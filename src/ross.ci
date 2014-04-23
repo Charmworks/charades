@@ -1,0 +1,12 @@
+mainmodule ross {
+
+	extern module pe; /**< defines the PE */
+	extern module lp; /**< defines the LP */
+
+	/** \brief Main chare needed for Charm compilation */
+	mainchare Main {
+		entry Main(CkMigrateMsg *);
+	};
+
+	/** \brief Common readonlies should be added */
+}

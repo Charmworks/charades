@@ -1,0 +1,23 @@
+module pe {
+
+	group PE {
+		entry PE(); /**< constructor */
+		entry void GVT_begin(); /**< begin gvt computation */
+		entry void GVT_end(); /**< reduction target for completion of GVT */
+
+		/**< Endless loop to execute on this PE */
+		entry void execute() {
+			while(till the end of simulation) {
+				if(time to compute GVT) {
+					GVT_begin();
+					when GVT_end() serial {
+						collect_fossils();
+					}
+				}
+
+				serial { schedule_nextLP(); }
+			}
+
+		}
+	};
+}
