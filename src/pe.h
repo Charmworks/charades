@@ -8,7 +8,6 @@ class PE: public CBase_PE {
 
 	/** \brief Methods for GVT computation */
 	void GVT_begin(); /**< begin gvt computation*/
-	void GVT_end(); /**< end gvt computation */
 
 	/** \brief Methods for updating current information */
 	void update_nextEvents(LP_Entry); /**< update the entry for a given LP in the nextEvents */
