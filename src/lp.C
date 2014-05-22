@@ -9,6 +9,8 @@ void LP::recv_event(Event* e) {
   if (e->ts < events.top()->ts) {
     pes.ckLocalBranch()->update_next(this, e->ts);
   }
+  // Do a check on the back of the processed queue and maybe rollback
+  // Also may need to cancel things in the case of an anti-message
   events.push(e);
 }
 
@@ -16,7 +18,7 @@ void LP::execute_me(Time ts) {
   while (events.top()->ts <= ts) {
     Event* e = events.top();
     events.pop();
-    // Execute e on the associated LP
+    userEntities[map(e->dest_id)]->execute(e);
     processedEvents.push(e);
   }
   pes.ckLocalBranch()->update_next(this, events.top()->ts);
