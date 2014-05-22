@@ -1,6 +1,8 @@
 #include "lp.h"
 #include "pe.h"
 
+// TODO: These should either be declared as readonlys, or moved to a group
+// data structure of global constants.
 extern CProxy_PE pes;
 extern CProxy_LP lps;
 

@@ -2,6 +2,7 @@ Things we may need to add:
 - Some group level, or node group level, data structure for global data
   - It would contain things like maps and lp types
   - In ROSS there is a global array of lptype structures
+  - This would also replace the need for readonlys
 
 As far as dealing with types:
 - Rather than events carrying pointers to LPs, maybe just have them carry an int which indexes the global type array
