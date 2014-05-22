@@ -5,6 +5,7 @@ mainmodule ross {
 
 	/** \brief Main chare needed for Charm compilation */
 	mainchare Main {
+    entry Main(CkArgMsg *);
 		entry Main(CkMigrateMsg *);
 	};
 
