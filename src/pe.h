@@ -13,8 +13,8 @@ public:
 	void GVT_begin(); /**< begin gvt computation*/
 
 	/** \brief Methods for updating current information */
-	void update_next(LP*,Time);//LP_Entry); /**< update the entry for a given LP in the nextEvents */
-	void update_oldest(LP*,Time);//LP_Entry); /** < update the entry for a given LP in the oldestEvents */
+	void update_next(LP*,tw_stime);//LP_Entry); /**< update the entry for a given LP in the nextEvents */
+	void update_oldest(LP*,tw_stime);//LP_Entry); /** < update the entry for a given LP in the oldestEvents */
 
 	void collect_fossils(); /**< collect fossils */
 	void schedule_next(); /**< find the smallest time step and execute */

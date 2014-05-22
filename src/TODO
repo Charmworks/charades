@@ -1,0 +1,20 @@
+Things we may need to add:
+- Some group level, or node group level, data structure for global data
+  - It would contain things like maps and lp types
+  - In ROSS there is a global array of lptype structures
+
+As far as dealing with types:
+- Rather than events carrying pointers to LPs, maybe just have them carry an int which indexes the global type array
+  - This allows the LPs to look up the type upon receiving the event to find the local mapping
+  - This also allows us to preserve the API for tw_event_send(tw_event*), since it can look up the CProxy using the map in the type array
+  - We also wouldn't have to worry about dealing with pointers while migrating
+
+Haven't really looked into LP state yet really. Right now it is a void pointer. Seems weird to have it heap allocated like that.
+
+Still not sure how all these pointers to functions are going to work in the face of migrations. 
+
+Make actual naming conventions. Right now there's a weird mix of our own names and ROSS (tw_*) names.
+Obviously the public API needs to have ROSS names, but to avoid confusion, all the charm stuff should probaby be as separate as possible.
+A very thin layer of typedefs with the public API would probably suffice.
+
+The extreme decoupling of LP state and type is still weird. Not sure if it is necessary or even more efficient.

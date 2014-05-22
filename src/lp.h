@@ -5,33 +5,42 @@
 #include <vector>
 #include <queue>
 
-struct user_entity {
+struct LPType {
   event_f execute;
+  revent_f reverse;
+  map_f map;
+  map_local_f local_map;
 };
 
-typedef std::vector<user_entity*> List;
-typedef std::queue<Event*> FIFO;
-typedef std::priority_queue<Event*> PriorityQueue;
+struct LPData {
+  LPType* type;
+  // TODO: Haven't dealt with state yet
+  void* state;
+};
 
 struct Event : public CMessage_Event {
-  Time ts;
+  tw_stime ts;
+  LPType* type;
   tw_lpid dest_id;
   tw_lpid source_id;
 };
 
+typedef std::vector<LPData*> LPList;
+typedef std::deque<Event*> ProcessedQueue;
+typedef std::priority_queue<Event*> PriorityQueue;
+
 class LP : public CBase_LP {
 private:
-	List userEntities;
+	LPList lpData;
 	PriorityQueue events;
-	FIFO processedEvents;
-
-  map_local_f map;
+	ProcessedQueue processedEvents;
 
 public:
 	LP(); /**< constructor */
 
 	void recv_event(Event*); /**< receive an event designated for me and add to the PE's and my event Q */
 
-	void execute_me(Time); /**< execute the events with least time stamp till the given ts*/
-	void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
+	void execute_me(tw_stime); /**< execute the events with least time stamp till the given ts*/
+	void rollback_me(tw_stime); /**< rollback this collection of LPs until the given ts */
+	void fossil_me(tw_stime); /**< collect fossils till next the given gvt_ts */
 };
