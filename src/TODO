@@ -18,3 +18,8 @@ Obviously the public API needs to have ROSS names, but to avoid confusion, all t
 A very thin layer of typedefs with the public API would probably suffice.
 
 The extreme decoupling of LP state and type is still weird. Not sure if it is necessary or even more efficient.
+
+Still need to figure out how, upon creation, an LP chare knows how to instatiate it's local collection of LPs. Another map maybe?
+How many levels of mapping did original ROSS have?
+
+Down the road: If an lpid is mapped to the sending proxy, there is no need to do any sending

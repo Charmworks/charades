@@ -18,9 +18,11 @@ struct LPData {
   void* state;
 };
 
+// TODO: Instead of type, maybe we could have the sender (who already knows
+// the type) compute the local index and send that instead.
 struct Event : public CMessage_Event {
-  tw_stime ts;
   LPType* type;
+  tw_stime ts;
   tw_lpid dest_id;
   tw_lpid source_id;
 };
