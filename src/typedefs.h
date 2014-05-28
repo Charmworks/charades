@@ -3,9 +3,11 @@
 
 // These are types used in ROSS already
 typedef double tw_stime;
+typedef double Time;
 typedef unsigned long long tw_lpid;
 
 class LPData;
+class Event;
 
 // These typedefs are similar to function ptr typedefs used by ROSS.
 typedef int (*map_f) (tw_lpid);
