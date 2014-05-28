@@ -26,5 +26,4 @@ How many levels of mapping did original ROSS have?
 Down the road: If an lpid is mapped to the sending proxy, there is no need to do any sending
 
 PEQueue:
-- Should we combine the two kinds of token into one LP token, then just pass a comparator to the PEQueue? This shouldn't change the API too much, and would probably be better than what we currently have
 - Originally, the Tokens would be owned and created by the PEQueue and given to the LP when it arrived on the PE. Then however we either need to dynamically allocate when LPs arrive and leave, or there would have to be a pool of tokens which would require extra management. So I decided tokens should be owned and created by the LP chares, but used and modified by the queues.
