@@ -10,6 +10,8 @@ As far as dealing with types:
   - This also allows us to preserve the API for tw_event_send(tw_event*), since it can look up the CProxy using the map in the type array
   - We also wouldn't have to worry about dealing with pointers while migrating
 
+Clean up file structure
+
 Haven't really looked into LP state yet really. Right now it is a void pointer. Seems weird to have it heap allocated like that.
 
 Still not sure how all these pointers to functions are going to work in the face of migrations. 
