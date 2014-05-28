@@ -35,7 +35,8 @@ typedef std::priority_queue<Event*> PriorityQueue;
 
 class LP : public CBase_LP {
 private:
-  LPToken token;
+  LPToken next_token;
+  LPToken oldest_token;
 	LPList lpData;
 	PriorityQueue events;
 	ProcessedQueue processedEvents;

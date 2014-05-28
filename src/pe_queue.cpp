@@ -13,7 +13,7 @@ PEQueue::~PEQueue() {
 
 // Inserts the token pointer at the bottom of the heap, then pulls it up to
 // the correct index in a log number of steps.
-void PEQueue::insert(LPToken* t) {
+void PEQueue::insert(LPToken* t, Time ts) {
   if (size == capacity) {
     LPToken** tmp = new LPToken*[capacity*2];
     for (int i = 0; i < capacity; i++) {
@@ -25,6 +25,7 @@ void PEQueue::insert(LPToken* t) {
   }
   heap[size] = t;
   heap[size]->index = size;
+  heap[size]->ts = ts;
   pull_up(size);
   size++;
 }
