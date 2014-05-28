@@ -6,18 +6,9 @@
 extern CProxy_PE pes;
 extern CProxy_LP lps;
 
-// Temporary definition of tw_event_send. Should be moved to a different
-// file...probably something like ross.C or something like that.
-typedef Event tw_event;
-void tw_event_send(tw_event* e) {
-  int idx = e->type->map(e->dest_id);
-  lps(idx).recv_event(e);
-}
-
+// Create LPStructs based on mappins, and do initial registration with the PE.
 LP::LP() : next_token(this), oldest_token(this) {
-  // TODO:Create the user entites associated with this chare
-  // To do this we'll need to know what types to map them to, and how many
-  // to create. Need to see how this is done in ROSS
+  pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 }
 
 // Entry method for sending events to LPs.
@@ -28,7 +19,7 @@ void LP::recv_event(Event* e) {
   if (e->ts < events.top()->ts) {
     pes.ckLocalBranch()->update_next(&next_token, e->ts);
   }
-  if (e->ts < processedEvents.back()->ts) {
+  if (e->ts < processed_events.back()->ts) {
     rollback_me(e->ts);
   }
   events.push(e);
@@ -42,12 +33,9 @@ void LP::execute_me(tw_stime ts) {
   while (events.top()->ts <= ts) {
     Event* e = events.top();
     events.pop();
-    ////////////////////////////////////////////////////
-    // TODO: The execution logic needs work
-    LPData *lp = lpData[e->type->local_map(e->dest_id)];
-    e->type->execute(lp, e);
-    ////////////////////////////////////////////////////
-    processedEvents.push_front(e);
+    LPStruct *lp = lp_structs[e->local_dest];
+    lp->type->execute(lp, e);
+    processed_events.push_front(e);
   }
   pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
 }
@@ -56,12 +44,12 @@ void LP::execute_me(tw_stime ts) {
 // 1) If the next event is older than the current gvt pop it and delete it.
 // 2) Update the PE with our oldest unprocessed event time.
 void LP::fossil_me(tw_stime gvt) {
-  while (processedEvents.back()->ts <= gvt) {
-    Event* e = processedEvents.back();
-    processedEvents.pop_back();
+  while (processed_events.back()->ts <= gvt) {
+    Event* e = processed_events.back();
+    processed_events.pop_back();
     delete e;
   }
-  pes.ckLocalBranch()->update_oldest(&oldest_token, processedEvents.back()->ts);
+  pes.ckLocalBranch()->update_oldest(&oldest_token, processed_events.back()->ts);
 }
 
 // Rollback all processed events up to the passed in timestamp.
@@ -70,14 +58,11 @@ void LP::fossil_me(tw_stime gvt) {
 // 3) Push the popped event onto the event priority queue.
 // Note: This method is not responsible for updating the PE.
 void LP::rollback_me(tw_stime ts) {
-  while (processedEvents.back()->ts > ts) {
-    Event* e = processedEvents.front();
-    processedEvents.pop_front();
-    ////////////////////////////////////////////////////
-    // TODO: The execution logic needs work
-    LPData *lp = lpData[e->type->local_map(e->dest_id)];
-    e->type->reverse(lp, e);
-    ////////////////////////////////////////////////////
+  while (processed_events.back()->ts > ts) {
+    Event* e = processed_events.front();
+    processed_events.pop_front();
+    LPStruct *lp = lp_structs[e->local_dest];
+    lp->type->reverse(lp, e);
     events.push(e);
   }
 }

@@ -7,29 +7,30 @@
 #include <vector>
 #include <queue>
 
+// The LPType contains function pointers for handling/reversing events as well
+// as maps on how to locate LP structs based on their global ids.
 struct LPType {
   event_f execute;
   revent_f reverse;
-  map_f map;
-  map_local_f local_map;
+  map_f global_map;
+  map_f local_map;
 };
 
-struct LPData {
+// TODO: Need to flesh this out more
+// Right now, an LPStruct is an LPType, as well as its state.
+struct LPStruct {
   LPType* type;
-  // TODO: Haven't dealt with state yet
   void* state;
 };
 
-// TODO: Instead of type, maybe we could have the sender (who already knows
-// the type) compute the local index and send that instead.
+// TODO: This needs some work, especially since we don't know how we are dealing
+// with globals such as type yet.
 struct Event : public CMessage_Event {
-  LPType* type;
-  tw_stime ts;
-  tw_lpid dest_id;
-  tw_lpid source_id;
+  Time ts;
+  unsigned local_dest;
 };
 
-typedef std::vector<LPData*> LPList;
+typedef std::vector<LPStruct*> LPList;
 typedef std::deque<Event*> ProcessedQueue;
 typedef std::priority_queue<Event*> PriorityQueue;
 
@@ -37,10 +38,10 @@ class LP : public CBase_LP {
 private:
   LPToken next_token;
   LPToken oldest_token;
-	LPList lpData;
-	PriorityQueue events;
-	ProcessedQueue processedEvents;
 
+	LPList lp_structs;
+	PriorityQueue events;
+	ProcessedQueue processed_events;
 public:
 	LP(); /**< constructor */
 

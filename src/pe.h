@@ -14,6 +14,9 @@ public:
 	/** \brief Methods for GVT computation */
 	void GVT_begin(); /**< begin gvt computation*/
 
+  void register_lp(LPToken*, Time, LPToken*, Time);
+  void unregister_lp(LPToken*, Time, LPToken*, Time);
+
 	/** \brief Methods for updating current information */
 	void update_next(LPToken*, Time); /**< update the entry for a given LP in the nextEvents */
 	void update_oldest(LPToken*, Time); /** < update the entry for a given LP in the oldestEvents */
