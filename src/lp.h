@@ -1,6 +1,8 @@
 #include "lp.decl.h"
 
 #include "typedefs.h"
+// TODO: Maybe put LP tokens in a different place
+#include "pe_queue.h"
 
 #include <vector>
 #include <queue>
@@ -33,6 +35,7 @@ typedef std::priority_queue<Event*> PriorityQueue;
 
 class LP : public CBase_LP {
 private:
+  LPToken token;
 	LPList lpData;
 	PriorityQueue events;
 	ProcessedQueue processedEvents;
@@ -42,7 +45,7 @@ public:
 
 	void recv_event(Event*); /**< receive an event designated for me and add to the PE's and my event Q */
 
-	void execute_me(tw_stime); /**< execute the events with least time stamp till the given ts*/
-	void rollback_me(tw_stime); /**< rollback this collection of LPs until the given ts */
-	void fossil_me(tw_stime); /**< collect fossils till next the given gvt_ts */
+	void execute_me(Time); /**< execute the events with least time stamp till the given ts*/
+	void rollback_me(Time); /**< rollback this collection of LPs until the given ts */
+	void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
 };

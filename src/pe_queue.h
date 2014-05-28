@@ -17,7 +17,9 @@ class LP;
 struct LPToken {
   LP* lp;
   Time ts;
-  unsigned int index;
+  unsigned index;
+
+  LPToken(LP* lp) : lp(lp) {}
 };
 
 // TODO: The big 3? Or disable them?
@@ -25,14 +27,18 @@ struct LPToken {
 class PEQueue {
 private:
   unsigned capacity, size;
-  LPToken* heap;
+  LPToken** heap;
+
+  void swap(unsigned, unsigned);
+  void pull_up(unsigned);
+  void push_down(unsigned);
 public:
   PEQueue();
 
   void insert(LPToken*);
   void remove(LPToken*);
 
-  void update(LPToken*);
+  void update(LPToken*, Time);
 };
 
 #endif

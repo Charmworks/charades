@@ -14,7 +14,7 @@ void tw_event_send(tw_event* e) {
   lps(idx).recv_event(e);
 }
 
-LP::LP() {
+LP::LP() : token(this) {
   // TODO:Create the user entites associated with this chare
   // To do this we'll need to know what types to map them to, and how many
   // to create. Need to see how this is done in ROSS
@@ -26,7 +26,7 @@ LP::LP() {
 // 3) Push event into the priority queue.
 void LP::recv_event(Event* e) {
   if (e->ts < events.top()->ts) {
-    pes.ckLocalBranch()->update_next(this, e->ts);
+    pes.ckLocalBranch()->update_next(&token, e->ts);
   }
   if (e->ts < processedEvents.back()->ts) {
     rollback_me(e->ts);
@@ -49,7 +49,7 @@ void LP::execute_me(tw_stime ts) {
     ////////////////////////////////////////////////////
     processedEvents.push_front(e);
   }
-  pes.ckLocalBranch()->update_next(this, events.top()->ts);
+  pes.ckLocalBranch()->update_next(&token, events.top()->ts);
 }
 
 // Fossil collect all events older than the passed in GVT.
@@ -61,7 +61,7 @@ void LP::fossil_me(tw_stime gvt) {
     processedEvents.pop_back();
     delete e;
   }
-  pes.ckLocalBranch()->update_oldest(this, processedEvents.back()->ts);
+  pes.ckLocalBranch()->update_oldest(&token, processedEvents.back()->ts);
 }
 
 // Rollback all processed events up to the passed in timestamp.
