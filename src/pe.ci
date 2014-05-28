@@ -1,24 +1,24 @@
 module pe {
 
-	group PE {
-		entry PE(); /**< constructor */
-		entry void GVT_begin(); /**< begin gvt computation */
-		entry void GVT_end(); /**< reduction target for completion of GVT */
+  group PE {
+    entry PE(); /**< constructor */
+    entry void GVT_begin(); /**< begin gvt computation */
+    entry void GVT_end(); /**< reduction target for completion of GVT */
 
-		/**< Endless loop to execute on this PE */
+    /**< Endless loop to execute on this PE */
     // NOTE: MiniApp performance was absolutely awful when using SDAG. Needs
     // a bit more exploration, but we may want to avoid SDAG here for now.
-		entry void execute() {
-			/*while(till the end of simulation) {
-				if(time to compute GVT) {
-					serial { GVT_begin(); }
-					when GVT_end() serial {
-						collect_fossils();
-					}
-				}
+    entry void execute() {
+      /*while(till the end of simulation) {
+        if(time to compute GVT) {
+        serial { GVT_begin(); }
+        when GVT_end() serial {
+        collect_fossils();
+        }
+        }
 
-				serial { schedule_nextLP(); }
-			}*/
-		};
-	};
+        serial { schedule_nextLP(); }
+        }*/
+    };
+  };
 }

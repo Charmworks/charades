@@ -1,7 +1,7 @@
 module lp {
   message Event;
-	array [1D] LP {
-		entry LP(); /**< constructor */
-		entry void recv_event(Event*); /**< recieve an event for this LP */
-	};
+  array [1D] LP {
+    entry LP(); /**< constructor */
+    entry void recv_event(Event*); /**< recieve an event for this LP */
+  };
 };
