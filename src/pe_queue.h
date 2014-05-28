@@ -20,17 +20,29 @@ public:
   friend class PEQueue;
 };
 
-// Priority queue of LPToken pointers weighted by timestamp.
+// Priority queue of LPToken pointers weighted by timestamp. The heap is
+// maintained as an array of LPToken pointers. The pointers are not owned by the
+// queue. The queue must update the index and timestamp entries in the token.
+// This allows us to find an entry in the heap in constant time when given a
+// pointer to an LPToken, allowing us to update the token with a new timestamp
+// and reposition it in the queue accordingly.
 class PEQueue {
 private:
   unsigned capacity, size;
   LPToken** heap;
 
+  // Swaps the queue entries at the two indices and updates their index fields.
   void swap(unsigned, unsigned);
+
+  // Repositions entries located at the given index.
   void pull_up(unsigned);
   void push_down(unsigned);
 
+  // Compares the entries at the given indices, and returns the index of the
+  // smallest entry.
   unsigned smallest(unsigned, unsigned) const;
+
+  // Helper methods for accessing parents and children based on indices.
   bool has_parent(unsigned) const;
   bool has_left(unsigned) const;
   bool has_right(unsigned) const;
@@ -41,9 +53,11 @@ public:
   PEQueue();
   ~PEQueue();
 
+  // Inserts and removes tokens from the queue.
   void insert(LPToken*, Time);
   void remove(LPToken*);
 
+  // Updates the given token with a new timestamp, and repositions it.
   void update(LPToken*, Time);
 };
 

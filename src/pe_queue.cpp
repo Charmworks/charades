@@ -3,7 +3,7 @@
 PEQueue::PEQueue() {
   size = 0;
   // TODO: Set this sensibly. Maybe 2x number of LPs per PE or something.
-  capacity = 20;
+  capacity = 32;
   heap = new LPToken*[capacity];
 }
 
@@ -14,6 +14,7 @@ PEQueue::~PEQueue() {
 // Inserts the token pointer at the bottom of the heap, then pulls it up to
 // the correct index in a log number of steps.
 void PEQueue::insert(LPToken* t, Time ts) {
+  // Resize the array if necessary
   if (size == capacity) {
     LPToken** tmp = new LPToken*[capacity*2];
     for (int i = 0; i < capacity; i++) {
@@ -23,9 +24,12 @@ void PEQueue::insert(LPToken* t, Time ts) {
     heap = tmp;
     capacity = capacity*2;
   }
+  // Insert the token at the end, and update its fields
   heap[size] = t;
   heap[size]->index = size;
   heap[size]->ts = ts;
+
+  // Reposition the newly inserted token and update size
   pull_up(size);
   size++;
 }
@@ -50,7 +54,7 @@ void PEQueue::update(LPToken* t, Time ts) {
   }
 }
 
-// Swap positions i1 and i2 in the heap and update their index fields
+// Swap positions i1 and i2 in the heap and update their index fields.
 void PEQueue::swap(unsigned i1, unsigned i2) {
   LPToken* tmp = heap[i1];
   heap[i1] = heap[i2];
