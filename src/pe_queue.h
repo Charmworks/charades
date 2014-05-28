@@ -32,8 +32,17 @@ private:
   void swap(unsigned, unsigned);
   void pull_up(unsigned);
   void push_down(unsigned);
+
+  unsigned smallest(unsigned, unsigned) const;
+  bool has_parent(unsigned) const;
+  bool has_left(unsigned) const;
+  bool has_right(unsigned) const;
+  unsigned parent(unsigned) const;
+  unsigned left(unsigned) const;
+  unsigned right(unsigned) const;
 public:
   PEQueue();
+  ~PEQueue();
 
   void insert(LPToken*);
   void remove(LPToken*);
