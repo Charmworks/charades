@@ -35,19 +35,19 @@ typedef std::deque<Event*> ProcessedQueue;
 typedef std::priority_queue<Event*> PriorityQueue;
 
 class LP : public CBase_LP {
-private:
-  LPToken next_token;
-  LPToken oldest_token;
+  private:
+    LPToken next_token;
+    LPToken oldest_token;
 
-	LPList lp_structs;
-	PriorityQueue events;
-	ProcessedQueue processed_events;
-public:
-	LP(); /**< constructor */
+    LPList lp_structs;
+    PriorityQueue events;
+    ProcessedQueue processed_events;
+  public:
+    LP(); /**< constructor */
 
-	void recv_event(Event*); /**< receive an event designated for me and add to the PE's and my event Q */
+    void recv_event(Event*); /**< receive an event designated for me and add to the PE's and my event Q */
 
-	void execute_me(Time); /**< execute the events with least time stamp till the given ts*/
-	void rollback_me(Time); /**< rollback this collection of LPs until the given ts */
-	void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
+    void execute_me(Time); /**< execute the events with least time stamp till the given ts*/
+    void rollback_me(Time); /**< rollback this collection of LPs until the given ts */
+    void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
 };
