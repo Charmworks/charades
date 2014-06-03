@@ -1,4 +1,5 @@
-CHARMC=~/Programming/libraries/charm/bin/charmc
+#CHARMC=~/Programming/libraries/charm/bin/charmc
+CHARMC=~/git/charm/bin/charmc
 
 all: ross pe lp
 

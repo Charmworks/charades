@@ -37,10 +37,10 @@ void PE::GVT_end(Time newGVT) {
  * on this queue for LP's time stamps.
  */
 void PE::collect_fossils() {
-  /*TODO Missing functionality in the queue to read the top */
   LPToken *min = oldestEvents.top();
   while((min != NULL) && (min->ts < gvt)) {
     min->lp->fossil_me(gvt);
+    min = oldestEvents.top();
   }
 }
 

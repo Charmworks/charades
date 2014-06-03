@@ -40,11 +40,11 @@ class PE: public CBase_PE {
 
     /** \brief Update the entry for a given LP in the nextEvents */
     void update_next(LPToken* token, Time ts) {
-        nextEvents.update(token, ts)
+        nextEvents.update(token, ts);
     }
 
     /** \brief Update the entry for a given LP in the oldestEvents */
-    void update_oldest(LPToken*, Time) {
+    void update_oldest(LPToken* token, Time ts) {
         oldestEvents.update(token, ts);
     }
 };

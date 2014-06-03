@@ -1,5 +1,7 @@
 #include "pe_queue.h"
 
+#include <stdlib.h>
+
 PEQueue::PEQueue() {
   size = 0;
   // TODO: Set this sensibly. Maybe 2x number of LPs per PE or something.
@@ -9,6 +11,12 @@ PEQueue::PEQueue() {
 
 PEQueue::~PEQueue() {
   delete[] heap;
+}
+
+// Returns a pointer to the top token on the queue.
+LPToken* PEQueue::top() const {
+  if (size == 0)  return NULL;
+  else            return heap[0];
 }
 
 // Inserts the token pointer at the bottom of the heap, then pulls it up to
