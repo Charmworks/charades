@@ -10,8 +10,10 @@
 // The LPType contains function pointers for handling/reversing events as well
 // as maps on how to locate LP structs based on their global ids.
 struct LPType {
+  init_f init;
   event_f execute;
   revent_f reverse;
+  finalize_f finalize;
   map_f global_map;
   map_f local_map;
 };
@@ -19,15 +21,19 @@ struct LPType {
 // TODO: Need to flesh this out more
 // Right now, an LPStruct is an LPType, as well as its state.
 struct LPStruct {
-  LPType* type;
+  unsigned id;
+  unsigned gid;
   void* state;
+  LPType* type;
 };
 
 // TODO: This needs some work, especially since we don't know how we are dealing
 // with globals such as type yet.
 struct Event : public CMessage_Event {
   Time ts;
-  unsigned local_dest;
+  unsigned global_id;
+  unsigned local_id;
+  LPStruct* src_lp;
 };
 
 typedef std::vector<LPStruct*> LPList;
