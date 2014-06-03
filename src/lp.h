@@ -38,13 +38,12 @@ struct LPType {
 // Right now, an LPStruct is an LPType, as well as its state.
 struct LPStruct {
   LP* owner;
-  unsigned id;
   unsigned gid;
   void* state;
   LPType* type;
 };
 
-typedef std::vector<LPStruct*> LPList;
+typedef std::vector<LPStruct> LPList;
 typedef std::deque<Event*> ProcessedQueue;
 typedef std::priority_queue<Event*> PriorityQueue;
 

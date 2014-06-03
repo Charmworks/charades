@@ -6,10 +6,22 @@
 // data structure of global constants.
 extern CProxy_PE pes;
 extern CProxy_LP lps;
+extern unsigned g_lps_per_chare;
+extern type_map_f global_type_map;
 
-// Create LPStructs based on mappins, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this) {
+// Create LPStructs based on mappings, and do initial registration with the PE.
+LP::LP() : next_token(this), oldest_token(this), lp_structs(g_lps_per_chare) {
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
+
+  // Create array of LPStructs based on globals
+  // TODO: Should the init function be called here as well?
+  unsigned offset = thisIndex * g_lps_per_chare;
+  for (int i = 0; i < g_lps_per_chare; i++) {
+    lp_structs[i].owner = this;
+    lp_structs[i].gid = offset + i;
+    lp_structs[i].state = NULL;
+    lp_structs[i].type = global_type_map(lp_structs[i].gid);
+  }
 }
 
 // Entry method for sending events to LPs.
@@ -35,7 +47,7 @@ void LP::execute_me(tw_stime ts) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
-    LPStruct *lp = lp_structs[e->local_id];
+    LPStruct *lp = &lp_structs[e->local_id];
     lp->type->execute(lp, e);
     processed_events.push_front(e);
   }
@@ -63,7 +75,7 @@ void LP::rollback_me(tw_stime ts) {
   while (processed_events.back()->ts > ts) {
     Event* e = processed_events.front();
     processed_events.pop_front();
-    LPStruct *lp = lp_structs[e->local_id];
+    LPStruct *lp = &lp_structs[e->local_id];
     lp->type->reverse(lp, e);
     events.push(e);
   }

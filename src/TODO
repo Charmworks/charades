@@ -28,11 +28,20 @@ How many levels of mapping did original ROSS have?
 
 Down the road: If an lpid is mapped to the sending proxy, there is no need to do any sending
 
-PEQueue:
-- Originally, the Tokens would be owned and created by the PEQueue and given to the LP when it arrived on the PE. Then however we either need to dynamically allocate when LPs arrive and leave, or there would have to be a pool of tokens which would require extra management. So I decided tokens should be owned and created by the LP chares, but used and modified by the queues.
-
 Current LP Time:
 - In the ross model, LPs don't maintain current time. It is maintained by the associated KP.
 - Is this correct? It has to be the case that current time will only be read from within an event handler otherwise the data will be incorrect.
 - Also, how does the field get updated wrt to rollbacks.
 - Seems like a more "correct/robust" impl might involve instead just checking the top of the event queue.
+
+Random number generation:
+- Big module that will probably just be taken from ROSS and used as is.
+
+Events:
+- Seems like ROSS is not re-using events. Or they are but it is convoluted by the ROSS allocation scheme.
+- Is it possible to re-use events? ie: In PHOLD why ask for a new event each time, when you could just resend the one you received.
+
+Biggest roadblocks to getting PHOLD working:
+- RNG functionality needs to be added to LPs
+- Bitfield support needs to be added
+- Globals, globals, globals
