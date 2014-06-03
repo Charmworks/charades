@@ -1,7 +1,6 @@
 #include "lp.decl.h"
 
 #include "typedefs.h"
-#include "pe_queue.h"
 
 #include <vector>
 #include <queue>
