@@ -1,17 +1,11 @@
 #include "lp.h"
 #include "pe.h"
+#include "event.h"
 
 // TODO: These should either be declared as readonlys, or moved to a group
 // data structure of global constants.
 extern CProxy_PE pes;
 extern CProxy_LP lps;
-
-// TODO: This is temporary and over simplified. Should also be moved.
-void tw_send_event(Event* e) {
-  unsigned index = e->src_lp->type->global_map(e->global_id);
-  e->local_id = e->src_lp->type->local_map(e->global_id);
-  lps(index).recv_event(e);
-}
 
 // Create LPStructs based on mappins, and do initial registration with the PE.
 LP::LP() : next_token(this), oldest_token(this) {
@@ -40,6 +34,7 @@ void LP::execute_me(tw_stime ts) {
   while (events.top()->ts <= ts) {
     Event* e = events.top();
     events.pop();
+    current_time = e->ts;
     LPStruct *lp = lp_structs[e->local_id];
     lp->type->execute(lp, e);
     processed_events.push_front(e);

@@ -13,7 +13,8 @@ class PE: public CBase_PE {
     int gvt_cnt; /**< count since last gvt */
     int gvt_freq; /**< frequency of GVT computation */
   public:
-    PE() { this->PE(default_batchSize, default_gvt_freq); }
+    // TODO: Commented this out temporarily so that code would compile
+    //PE() { this->PE(default_batchSize, default_gvt_freq); }
 
     PE(int batchSize_, int gvt_freq_) : batchSize(batchSize_), gvt_cnt(0), gvt_freq(gvt_freq_) { }
 

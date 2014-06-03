@@ -4,21 +4,7 @@
 #include "typedefs.h"
 
 class LP;
-
-// Tokens owned by LP chares that are used by the PE queues that control
-// scheduling and fossil collection. Each token has a direct pointer to its LP,
-// the timestamp associated with the token, and the index of its location in the
-// queue.
-struct LPToken {
-  private:
-    LP* lp;
-    Time ts;
-    unsigned index;
-
-  public:
-    LPToken(LP* lp) : lp(lp) {}
-    friend class PEQueue;
-};
+struct LPToken;
 
 // Priority queue of LPToken pointers weighted by timestamp. The heap is
 // maintained as an array of LPToken pointers. The pointers are not owned by the
