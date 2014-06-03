@@ -45,3 +45,8 @@ Biggest roadblocks to getting PHOLD working:
 - RNG functionality needs to be added to LPs
 - Bitfield support needs to be added
 - Globals, globals, globals
+
+Add our version of tw_init:
+- Will definitely create PE group chares
+- May also create LP chare array
+- Need to see where init function is called on LPs in original ROSS
