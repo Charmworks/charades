@@ -11,6 +11,8 @@ struct LPType {
   map_f local_map;
 };
 
+class LPChare;
+struct tw_rng;
 // TODO: Need to flesh this out more
 // Right now, an LPStruct is an LPType, as well as its state.
 struct LPStruct {
@@ -18,4 +20,5 @@ struct LPStruct {
   unsigned gid;
   void* state;
   LPType* type;
+  tw_rng* rng;
 };
