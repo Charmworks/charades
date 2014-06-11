@@ -1,16 +1,16 @@
-#include "lp.h"
+#include "lp_chare.h"
 #include "pe.h"
 #include "event.h"
 
 // TODO: These should either be declared as readonlys, or moved to a group
 // data structure of global constants.
 extern CProxy_PE pes;
-extern CProxy_LP lps;
+extern CProxy_LPChare lps;
 extern unsigned g_lps_per_chare;
 extern type_map_f global_type_map;
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this), lp_structs(g_lps_per_chare) {
+LPChare::LPChare() : next_token(this), oldest_token(this), lp_structs(g_lps_per_chare) {
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
   // Create array of LPStructs based on globals
@@ -28,7 +28,7 @@ LP::LP() : next_token(this), oldest_token(this), lp_structs(g_lps_per_chare) {
 // 1) Check if the event is earlier than our earliest and update the PE.
 // 2) Check to see if we need a rollback.
 // 3) Push event into the priority queue.
-void LP::recv_event(Event* e) {
+void LPChare::recv_event(Event* e) {
   if (e->ts < events.top()->ts) {
     pes.ckLocalBranch()->update_next(&next_token, e->ts);
   }
@@ -42,7 +42,7 @@ void LP::recv_event(Event* e) {
 // 1) If next event is still earlier than ts, pop it.
 // 2) Execute the popped event on its destination LP.
 // 3) Update the PE with our new earliest timestamp.
-void LP::execute_me(tw_stime ts) {
+void LPChare::execute_me(tw_stime ts) {
   while (events.top()->ts <= ts) {
     Event* e = events.top();
     events.pop();
@@ -57,7 +57,7 @@ void LP::execute_me(tw_stime ts) {
 // Fossil collect all events older than the passed in GVT.
 // 1) If the next event is older than the current gvt pop it and delete it.
 // 2) Update the PE with our oldest unprocessed event time.
-void LP::fossil_me(tw_stime gvt) {
+void LPChare::fossil_me(tw_stime gvt) {
   while (processed_events.back()->ts <= gvt) {
     Event* e = processed_events.back();
     processed_events.pop_back();
@@ -71,7 +71,7 @@ void LP::fossil_me(tw_stime gvt) {
 // 2) Execute the reverse handler on the target lp and popped event.
 // 3) Push the popped event onto the event priority queue.
 // Note: This method is not responsible for updating the PE.
-void LP::rollback_me(tw_stime ts) {
+void LPChare::rollback_me(tw_stime ts) {
   while (processed_events.back()->ts > ts) {
     Event* e = processed_events.front();
     processed_events.pop_front();
