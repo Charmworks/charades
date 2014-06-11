@@ -1,9 +1,10 @@
 #include "typedefs.h"
 
-#include "lp.decl.h"
+#include "lp_chare.decl.h"
 
 // TODO: This needs some work, especially since we don't know how we are dealing
-// with globals such as type yet.
+// with globals such as type yet. It would also be nice if we could decouple an
+// event struct from the Charm++ infrastructure.
 struct Event : public CMessage_Event {
   Time ts;
   unsigned index;

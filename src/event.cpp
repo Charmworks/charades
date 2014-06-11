@@ -1,7 +1,7 @@
 #include "event.h"
-#include "lp.h"
+#include "lp_chare.h"
 
-extern CProxy_LP lps;
+extern CProxy_LPChare lps;
 
 void tw_send_event(tw_event* e) {
   lps(e->index).recv_event(e);

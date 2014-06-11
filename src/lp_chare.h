@@ -1,5 +1,6 @@
-#include "lp.decl.h"
+#include "lp_chare.decl.h"
 
+#include "lp_structs.h"
 #include "typedefs.h"
 
 #include <vector>
@@ -13,40 +14,20 @@ class Event;
 // queue.
 struct LPToken {
   private:
-    LP* lp;
+    LPChare* lp;
     Time ts;
     unsigned index;
 
   public:
-    LPToken(LP* lp) : lp(lp) {}
+    LPToken(LPChare* lp) : lp(lp) {}
     friend class PEQueue;
-};
-
-// The LPType contains function pointers for handling/reversing events as well
-// as maps on how to locate LP structs based on their global ids.
-struct LPType {
-  init_f init;
-  event_f execute;
-  revent_f reverse;
-  finalize_f finalize;
-  map_f global_map;
-  map_f local_map;
-};
-
-// TODO: Need to flesh this out more
-// Right now, an LPStruct is an LPType, as well as its state.
-struct LPStruct {
-  LP* owner;
-  unsigned gid;
-  void* state;
-  LPType* type;
 };
 
 typedef std::vector<LPStruct> LPList;
 typedef std::deque<Event*> ProcessedQueue;
 typedef std::priority_queue<Event*> PriorityQueue;
 
-class LP : public CBase_LP {
+class LPChare : public CBase_LPChare {
   private:
     LPToken next_token;
     LPToken oldest_token;
@@ -58,7 +39,7 @@ class LP : public CBase_LP {
     // TODO: Maybe it would be better to just poll the top of the events queue instead of maintaining this
     Time current_time;
   public:
-    LP(); /**< constructor */
+    LPChare(); /**< constructor */
 
     void recv_event(Event*); /**< receive an event designated for me and add to the PE's and my event Q */
 

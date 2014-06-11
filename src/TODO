@@ -11,6 +11,7 @@ As far as dealing with types:
   - We also wouldn't have to worry about dealing with pointers while migrating
 
 Clean up file structure
+- Definetly want to split up Charm++ stuff from non-Charm++. i.e. anything dealing with underlying structs shouldn't need to be able to find charm++.h
 
 Haven't really looked into LP state yet really. Right now it is a void pointer. Seems weird to have it heap allocated like that.
 

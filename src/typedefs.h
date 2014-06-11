@@ -24,4 +24,7 @@ typedef void (*finalize_f) (LPStruct*);
 typedef unsigned (*map_f) (tw_lpid);
 typedef LPType* (*type_map_f) (tw_lpid);
 
+// TODO: This should be somewhere else
+#define TW_LOC  __FILE__,__LINE__
+
 #endif
