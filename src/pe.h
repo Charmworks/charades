@@ -27,6 +27,11 @@ class PE: public CBase_PE {
     void GVT_contribute(); /**< all sent messages received, contribute to GVT */
     void GVT_end(Time); /**< GVT computer */
 
+    /** \brief Get time stamp of the minium event */
+    Time getMinTime() {
+      return nextEvents.top()->ts;
+    }
+
     /** \brief Register the given LP to our queues */
     void register_lp(LPToken* next_token, Time next_ts, LPToken* oldest_token, Time oldest_ts) {
         nextEvents.insert(next_token, next_ts);
