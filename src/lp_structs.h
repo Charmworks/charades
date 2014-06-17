@@ -1,3 +1,6 @@
+#ifndef _LP_STRUCTS_H
+#define _LP_STRUCTS_H
+
 #include "typedefs.h"
 
 // The LPType contains function pointers for handling/reversing events as well
@@ -22,3 +25,4 @@ struct LPStruct {
   LPType* type;
   tw_rng* rng;
 };
+#endif

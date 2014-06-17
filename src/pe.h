@@ -1,5 +1,7 @@
-#include "pe.decl.h"
+#ifndef _PE_H
+#define _PE_H
 
+#include "pe.decl.h"
 #include "pe_queue.h"
 
 class LP;
@@ -54,3 +56,4 @@ class PE: public CBase_PE {
         oldestEvents.update(token, ts);
     }
 };
+#endif

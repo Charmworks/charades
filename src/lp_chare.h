@@ -1,3 +1,6 @@
+#ifndef _LP_CHARE_H
+#define _LP_CHARE_H
+
 #include "lp_chare.decl.h"
 
 #include "lp_structs.h"
@@ -49,3 +52,4 @@ class LPChare : public CBase_LPChare {
 
     Time now() const { return current_time; }
 };
+#endif

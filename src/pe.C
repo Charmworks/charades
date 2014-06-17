@@ -59,3 +59,4 @@ int PE::schedule_nextLP() {
   min->lp->execute_me(nextEvents.top()->ts);
   return 1;
 }
+#include "pe.def.h"
