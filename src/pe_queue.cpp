@@ -1,7 +1,5 @@
 #include "pe_queue.h"
-
-#include "lp.h"
-
+#include "lp_chare.h"
 #include <stdlib.h>
 
 PEQueue::PEQueue() {

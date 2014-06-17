@@ -1,28 +1,32 @@
 #CHARMC=~/Programming/libraries/charm/bin/charmc
-CHARMC=~/charm/net-linux-x86_64_debug/bin/charmc
+CHARMC ?= ~/charm/net-linux-x86_64_debug/bin/charmc
+OPTS=
 
-all: lp
+all: libross.a
+
+libross.a: lp.o pe_queue.o event.o
+	$(CHARMC) -o $@ $^
 
 ross: ross.ci
-	$(CHARMC) ross.ci
+	$(CHARMC) $<
 
 lp_generated: lp_chare.ci
-	$(CHARMC) -c lp_chare.ci
+	$(CHARMC) $<
 
 pe_generated: pe.ci
-	$(CHARMC) -c pe.ci
+	$(CHARMC) $<
 
-pe: pe_queue pe_generated pe.h pe.C
-	$(CHARMC) -c pe.C -o pe.o
+pe: pe.C pe.h pe_queue pe_generated
+	$(CHARMC) $(OPTS) -c pe.C -o pe.o
 
-lp: lp_generated lp_chare.h lp_structs.h lp_chare.C pe_generated pe.h event
-	$(CHARMC) -c lp_chare.C -o lp.o
+lp.o:  lp_chare.C lp_chare.h lp_structs.h pe_generated pe.h lp_generated event.o
+	$(CHARMC) $(OPTS) -c lp_chare.C -o $@
 
-pe_queue: lp_generated pe_queue.h pe_queue.cpp
-	$(CHARMC) -c pe_queue.cpp -o pe_queue.o
+pe_queue.o: pe_queue.cpp pe_queue.h lp_generated
+	$(CHARMC) $(OPTS) -c pe_queue.cpp -o $@
 
-event: lp_generated event.cpp event.h
-	$(CHARMC) -c event.cpp -o event.o
+event.o: event.cpp event.h lp_generated
+	$(CHARMC) $(OPTS) -c event.cpp -o $@
 
 clean:
-	rm -rf *.o *.decl.h *.def.h
+	rm -rf *.o *.decl.h *.def.h libross.a

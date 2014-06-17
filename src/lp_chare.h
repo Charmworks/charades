@@ -24,6 +24,7 @@ struct LPToken {
   public:
     LPToken(LPChare* lp) : lp(lp) {}
     friend class PEQueue;
+    friend class PE;
 };
 
 typedef std::vector<LPStruct> LPList;
