@@ -55,7 +55,7 @@ void PE::collect_fossils() {
 int PE::schedule_nextLP() {
   LPToken *min = nextEvents.top();
   if(min == NULL) return 0;
-  nextEvents.remove(top);
+  /* TODO: this is not right, we want to pass the time stamp of the next event */
   min->lp->execute_me(nextEvents.top()->ts);
   return 1;
 }
