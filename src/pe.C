@@ -1,6 +1,20 @@
 #include "pe.h"
 
-void PE::execute() {
+void PE::execute_seq() {
+  while(getMinTime() < endTime)
+    schedule_nextLP();
+  }
+}
+
+void PE::execute_cons() {
+  while(getMinTime() < gvt + lookahead) {
+    schedule_nextLP();
+  }
+
+  GVT_begin();
+}
+
+void PE::execute_opt() {
   if(++gvt_cnt > gvt_freq) {
     GVT_begin();
     gvt_cnt = 0;
@@ -31,6 +45,7 @@ void PE::GVT_contribute() {
 void PE::GVT_end(Time newGVT) {
   gvt = newGVT;
   collect_fossils();
+  thisProxy[CkMyPe()].execute();
 }
 
 /* Go over the oldest events queue and call fossil collection on the LPs with
@@ -57,6 +72,7 @@ int PE::schedule_nextLP() {
   if(min == NULL) return 0;
   /* TODO: this is not right, we want to pass the time stamp of the next event */
   min->lp->execute_me(nextEvents.top()->ts);
+  currTime = min->ts;
   return 1;
 }
 #include "pe.def.h"

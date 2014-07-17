@@ -10,7 +10,8 @@ class PE: public CBase_PE {
   private:
     PEQueue nextEvents; /**< queue to store the time stamp for next events that an LP has to execute*/
     PEQueue oldestEvents; /**< queue to store the time stamp for the earliest event that an LP has execute beyond the last computed GVT*/
-    Time gvt; /**< current time on this PE */
+    Time gvt, currTime, endTime; /**< current time on this PE */
+    Time lookahead; /**< look ahead of conservative simulation */
     int batchSize; /**< number of events executed before network polling */
     int gvt_cnt; /**< count since last gvt */
     int gvt_freq; /**< frequency of GVT computation */
@@ -20,7 +21,14 @@ class PE: public CBase_PE {
 
     PE(int batchSize_, int gvt_freq_) : batchSize(batchSize_), gvt_cnt(0), gvt_freq(gvt_freq_) { }
 
-    void execute();
+    /** \brief Various schedulers
+        sequential (no communication, run to end)
+        conservative (find the next epoch, assume a lookahead, run to end of epoch
+        optimistic (run till you are forced to rollback, compute GVT once in a while)
+      */
+    void execute_seq();
+    void execute_cons();
+    void execute_opt();
     void collect_fossils(); /**< collect fossils */
     int schedule_nextLP(); /**< find the smallest time step and execute */
 

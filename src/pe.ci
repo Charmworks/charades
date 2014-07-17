@@ -6,6 +6,8 @@ module pe {
     entry void GVT_begin(); /**< begin gvt computation */
     entry void GVT_contribute(); /**< reduction target for completion of GVT */
     entry void GVT_end(); /**< reduction target for completion of GVT */
-    entry void execute(); /**< move one step further, till the end of simulation */
+    entry void execute_seq(); /**< execute till the end of simulation */
+    entry void execute_cons(); /**< move to the end of this epoch */
+    entry void execute_opt(); /**< move one step further optimistically  */
   };
 }
