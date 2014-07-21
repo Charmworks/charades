@@ -12,6 +12,9 @@ void tw_init(int* argc, char*** argv) {
   tw_opt_print();
 }
 
+// TODO: In original ROSS this was defined in a processor centric way in that
+// nlp, and g_tw_nlp were the number of lps on just this processor. Now we want
+// to know the total number of LPs so we can create a chare array of that size.
 void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // TODO: This should probably be in a group chare for config variables
   g_tw_nlp = nlp;
