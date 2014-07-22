@@ -22,15 +22,15 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // TODO: This should probably be in a group chare for config variables
   // TODO: What will this variable mean in the new ROSS? Right now it is lps on
   // on this PE which makes no sense. It should be total lps.
-  g_tw_nlp = nlp;
+  PE_VALUE(g_tw_nlp) = nlp;
 
   // TODO: Nikhil is working on the memory management portion
 #ifdef ROSS_MEMORY
-  g_tw_memory_sz = sizeof(tw_memory);
+  PE_VALUE(g_tw_memory_sz) = sizeof(tw_memory);
 #endif
 
-  g_tw_msg_sz = msg_sz;
-  g_tw_rng_seed = seed;
+  PE_VALUE(g_tw_msg_sz) = msg_sz;
+  PE_VALUE(g_tw_rng_seed) = seed;
 
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
@@ -38,7 +38,7 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // Only one processor should create the chare array
   if (tw_ismaster()) {
     // First we need to figure out the number of KPs (LP Chares)
-    unsigned num_chares = nlp / g_lps_per_chare;
+    unsigned num_chares = nlp / PE_VALUE(g_lps_per_chare);
 
     // Create the lp chare array and store it in the readonly
     // TODO: We will eventually pass in a mapping function to the chare array
