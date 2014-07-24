@@ -1,5 +1,7 @@
 #include "ross_setup.h"
 
+#define SET_PE_VALUE(x,y) true
+
 // Readonly array of lp chares.
 extern CProxy_LP lps;
 
@@ -22,15 +24,15 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // TODO: This should probably be in a group chare for config variables
   // TODO: What will this variable mean in the new ROSS? Right now it is lps on
   // on this PE which makes no sense. It should be total lps.
-  PE_VALUE(g_tw_nlp) = nlp;
+  SET_PE_VALUE(g_tw_nlp, nlp);
 
   // TODO: Nikhil is working on the memory management portion
 #ifdef ROSS_MEMORY
-  PE_VALUE(g_tw_memory_sz) = sizeof(tw_memory);
+  SET_PE_VALUE(g_tw_memory_sz, sizeof(tw_memory));
 #endif
 
-  PE_VALUE(g_tw_msg_sz) = msg_sz;
-  PE_VALUE(g_tw_rng_seed) = seed;
+  SET_PE_VALUE(g_tw_msg_sz, msg_sz);
+  SET_PE_VALUE(g_tw_rng_seed, seed);
 
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
