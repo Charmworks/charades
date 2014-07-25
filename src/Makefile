@@ -28,9 +28,6 @@ pe_queue.o: pe_queue.cpp pe_queue.h lp_generated
 event.o: event.cpp event.h lp_generated
 	$(CHARMC) $(OPTS) -c event.cpp -o $@
 
-ross_opts.o: ross_opts.cpp ross_opts.h
-	$(CHARMC) $(OPTS) -c ross_opts.cpp -o $@
-
 ross_setup.o: ross_setup.cpp ross_setup.h
 	$(CHARMC) $(OPTS) -c ross_setup.cpp -o $@
 

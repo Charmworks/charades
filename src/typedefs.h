@@ -28,30 +28,6 @@ typedef void (*finalize_f) (LPStruct*);
 typedef unsigned (*map_f) (tw_lpid);
 typedef LPType* (*type_map_f) (tw_lpid);
 
-// Typedefs for options
-typedef enum tw_opttype {
-  TWOPTTYPE_GROUP = 1,
-  TWOPTTYPE_ULONG,
-  TWOPTTYPE_UINT,
-  TWOPTTYPE_STIME,
-  TWOPTTYPE_CHAR,
-  TWOPTTYPE_SHOWHELP
-} tw_opttype;
-
-typedef struct tw_optdef {
-  tw_opttype type;
-  const char* name;
-  const char* help;
-  void* value;
-} tw_optdef;
-
-#define TWOPT_GROUP(h)      { TWOPTTYPE_GROUP, NULL, (h), NULL }
-#define TWOPT_ULONG(n,v,h)  { TWOPTTYPE_ULONG, (n), (h), &(v) }
-#define TWOPT_UINT(n,v,h)   { TWOPTTYPE_UINT,  (n), (h), &(v) }
-#define TWOPT_STIME(n,v,h)  { TWOPTTYPE_STIME, (n), (h), &(v) }
-#define TWOPT_CHAR(n,v,h)   { TWOPTTYPE_CHAR,  (n), (h), &(v) }
-#define TWOPT_END()         { 0, NULL, NULL, NULL }
-
 // TODO: This should be somewhere else
 #define TW_LOC  __FILE__,__LINE__
 
