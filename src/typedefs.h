@@ -1,6 +1,10 @@
 #ifndef TYPEDEFS_H_
 #define TYPEDEFS_H_
 
+// Included for size_t and int32_t respectively
+#include <cstddef>
+#include <stdint.h>
+
 // TODO: Make this a more complete listing of types?
 // TODO: Should we have a central file for all types, or just define types
 // where they are needed.
@@ -27,6 +31,9 @@ typedef void (*revent_f) (LPStruct*, Event*);
 typedef void (*finalize_f) (LPStruct*);
 typedef unsigned (*map_f) (tw_lpid);
 typedef LPType* (*type_map_f) (tw_lpid);
+
+// Typedefs for rand
+typedef int32_t* tw_seed;
 
 // TODO: This should be somewhere else
 #define TW_LOC  __FILE__,__LINE__
