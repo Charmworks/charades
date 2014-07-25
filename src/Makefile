@@ -4,7 +4,7 @@ OPTS=
 
 all: libross.a
 
-libross.a: lp.o pe_queue.o event.o ross_opts.o ross_setup.o
+libross.a: lp.o pe_queue.o event.o ross_setup.o
 	$(CHARMC) -o $@ $^
 
 ross: ross.ci
