@@ -9,6 +9,7 @@
 // A struct for holding global variables used by ROSS. An instance of this
 // struct will be held by each PE group chare.
 // TODO: Organize the declarations by module and get rid of unecessary globals
+// TODO: Initialization of defaultst 
 struct Globals {
   unsigned g_lps_per_chare;
   unsigned g_tw_synchronization_protocol;
@@ -27,5 +28,7 @@ struct Globals {
 // Get the local branch of the PE group and return its globals.
 // If possible we should cache the pointer to the local branch.
 Globals* get_globals();
+
+#define PE_VALUE(x) get_globals()->x
 
 #endif

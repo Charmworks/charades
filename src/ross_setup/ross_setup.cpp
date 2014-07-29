@@ -5,7 +5,6 @@
 #include <stdio.h>
 
 #ifndef NO_GLOBALS
-// TODO: Probably need a wrapper for initializing the chares
 unsigned g_lps_per_chare = 16;
 unsigned g_tw_synchronization_protocol;
 tw_stime g_tw_ts_end;
@@ -18,7 +17,6 @@ size_t g_tw_msg_sz;
 tw_seed* g_tw_rng_seed;
 
 FILE* g_tw_csv;
-
 #endif
 
 #ifndef NO_FORWARD_DECLS
@@ -29,14 +27,11 @@ const tw_optdef* tw_clock_setup();
 
 int tw_ismaster();
 void create_lps();
+void tw_error(const char* file, int line, const char* fmt, ...);
 // TODO: ALl these net methods may be unnecessary with Charm++ as the backend
 void tw_net_start();
 void tw_gvt_start();
-
-void tw_error(const char* file, int line, const char* fmt, ...);
 #endif
-
-#define PE_VALUE(x) get_globals()->x
 
 // This can probably stay as a static global since it is only used at init for
 // options. This is probably true of most options globals.

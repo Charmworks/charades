@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PE_VALUE(x) get_globals()->x
-
 #ifndef NO_GLOBALS
 FILE* g_tw_csv;
 #endif
