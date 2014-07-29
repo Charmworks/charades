@@ -1,5 +1,6 @@
 #include "ross_setup.h"
 #include "../ross_opts/ross_opts.h"
+#include "../globals.h"
 
 #include <stdio.h>
 
@@ -18,16 +19,6 @@ tw_seed* g_tw_rng_seed;
 
 FILE* g_tw_csv;
 
-static const tw_optdef kernel_options[] = {
-    TWOPT_GROUP("ROSS Kernel"),
-    TWOPT_UINT("synch", g_tw_synchronization_protocol, "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
-// TODO: This will probably be replaced by number of chares
-//    TWOPT_UINT("nkp", nkp_per_pe, "number of kernel processes (KPs) per pe"),
-    TWOPT_STIME("end", g_tw_ts_end, "simulation end timestamp"),
-    TWOPT_UINT("batch", g_tw_mblock, "messages per scheduler block"),
-    TWOPT_UINT("extramem", g_tw_events_per_pe_extra, "Number of extra events allocated per PE."),
-    TWOPT_END()
-};
 #endif
 
 #ifndef NO_FORWARD_DECLS
@@ -45,7 +36,20 @@ void tw_gvt_start();
 void tw_error(const char* file, int line, const char* fmt, ...);
 #endif
 
-#define PE_VALUE(x) x
+#define PE_VALUE(x) get_globals()->x
+
+// This can probably stay as a static global since it is only used at init for
+// options. This is probably true of most options globals.
+static const tw_optdef kernel_options[] = {
+    TWOPT_GROUP("ROSS Kernel"),
+    TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
+// TODO: This will probably be replaced by number of chares
+//    TWOPT_UINT("nkp", nkp_per_pe, "number of kernel processes (KPs) per pe"),
+    TWOPT_STIME("end", PE_VALUE(g_tw_ts_end), "simulation end timestamp"),
+    TWOPT_UINT("batch", PE_VALUE(g_tw_mblock), "messages per scheduler block"),
+    TWOPT_UINT("extramem", PE_VALUE(g_tw_events_per_pe_extra), "Number of extra events allocated per PE."),
+    TWOPT_END()
+};
 
 // TODO: This needs a lot of work
 void tw_init(int* argc, char*** argv) {
