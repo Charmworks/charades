@@ -1,7 +1,17 @@
-// TODO: Better typedefs
-#include "rand-clcg4.h"
+#include "ross_clcg4.h"
 #include "../typedefs.h"
 #include "../lp_structs.h"
+#include "../globals.h"
+
+#ifndef NO_GLOBALS
+size_t g_tw_rng_max;
+tw_seed* g_tw_rng_seed;
+#endif
+
+#ifndef NO_FORWARD_DECLS
+void* tw_calloc(const char* file, int line, const char* for_who, size_t e_sz, size_t n);
+void tw_error(const char* file, int line, const char* fmt, ...);
+#endif
 
 /**
  * @file rand-clcg4.c
@@ -288,12 +298,12 @@ tw_rand_init_streams(tw_lp * lp, unsigned int nstreams)
 
 	lp->rng = (tw_rng*)tw_calloc(TW_LOC, "LP RNG Streams", sizeof(*lp->rng), nstreams);
 
-	if(nstreams > g_tw_rng_max)
+	if(nstreams > PE_VALUE(g_tw_rng_max))
 		tw_error(TW_LOC, "RNG max streams exceeded: %d > %d\n",
-			 nstreams, g_tw_rng_max);
+			 nstreams, PE_VALUE(g_tw_rng_max));
 
 	for(i = 0; i < nstreams; i++)
-		tw_rand_initial_seed((tw_rng_stream*)(&lp->rng[i]), (lp->gid * g_tw_rng_max) + i);
+		tw_rand_initial_seed((tw_rng_stream*)(&lp->rng[i]), (lp->gid * PE_VALUE(g_tw_rng_max)) + i);
 }
 
 /*
@@ -317,10 +327,10 @@ rng_init(int v, int w)
 	rng->a[2] = 138556;
 	rng->a[3] = 49689;
 
-	if(g_tw_rng_seed)
+	if(PE_VALUE(g_tw_rng_seed))
 	{
 		for(j = 0; j < 4; j++)
-			rng->seed[j] = *g_tw_rng_seed[j];
+			rng->seed[j] = *(PE_VALUE(g_tw_rng_seed))[j];
 	} else
 	{
 		rng->seed[0] = 11111111;

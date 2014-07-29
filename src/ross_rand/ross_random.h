@@ -1,13 +1,9 @@
-#ifndef INC_tw_rand_h
-#define	INC_tw_rand_h
+#ifndef ROSS_RANDOM_H_
+#define	ROSS_RANDOM_H_
 
 #define tw_opi 6.28318530718
 #define tw_rand_unif(G)			rng_gen_val(G)
 #define tw_rand_reverse_unif(G)	rng_gen_reverse_val(G)
-
-// TODO: This is temporary
-#include <stdint.h>
-void tw_error(const char *file, int line, const char *fmt,...);
 
 typedef struct tw_rng tw_rng;
 typedef struct tw_rng_stream tw_rng_stream;

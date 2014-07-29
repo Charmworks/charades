@@ -1,28 +1,16 @@
-#ifndef INC_clcg4_h
-#define INC_clcg4_h
+#ifndef ROSS_CLCG4_H_
+#define ROSS_CLCG4_H_
 
-// TODO: Better includes
-#include <stdio.h>
+// Included for int32_t
 #include <stdint.h>
+// Included for FILE
+#include <stdio.h>
 
-
-enum SeedType
-{
+typedef enum SeedType {
 	InitialSeed, LastSeed, NewSeed
-};
+} SeedType;
 
-typedef int32_t * tw_seed;
-
-typedef enum SeedType SeedType;
-
-// TODO: This is temporary
-void tw_error(const char *file, int line, const char *fmt,...);
-void* tw_calloc(const char* file, int line, const char* for_who, size_t e_sz, size_t n);
-size_t g_tw_rng_max = 1;
-tw_seed* g_tw_rng_seed = NULL;
-
-struct tw_rng
-{
+typedef struct tw_rng {
 	/*
 	 * equals a[i]^{m[i]-2} mod m[i]
 	 */
@@ -38,10 +26,9 @@ struct tw_rng
 
 	// the seed..
 	int32_t	seed[4];
-};
+} tw_rng;
 
-struct tw_rng_stream
-{
+typedef struct tw_rng_stream {
 	int32_t	 Ig[4];
 	int32_t	 Lg[4];
 	int32_t	 Cg[4];
@@ -53,9 +40,9 @@ struct tw_rng_stream
 	double	 tw_normal_u2;
 	int	 tw_normal_flipflop;
 #endif
-};
+} tw_rng_stream;
 
-extern tw_rng	*rng_init(int v, int w);
+extern tw_rng*  rng_init(int v, int w);
 extern void     rng_set_initial_seed();
 extern void     rng_init_generator(tw_rng_stream * g, SeedType Where);
 extern void     rng_set_seed(tw_rng_stream * g, uint32_t * s);

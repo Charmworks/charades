@@ -20,7 +20,9 @@ struct Globals {
   unsigned g_tw_nlp;
   size_t g_tw_memory_sz;
   size_t g_tw_msg_sz;
+
   tw_seed* g_tw_rng_seed;
+  size_t g_tw_rng_max;
 
   FILE* g_tw_csv;
 };

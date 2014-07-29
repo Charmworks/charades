@@ -1,9 +1,12 @@
+#include "../typedefs.h"
+#include "ross_random.h"
+#include "ross_clcg4.h"
+
 #include <math.h>
 
-// TODO: Better includes
-#include "../typedefs.h"
-#include "ross-random.h"
-#include "rand-clcg4.h"
+#ifndef NO_FORWARD_DECLS
+void tw_error(const char* file, int line, const char* fmt, ...);
+#endif
 
 /*
  * tw_rand_init
