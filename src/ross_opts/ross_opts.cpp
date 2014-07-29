@@ -1,26 +1,17 @@
-#include "../typedefs.h"
 #include "ross_opts.h"
+#include "../typedefs.h"
+#include "../globals.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// These globals will be move to a PE group most likely.
-// TODO: Remove these.
+#define PE_VALUE(x) get_globals()->x
+
 #ifndef NO_GLOBALS
-//static const char ross_options[] = ROSS_OPTION_LIST;
-static const char ross_options[] = {};
-static const char *program;
-static const tw_optdef *all_groups[10];
-
-static const tw_optdef *opt_groups[10];
-static unsigned int opt_index = 0;
+FILE* g_tw_csv;
 #endif
-
-// Wrapper macros that will eventually deal with the PE group
-//#define SET_PE_VALUE(x,y) x = y
-//#define PE_VALUE(x) x
 
 // Forward declarations to functions that are declared in another module.
 // TODO: Remove these and include the appropriate headers.
@@ -28,13 +19,22 @@ static unsigned int opt_index = 0;
 int tw_ismaster();
 void tw_error(const char* file, int line, const char* fmt, ...);
 void tw_net_stop();
-extern FILE* g_tw_csv;
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) ( sizeof((a)) / sizeof((a)[0]) )
 #endif
 
 #endif
+
+// These globals are probably OK since they are just used at initialization.
+//static const char ross_options[] = ROSS_OPTION_LIST;
+static const char ross_options[] = {};
+static const char *program;
+static const tw_optdef *all_groups[10];
+
+static const tw_optdef *opt_groups[10];
+static unsigned int opt_index = 0;
+
 
 // Forward declarations for functions not part of the public API
 static int is_empty(const tw_optdef *def);
@@ -175,7 +175,7 @@ show_help(void)
 void
 tw_opt_print(void)
 {
-	FILE *f = g_tw_csv;
+	FILE *f = PE_VALUE(g_tw_csv);
 	const tw_optdef **group = all_groups;
 
 	if(!tw_ismaster() || NULL == f)
