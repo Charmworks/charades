@@ -4,6 +4,11 @@
 #include "pe.decl.h"
 #include "pe_queue.h"
 
+// Included for LPToken
+#include "lp_chare.h"
+
+#include "globals.h"
+
 class LP;
 
 class PE: public CBase_PE {
@@ -16,6 +21,9 @@ class PE: public CBase_PE {
     int gvt_cnt; /**< count since last gvt */
     int gvt_freq; /**< frequency of GVT computation */
   public:
+    // A struct of global variables stored on each PE.
+    Globals* globals;
+
     // TODO: Commented this out temporarily so that code would compile
     //PE() { this->PE(default_batchSize, default_gvt_freq); }
 

@@ -4,7 +4,7 @@ OPTS=
 
 all: libross.a
 
-libross.a: lp.o pe_queue.o event.o
+libross.a: lp.o pe_queue.o event.o globals.o
 	$(CHARMC) -o $@ $^
 
 ross: ross.ci
@@ -27,6 +27,9 @@ pe_queue.o: pe_queue.cpp pe_queue.h lp_generated
 
 event.o: event.cpp event.h lp_generated
 	$(CHARMC) $(OPTS) -c event.cpp -o $@
+
+globals.o: globals.cpp globals.h
+	$(CHARMC) $(OPTS) -c globals.cpp -o $@
 
 clean:
 	rm -rf *.o *.decl.h *.def.h libross.a
