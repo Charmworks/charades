@@ -13,4 +13,9 @@ mainmodule ross {
   };
 
   /** \brief Common readonlies should be added */
+
+  /** \brief Events in ROSS - wrapped by Charm++ message */
+  message Event {
+
+  }
 }

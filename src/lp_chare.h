@@ -5,6 +5,7 @@
 
 #include "lp_structs.h"
 #include "typedefs.h"
+#include "processed_queue.h"
 
 #include <vector>
 #include <queue>
@@ -28,7 +29,6 @@ struct LPToken {
 };
 
 typedef std::vector<LPStruct> LPList;
-typedef std::deque<Event*> ProcessedQueue;
 typedef std::priority_queue<Event*> PriorityQueue;
 
 class LPChare : public CBase_LPChare {
