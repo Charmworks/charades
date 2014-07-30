@@ -1,6 +1,9 @@
 #CHARMC=~/Programming/libraries/charm/bin/charmc
 CHARMC ?= ~/charm/net-linux-x86_64_debug/bin/charmc
-OPTS=
+OPTS =
+
+INCS = -Icollections
+C_FLAGS=$(INCS) $(OPTS)
 
 all: libross.a
 
@@ -17,19 +20,19 @@ pe_generated: pe.ci
 	$(CHARMC) $<
 
 pe: pe.C pe.h pe_queue pe_generated
-	$(CHARMC) $(OPTS) -c pe.C -o pe.o
+	$(CHARMC) $(C_FLAGS) -c $< -o pe.o
 
 lp.o:  lp_chare.C lp_chare.h lp_structs.h pe_generated pe.h lp_generated event.o
-	$(CHARMC) $(OPTS) -c lp_chare.C -o $@
+	$(CHARMC) $(C_FLAGS) -c $< -o $@
 
-pe_queue.o: pe_queue.cpp pe_queue.h lp_generated
-	$(CHARMC) $(OPTS) -c pe_queue.cpp -o $@
+pe_queue.o: collections/pe_queue.cpp collections/pe_queue.h lp_generated
+	$(CHARMC) $(C_FLAGS) -c $< -o $@
 
 event.o: event.cpp event.h lp_generated
-	$(CHARMC) $(OPTS) -c event.cpp -o $@
+	$(CHARMC) $(C_FLAGS) -c event.cpp -o $@
 
 globals.o: globals.cpp globals.h
-	$(CHARMC) $(OPTS) -c globals.cpp -o $@
+	$(CHARMC) $(C_FLAGS) -c globals.cpp -o $@
 
 clean:
 	rm -rf *.o *.decl.h *.def.h libross.a
