@@ -23,6 +23,7 @@ typedef unsigned long long tw_lpid;
 typedef Event tw_event;
 typedef LPStruct tw_lp;
 typedef LPType tw_lptype;
+typedef struct avlNode *AvlTree;
 
 // These typedefs are similar to function ptr typedefs used by ROSS.
 // TODO: Need to figure out how we are doing maps exactly, and how many we need.

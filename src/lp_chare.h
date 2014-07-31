@@ -38,6 +38,7 @@ class LPChare : public CBase_LPChare {
     LPList lp_structs;
     PendingQueue events;
     ProcessedQueue processed_events;
+    AvlTree all_events;
 
     // TODO: Maybe it would be better to just poll the top of the events queue instead of maintaining this
     Time current_time;
