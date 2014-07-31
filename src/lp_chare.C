@@ -56,6 +56,7 @@ void LPChare::execute_me(tw_stime ts) {
     events.pop();
     current_time = e->ts;
     LPStruct *lp = &lp_structs[e->local_id];
+    currEvent = e;
     lp->type->execute(lp, e);
     processed_events.push_front(e);
   }

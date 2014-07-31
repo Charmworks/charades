@@ -42,6 +42,7 @@ class LPChare : public CBase_LPChare {
 
     // TODO: Maybe it would be better to just poll the top of the events queue instead of maintaining this
     Time current_time;
+    Event *currEvent;
   public:
     LPChare(); /**< constructor */
 

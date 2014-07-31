@@ -14,8 +14,8 @@ mainmodule ross {
 
   /** \brief Common readonlies should be added */
 
-  /** \brief Events in ROSS - wrapped by Charm++ message */
-  message Event {
-
+  /** \brief RemoteEvent in ROSS - wrapped by Charm++ message - contains minimum data required*/
+  message RemoteEvent {
+    char userData[];
   }
 }

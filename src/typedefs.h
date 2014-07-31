@@ -17,13 +17,18 @@ class Event;
 class ProcessedQueue;
 class PendingQueue;
 
+typedef unsigned long long EventID;
+typedef enum tw_event_owner tw_event_owner
+typedef unsigned long long tw_lpid;
+typedef struct avlNode *AvlTree;
+typedef struct tw_bf tw_bf;
+
 // API layer linking our types to ROSS types
 typedef Time tw_stime;
-typedef unsigned long long tw_lpid;
+typedef EventID tw_eventid;
 typedef Event tw_event;
 typedef LPStruct tw_lp;
 typedef LPType tw_lptype;
-typedef struct avlNode *AvlTree;
 
 // These typedefs are similar to function ptr typedefs used by ROSS.
 // TODO: Need to figure out how we are doing maps exactly, and how many we need.
