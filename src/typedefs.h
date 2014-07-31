@@ -14,6 +14,8 @@ typedef double Time;
 class LPStruct;
 class LPType;
 class Event;
+class ProcessedQueue;
+class PendingQueue;
 
 // API layer linking our types to ROSS types
 typedef Time tw_stime;

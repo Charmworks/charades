@@ -29,7 +29,6 @@ struct LPToken {
 };
 
 typedef std::vector<LPStruct> LPList;
-typedef std::priority_queue<Event*> PriorityQueue;
 
 class LPChare : public CBase_LPChare {
   private:
@@ -37,7 +36,7 @@ class LPChare : public CBase_LPChare {
     LPToken oldest_token;
 
     LPList lp_structs;
-    PriorityQueue events;
+    PendingQueue events;
     ProcessedQueue processed_events;
 
     // TODO: Maybe it would be better to just poll the top of the events queue instead of maintaining this

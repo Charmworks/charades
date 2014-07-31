@@ -82,3 +82,4 @@ class ProcessedQueue {
     }
   }
 };
+#endif
