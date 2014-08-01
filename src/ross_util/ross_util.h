@@ -2,15 +2,7 @@
 #define ROSS_UTIL_H_
 
 #include "../typedefs.h"
-
-// Typedefs
-
-typedef struct tw_out {
-    struct tw_out *next;
-    tw_kp *owner;
-    /** The actual message content */
-    char message[256 - 2*sizeof(void *)];
-} tw_out;
+#include "../event.h"
 
 // API functions
 
