@@ -25,15 +25,8 @@ int tw_output(tw_lp *lp, const char *fmt, ...) {
         return 0;
     }
 
-    tw_out *out = tw_kp_grab_output_buffer(lp->kp);
-    if (!out) {
-        tw_printf(TW_LOC, "kp (%d) has no available output buffers\n", lp->kp->id);
-        tw_printf(TW_LOC, "This event may be rolled back!");
-        va_start(ap, fmt);
-        vfprintf(stdout, fmt, ap);
-        va_end(ap);
-        return 0;
-    }
+    // TODO: how do new tw_outs get created?
+    tw_out out;
 
     cev = lp->pe->cur_event;
 
