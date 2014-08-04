@@ -16,7 +16,7 @@ extern local_to_global_map ltog;
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
 // TODO: We may just want to pass in a mapping as a param to the constructor.
-LPChare::LPChare() : next_token(this), oldest_token(this), lp_structs(g_lps_per_chare) {
+LPChare::LPChare() : next_token(this), oldest_token(this), lp_structs(g_lps_per_chare), uniqID(0) {
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
   // Create array of LPStructs based on globals

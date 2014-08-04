@@ -42,8 +42,9 @@ class LPChare : public CBase_LPChare {
 
     // TODO: Maybe it would be better to just poll the top of the events queue instead of maintaining this
     Time current_time;
-    Event *currEvent;
   public:
+    Event *currEvent;
+    EventID uniqID;
     LPChare(); /**< constructor */
 
     void recv_event(Event*); /**< receive an event designated for me and add to the PE's and my event Q */

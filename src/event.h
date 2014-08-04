@@ -12,11 +12,7 @@ enum tw_event_owner
   TW_pe_pq = 2,	       	  /**< @brief In a tw_pe.pq */
   TW_kp_pevent_q = 3,     /**< @brief In a tw_kp.pevent_q */
   TW_pe_anti_msg = 4,     /**< @brief Anti-message */
-  TW_net_outq = 5,        /**< @brief Pending network transmission */
-  TW_net_asend = 6,       /**< @brief Network transmission in progress */
-  TW_net_acancel = 7,     /**< @brief Network transmission in progress */
-  TW_pe_sevent_q = 8,     /**< @brief In tw_pe.sevent_q */
-  TW_pe_free_q = 9        /**< @brief In tw_pe.free_q */
+  TW_pe_anti_msg = 4,     /**< @brief Anti-message */
 };
 
 /**
