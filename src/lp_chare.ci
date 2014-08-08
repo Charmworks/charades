@@ -1,6 +1,6 @@
 module lp_chare {
   array [1D] LPChare {
     entry LPChare(); /**< constructor */
-    entry void recv_event(Event*); /**< recieve an event for this LP */
+    entry void recv_event(RemoteEvent*); /**< recieve an event for this LP */
   };
 };

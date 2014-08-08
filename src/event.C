@@ -27,6 +27,7 @@ static inline void freeEvent(tw_event * e) {
     if(e->eventMsg) delete e->eventMsg;
     delete e;
   } else {
+    e->state.owner = TW_event_null;
     eventBuffers[CkMyPe()].push(e);
   }
 }
@@ -51,17 +52,16 @@ tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
 
   recv_ts = sender->owner->now() + offset_ts;
 
-  /* TODO: use this info */
-  /*if(g_tw_synchronization_protocol == CONSERVATIVE)
-    {
-    if(offset_ts < g_tw_min_detected_offset)
-    g_tw_min_detected_offset = offset_ts;
-    }*/
+  if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE)
+  {
+    if(offset_ts < PE_VALUE(g_tw_min_detected_offset))
+      PE_VALUE(g_tw_min_detected_offset) = offset_ts;
+  }
 
   /* If this event will be past the end time, or there
    * are no more free events available, use abort event.
    */
-  /* TODO : do something among the abort events */
+  /* TODO : do something about the abort events */
   if (recv_ts >= PE_VALUE(g_tw_ts_end)) {
     e = PE_VALUE(abort_event);
   } else {
@@ -93,7 +93,7 @@ void tw_event_send(tw_event * event) {
   LPChare   *send_pe = src_lp->owner;
   int dest_peid;
 
-  tw_stime   recv_ts = event->ts;
+  tw_stime   recv_ts = event->t;
 
   if (event == PE_VALUE(abort_event)) {
     if (recv_ts < PE_VALUE(g_tw_ts_end)) {
@@ -118,70 +118,49 @@ void tw_event_send(tw_event * event) {
   dest_peid = src_lp->type->global_map(event->dest_lp);
 
   // fill in entries for remote msg
-  e->eventMsg->event_id = e->owner->uniqID++;
+  e->eventMsg->event_id = e->event_id = e->owner->uniqID++;
   e->eventMsg->ts = e->ts;
   e->eventMsg->dest_lp = e->dest_lp;
-  e->eventMsg->send_pe = e->owner->thisIndex;
+  e->eventMsg->send_pe = e->send_pe = e->owner->thisIndex;
 
-  lps(dest_lp).recv_event(e->eventMsg);
+  lps(dest_peid).recv_event(e->eventMsg);
+  e->state.owner = TW_sent;
   e->eventMsg = NULL;
 }
 
-//TODO continue here
-static inline void event_cancel(tw_event * event) {
-    LPChare *send_pe = event->src_lp->owner;
-    tw_peid dest_peid;
+static inline void event_cancel(tw_event * e) {
+  /* already sent, send anti message and free me */
+  if(event->state.owner == TW_sent) {
+    LPChare *send_pe = ((tw_lp*)e->src_lp)->owner;
+    RemoteMsg * eventMsg = new (0) RemoteMsg;
+    eventMsg->isAnti = true;
+    eventMsg->event_id = e->event_id;
+    eventMsg->ts = e->ts;
+    eventMsg->dest_lp = e->dest_lp;
+    eventMsg->send_pe = e->send_pe;
+    lps(dest_peid).recv_event(eventMsg);
+    tw_event_free(send_pe, e);
+    return;
+  }
 
-    if(event->state.owner == TW_net_asend || event->state.owner == TW_pe_sevent_q) {
-        /* Slowest approach of all; this has to be sent over the
-        * network to let the dest_pe know it shouldn't have seen
-        * it in the first place.
-        */
-        tw_net_cancel(event);
+  LPChare *recv_pe = ((tw_lp*)e->dest_lp)->owner;
+  switch (e->state.owner) {
+    case TW_chare_q:
+      /* Currently in our pq and not processed; delete it and
+       * free the event buffer immediately.  No need to wait.
+       */
+      recv_pe->delete_pending(e);
+      tw_event_free(recv_pe, e);
+      return;
 
-        if(tw_gvt_inprogress(send_pe)) {
-            send_pe->trans_msg_ts = min(send_pe->trans_msg_ts, event->recv_ts);
-        }
+    case TW_rollback_q:
+      e->cancel_next = recv_pe->cancel_q;
+      recv_pe->cancel_q = e;
+      return;
 
-        return;
-    }
-
-    dest_peid = event->dest_lp->pe->id;
-
-    if (send_pe->id == dest_peid) {
-        switch (event->state.owner) {
-            case TW_pe_pq:
-                /* Currently in our pq and not processed; delete it and
-                * free the event buffer immediately.  No need to wait.
-                */
-                tw_pq_delete_any(send_pe->pq, event);
-                tw_event_free(send_pe, event);
-                break;
-
-            case TW_pe_event_q:
-            case TW_kp_pevent_q:
-                local_cancel(send_pe, event);
-
-                if(tw_gvt_inprogress(send_pe)) {
-                    send_pe->trans_msg_ts = min(send_pe->trans_msg_ts, event->recv_ts);
-                }
-                break;
-
-            default:
-                tw_error(TW_LOC, "unknown fast local cancel owner %d", event->state.owner);
-        }
-    } else if (send_pe->node == dest_peid) {
-        /* Slower, but still a local cancel, so put into
-        * top of dest_pe->cancel_q for final deletion.
-        */
-        local_cancel(event->dest_lp->pe, event);
-        send_pe->stats.s_nsend_loc_remote--;
-
-        if(tw_gvt_inprogress(send_pe)) {
-            send_pe->trans_msg_ts = min(send_pe->trans_msg_ts, event->recv_ts);
-        }
-    } else {
-        tw_error(TW_LOC, "Should be remote cancel!");
-    }
+    default:
+      tw_error(TW_LOC, "unknown fast local cancel owner %d", e->state.owner);
+  }
+  tw_error(TW_LOC, "Should be remote cancel!");
 }
 

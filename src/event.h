@@ -5,14 +5,14 @@
 
 #include "ross.decl.h"
 
-// TODO - not all are needed
 enum tw_event_owner
 {
-  TW_pe_event_q = 1,	  /**< @brief In a tw_pe.event_q list */
-  TW_pe_pq = 2,	       	  /**< @brief In a tw_pe.pq */
-  TW_kp_pevent_q = 3,     /**< @brief In a tw_kp.pevent_q */
-  TW_pe_anti_msg = 4,     /**< @brief Anti-message */
-  TW_pe_anti_msg = 4,     /**< @brief Anti-message */
+  TW_event_inf = 0,      /**< End of line event */
+  TW_event_null = 1,      /**< event in unused queue */
+  TW_chare_q = 2,     /**<  In the chare's to be executed event queue */
+  TW_rollback_q = 3,     /**< In the chare's rollback queue */
+  TW_anti_msg = 4,     /**< Anti-message */
+  TW_sent = 5 /**< Event sent to someone else */
 };
 
 /**
@@ -76,7 +76,9 @@ struct RemoteEvent : public CMessage_RemoteEvent {
   Time ts;
   tw_lpid dest_lp;
   tw_peid send_pe;
-  Time ts;
+  bool isAnti;
+
+  RemoteEvent() : isAnti(false) { }
 };
 
 
@@ -85,18 +87,21 @@ class Event {
   Event() {
     userData = NULL;
     eventMsg = NULL;
+    caused_by_me = NULL;
+    cause_next = NULL;
+    cancel_next = NULL;
   }
 
   Event *next, *prev; //for processed queue
   size_t heap_index; //for avl trees
   Event *caused_by_me; //Start of event list caused by this event
   Event *cause_next; //Next in parent's caused_by_me chain
+  Event *cancel_next; //next in cancel list
 
   EventID event_id;
   struct {
-    unsigned char owner; 		/**< @brief Owner of the next/prev pointers; see tw_event_owner */
+    unsigned char owner; 		/**< which queue am I in; see tw_event_owner */
     unsigned char cancel_q;  	        /**< @brief Actively on a dest_lp->pe's cancel_q */
-    unsigned char cancel_asend;
     unsigned char remote; 		/**< @brief Indicates union addr is in 'remote' storage */
   } state;
 

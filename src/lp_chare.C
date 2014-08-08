@@ -36,14 +36,32 @@ LPChare::LPChare() : next_token(this), oldest_token(this), lp_structs(g_lps_per_
 // 1) Check if the event is earlier than our earliest and update the PE.
 // 2) Check to see if we need a rollback.
 // 3) Push event into the priority queue.
-void LPChare::recv_event(Event* e) {
-  if (e->ts < events.top()->ts) {
-    pes.ckLocalBranch()->update_next(&next_token, e->ts);
+void LPChare::recv_event(RemoteEvent* event) {
+  Event *e = allocateEvent(0);
+  e->event_id = event->event_id;
+  e->ts = event->ts;
+  e->dest_lp = event->dest_lp;
+  e->send_pe = event->send_pe;
+
+  if(event->isAnti) {
+    Event *real_e = avlDelete(all_events, e);
+    delete e;
+    e = real_e;
+    event_cancel(e);
+    delete event;
+  } else {
+    avlInsert(all_events, e);
+    e->userData = event->userData;
+    e->eventMsg = event;
+    if (e->ts < events.top()->ts) {
+      pes.ckLocalBranch()->update_next(&next_token, e->ts);
+    }
+    if (e->ts < processed_events.back()->ts) {
+      rollback_me(e->ts);
+    }
+    events.push(e);
+    e->status.owner = TW_chare_q;
   }
-  if (e->ts < processed_events.back()->ts) {
-    rollback_me(e->ts);
-  }
-  events.push(e);
 }
 
 // Execute events up to timestamp ts.
@@ -59,6 +77,7 @@ void LPChare::execute_me(tw_stime ts) {
     currEvent = e;
     lp->type->execute(lp, e);
     processed_events.push_front(e);
+    e->status.owner = TW_rollback_q;
   }
   pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
 }

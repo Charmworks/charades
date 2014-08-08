@@ -43,6 +43,7 @@ class LPChare : public CBase_LPChare {
     // TODO: Maybe it would be better to just poll the top of the events queue instead of maintaining this
     Time current_time;
   public:
+    Event *cancel_q;
     Event *currEvent;
     EventID uniqID;
     LPChare(); /**< constructor */
@@ -52,6 +53,9 @@ class LPChare : public CBase_LPChare {
     void execute_me(Time); /**< execute the events with least time stamp till the given ts*/
     void rollback_me(Time); /**< rollback this collection of LPs until the given ts */
     void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
+
+    /* TODO implement this */
+    void delete_pending(Event *e);
 
     Time now() const { return current_time; }
 };
