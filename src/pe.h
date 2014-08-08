@@ -23,6 +23,7 @@ class PE: public CBase_PE {
   public:
     // A struct of global variables stored on each PE.
     Globals* globals;
+    std::vector<LPChare*> cancel_q;
 
     // TODO: Commented this out temporarily so that code would compile
     //PE() { this->PE(default_batchSize, default_gvt_freq); }
@@ -39,6 +40,7 @@ class PE: public CBase_PE {
     void execute_opt();
     void collect_fossils(); /**< collect fossils */
     int schedule_nextLP(); /**< find the smallest time step and execute */
+    void process_cancel_q();
 
     /** \brief Methods for GVT computation */
     void GVT_begin(); /**< begin gvt computation*/

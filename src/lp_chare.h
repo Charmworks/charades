@@ -46,13 +46,16 @@ class LPChare : public CBase_LPChare {
     Event *cancel_q;
     Event *currEvent;
     EventID uniqID;
+    bool enqueued_cancel_q;
     LPChare(); /**< constructor */
 
     void recv_event(Event*); /**< receive an event designated for me and add to the PE's and my event Q */
 
     void execute_me(Time); /**< execute the events with least time stamp till the given ts*/
     void rollback_me(Time); /**< rollback this collection of LPs until the given ts */
+    void rollback_me(Event*); /**< rollback this collection of LPs until the given ts */
     void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
+    void process_cancel_q();
 
     /* TODO implement this */
     void delete_pending(Event *e);

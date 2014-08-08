@@ -156,11 +156,38 @@ static inline void event_cancel(tw_event * e) {
     case TW_rollback_q:
       e->cancel_next = recv_pe->cancel_q;
       recv_pe->cancel_q = e;
+      if(!recv_pe->enqueued_cancel_q) {
+        pes.ckLocalBranch()->cancel_q.push_back(recv_pe);
+      }
       return;
 
     default:
       tw_error(TW_LOC, "unknown fast local cancel owner %d", e->state.owner);
   }
   tw_error(TW_LOC, "Should be remote cancel!");
+}
+
+void tw_event_rollback(tw_event * event) {
+  tw_event  *e = event->caused_by_me;
+  tw_lp     *dest_lp = (tw_lp*)event->dest_lp;
+
+  tw_free_output_messages(event, 0);
+
+  dest_lp->owner->currEvent = event;
+  dest_lp->owner->current_time = event->ts;
+  //(*dest_lp->type->revent)(dest_lp->cur_state, &event->cv, tw_event_data(event), dest_lp);
+  /* TODO talk to Eric and fix this */
+  LPStruct *lp = &lp_structs[e->local_id];
+  dest_lp->type->reverse(lp, e);
+
+  while (e) {
+    tw_event *n = e->cause_next;
+    e->cause_next = NULL;
+
+    event_cancel(e);
+    e = n;
+  }
+
+  event->caused_by_me = NULL;
 }
 

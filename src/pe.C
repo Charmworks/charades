@@ -20,10 +20,18 @@ void PE::execute_opt() {
     gvt_cnt = 0;
     return;
   }
+  process_cancel_q();
+
   for(int events = 0; events < batchSize(); events++) {
     if(!schedule_nextLP())  break;
   }
   thisProxy[CkMyPe()].execute();
+}
+
+void PE::process_cancel_q() {
+  for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
+    cancel_q[pe_i].process_cancel_q();
+  }
 }
 
 /* For now, in the synchronous version, invoke completion detection that leads

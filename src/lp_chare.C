@@ -16,7 +16,8 @@ extern local_to_global_map ltog;
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
 // TODO: We may just want to pass in a mapping as a param to the constructor.
-LPChare::LPChare() : next_token(this), oldest_token(this), lp_structs(g_lps_per_chare), uniqID(0) {
+LPChare::LPChare() : next_token(this), oldest_token(this),
+    lp_structs(g_lps_per_chare), uniqID(0), enqueued_cancel_q(false) {
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
   // Create array of LPStructs based on globals
@@ -53,6 +54,8 @@ void LPChare::recv_event(RemoteEvent* event) {
     avlInsert(all_events, e);
     e->userData = event->userData;
     e->eventMsg = event;
+    /* TODO Somehow get lop LP pointer */
+    //e->dest_lp =
     if (e->ts < events.top()->ts) {
       pes.ckLocalBranch()->update_next(&next_token, e->ts);
     }
@@ -103,8 +106,56 @@ void LPChare::rollback_me(tw_stime ts) {
   while (processed_events.back()->ts > ts) {
     Event* e = processed_events.front();
     processed_events.pop_front();
-    LPStruct *lp = &lp_structs[e->local_id];
-    lp->type->reverse(lp, e);
+    tw_event_rollback(e);
+    current_time = processed_events.front()->ts;
     events.push(e);
+  }
+}
+
+void LPChare::rollback_me(Event *event) {
+  Event* e = processed_events.front();
+  processed_events.pop_front();
+
+  while(e != event)
+  {
+    tw_event_rollback(e);
+    events.push(e);
+    e = processed_events.front();
+    processed_events.pop_front();
+  }
+
+  tw_event_rollback(e);
+  current_time = processed_events.front()->ts;
+}
+
+void LPChare::process_cancel_q() {
+  tw_event    *cev, *nev;
+
+  while (cancel_q) {
+    cev = cancel_q;
+    cancel_q = NULL;
+
+    for (; cev; cev = nev) {
+      nev = cev->cancel_next;
+
+      switch (cev->state.owner) {
+        case TW_anti_msg:
+          tw_event_free(this, cev);
+          break;
+
+        case TW_chare_q:
+          delete_pending(cev);
+          tw_event_free(this, cev);
+          break;
+
+        case TW_rollback_q:
+          rollback_me(cev);
+          tw_event_free(this, cev);
+          break;
+
+        default:
+          tw_error(TW_LOC, "Event in cancel_q, but owner %d not recognized", cev->state.owner);
+      }
+    }
   }
 }
