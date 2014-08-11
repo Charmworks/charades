@@ -1,5 +1,15 @@
 #include "pe.h"
 
+// This is the API which allows the ROSS code to initialize and access the
+// Charm++ backend.
+void create_pes() {
+  pes = CProxy_PE::ckNew();
+}
+
+Globals* get_globals() {
+  return pes.ckLocalBranch()->globals;
+}
+
 void PE::execute_seq() {
   while(getMinTime() < endTime)
     schedule_nextLP();

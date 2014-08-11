@@ -27,6 +27,7 @@ const tw_optdef* tw_clock_setup();
 
 int tw_ismaster();
 void create_lps();
+void create_pes();
 void tw_error(const char* file, int line, const char* fmt, ...);
 // TODO: ALl these net methods may be unnecessary with Charm++ as the backend
 void tw_net_start();
@@ -46,7 +47,6 @@ static const tw_optdef kernel_options[] = {
     TWOPT_END()
 };
 
-// TODO: This needs a lot of work
 void tw_init(int* argc, char*** argv) {
   /** Add all of the command line options before parsing them **/
   tw_opt_add(tw_net_init(argc, argv));
@@ -80,6 +80,9 @@ void tw_init(int* argc, char*** argv) {
 
   tw_opt_print();
 
+  // Create the PE group chare array
+  create_pes();
+  // TODO: Do we need any net stuff?
   tw_net_start();
   tw_gvt_start();
 }
@@ -113,7 +116,6 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
     // TODO: We will eventually pass in a mapping function to the chare array
     // so it can properly determine which global ids it has.
     // The constructor also initializes the rng for each lp.
-    // lps = CProxy_LP::ckNew(num_chares);
     create_lps();
   }
 }

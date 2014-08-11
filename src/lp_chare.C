@@ -2,17 +2,19 @@
 #include "pe.h"
 #include "event.h"
 
-// TODO: These should either be declared as readonlys, or moved to a group
-// data structure of global constants.
+// Readonly variables for the global proxies.
 extern CProxy_PE pes;
 extern CProxy_LPChare lps;
-extern unsigned g_lps_per_chare;
-extern type_map_f global_type_map;
 
 // TODO: Temporary mapping definitions. Once mapping is nailed down, this
 // should be moved.
 typedef tw_lpid(*local_to_global_map) (unsigned, tw_lpid);
 extern local_to_global_map ltog;
+
+// This is the API which allows the ROSS code to initialize the Charm backend.
+void create_lps() {
+  lps = CProxy_LPChare::ckNew(PE_VALUE(g_num_lp_chares));
+}
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
 // TODO: We may just want to pass in a mapping as a param to the constructor.
@@ -22,7 +24,7 @@ LPChare::LPChare() : next_token(this), oldest_token(this),
 
   // Create array of LPStructs based on globals
   // TODO: Should the init function be called here as well?
-  unsigned offset = thisIndex * g_lps_per_chare;
+  unsigned offset = thisIndex * PE_VALUE(g_lps_per_chare);
   for (int i = 0; i < g_lps_per_chare; i++) {
     lp_structs[i].owner = this;
     lp_structs[i].gid = ltog(thisIndex, i);

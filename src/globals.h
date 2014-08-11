@@ -25,7 +25,14 @@ struct Globals {
   size_t g_tw_rng_max;
 
   FILE* g_tw_csv;
+
+  unsigned g_num_lp_chares;
 };
+
+// Functions for modifying globals including readonly chare proxies.
+// These functions are defined in the appropriate Charm++ backend files.
+void create_pes();
+void create_lps();
 
 // Get the local branch of the PE group and return its globals.
 // If possible we should cache the pointer to the local branch.

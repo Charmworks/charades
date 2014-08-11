@@ -1,7 +1,7 @@
 mainmodule ross {
 
   extern module pe; /**< defines the PE */
-  extern module lp; /**< defines the LP */
+  extern module lp_chare; /**< defines the LP */
 
   readonly CProxy_PE pes;
   readonly CProxy_LP lps;
@@ -17,5 +17,5 @@ mainmodule ross {
   /** \brief RemoteEvent in ROSS - wrapped by Charm++ message - contains minimum data required*/
   message RemoteEvent {
     char userData[];
-  }
+  };
 }
