@@ -10,7 +10,7 @@ all: libross.a
 libross.a: ross lp.o pe_queue.o event.o globals.o
 	$(CHARMC) -o $@ $^
 
-ross: ross.ci lp_generated
+ross: ross.ci
 	$(CHARMC) $<
 
 lp_generated: lp_chare.ci
