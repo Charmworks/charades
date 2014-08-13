@@ -1,12 +1,9 @@
 #include "../typedefs.h"
 #include "ross_random.h"
 #include "ross_clcg4.h"
+#include "../ross_util/ross_util.h"
 
 #include <math.h>
-
-#ifndef NO_FORWARD_DECLS
-void tw_error(const char* file, int line, const char* fmt, ...);
-#endif
 
 /*
  * tw_rand_init

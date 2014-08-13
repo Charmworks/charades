@@ -2,7 +2,7 @@
 CHARMC ?= ~/charm/net-linux-x86_64_debug/bin/charmc
 OPTS =
 
-INCS = -Icollections
+INCS = -Icollections -Iross_util
 C_FLAGS=$(INCS) $(OPTS)
 
 all: libross.a
