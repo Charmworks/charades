@@ -4,15 +4,12 @@
 #include "lp.h"
 #include "pe.h"
 #include "lp_struct.h"
+#include "ross_util.h"
 #include <assert.h>
 #include <stack>
 
 extern CProxy_LP lps;
 extern CProxy_PE pes;
-
-#ifndef NO_FORWARD_DECLS
-void tw_error(const char* file, int line, const char* fmt, ...);
-#endif
 
 // TODO: This should go in a better place
 static const unsigned CONSERVATIVE=2;
@@ -91,10 +88,7 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
       PE_VALUE(g_tw_min_detected_offset) = offset_ts;
   }
 
-  /* If this event will be past the end time, or there
-   * are no more free events available, use abort event.
-   */
-  /* TODO : do something about the abort events */
+  /* TODO : make sure abort_event is allocated as part of globals */
   if (recv_ts >= PE_VALUE(g_tw_ts_end)) {
     e = PE_VALUE(abort_event);
   } else {
@@ -123,22 +117,20 @@ static inline void link_causality (tw_event *nev, tw_event *cev) {
 
 void tw_event_send(tw_event * e) {
   tw_lp     *src_lp = (tw_lp*)e->src_lp;
-// TODO: How do we deal with "pes"
-  LP       *send_pe = src_lp->owner;
+  LP        *send_pe = src_lp->owner;
   int dest_peid;
 
   tw_stime   recv_ts = e->ts;
 
   if (e == PE_VALUE(abort_event)) {
-    if (recv_ts < PE_VALUE(g_tw_ts_end)) {
-      // TODO: Don't know what this is
+    /* TODO: Handle case where abort event is caused by lack of memory */
+    //if (recv_ts < PE_VALUE(g_tw_ts_end)) {
       //send_pe->cev_abort = 1;
-    }
+    //}
     return;
   }
 
   //Trap lookahead violations in debug mode
-  //Note that compiling with the -DNDEBUG flag will turn this off!
   if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
     assert(recv_ts - send_pe->now() >= PE_VALUE(g_tw_lookahead) && "Lookahead violation: try decreasing the lookahead value");
   }
