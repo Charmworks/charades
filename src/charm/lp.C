@@ -40,7 +40,17 @@ LP::LP() : next_token(this), oldest_token(this),
     //lp_structs[i].type = global_type_map(lp_structs[i].gid);
   }
 
-  // TODO: Init LP RNG streams
+  // TODO (eric): Init LP RNG streams
+}
+
+/* Delete an event in our pending queue */
+void LP::delete_pending(Event *e) {
+  if(events.top() == e) {
+    events.erase(e);
+    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+  } else {
+    events.erase(e);
+  }
 }
 
 // Entry method for sending events to LPs.
@@ -64,10 +74,11 @@ void LP::recv_event(RemoteEvent* event) {
     event_cancel(e);
     delete event;
   } else {
+    e->state.remote = 1;
     avlInsert(&all_events, e);
     e->userData = event->userData;
     e->eventMsg = event;
-    /* TODO Somehow get lop LP pointer */
+    /* TODO (eric): Somehow get lop LP pointer */
     //e->dest_lp =
     if (e->ts < events.top()->ts) {
       pes.ckLocalBranch()->update_next(&next_token, e->ts);
@@ -89,7 +100,7 @@ void LP::execute_me(tw_stime ts) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
-    // TODO: Instead of local id, use a direct pointer to the LP
+    // TODO (eric): Instead of local id, use a direct pointer to the LP
     //LPStruct *lp = &lp_structs[e->local_id];
     //lp->type->execute(lp, e);
     currEvent = e;

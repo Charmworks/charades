@@ -3,6 +3,14 @@
 
 #include "../typedefs.h"
 
+#ifndef AVL_NODE_COUNT
+#define AVL_NODE_COUNT 262144
+#endif
+
+#ifndef NUM_OUT_MESG
+#define NUM_OUT_MESG 2000
+#endif
+
 void tw_init(int* argc, char*** argv);
 void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed);
 

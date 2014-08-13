@@ -61,9 +61,6 @@ struct tw_bf
 
 typedef struct tw_out {
     struct tw_out *next;
-// TODO: No kps in new ROSS
-//    tw_kp *owner;
-    /** The actual message content */
     char message[256 - 2*sizeof(void *)];
 } tw_out;
 
@@ -93,6 +90,7 @@ class Event {
     caused_by_me = NULL;
     cause_next = NULL;
     cancel_next = NULL;
+    state.remote = 0;
   }
 
   Event *next, *prev; //for processed queue

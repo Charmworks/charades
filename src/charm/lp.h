@@ -38,11 +38,11 @@ class LP : public CBase_LP {
     LPList lp_structs;
     PendingQueue events;
     ProcessedQueue processed_events;
-    AvlTree all_events;
 
     // TODO: Maybe it would be better to just poll the top of the events queue instead of maintaining this
     Time current_time;
   public:
+    AvlTree all_events;
     Event *cancel_q;
     Event *currEvent;
     EventID uniqID;
@@ -57,7 +57,6 @@ class LP : public CBase_LP {
     void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
     void process_cancel_q();
 
-    /* TODO implement this */
     void delete_pending(Event *e);
 
     Time now() const { return current_time; }

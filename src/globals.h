@@ -49,4 +49,7 @@ Globals* get_globals();
 
 #define PE_VALUE(x) get_globals()->x
 
+CkpvExtern(AvlTree, avl_list_head);
+CkpvExtern(tw_out*, output);
+
 #endif

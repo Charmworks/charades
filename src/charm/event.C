@@ -18,6 +18,7 @@ void tw_error(const char* file, int line, const char* fmt, ...);
 static const unsigned CONSERVATIVE=2;
 
 std::stack<Event *> eventBuffers[128];
+CkpvDeclare(tw_out*, output);
 
 static inline tw_event * allocateEvent(int needMsg = 1) {
   Event * e = eventBuffers[CkMyPe()].top();
@@ -38,7 +39,20 @@ static inline tw_event * allocateEvent(int needMsg = 1) {
   return e;
 }
 
+inline tw_out* allocate_output_buffer() {
+  tw_out* free_buf = NULL;
+  if(CkpvAccess(output)) {
+    free_buf = CkpvAccess(output);
+    CkpvAccess(output) = free_buf->next;
+  }
+  return free_buf;
+}
+
 static inline void freeEvent(tw_event * e) {
+  if(e->state.remote == 1) {
+    avlDelete(e->dest_lp->owner->all_events, e);
+  }
+  e->state.remote = 0;
   if(eventBuffers[CkMyPe()].size() >= PE_VALUE(g_tw_max_events_buffered)) {
     if(e->eventMsg) delete e->eventMsg;
     delete e;
@@ -46,6 +60,11 @@ static inline void freeEvent(tw_event * e) {
     e->state.owner = TW_event_null;
     eventBuffers[CkMyPe()].push(e);
   }
+}
+
+inline void free_output_buffer(tw_out *buffer) {
+  buffer->next = CkpvAccess(output);
+  CkpvAccess(output) = buffer;
 }
 
 static inline void tw_free_output_messages(tw_event *e, int print_message)
@@ -56,9 +75,7 @@ static inline void tw_free_output_messages(tw_event *e, int print_message)
       printf("%s", temp->message);
     e->out_msgs = temp->next;
     // Put it back
-    /* TODO : What is this for? Another buffer? */
-    // TODO: This is undeclared and undefined.
-    //tw_kp_put_back_output_buffer(temp);
+    free_output_buffer(temp);
   }
 }
 
