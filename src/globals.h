@@ -8,8 +8,9 @@
 
 // A struct for holding global variables used by ROSS. An instance of this
 // struct will be held by each PE group chare.
-// TODO: Organize the declarations by module and get rid of unecessary globals
-// TODO: Initialization of defaultst 
+// TODO (eric): Organize the declarations by module and get rid of unecessary globals
+// TODO (eric): Initialization of defaultst 
+// TODO (eric): Make sure these have the right types
 struct Globals {
   unsigned g_lps_per_chare;
   unsigned g_tw_synchronization_protocol;
@@ -21,21 +22,26 @@ struct Globals {
   size_t g_tw_memory_sz;
   size_t g_tw_msg_sz;
 
+  // RNG Globals
   tw_seed* g_tw_rng_seed;
   size_t g_tw_rng_max;
+  unsigned g_tw_nRNG_per_lp;
+  unsigned g_tw_rng_default;
 
   FILE* g_tw_csv;
 
   unsigned g_num_lp_chares;
 
   // Globals used in events
-  // TODO: Make sure these have the right types
   size_t g_tw_user_data_size;
   unsigned g_tw_max_events_buffered;
   unsigned g_tw_min_detected_offset;
   tw_event* abort_event;
   tw_stime g_tw_lookahead;
 
+  // Global mapping function pointers
+  init_map_f g_init_map;
+  type_map_f g_type_map;
 };
 
 // Functions for modifying globals including readonly chare proxies.

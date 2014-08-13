@@ -213,9 +213,8 @@ void tw_event_rollback(tw_event * event) {
   tw_free_output_messages(event, 0);
 
   dest_lp->owner->currEvent = event;
-  // TODO: I think this is handled in the LP. Need to find out.
-  //dest_lp->owner->current_time = event->ts;
-  //(*dest_lp->type->revent)(dest_lp->cur_state, &event->cv, tw_event_data(event), dest_lp);
+  dest_lp->owner->current_time = event->ts;
+  (*dest_lp->type->revent)(dest_lp->cur_state, &event->cv, tw_event_data(event), dest_lp);
   /* TODO talk to Eric and fix this */
   //LPStruct *lp = &lp_structs[e->local_id];
   //dest_lp->type->reverse(lp, e);

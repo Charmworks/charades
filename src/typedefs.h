@@ -42,8 +42,14 @@ typedef void (*init_f) (LPStruct*);
 typedef void (*event_f) (LPStruct*, Event*);
 typedef void (*revent_f) (LPStruct*, Event*);
 typedef void (*finalize_f) (LPStruct*);
+
+// This map takes a global lpid and returns the chare index containing that lp
 typedef unsigned (*map_f) (tw_lpid);
+// This map takes a global lpid and returns the type of that lp
 typedef LPType* (*type_map_f) (tw_lpid);
+// This map takes an LP chare index, and a local lpid and returns the global id
+// for that LP.
+typedef unsigned (*init_map_f) (unsigned, tw_lpid);
 
 // Typedefs for rand
 typedef int32_t* tw_seed;

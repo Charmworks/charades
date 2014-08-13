@@ -1,8 +1,10 @@
 #include "lp.h"
 #include "pe.h"
 #include "event.h"
+
 #include "globals.h"
 
+#include "ross_rand/ross_clcg4.h"
 #include "avl_tree.h"
 
 // Readonly variables for the global proxies.
@@ -11,36 +13,38 @@ extern CProxy_LP lps;
 
 #ifndef NO_FORWARD_DECLS
 void tw_error(const char* file, int line, const char* fmt, ...);
+void tw_rand_init_streams(tw_lp*, unsigned);
 #endif
 
-// TODO: Temporary mapping definitions. Once mapping is nailed down, this
-// should be moved.
-typedef tw_lpid(*local_to_global_map) (unsigned, tw_lpid);
-extern local_to_global_map ltog;
-
 // This is the API which allows the ROSS code to initialize the Charm backend.
+// TODO (eric): This will have to start and stop the charm scheduler to work
+// properly.
 void create_lps() {
   lps = CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
 }
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-// TODO: We may just want to pass in a mapping as a param to the constructor.
 LP::LP() : next_token(this), oldest_token(this),
     lp_structs(PE_VALUE(g_lps_per_chare)), uniqID(0), enqueued_cancel_q(false) {
+  // Register with the local PE so it can schedule this LP for execution, fossil
+  // collection, and cancelation.
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
   // Create array of LPStructs based on globals
-  // TODO: Should the init function be called here as well?
-  unsigned offset = thisIndex * PE_VALUE(g_lps_per_chare);
+  // TODO (eric): Should the init function be called here as well?
+  // No, it appears as though the init function is called in tw_run().
   for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].owner = this;
-    lp_structs[i].gid = ltog(thisIndex, i);
+    lp_structs[i].gid = PE_VALUE(g_init_map(thisIndex, i));
+    lp_structs[i].type = PE_VALUE(g_type_map(lp_structs[i].gid));
+    // TODO (eric): Figure out how to handle state
     lp_structs[i].state = NULL;
-    // TODO: Nail down mappings.
-    //lp_structs[i].type = global_type_map(lp_structs[i].gid);
-  }
 
-  // TODO (eric): Init LP RNG streams
+    // Initialize the RNG streams for each LP
+    if (PE_VALUE(g_tw_rng_default) == 1) {
+      tw_rand_init_streams(&lp_structs[i], PE_VALUE(g_tw_nRNG_per_lp));
+    }
+  }
 }
 
 /* Delete an event in our pending queue */
@@ -59,15 +63,16 @@ void LP::delete_pending(Event *e) {
 // 3) Push event into the priority queue.
 void LP::recv_event(RemoteEvent* event) {
   // TODO: Difference between tw_event_new and allocate event?
+  // TODO: Which of these fields needs to be set here, and which in the else branch
   Event *e = allocateEvent(0);
   e->event_id = event->event_id;
   e->ts = event->ts;
+  // TODO (eric): dest_lp should be a pointer to an LPStruct at this point
   e->dest_lp = event->dest_lp;
-  // TODO: Figure out pe
+  // TODO (eric)
   //e->send_pe = event->send_pe;
 
   if(event->isAnti) {
-    // TODO: What is all_events
     Event *real_e = avlDelete(&all_events, e);
     delete e;
     e = real_e;
@@ -78,8 +83,6 @@ void LP::recv_event(RemoteEvent* event) {
     avlInsert(&all_events, e);
     e->userData = event->userData;
     e->eventMsg = event;
-    /* TODO (eric): Somehow get lop LP pointer */
-    //e->dest_lp =
     if (e->ts < events.top()->ts) {
       pes.ckLocalBranch()->update_next(&next_token, e->ts);
     }
@@ -100,9 +103,8 @@ void LP::execute_me(tw_stime ts) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
-    // TODO (eric): Instead of local id, use a direct pointer to the LP
-    //LPStruct *lp = &lp_structs[e->local_id];
-    //lp->type->execute(lp, e);
+    LPStruct* lp = (LPStruct*)e->dest_lp;
+    lp->type->execute(lp, e);
     currEvent = e;
     processed_events.push_front(e);
     e->state.owner = TW_rollback_q;
@@ -128,8 +130,9 @@ void LP::fossil_me(tw_stime gvt) {
 // 3) Push the popped event onto the event priority queue.
 // Note: This method is not responsible for updating the PE.
 void LP::rollback_me(tw_stime ts) {
-  while (processed_events.back()->ts > ts) {
-    Event* e = processed_events.front();
+  Event* e;
+  while (processed_events.front()->ts > ts) {
+    e = processed_events.front();
     processed_events.pop_front();
     tw_event_rollback(e);
     current_time = processed_events.front()->ts;
@@ -138,19 +141,14 @@ void LP::rollback_me(tw_stime ts) {
 }
 
 void LP::rollback_me(Event *event) {
-  Event* e = processed_events.front();
-  processed_events.pop_front();
-
-  while(e != event)
-  {
-    tw_event_rollback(e);
-    events.push(e);
+  Event* e;
+  do {
     e = processed_events.front();
     processed_events.pop_front();
-  }
-
-  tw_event_rollback(e);
-  current_time = processed_events.front()->ts;
+    tw_event_rollback(e);
+    current_time = processed_events.front()->ts;
+    events.push(e);
+  } while (e != event);
 }
 
 void LP::process_cancel_q() {

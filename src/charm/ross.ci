@@ -10,6 +10,6 @@ mainmodule ross {
   mainchare Initialize {
     entry Initialize(CkArgMsg *);
     entry Initialize(CkMigrateMsg *);
-    entry [reductiontarget] Exit();
+    entry [reductiontarget] void Exit();
   };
 }
