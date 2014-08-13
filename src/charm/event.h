@@ -118,7 +118,13 @@ class Event {
   char *userData;
 };
 
+// Exposed event API
+// TODO: Finalize/clean this up
 void tw_event_send(tw_event * event);
 tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
+tw_event * allocateEvent(int needMsg = 1);
+void tw_event_rollback(tw_event * event);
+void tw_event_free(tw_pe *pe, tw_event *e);
+void event_cancel(tw_event * e);
 
 #endif

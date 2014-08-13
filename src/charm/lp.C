@@ -3,9 +3,15 @@
 #include "event.h"
 #include "globals.h"
 
+#include "avl_tree.h"
+
 // Readonly variables for the global proxies.
 extern CProxy_PE pes;
 extern CProxy_LP lps;
+
+#ifndef NO_FORWARD_DECLS
+void tw_error(const char* file, int line, const char* fmt, ...);
+#endif
 
 // TODO: Temporary mapping definitions. Once mapping is nailed down, this
 // should be moved.
@@ -42,20 +48,23 @@ LP::LP() : next_token(this), oldest_token(this),
 // 2) Check to see if we need a rollback.
 // 3) Push event into the priority queue.
 void LP::recv_event(RemoteEvent* event) {
+  // TODO: Difference between tw_event_new and allocate event?
   Event *e = allocateEvent(0);
   e->event_id = event->event_id;
   e->ts = event->ts;
   e->dest_lp = event->dest_lp;
-  e->send_pe = event->send_pe;
+  // TODO: Figure out pe
+  //e->send_pe = event->send_pe;
 
   if(event->isAnti) {
-    Event *real_e = avlDelete(all_events, e);
+    // TODO: What is all_events
+    Event *real_e = avlDelete(&all_events, e);
     delete e;
     e = real_e;
     event_cancel(e);
     delete event;
   } else {
-    avlInsert(all_events, e);
+    avlInsert(&all_events, e);
     e->userData = event->userData;
     e->eventMsg = event;
     /* TODO Somehow get lop LP pointer */
@@ -67,7 +76,7 @@ void LP::recv_event(RemoteEvent* event) {
       rollback_me(e->ts);
     }
     events.push(e);
-    e->status.owner = TW_chare_q;
+    e->state.owner = TW_chare_q;
   }
 }
 
@@ -80,11 +89,12 @@ void LP::execute_me(tw_stime ts) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
-    LPStruct *lp = &lp_structs[e->local_id];
+    // TODO: Instead of local id, use a direct pointer to the LP
+    //LPStruct *lp = &lp_structs[e->local_id];
+    //lp->type->execute(lp, e);
     currEvent = e;
-    lp->type->execute(lp, e);
     processed_events.push_front(e);
-    e->status.owner = TW_rollback_q;
+    e->state.owner = TW_rollback_q;
   }
   pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
 }

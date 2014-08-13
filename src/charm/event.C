@@ -17,9 +17,6 @@ void tw_error(const char* file, int line, const char* fmt, ...);
 // TODO: This should go in a better place
 static const unsigned CONSERVATIVE=2;
 
-// TODO: This is just here so this compiles
-typedef LP tw_pe;
-
 std::stack<Event *> eventBuffers[128];
 
 static inline tw_event * allocateEvent(int needMsg = 1) {
@@ -96,7 +93,7 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
   return e;
 }
 
-static inline void tw_event_free(tw_pe *pe, tw_event *e)
+void tw_event_free(tw_pe *pe, tw_event *e)
 {
   tw_free_output_messages(e, 0);
   freeEvent(e);
@@ -151,7 +148,7 @@ void tw_event_send(tw_event * e) {
   e->eventMsg = NULL;
 }
 
-static inline void event_cancel(tw_event * e) {
+void event_cancel(tw_event * e) {
   /* already sent, send anti message and free me */
   if(e->state.owner == TW_sent) {
     LP *send_pe = ((tw_lp*)e->src_lp)->owner;

@@ -13,6 +13,7 @@
 typedef double Time;
 class LPStruct;
 class LPType;
+class LP;
 class Event;
 class ProcessedQueue;
 class PendingQueue;
@@ -29,6 +30,9 @@ typedef EventID tw_eventid;
 typedef Event tw_event;
 typedef LPStruct tw_lp;
 typedef LPType tw_lptype;
+
+// TODO: This doesn't really make sense;
+typedef LP tw_pe;
 
 // These typedefs are similar to function ptr typedefs used by ROSS.
 // TODO: Need to figure out how we are doing maps exactly, and how many we need.
