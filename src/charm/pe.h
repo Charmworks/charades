@@ -5,9 +5,14 @@
 #include "pe_queue.h"
 
 // Included for LPToken
-#include "charm/lp.h"
+#include "lp.h"
 
 #include "globals.h"
+
+// TODO: These should maybe be pushed to globals like everything else?
+// TODO: They are probably already included in the gvt cl opts
+static const unsigned default_batch_size = 16;
+static const unsigned default_gvt_freq = 1024;
 
 class LP;
 
@@ -23,10 +28,10 @@ class PE: public CBase_PE {
   public:
     // A struct of global variables stored on each PE.
     Globals* globals;
+    // TODO: Do we need another queue for this?
     std::vector<LP*> cancel_q;
 
-    // TODO: Commented this out temporarily so that code would compile
-    //PE() { this->PE(default_batchSize, default_gvt_freq); }
+    PE() : batchSize(default_batch_size), gvt_freq(default_gvt_freq), gvt_cnt(0) {}
 
     PE(int batchSize_, int gvt_freq_) : batchSize(batchSize_), gvt_cnt(0), gvt_freq(gvt_freq_) { }
 

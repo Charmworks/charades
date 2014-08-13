@@ -20,17 +20,18 @@ void create_lps() {
 // Create LPStructs based on mappings, and do initial registration with the PE.
 // TODO: We may just want to pass in a mapping as a param to the constructor.
 LP::LP() : next_token(this), oldest_token(this),
-    lp_structs(g_lps_per_chare), uniqID(0), enqueued_cancel_q(false) {
+    lp_structs(PE_VALUE(g_lps_per_chare)), uniqID(0), enqueued_cancel_q(false) {
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
   // Create array of LPStructs based on globals
   // TODO: Should the init function be called here as well?
   unsigned offset = thisIndex * PE_VALUE(g_lps_per_chare);
-  for (int i = 0; i < g_lps_per_chare; i++) {
+  for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].owner = this;
     lp_structs[i].gid = ltog(thisIndex, i);
     lp_structs[i].state = NULL;
-    lp_structs[i].type = global_type_map(lp_structs[i].gid);
+    // TODO: Nail down mappings.
+    //lp_structs[i].type = global_type_map(lp_structs[i].gid);
   }
 
   // TODO: Init LP RNG streams

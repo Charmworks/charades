@@ -11,6 +11,8 @@
 
 #include "typedefs.h"
 
+#include "event.h"
+
 typedef Event *ELEMENT_TYPE;
 typedef double KEY_TYPE;
 #define KEY(e) (e->ts)

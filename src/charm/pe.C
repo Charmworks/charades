@@ -1,5 +1,7 @@
 #include "pe.h"
 
+extern CProxy_PE pes;
+
 // This is the API which allows the ROSS code to initialize and access the
 // Charm++ backend.
 void create_pes() {
@@ -11,7 +13,7 @@ Globals* get_globals() {
 }
 
 void PE::execute_seq() {
-  while(getMinTime() < endTime)
+  while(getMinTime() < endTime) {
     schedule_nextLP();
   }
 }
@@ -32,15 +34,15 @@ void PE::execute_opt() {
   }
   process_cancel_q();
 
-  for(int events = 0; events < batchSize(); events++) {
+  for(int events = 0; events < batchSize; events++) {
     if(!schedule_nextLP())  break;
   }
-  thisProxy[CkMyPe()].execute();
+  thisProxy[CkMyPe()].execute_opt();
 }
 
 void PE::process_cancel_q() {
   for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
-    cancel_q[pe_i].process_cancel_q();
+    cancel_q[pe_i]->process_cancel_q();
   }
 }
 
@@ -63,7 +65,9 @@ void PE::GVT_contribute() {
 void PE::GVT_end(Time newGVT) {
   gvt = newGVT;
   collect_fossils();
-  thisProxy[CkMyPe()].execute();
+  // TODO: Write a generic execute function that knows which scheduler to call
+  // or a similar solution.
+  thisProxy[CkMyPe()].execute_opt();
 }
 
 /* Go over the oldest events queue and call fossil collection on the LPs with

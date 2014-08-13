@@ -1,6 +1,7 @@
 #ifndef PROCESSED_QUEUE
 #define PROCESSED_QUEUE
 #include "typedefs.h"
+#include "event.h"
 
 class ProcessedQueue {
   size_t length;
