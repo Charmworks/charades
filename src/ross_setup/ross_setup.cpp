@@ -30,9 +30,6 @@ int tw_ismaster();
 void create_lps();
 void create_pes();
 void tw_error(const char* file, int line, const char* fmt, ...);
-// TODO: ALl these net methods may be unnecessary with Charm++ as the backend
-void tw_net_start();
-void tw_gvt_start();
 #endif
 
 // This can probably stay as a static global since it is only used at init for
@@ -47,6 +44,25 @@ static const tw_optdef kernel_options[] = {
     TWOPT_UINT("extramem", PE_VALUE(g_tw_events_per_pe_extra), "Number of extra events allocated per PE."),
     TWOPT_END()
 };
+
+void tw_event_setup() {
+  CkpvInitialize(AvlTree, avl_list_head);
+  /* TODO : Make AVL_NODE_COUNT compile time */
+  AvlTree avl_list = (AvlTree)calloc(sizeof(struct avlNode), AVL_NODE_COUNT);
+  for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
+    avl_list[i].next = &avl_list[i + 1];
+  }
+  avl_list[i].next = NULL;
+  CkpvAccess(avl_list_head) = &avl_list[0];
+
+  CkpvAccess(tw_out*, output);
+  tw_out *output_head = (tw_out *)calloc(sizeof(struct tw_out), NUM_OUT_MESG);
+  for (int i = 0; i < NUM_OUT_MESG - 1; i++) {
+    output_head[i].next = &output_head[i + 1];
+  }
+  output_head[i].next = NULL;
+  CkpvAccess(output) = output_head;
+}
 
 void tw_init(int* argc, char*** argv) {
   // TODO (nikhil): We need to init the charm library here and create the PE chares.
@@ -96,27 +112,6 @@ void tw_init(int* argc, char*** argv) {
   tw_opt_print();
   /** Set up all the buffers for events */
   tw_event_setup();
-  /** Set up GVT related */
-  tw_gvt_setup();
-}
-
-void tw_event_setup() {
-  CkpvInitialize(AvlTree, avl_list_head);
-  /* TODO : Make AVL_NODE_COUNT compile time */
-  AvlTree avl_list = (AvlTree)calloc(sizeof(struct avlNode), AVL_NODE_COUNT);
-  for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
-    avl_list[i].next = &avl_list[i + 1];
-  }
-  avl_list[i].next = NULL;
-  CkpvAccess(avl_list_head) = &avl_list[0];
-
-  CkpvAccess(tw_out*, output);
-  tw_out *output_head = (tw_out *)calloc(sizeof(struct tw_out), NUM_OUT_MESG);
-  for (int i = 0; i < NUM_OUT_MESG - 1; i++) {
-    output_head[i].next = &output_head[i + 1];
-  }
-  output_head[i].next = NULL;
-  CkpvAccess(output) = output_head;
 }
 
 // TODO: In original ROSS this was defined in a processor centric way in that
