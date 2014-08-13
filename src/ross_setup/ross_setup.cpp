@@ -55,9 +55,9 @@ void tw_init(int* argc, char*** argv) {
   // to the PE global variables.
   /*TODO: change Charm interface */
 #if CMK_CONVERSE_MPI
-  CharmLibInit(MPI_COMM_WORLD, argc, argv);
+  CharmLibInit(MPI_COMM_WORLD, *argc, *argv);
 #else
-  CharmLibInit(0, argc, argv);
+  CharmLibInit(0, *argc, *argv);
 #endif
   // Create the PE group chare array
   // create_pes(); To be done by mainchare
