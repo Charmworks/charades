@@ -9,6 +9,17 @@
 // TODO: Should we have a central file for all types, or just define types
 // where they are needed.
 
+/**
+ * Synchronization protocol used
+ */
+enum tw_synch_e {
+    NO_SYNCH,
+    SEQUENTIAL,
+    CONSERVATIVE,
+    OPTIMISTIC,
+};
+
+
 // Types used in the Charm++ backend of the framework
 typedef double Time;
 class LPStruct;

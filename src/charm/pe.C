@@ -15,13 +15,13 @@ PE::PE(CProxy_Initialize srcProxy) : batchSize(20), gvt_cnt(0), gvt_freq(10) {
 
 void PE::execute_seq() {
   while(getMinTime() < endTime) {
-    schedule_nextLP();
+    schedule_nextLP_no_save();
   }
 }
 
 void PE::execute_cons() {
   while(getMinTime() < gvt + lookahead) {
-    schedule_nextLP();
+    schedule_nextLP_no_save();
   }
 
   GVT_begin();
@@ -95,6 +95,15 @@ int PE::schedule_nextLP() {
   if(min == NULL) return 0;
   /* TODO: this is not right, we want to pass the time stamp of the next event */
   min->lp->execute_me(nextEvents.top()->ts);
+  currTime = min->ts;
+  return 1;
+}
+
+int PE::schedule_nextLP_no_save() {
+  LPToken *min = nextEvents.top();
+  if(min == NULL) return 0;
+  /* TODO: this is not right, we want to pass the time stamp of the next event */
+  min->lp->execute_me_no_save(nextEvents.top()->ts);
   currTime = min->ts;
   return 1;
 }

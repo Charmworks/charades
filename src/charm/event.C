@@ -11,9 +11,6 @@
 extern CProxy_LP lps;
 extern CProxy_PE pes;
 
-// TODO: This should go in a better place
-static const unsigned CONSERVATIVE=2;
-
 std::stack<Event *> eventBuffers[128];
 CkpvDeclare(tw_out*, output);
 

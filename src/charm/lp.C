@@ -75,7 +75,9 @@ void LP::recv_event(RemoteEvent* event) {
     delete event;
   } else {
     e->state.remote = 1;
-    avlInsert(&all_events, e);
+    if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+      avlInsert(&all_events, e);
+    }
     e->userData = event->userData;
     e->eventMsg = event;
     /* TODO (eric): Somehow get lop LP pointer */
@@ -89,6 +91,19 @@ void LP::recv_event(RemoteEvent* event) {
     events.push(e);
     e->state.owner = TW_chare_q;
   }
+}
+
+void LP::execute_me_no_save(tw_stime ts) {
+  while (events.top()->ts <= ts) {
+    Event* e = events.top();
+    events.pop();
+    current_time = e->ts;
+    // TODO (eric): Instead of local id, use a direct pointer to the LP
+    //LPStruct *lp = &lp_structs[e->local_id];
+    //lp->type->execute(lp, e);
+    currEvent = e;
+  }
+  pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
 }
 
 // Execute events up to timestamp ts.
