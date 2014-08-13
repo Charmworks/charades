@@ -3,7 +3,7 @@
 
 #include "typedefs.h"
 
-#include "ross.decl.h"
+#include "event.decl.h"
 
 enum tw_event_owner
 {
@@ -12,7 +12,8 @@ enum tw_event_owner
   TW_chare_q = 2,     /**<  In the chare's to be executed event queue */
   TW_rollback_q = 3,     /**< In the chare's rollback queue */
   TW_anti_msg = 4,     /**< Anti-message */
-  TW_sent = 5 /**< Event sent to someone else */
+  TW_sent = 5, /**< Event sent to someone else */
+  TW_pe_pq = 6
 };
 
 /**
@@ -60,7 +61,8 @@ struct tw_bf
 
 typedef struct tw_out {
     struct tw_out *next;
-    tw_kp *owner;
+// TODO: No kps in new ROSS
+//    tw_kp *owner;
     /** The actual message content */
     char message[256 - 2*sizeof(void *)];
 } tw_out;
@@ -75,7 +77,8 @@ struct RemoteEvent : public CMessage_RemoteEvent {
   EventID event_id;
   Time ts;
   tw_lpid dest_lp;
-  tw_peid send_pe;
+// TODO: Define what the peid type is
+//  tw_peid send_pe;
   bool isAnti;
 
   RemoteEvent() : isAnti(false) { }
@@ -108,7 +111,8 @@ class Event {
   tw_bf cv;
   tw_lpid dest_lp, src_lp;
   Time ts;
-  tw_peid send_pe;
+// TODO: Define what the peid type is
+//  tw_peid send_pe;
   RemoteEvent * eventMsg;
   tw_out *out_msgs;
   char *userData;

@@ -27,6 +27,15 @@ struct Globals {
   FILE* g_tw_csv;
 
   unsigned g_num_lp_chares;
+
+  // Globals used in events
+  // TODO: Make sure these have the right types
+  size_t g_tw_user_data_size;
+  unsigned g_tw_max_events_buffered;
+  unsigned g_tw_min_detected_offset;
+  tw_event* abort_event;
+  tw_stime g_tw_lookahead;
+
 };
 
 // Functions for modifying globals including readonly chare proxies.

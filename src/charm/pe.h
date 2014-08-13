@@ -23,7 +23,7 @@ class PE: public CBase_PE {
   public:
     // A struct of global variables stored on each PE.
     Globals* globals;
-    std::vector<LPChare*> cancel_q;
+    std::vector<LP*> cancel_q;
 
     // TODO: Commented this out temporarily so that code would compile
     //PE() { this->PE(default_batchSize, default_gvt_freq); }

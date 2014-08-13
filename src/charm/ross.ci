@@ -11,11 +11,4 @@ mainmodule ross {
     entry Main(CkArgMsg *);
     entry Main(CkMigrateMsg *);
   };
-
-  /** \brief Common readonlies should be added */
-
-  /** \brief RemoteEvent in ROSS - wrapped by Charm++ message - contains minimum data required*/
-  message RemoteEvent {
-    char userData[];
-  };
 }
