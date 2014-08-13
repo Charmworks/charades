@@ -64,6 +64,7 @@ void LP::recv_event(RemoteEvent* event) {
     event_cancel(e);
     delete event;
   } else {
+    e->state.remote = 1;
     avlInsert(all_events, e);
     e->userData = event->userData;
     e->eventMsg = event;
