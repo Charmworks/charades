@@ -1,6 +1,7 @@
 #include "ross_setup.h"
 #include "../ross_opts/ross_opts.h"
 #include "../globals.h"
+#include "mpi-interoperate.h"
 
 #include <stdio.h>
 
@@ -48,6 +49,16 @@ static const tw_optdef kernel_options[] = {
 };
 
 void tw_init(int* argc, char*** argv) {
+  /*TODO: change Charm interface */
+#if CMK_CONVERSE_MPI
+  CharmLibInit(MPI_COMM_WORLD, argc, argv);
+#else
+  CharmLibInit(0, argc, argv);
+#endif
+  // Create the PE group chare array
+  // create_pes(); To be done by mainchare
+  // TODO: Do we need any net stuff?
+
   /** Add all of the command line options before parsing them **/
   tw_opt_add(tw_net_init(argc, argv));
   tw_opt_add(kernel_options);
@@ -79,10 +90,6 @@ void tw_init(int* argc, char*** argv) {
   }
 
   tw_opt_print();
-
-  // Create the PE group chare array
-  create_pes();
-  // TODO: Do we need any net stuff?
   tw_net_start();
   tw_gvt_start();
 }
