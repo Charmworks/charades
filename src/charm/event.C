@@ -53,7 +53,7 @@ inline tw_out* allocate_output_buffer() {
 
 static inline void freeEvent(tw_event * e) {
   if(e->state.remote == 1) {
-    avlDelete(OWNER, e);
+    avlDelete(e->dest_lp->owner->all_events, e);
   }
   e->state.remote = 0;
   if(eventBuffers[CkMyPe()].size() >= PE_VALUE(g_tw_max_events_buffered)) {

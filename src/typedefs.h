@@ -20,6 +20,7 @@ class PendingQueue;
 typedef unsigned long long EventID;
 //typedef enum tw_event_owner tw_event_owner;
 typedef unsigned long long tw_lpid;
+typedef unsigned long long tw_peid;
 typedef struct avlNode *AvlTree;
 typedef struct tw_bf tw_bf;
 
