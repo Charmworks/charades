@@ -48,9 +48,15 @@ static const tw_optdef kernel_options[] = {
 };
 
 void tw_init(int* argc, char*** argv) {
+  // TODO (nikhil): We need to init the charm library here and create the PE chares.
+  // charm_lib_init()
+  // TODO (eric): After the charm_lib_init() returns we need to copy user options over
+  // to the PE global variables.
+
   /** Add all of the command line options before parsing them **/
   tw_opt_add(tw_net_init(argc, argv));
   tw_opt_add(kernel_options);
+  // TODO (nikhil): Implement tw_gvt_setup()
   tw_opt_add(tw_gvt_setup());
   // TODO We may not use any clock stuff
   tw_opt_add(tw_clock_setup());
@@ -80,9 +86,8 @@ void tw_init(int* argc, char*** argv) {
 
   tw_opt_print();
 
-  // Create the PE group chare array
-  create_pes();
   // TODO: Do we need any net stuff?
+  // TODO (nikhil): net_start() sets up buffers
   tw_net_start();
   tw_gvt_start();
 }
@@ -95,12 +100,6 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // TODO: What will this variable mean in the new ROSS? Right now it is lps on
   // on this PE which makes no sense. It should be total lps.
   PE_VALUE(g_tw_nlp) = nlp;
-
-  // TODO: Nikhil is working on the memory management portion
-#ifdef ROSS_MEMORY
-  PE_VALUE(g_tw_memory_sz) = sizeof(tw_memory);
-#endif
-
   PE_VALUE(g_tw_msg_sz) = msg_sz;
   PE_VALUE(g_tw_rng_seed) = seed;
 

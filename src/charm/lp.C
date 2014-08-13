@@ -33,7 +33,7 @@ LP::LP() : next_token(this), oldest_token(this),
     lp_structs[i].type = global_type_map(lp_structs[i].gid);
   }
 
-  // TODO: Init LP RNG streams
+  // TODO (eric): Init LP RNG streams
 }
 
 // Entry method for sending events to LPs.
@@ -57,7 +57,7 @@ void LP::recv_event(RemoteEvent* event) {
     avlInsert(all_events, e);
     e->userData = event->userData;
     e->eventMsg = event;
-    /* TODO Somehow get lop LP pointer */
+    /* TODO (eric): Somehow get lop LP pointer */
     //e->dest_lp =
     if (e->ts < events.top()->ts) {
       pes.ckLocalBranch()->update_next(&next_token, e->ts);
@@ -79,6 +79,7 @@ void LP::execute_me(tw_stime ts) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
+    // TODO (eric): Fix me
     LPStruct *lp = &lp_structs[e->local_id];
     currEvent = e;
     lp->type->execute(lp, e);

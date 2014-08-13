@@ -35,7 +35,7 @@ void PE::execute_opt() {
   for(int events = 0; events < batchSize(); events++) {
     if(!schedule_nextLP())  break;
   }
-  thisProxy[CkMyPe()].execute();
+  thisProxy[CkMyPe()].execute_opt();
 }
 
 void PE::process_cancel_q() {
