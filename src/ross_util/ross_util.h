@@ -9,7 +9,5 @@
 int tw_output (tw_lp *lp, const char *fmt, ...);
 void tw_printf(const char *file, int line, const char *fmt, ...);
 void tw_error(const char *file, int line, const char *fmt, ...);
-void tw_calloc_stats(size_t *bytes_allocated, size_t *bytes_wasted);
-void * tw_calloc(const char *file, int line, const char *for_who, size_t e_sz, size_t n);
 
 #endif

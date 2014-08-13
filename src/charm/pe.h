@@ -44,6 +44,7 @@ class PE: public CBase_PE {
     void execute_cons();
     void execute_opt();
     void collect_fossils(); /**< collect fossils */
+    int schedule_nextLP_no_save(); /**< find the smallest time step and execute for non-optimistic */
     int schedule_nextLP(); /**< find the smallest time step and execute */
     void process_cancel_q();
 
