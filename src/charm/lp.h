@@ -57,7 +57,6 @@ class LP : public CBase_LP {
     void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
     void process_cancel_q();
 
-    /* TODO implement this */
     void delete_pending(Event *e);
 
     Time now() const { return current_time; }
