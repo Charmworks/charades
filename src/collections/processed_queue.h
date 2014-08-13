@@ -38,6 +38,7 @@ class ProcessedQueue {
       tail = NULL;
     } else {
       head->prev = NULL;
+    }
     length--;
     return e;
   }

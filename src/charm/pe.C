@@ -2,12 +2,13 @@
 
 // This is the API which allows the ROSS code to initialize and access the
 // Charm++ backend.
-void create_pes() {
-  pes = CProxy_PE::ckNew();
-}
 
 Globals* get_globals() {
   return pes.ckLocalBranch()->globals;
+}
+
+PE::PE(CProxy_Initialize srcProxy) : batchSize(20), gvt_cnt(0), gvt_freq(10) {
+  contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }
 
 void PE::execute_seq() {

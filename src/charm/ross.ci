@@ -6,16 +6,10 @@ mainmodule ross {
   readonly CProxy_PE pes;
   readonly CProxy_LP lps;
 
-  /** \brief Main chare needed for Charm compilation */
-  mainchare Main {
-    entry Main(CkArgMsg *);
-    entry Main(CkMigrateMsg *);
-  };
-
-  /** \brief Common readonlies should be added */
-
-  /** \brief RemoteEvent in ROSS - wrapped by Charm++ message - contains minimum data required*/
-  message RemoteEvent {
-    char userData[];
+  /** \brief Main chare that initializes pes */
+  mainchare Initialize {
+    entry Initialize(CkArgMsg *);
+    entry Initialize(CkMigrateMsg *);
+    entry [reductiontarget] Exit();
   };
 }

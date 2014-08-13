@@ -5,10 +5,10 @@
 
 #include "typedefs.h"
 #include "lp_struct.h"
+#include "pending_queue.h"
 #include "processed_queue.h"
 
 #include <vector>
-#include <queue>
 
 class RemoteEvent;
 
@@ -58,7 +58,7 @@ class LP : public CBase_LP {
     void process_cancel_q();
 
     /* TODO implement this */
-    void delete_pending(RemoteEvent *e);
+    void delete_pending(Event *e);
 
     Time now() const { return current_time; }
 };

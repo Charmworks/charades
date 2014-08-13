@@ -8,6 +8,7 @@
 #include "charm/lp.h"
 
 #include "globals.h"
+#include "ross.h"
 
 class LP;
 
@@ -23,12 +24,12 @@ class PE: public CBase_PE {
   public:
     // A struct of global variables stored on each PE.
     Globals* globals;
-    std::vector<LPChare*> cancel_q;
+    std::vector<LP*> cancel_q;
 
     // TODO: Commented this out temporarily so that code would compile
     //PE() { this->PE(default_batchSize, default_gvt_freq); }
 
-    PE(int batchSize_, int gvt_freq_) : batchSize(batchSize_), gvt_cnt(0), gvt_freq(gvt_freq_) { }
+    PE();
 
     /** \brief Various schedulers
         sequential (no communication, run to end)

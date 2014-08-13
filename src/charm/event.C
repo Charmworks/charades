@@ -1,17 +1,36 @@
 #include "typedefs.h"
+#include "globals.h"
 #include "event.h"
+#include "lp.h"
+#include "pe.h"
+#include "lp_struct.h"
+#include <assert.h>
 #include <stack>
+
+extern CProxy_LP lps;
+extern CProxy_PE pes;
+
+#ifndef NO_FORWARD_DECLS
+void tw_error(const char* file, int line, const char* fmt, ...);
+#endif
+
+// TODO: This should go in a better place
+static const unsigned CONSERVATIVE=2;
+
+// TODO: This is just here so this compiles
+typedef LP tw_pe;
 
 std::stack<Event *> eventBuffers[128];
 
 static inline tw_event * allocateEvent(int needMsg = 1) {
-  Event * e = eventBuffers[CkMyPe()].pop();
+  Event * e = eventBuffers[CkMyPe()].top();
+  eventBuffers[CkMyPe()].pop();
   if(e == NULL) {
     e = new Event;
   }
   if(needMsg) {
     if(e->eventMsg == NULL) {
-      e->eventMsg = new (PE_VALUE(g_tw_user_data_size)) RemoteMsg;
+      e->eventMsg = new (PE_VALUE(g_tw_user_data_size)) RemoteEvent;
       e->userData = e->eventMsg->userData;
     }
   } else {
@@ -41,12 +60,12 @@ static inline void tw_free_output_messages(tw_event *e, int print_message)
     e->out_msgs = temp->next;
     // Put it back
     /* TODO : What is this for? Another buffer? */
-    tw_kp_put_back_output_buffer(temp);
+    // TODO: This is undeclared and undefined.
+    //tw_kp_put_back_output_buffer(temp);
   }
 }
 
-static inline tw_event *
-tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
+tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
   tw_event	*e;
   tw_stime	recv_ts;
 
@@ -88,16 +107,18 @@ static inline void link_causality (tw_event *nev, tw_event *cev) {
   cev->caused_by_me = nev;
 }
 
-void tw_event_send(tw_event * event) {
-  tw_lp     *src_lp = (tw_lp*)event->src_lp;
-  LPChare   *send_pe = src_lp->owner;
+void tw_event_send(tw_event * e) {
+  tw_lp     *src_lp = (tw_lp*)e->src_lp;
+// TODO: How do we deal with "pes"
+  LP       *send_pe = src_lp->owner;
   int dest_peid;
 
-  tw_stime   recv_ts = event->t;
+  tw_stime   recv_ts = e->ts;
 
-  if (event == PE_VALUE(abort_event)) {
+  if (e == PE_VALUE(abort_event)) {
     if (recv_ts < PE_VALUE(g_tw_ts_end)) {
-      send_pe->cev_abort = 1;
+      // TODO: Don't know what this is
+      //send_pe->cev_abort = 1;
     }
     return;
   }
@@ -108,20 +129,22 @@ void tw_event_send(tw_event * event) {
     assert(recv_ts - send_pe->now() >= PE_VALUE(g_tw_lookahead) && "Lookahead violation: try decreasing the lookahead value");
   }
 
-  if (event->out_msgs) {
+  if (e->out_msgs) {
     tw_error(TW_LOC, "It is an error to send an event with pre-loaded output message.");
   }
 
-  link_causality(event, send_pe->currEvent);
+  link_causality(e, send_pe->currEvent);
 
   // call LP remote mapping function to get dest_pe
-  dest_peid = src_lp->type->global_map(event->dest_lp);
+  dest_peid = src_lp->type->global_map(e->dest_lp);
 
   // fill in entries for remote msg
-  e->eventMsg->event_id = e->event_id = e->owner->uniqID++;
+  // TODO: Owner needs to be figured out
+  //e->eventMsg->event_id = e->event_id = e->owner->uniqID++;
   e->eventMsg->ts = e->ts;
   e->eventMsg->dest_lp = e->dest_lp;
-  e->eventMsg->send_pe = e->send_pe = e->owner->thisIndex;
+  // TODO: PE needs to be figured out
+  //e->eventMsg->send_pe = e->send_pe = e->owner->thisIndex;
 
   lps(dest_peid).recv_event(e->eventMsg);
   e->state.owner = TW_sent;
@@ -130,20 +153,22 @@ void tw_event_send(tw_event * event) {
 
 static inline void event_cancel(tw_event * e) {
   /* already sent, send anti message and free me */
-  if(event->state.owner == TW_sent) {
-    LPChare *send_pe = ((tw_lp*)e->src_lp)->owner;
-    RemoteMsg * eventMsg = new (0) RemoteMsg;
+  if(e->state.owner == TW_sent) {
+    LP *send_pe = ((tw_lp*)e->src_lp)->owner;
+    RemoteEvent * eventMsg = new (0) RemoteEvent;
     eventMsg->isAnti = true;
     eventMsg->event_id = e->event_id;
     eventMsg->ts = e->ts;
     eventMsg->dest_lp = e->dest_lp;
-    eventMsg->send_pe = e->send_pe;
-    lps(dest_peid).recv_event(eventMsg);
+// TODO: Haven't decided what to do with pe yet
+    //eventMsg->send_pe = e->send_pe;
+    // TODO: Where does dest_peid come from?
+    //lps(dest_peid).recv_event(eventMsg);
     tw_event_free(send_pe, e);
     return;
   }
 
-  LPChare *recv_pe = ((tw_lp*)e->dest_lp)->owner;
+  LP *recv_pe = ((tw_lp*)e->dest_lp)->owner;
   switch (e->state.owner) {
     case TW_chare_q:
       /* Currently in our pq and not processed; delete it and
@@ -174,11 +199,12 @@ void tw_event_rollback(tw_event * event) {
   tw_free_output_messages(event, 0);
 
   dest_lp->owner->currEvent = event;
-  dest_lp->owner->current_time = event->ts;
+  // TODO: I think this is handled in the LP. Need to find out.
+  //dest_lp->owner->current_time = event->ts;
   //(*dest_lp->type->revent)(dest_lp->cur_state, &event->cv, tw_event_data(event), dest_lp);
   /* TODO talk to Eric and fix this */
-  LPStruct *lp = &lp_structs[e->local_id];
-  dest_lp->type->reverse(lp, e);
+  //LPStruct *lp = &lp_structs[e->local_id];
+  //dest_lp->type->reverse(lp, e);
 
   while (e) {
     tw_event *n = e->cause_next;
@@ -190,4 +216,3 @@ void tw_event_rollback(tw_event * event) {
 
   event->caused_by_me = NULL;
 }
-

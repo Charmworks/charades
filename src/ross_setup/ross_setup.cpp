@@ -1,6 +1,7 @@
 #include "ross_setup.h"
 #include "../ross_opts/ross_opts.h"
 #include "../globals.h"
+#include "mpi-interoperate.h"
 
 #include <stdio.h>
 
@@ -52,6 +53,15 @@ void tw_init(int* argc, char*** argv) {
   // charm_lib_init()
   // TODO (eric): After the charm_lib_init() returns we need to copy user options over
   // to the PE global variables.
+  /*TODO: change Charm interface */
+#if CMK_CONVERSE_MPI
+  CharmLibInit(MPI_COMM_WORLD, argc, argv);
+#else
+  CharmLibInit(0, argc, argv);
+#endif
+  // Create the PE group chare array
+  // create_pes(); To be done by mainchare
+  // TODO: Do we need any net stuff?
 
   /** Add all of the command line options before parsing them **/
   tw_opt_add(tw_net_init(argc, argv));

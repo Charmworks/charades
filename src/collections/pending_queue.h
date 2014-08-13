@@ -39,7 +39,7 @@ class PendingQueue
     nelems = 0;
     curr_max = (2*init_size);
     elems = NULL;
-    elems = realloc(elems, sizeof(ELEMENT_TYPE) * curr_max);
+    elems = (ELEMENT_TYPE*)realloc(elems, sizeof(ELEMENT_TYPE) * curr_max);
     memset(elems, 0, sizeof(ELEMENT_TYPE) * curr_max);
   }
 
@@ -95,7 +95,7 @@ class PendingQueue
       size_t i = 50000;
       size_t u = curr_max;
       curr_max += i;
-      elems = realloc(elems, sizeof(ELEMENT_TYPE) * curr_max);
+      elems = (ELEMENT_TYPE*)realloc(elems, sizeof(ELEMENT_TYPE) * curr_max);
       memset(&elems[u], 0, sizeof(ELEMENT_TYPE) * i);
     }
 
@@ -109,7 +109,7 @@ class PendingQueue
   ELEMENT_TYPE pop()
   {
     if( nelems <= 0 )
-      return NULL
+      return NULL;
     else
     {
       ELEMENT_TYPE e = elems[0];
