@@ -155,6 +155,9 @@ void tw_event_send(tw_event * e) {
   lps(dest_peid).recv_event(e->eventMsg);
   e->state.owner = TW_sent;
   e->eventMsg = NULL;
+  if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+   freeEvent(e);
+  }
 }
 
 void event_cancel(tw_event * e) {
