@@ -57,7 +57,6 @@ void tw_init(int* argc, char*** argv) {
 #endif
   // Create the PE group chare array
   // create_pes(); To be done by mainchare
-  // TODO: Do we need any net stuff?
 
   /** Add all of the command line options before parsing them **/
   tw_opt_add(tw_net_init(argc, argv));
@@ -90,8 +89,23 @@ void tw_init(int* argc, char*** argv) {
   }
 
   tw_opt_print();
-  tw_net_start();
-  tw_gvt_start();
+  /** Set up all the buffers for events */
+  tw_event_setup();
+  /** Set up GVT related */
+  tw_gvt_setup();
+}
+
+void tw_event_setup() {
+  CkpvInitialize(AvlTree, avl_list_head);
+  /* TODO : Make AVL_NODE_COUNT compile time */
+  AvlTree avl_list = (AvlTree)calloc(sizeof(struct avlNode), AVL_NODE_COUNT);
+
+  for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
+    avl_list[i].next = &avl_list[i + 1];
+  }
+  avl_list[i].next = NULL;
+
+  CkpvAccess(avl_list_head) = &avl_list[0];
 }
 
 // TODO: In original ROSS this was defined in a processor centric way in that
