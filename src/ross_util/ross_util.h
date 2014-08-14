@@ -2,7 +2,7 @@
 #define ROSS_UTIL_H_
 
 #include "../typedefs.h"
-#include "../event.h"
+#include "../charm/event.h"
 
 // API functions
 
