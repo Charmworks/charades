@@ -4,17 +4,21 @@
 #include "lp.h"
 #include "pe.h"
 #include "lp_struct.h"
-#include "ross_util.h"
+#include "collections/avl_tree.h"
 #include <assert.h>
 #include <stack>
 
 extern CProxy_LP lps;
 extern CProxy_PE pes;
 
+#ifndef NO_FORWARD_DECLS
+void tw_error(const char* file, int line, const char* fmt, ...);
+#endif
+
 std::stack<Event *> eventBuffers[128];
 CkpvDeclare(tw_out*, output);
 
-static inline tw_event * allocateEvent(int needMsg = 1) {
+tw_event * allocateEvent(int needMsg = 1) {
   Event * e = eventBuffers[CkMyPe()].top();
   eventBuffers[CkMyPe()].pop();
   if(e == NULL) {
@@ -44,7 +48,7 @@ inline tw_out* allocate_output_buffer() {
 
 static inline void freeEvent(tw_event * e) {
   if(e->state.remote == 1) {
-    avlDelete(e->dest_lp->owner->all_events, e);
+    avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
   }
   e->state.remote = 0;
   if(eventBuffers[CkMyPe()].size() >= PE_VALUE(g_tw_max_events_buffered)) {
@@ -77,7 +81,7 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
   tw_event	*e;
   tw_stime	recv_ts;
 
-  recv_ts = sender->owner->now() + offset_ts;
+  recv_ts = sender->owner->current_time + offset_ts;
 
   if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE)
   {
@@ -85,7 +89,7 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
       PE_VALUE(g_tw_min_detected_offset) = offset_ts;
   }
 
-  /* TODO : make sure abort_event is allocated as part of globals */
+  /* TODO(nikhil) : make sure abort_event is allocated as part of globals */
   if (recv_ts >= PE_VALUE(g_tw_ts_end)) {
     e = PE_VALUE(abort_event);
   } else {
@@ -95,6 +99,7 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
   e->dest_lp = dest_gid;
   e->src_lp = (tw_lpid)sender;
   e->ts = recv_ts;
+  e->send_pe = (tw_peid)sender->owner;
 
   tw_free_output_messages(e, 0);
 
@@ -120,7 +125,7 @@ void tw_event_send(tw_event * e) {
   tw_stime   recv_ts = e->ts;
 
   if (e == PE_VALUE(abort_event)) {
-    /* TODO: Handle case where abort event is caused by lack of memory */
+    /* TODO (nikhil): Handle case where abort event is caused by lack of memory */
     //if (recv_ts < PE_VALUE(g_tw_ts_end)) {
       //send_pe->cev_abort = 1;
     //}
@@ -129,7 +134,7 @@ void tw_event_send(tw_event * e) {
 
   //Trap lookahead violations in debug mode
   if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-    assert(recv_ts - send_pe->now() >= PE_VALUE(g_tw_lookahead) && "Lookahead violation: try decreasing the lookahead value");
+    assert(recv_ts - send_pe->current_time >= PE_VALUE(g_tw_lookahead) && "Lookahead violation: try decreasing the lookahead value");
   }
 
   if (e->out_msgs) {
@@ -139,15 +144,14 @@ void tw_event_send(tw_event * e) {
   link_causality(e, send_pe->currEvent);
 
   // call LP remote mapping function to get dest_pe
-  dest_peid = src_lp->type->global_map(e->dest_lp);
+  dest_peid = src_lp->type->chare_map(e->dest_lp);
 
   // fill in entries for remote msg
-  // TODO: Owner needs to be figured out
-  //e->eventMsg->event_id = e->event_id = e->owner->uniqID++;
+  // TODO (nikhil): Why are these set here and not at event creation?
+  e->eventMsg->event_id = e->event_id = ((LP*)(e->send_pe))->uniqID++;
   e->eventMsg->ts = e->ts;
   e->eventMsg->dest_lp = e->dest_lp;
-  // TODO: PE needs to be figured out
-  //e->eventMsg->send_pe = e->send_pe = e->owner->thisIndex;
+  e->eventMsg->send_pe = e->send_pe = ((LP*)(e->send_pe))->thisIndex;
 
   lps(dest_peid).recv_event(e->eventMsg);
   e->state.owner = TW_sent;
@@ -166,10 +170,8 @@ void event_cancel(tw_event * e) {
     eventMsg->event_id = e->event_id;
     eventMsg->ts = e->ts;
     eventMsg->dest_lp = e->dest_lp;
-// TODO: Haven't decided what to do with pe yet
-    //eventMsg->send_pe = e->send_pe;
-    // TODO: Where does dest_peid come from?
-    //lps(dest_peid).recv_event(eventMsg);
+    eventMsg->send_pe = e->send_pe;
+    lps(((tw_lp*)(e->src_lp))->type->chare_map(e->dest_lp)).recv_event(eventMsg);
     tw_event_free(send_pe, e);
     return;
   }
@@ -206,10 +208,9 @@ void tw_event_rollback(tw_event * event) {
 
   dest_lp->owner->currEvent = event;
   dest_lp->owner->current_time = event->ts;
-  (*dest_lp->type->revent)(dest_lp->cur_state, &event->cv, tw_event_data(event), dest_lp);
-  /* TODO talk to Eric and fix this */
-  //LPStruct *lp = &lp_structs[e->local_id];
-  //dest_lp->type->reverse(lp, e);
+  dest_lp->type->reverse(dest_lp, e);
+  // TODO: The following is the type signiture for original ROSS
+  //(*dest_lp->type->reverse)(((LPStruct*)(dest_lp))->state, &event->cv, tw_event_data(event), dest_lp);
 
   while (e) {
     tw_event *n = e->cause_next;

@@ -57,7 +57,8 @@ Globals* get_globals();
 
 #define PE_VALUE(x) get_globals()->x
 
-CkpvExtern(AvlTree, avl_list_head);
-CkpvExtern(tw_out*, output);
+// TODO (nikhil): What are these for? They don't compile
+//CkpvExtern(AvlTree, avl_list_head);
+//CkpvExtern(tw_out*, output);
 
 #endif

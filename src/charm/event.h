@@ -65,9 +65,7 @@ typedef struct tw_out {
 } tw_out;
 
 
-// TODO: This needs some work, especially since we don't know how we are dealing
-// with globals such as type yet. It would also be nice if we could decouple an
-// event struct from the Charm++ infrastructure.
+// TODO: Decouple Charm++ messages from ROSS events
 struct RemoteEvent : public CMessage_RemoteEvent {
   public:
   char *userData;
@@ -118,7 +116,7 @@ class Event {
 // TODO: Finalize/clean this up
 void tw_event_send(tw_event * event);
 tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
-tw_event * allocateEvent(int needMsg = 1);
+tw_event * allocateEvent(int);
 void tw_event_rollback(tw_event * event);
 void tw_event_free(tw_pe *pe, tw_event *e);
 void event_cancel(tw_event * e);
