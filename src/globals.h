@@ -42,6 +42,8 @@ struct Globals {
   // Global mapping function pointers
   init_map_f g_init_map;
   type_map_f g_type_map;
+  // TODO (eric): This map may be stored in the type instead
+  local_map_f g_local_map;
 };
 
 // Functions for modifying globals including readonly chare proxies.

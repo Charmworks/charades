@@ -62,17 +62,19 @@ void LP::delete_pending(Event *e) {
 // 2) Check to see if we need a rollback.
 // 3) Push event into the priority queue.
 void LP::recv_event(RemoteEvent* event) {
-  // TODO: Difference between tw_event_new and allocate event?
-  // TODO: Which of these fields needs to be set here, and which in the else branch
+  // TODO (nikhil): Difference between tw_event_new and allocate event?
+  // Copy over the relevant fields from the remote event to the local event.
   Event *e = allocateEvent(0);
   e->event_id = event->event_id;
   e->ts = event->ts;
-  // TODO (eric): dest_lp should be a pointer to an LPStruct at this point
-  e->dest_lp = event->dest_lp;
-  // TODO (eric)
-  //e->send_pe = event->send_pe;
+  // TODO (eric): The use of map here could be cleaned up.
+  e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map(event->dest_lp))];
+  e->send_pe = event->send_pe;
 
   if(event->isAnti) {
+    // Find the corresponding real event in the avl tree, cancel it, and
+    // deallocate all involved events.
+    // TODO: Why do we use delete rather than event_free?
     Event *real_e = avlDelete(&all_events, e);
     delete e;
     e = real_e;
@@ -85,26 +87,31 @@ void LP::recv_event(RemoteEvent* event) {
     }
     e->userData = event->userData;
     e->eventMsg = event;
+
+    // Check the timestamps in the queues to see if updates or rollbacks
+    // need to be performed.
     if (e->ts < events.top()->ts) {
       pes.ckLocalBranch()->update_next(&next_token, e->ts);
     }
     if (e->ts < processed_events.back()->ts) {
       rollback_me(e->ts);
     }
+
+    // Push the event into the queue and set its owner field.
     events.push(e);
     e->state.owner = TW_chare_q;
   }
 }
 
 void LP::execute_me_no_save(tw_stime ts) {
+  // Pop the top event, update current time and event, then execute.
   while (events.top()->ts <= ts) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
-    // TODO (eric): Instead of local id, use a direct pointer to the LP
-    //LPStruct *lp = &lp_structs[e->local_id];
-    //lp->type->execute(lp, e);
     currEvent = e;
+    LPStruct* lp = (LPStruct*)e->dest_lp;
+    lp->type->execute(lp, e);
   }
   pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
 }
@@ -118,9 +125,11 @@ void LP::execute_me(tw_stime ts) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
+    currEvent = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
     lp->type->execute(lp, e);
-    currEvent = e;
+
+    // Since we're doing optimistic execution, save the event for later.
     processed_events.push_front(e);
     e->state.owner = TW_rollback_q;
   }
@@ -134,6 +143,7 @@ void LP::fossil_me(tw_stime gvt) {
   while (processed_events.back()->ts <= gvt) {
     Event* e = processed_events.back();
     processed_events.pop_back();
+    // TOOD: Does this need to be event_free instead?
     delete e;
   }
   pes.ckLocalBranch()->update_oldest(&oldest_token, processed_events.back()->ts);

@@ -74,8 +74,7 @@ struct RemoteEvent : public CMessage_RemoteEvent {
   EventID event_id;
   Time ts;
   tw_lpid dest_lp;
-// TODO: Define what the peid type is
-//  tw_peid send_pe;
+  tw_peid send_pe;
   bool isAnti;
 
   RemoteEvent() : isAnti(false) { }
@@ -109,8 +108,7 @@ class Event {
   tw_bf cv;
   tw_lpid dest_lp, src_lp;
   Time ts;
-// TODO: Define what the peid type is
-//  tw_peid send_pe;
+  tw_peid send_pe;
   RemoteEvent * eventMsg;
   tw_out *out_msgs;
   char *userData;

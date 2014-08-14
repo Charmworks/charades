@@ -10,8 +10,8 @@ struct LPType {
   event_f execute;
   revent_f reverse;
   finalize_f finalize;
-  map_f global_map;
-  map_f local_map;
+  // TODO: Why is the map stored here?
+  chare_map_f chare_map;
 };
 
 class LP;
