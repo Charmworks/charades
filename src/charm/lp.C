@@ -47,6 +47,11 @@ LP::LP() : next_token(this), oldest_token(this),
     }
   }
   // TODO (eric): Need to contribute to a reduction to exit the charm scheduler
+  contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
+}
+
+void LP::stopScheduler() {
+  // TODO (eric): Figure out how to return control to ROSS
 }
 
 /* Delete an event in our pending queue */
