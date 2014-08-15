@@ -25,4 +25,7 @@ extern double   tw_rand_normal_sd(tw_rng_stream * g, double Mu, double Sd, unsig
 extern long     tw_rand_poisson(tw_rng_stream * g, double Lambda);
 extern double   tw_rand_weibull(tw_rng_stream * g, double mean, double shape);
 
+// TODO: Does this belong here? Where is it defined?
+void tw_rand_init_streams(tw_lp*, unsigned); 
+
 #endif

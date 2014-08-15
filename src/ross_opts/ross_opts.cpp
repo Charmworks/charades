@@ -1,6 +1,7 @@
 #include "ross_opts.h"
-#include "../typedefs.h"
-#include "../globals.h"
+#include "ross_util.h"
+#include "typedefs.h"
+#include "globals.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -15,7 +16,6 @@ FILE* g_tw_csv;
 // TODO: Remove these and include the appropriate headers.
 #ifndef NO_FORWARD_DECLS
 int tw_ismaster();
-void tw_error(const char* file, int line, const char* fmt, ...);
 void tw_net_stop();
 
 #ifndef ARRAY_SIZE

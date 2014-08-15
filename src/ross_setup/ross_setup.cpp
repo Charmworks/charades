@@ -1,7 +1,7 @@
+#include "charm_functions.h"
 #include "ross_setup.h"
-#include "../ross_opts/ross_opts.h"
+#include "ross_opts.h"
 #include "globals.h"
-#include "mpi-interoperate.h"
 
 #include <stdio.h>
 
@@ -65,18 +65,9 @@ void tw_event_setup() {
 }
 
 void tw_init(int* argc, char*** argv) {
-  // TODO (nikhil): We need to init the charm library here and create the PE chares.
-  // charm_lib_init()
-  // TODO (eric): After the charm_lib_init() returns we need to copy user options over
-  // to the PE global variables.
-  /*TODO: change Charm interface */
-  // TODO (eric): Move this to the charm module and make a c-like API for it
-#if CMK_CONVERSE_MPI
-  CharmLibInit(MPI_COMM_WORLD, *argc, *argv);
-#else
-  CharmLibInit(0, *argc, *argv);
-#endif
-
+  charm_init();
+  // TODO (eric): After the charm_lib_init() returns we need to copy user
+  // options over to the PE global variables.
   /** Add all of the command line options before parsing them **/
   tw_opt_add(tw_net_init(argc, argv));
   tw_opt_add(kernel_options);
@@ -138,4 +129,9 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
     // The constructor also initializes the rng for each lp.
     create_lps();
   }
+}
+
+void tw_run() {
+  init_lps();
+  charm_run();
 }

@@ -4,6 +4,8 @@
 
 #include "globals.h"
 
+#include "ross_util.h"
+#include "ross_random.h"
 #include "ross_clcg4.h"
 #include "avl_tree.h"
 
@@ -13,14 +15,14 @@
 extern CProxy_PE pes;
 extern CProxy_LP lps;
 
-#ifndef NO_FORWARD_DECLS
-void tw_error(const char* file, int line, const char* fmt, ...);
-void tw_rand_init_streams(tw_lp*, unsigned);
-#endif
-
 // This is the API which allows the ROSS code to initialize the Charm backend.
 void create_lps() {
   lps = CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
+  StartCharmScheduler();
+}
+
+void init_lps() {
+  lps.init();
   StartCharmScheduler();
 }
 
@@ -32,8 +34,6 @@ LP::LP() : next_token(this), oldest_token(this),
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
   // Create array of LPStructs based on globals
-  // TODO (eric): Should the init function be called here as well?
-  // No, it appears as though the init function is called in tw_run().
   for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].owner = this;
     lp_structs[i].gid = PE_VALUE(g_init_map(thisIndex, i));
@@ -46,12 +46,17 @@ LP::LP() : next_token(this), oldest_token(this),
       tw_rand_init_streams(&lp_structs[i], PE_VALUE(g_tw_nRNG_per_lp));
     }
   }
-  // TODO (eric): Need to contribute to a reduction to exit the charm scheduler
   contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
 
 void LP::stopScheduler() {
   // TODO (eric): Figure out how to return control to ROSS
+}
+
+void LP::init() {
+  for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
+    lp_structs[i].type->init(&lp_structs[i]);
+  }
 }
 
 /* Delete an event in our pending queue */

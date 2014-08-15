@@ -46,13 +46,7 @@ struct Globals {
   local_map_f g_local_map;
 };
 
-// Functions for modifying globals including readonly chare proxies.
-// These functions are defined in the appropriate Charm++ backend files.
-void create_pes();
-void create_lps();
-
-// Get the local branch of the PE group and return its globals.
-// If possible we should cache the pointer to the local branch.
+// Defined in pe.C
 Globals* get_globals();
 
 #define PE_VALUE(x) get_globals()->x

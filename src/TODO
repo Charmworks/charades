@@ -1,21 +1,9 @@
-Things we may need to add:
-- Some group level, or node group level, data structure for global data
-  - It would contain things like maps and lp types
-  - In ROSS there is a global array of lptype structures
-  - This would also replace the need for readonlys
-
-As far as dealing with types:
-- Rather than events carrying pointers to LPs, maybe just have them carry an int which indexes the global type array
-  - This allows the LPs to look up the type upon receiving the event to find the local mapping
-  - This also allows us to preserve the API for tw_event_send(tw_event*), since it can look up the CProxy using the map in the type array
-  - We also wouldn't have to worry about dealing with pointers while migrating
-
 Clean up file structure
 - Definetly want to split up Charm++ stuff from non-Charm++. i.e. anything dealing with underlying structs shouldn't need to be able to find charm++.h
+- Want to split up event files into a charm backend portion and a new ross_event module
+- Want to make a ross_lp module
 
 Haven't really looked into LP state yet really. Right now it is a void pointer. Seems weird to have it heap allocated like that.
-
-Still not sure how all these pointers to functions are going to work in the face of migrations. 
 
 Make actual naming conventions. Right now there's a weird mix of our own names and ROSS (tw_*) names.
 Obviously the public API needs to have ROSS names, but to avoid confusion, all the charm stuff should probaby be as separate as possible.
@@ -24,30 +12,4 @@ There is also next to no naming consistency even in our own code.
 
 The extreme decoupling of LP state and type is still weird. Not sure if it is necessary or even more efficient.
 
-Still need to figure out how, upon creation, an LP chare knows how to instatiate it's local collection of LPs. Another map maybe?
-How many levels of mapping did original ROSS have?
-
 Down the road: If an lpid is mapped to the sending proxy, there is no need to do any sending
-
-Current LP Time:
-- In the ross model, LPs don't maintain current time. It is maintained by the associated KP.
-- Is this correct? It has to be the case that current time will only be read from within an event handler otherwise the data will be incorrect.
-- Also, how does the field get updated wrt to rollbacks.
-- Seems like a more "correct/robust" impl might involve instead just checking the top of the event queue.
-
-Random number generation:
-- Big module that will probably just be taken from ROSS and used as is.
-
-Events:
-- Seems like ROSS is not re-using events. Or they are but it is convoluted by the ROSS allocation scheme.
-- Is it possible to re-use events? ie: In PHOLD why ask for a new event each time, when you could just resend the one you received.
-
-Biggest roadblocks to getting PHOLD working:
-- RNG functionality needs to be added to LPs
-- Bitfield support needs to be added
-- Globals, globals, globals
-
-Add our version of tw_init:
-- Will definitely create PE group chares
-- May also create LP chare array
-- Need to see where init function is called on LPs in original ROSS

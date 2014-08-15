@@ -9,6 +9,12 @@ Globals* get_globals() {
   return pes.ckLocalBranch()->globals;
 }
 
+// Starts the simulation by calling the scheduler on all pes
+void charm_run() {
+  // TODO (eric): Check what scheduler to run, do any other necessary init
+  pes.execute_opt();
+}
+
 PE::PE(CProxy_Initialize srcProxy) : batchSize(20), gvt_cnt(0), gvt_freq(10) {
   contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }

@@ -3,6 +3,17 @@
 
 extern CProxy_PE pes;
 
+// Function that starts the charm library and results in the creation of the
+// PE group chares.
+void charm_init() {
+/*TODO: change Charm interface */
+#if CMK_CONVERSE_MPI
+  CharmLibInit(MPI_COMM_WORLD, *argc, *argv);
+#else
+  CharmLibInit(0, *argc, *argv);
+#endif
+}
+
 Initialize::Initialize(CkArgMsg *m) {
   pes = CProxy_PE::ckNew(thisProxy);
   delete m;
