@@ -70,13 +70,12 @@ void tw_init(int* argc, char*** argv) {
   // TODO (eric): After the charm_lib_init() returns we need to copy user options over
   // to the PE global variables.
   /*TODO: change Charm interface */
+  // TODO (eric): Move this to the charm module and make a c-like API for it
 #if CMK_CONVERSE_MPI
   CharmLibInit(MPI_COMM_WORLD, *argc, *argv);
 #else
   CharmLibInit(0, *argc, *argv);
 #endif
-  // Create the PE group chare array
-  // create_pes(); To be done by mainchare
 
   /** Add all of the command line options before parsing them **/
   tw_opt_add(tw_net_init(argc, argv));

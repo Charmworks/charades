@@ -4,8 +4,10 @@
 
 #include "globals.h"
 
-#include "ross_rand/ross_clcg4.h"
+#include "ross_clcg4.h"
 #include "avl_tree.h"
+
+#include "mpi-interoperate.h"
 
 // Readonly variables for the global proxies.
 extern CProxy_PE pes;
@@ -17,10 +19,9 @@ void tw_rand_init_streams(tw_lp*, unsigned);
 #endif
 
 // This is the API which allows the ROSS code to initialize the Charm backend.
-// TODO (eric): This will have to start and stop the charm scheduler to work
-// properly.
 void create_lps() {
   lps = CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
+  StartCharmScheduler();
 }
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
@@ -45,6 +46,7 @@ LP::LP() : next_token(this), oldest_token(this),
       tw_rand_init_streams(&lp_structs[i], PE_VALUE(g_tw_nRNG_per_lp));
     }
   }
+  // TODO (eric): Need to contribute to a reduction to exit the charm scheduler
 }
 
 /* Delete an event in our pending queue */
