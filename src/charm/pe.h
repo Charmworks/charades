@@ -8,7 +8,7 @@
 #include "lp.h"
 
 #include "globals.h"
-//#include "ross.h"
+#include "ross.h"
 
 // TODO: These should maybe be pushed to globals like everything else?
 // TODO: They are probably already included in the gvt cl opts
@@ -32,8 +32,9 @@ class PE: public CBase_PE {
     // TODO: Do we need another queue for this?
     std::vector<LP*> cancel_q;
 
-    PE() : batchSize(default_batch_size), gvt_freq(default_gvt_freq), gvt_cnt(0) {}
-    PE(int bs, int gf) : batchSize(bs), gvt_freq(gf), gvt_cnt(0) {}
+    //PE() : batchSize(default_batch_size), gvt_freq(default_gvt_freq), gvt_cnt(0) {}
+    //PE(int bs, int gf) : batchSize(bs), gvt_freq(gf), gvt_cnt(0) {}
+    PE(CProxy_Initialize);
 
     /** \brief Various schedulers
         sequential (no communication, run to end)

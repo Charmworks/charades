@@ -1,6 +1,8 @@
 module lp {
   extern module event;
 
+  readonly CProxy_LP lps;
+
   array [1D] LP {
     entry LP(); /**< constructor */
     entry void recv_event(RemoteEvent*); /**< recieve an event for this LP */

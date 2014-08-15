@@ -65,7 +65,7 @@ typedef struct tw_out {
 } tw_out;
 
 
-// TODO: Decouple Charm++ messages from ROSS events
+// TODO (eric): Decouple Charm++ messages from ROSS events
 struct RemoteEvent : public CMessage_RemoteEvent {
   public:
   char *userData;
@@ -113,7 +113,7 @@ class Event {
 };
 
 // Exposed event API
-// TODO: Finalize/clean this up
+// TODO (eric): Finalize/clean this up
 void tw_event_send(tw_event * event);
 tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
 tw_event * allocateEvent(int);

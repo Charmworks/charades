@@ -74,7 +74,7 @@ void LP::recv_event(RemoteEvent* event) {
   if(event->isAnti) {
     // Find the corresponding real event in the avl tree, cancel it, and
     // deallocate all involved events.
-    // TODO: Why do we use delete rather than event_free?
+    // TODO (nikhil): Why do we use delete rather than event_free?
     Event *real_e = avlDelete(&all_events, e);
     delete e;
     e = real_e;

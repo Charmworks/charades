@@ -10,9 +10,9 @@ class Initialize : public CBase_Initialize {
   public:
     Initialize(CkArgMsg *m);
 
-    Initialize(CkMigrateMsg* m) { }
+    Initialize(CkMigrateMessage* m) { }
 
-    Exit() {
+    void Exit() {
       CkExit();
     }
 };

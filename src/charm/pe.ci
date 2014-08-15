@@ -1,9 +1,12 @@
 module pe {
+  extern module ross;
+
   include "typedefs.h";
 
+  readonly CProxy_PE pes;
+
   group PE {
-    entry PE(); /**< default constructor */
-    entry PE(int, int); /**< constructor */
+    entry PE(CProxy_Initialize); /**< constructor called from the mainchare */
     entry void GVT_begin(); /**< begin gvt computation */
     entry void GVT_contribute(); /**< reduction target for completion of GVT */
     entry [reductiontarget] void GVT_end(Time); /**< reduction target for completion of GVT */
