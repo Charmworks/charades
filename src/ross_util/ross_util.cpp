@@ -1,5 +1,6 @@
 #include "ross_util.h"
-#include "../globals.h"
+#include "ross_event.h"
+#include "globals.h"
 
 #ifndef NO_GLOBALS
 #endif

@@ -1,8 +1,7 @@
 #ifndef ROSS_UTIL_H_
 #define ROSS_UTIL_H_
 
-#include "../typedefs.h"
-#include "../charm/event.h"
+#include "typedefs.h"
 
 // API functions
 

@@ -1,8 +1,8 @@
 #include "ross_clcg4.h"
-#include "../typedefs.h"
-#include "../lp_structs.h"
-#include "../globals.h"
-#include "../ross_util/ross_util.h"
+#include "typedefs.h"
+#include "lp_struct.h"
+#include "globals.h"
+#include "ross_util.h"
 
 #ifndef NO_GLOBALS
 size_t g_tw_rng_max;

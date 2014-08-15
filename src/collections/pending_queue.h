@@ -11,7 +11,7 @@
 
 #include "typedefs.h"
 
-#include "event.h"
+#include "ross_event.h"
 
 typedef Event *ELEMENT_TYPE;
 typedef double KEY_TYPE;
