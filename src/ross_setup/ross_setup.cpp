@@ -1,6 +1,6 @@
 #include "ross_setup.h"
 #include "../ross_opts/ross_opts.h"
-#include "../globals.h"
+#include "globals.h"
 #include "mpi-interoperate.h"
 
 #include <stdio.h>

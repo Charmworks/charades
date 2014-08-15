@@ -1,11 +1,4 @@
-CHARMC = ~/charm/net-linux-x86_64_debug/bin/charmc
-OPTS=-I.. -I../collections -I.
-
-# Turn on this option to test if code compiles without globals
-#OPTS+=-DNO_GLOBALS
-
-# Turn on this option to test if code compiles without external forward decls
-#OPTS+=-DNO_FORWARD_DECL
+include ../config.mk
 
 all: pe.o lp.o
 

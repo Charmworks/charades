@@ -1,10 +1,4 @@
-OPTS=
-
-# Turn on this option to test if code compiles without globals
-OPTS+=-DNO_GLOBALS
-
-# Turn on this option to test if code compiles without external forward decls
-#OPTS+=-DNO_FORWARD_DECL
+include ../config.mk
 
 all: ross_opts.o
 
