@@ -1,6 +1,10 @@
 #include "ross_util.h"
 #include "ross_event.h"
 #include "globals.h"
+#include "lp.h"
+
+// Included for va_start etc.
+#include <stdarg.h>
 
 #ifndef NO_GLOBALS
 #endif
@@ -70,7 +74,8 @@ void tw_error(const char *file, int line, const char *fmt, ...)
   va_list	ap;
 
   va_start(ap, fmt);
-  fprintf(stdout, "node: %ld: error: %s:%i: ", g_tw_mynode, file, line);
+  // TODO: C API for CkMyPE?
+  fprintf(stdout, "node: %d: error: %s:%i: ", CkMyPe(), file, line);
   vfprintf(stdout, fmt, ap);
   fprintf(stdout, "\n");
   fflush(stdout);

@@ -2,6 +2,7 @@
 #define GLOBALS_H_
 
 #include "typedefs.h"
+#include "ross_event.h"
 
 // Included for FILE
 #include <stdio.h>
@@ -44,15 +45,14 @@ struct Globals {
   type_map_f g_type_map;
   // TODO (eric): This map may be stored in the type instead
   local_map_f g_local_map;
+
+  AvlTree avl_list_head;
+  tw_out* output;
 };
 
 // Defined in pe.C
 Globals* get_globals();
 
 #define PE_VALUE(x) get_globals()->x
-
-// TODO (nikhil): What are these for? They don't compile
-//CkpvExtern(AvlTree, avl_list_head);
-//CkpvExtern(tw_out*, output);
 
 #endif

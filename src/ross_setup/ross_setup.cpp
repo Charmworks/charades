@@ -1,7 +1,9 @@
+#include <charm++.h>
 #include "charm_functions.h"
 #include "ross_setup.h"
 #include "ross_opts.h"
 #include "globals.h"
+#include "avl_tree.h"
 
 #include <stdio.h>
 
@@ -46,22 +48,20 @@ static const tw_optdef kernel_options[] = {
 };
 
 void tw_event_setup() {
-  CkpvInitialize(AvlTree, avl_list_head);
   /* TODO : Make AVL_NODE_COUNT compile time */
   AvlTree avl_list = (AvlTree)calloc(sizeof(struct avlNode), AVL_NODE_COUNT);
   for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
     avl_list[i].next = &avl_list[i + 1];
   }
-  avl_list[i].next = NULL;
-  CkpvAccess(avl_list_head) = &avl_list[0];
+  avl_list[AVL_NODE_COUNT - 1].next = NULL;
+  PE_VALUE(avl_list_head) = &avl_list[0];
 
-  CkpvAccess(tw_out*, output);
   tw_out *output_head = (tw_out *)calloc(sizeof(struct tw_out), NUM_OUT_MESG);
   for (int i = 0; i < NUM_OUT_MESG - 1; i++) {
     output_head[i].next = &output_head[i + 1];
   }
-  output_head[i].next = NULL;
-  CkpvAccess(output) = output_head;
+  output_head[NUM_OUT_MESG - 1].next = NULL;
+  PE_VALUE(output) = output_head;
 }
 
 void tw_init(int* argc, char*** argv) {

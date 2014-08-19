@@ -101,5 +101,6 @@ tw_event * allocateEvent(int);
 void tw_event_rollback(tw_event * event);
 void tw_event_free(tw_pe *pe, tw_event *e);
 void event_cancel(tw_event * e);
+tw_out* allocate_output_buffer();
 
 #endif

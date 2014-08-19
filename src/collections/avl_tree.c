@@ -6,8 +6,6 @@
 
 #include "avl_tree.h"
 
-CkpvDeclare(AvlTree, avl_list_head);
-
 /* implementation of an AVL tree with explicit heights */
 
 /* free a tree */
@@ -299,10 +297,10 @@ avlDelete(AvlTree *t, Event *key)
 
 AvlTree avl_alloc(void)
 {
-  AvlTree head = CkpvAccess(avl_list_head);
-  CkpvAccess(avl_list_head) = head->next;
+  AvlTree head = PE_VALUE(avl_list_head);
+  PE_VALUE(avl_list_head) = head->next;
 
-  if (CkpvAccess(avl_list_head) == NULL) {
+  if (PE_VALUE(avl_list_head) == NULL) {
     tw_error(TW_LOC, "avl_list_head is invalid!");
   }
 
@@ -318,6 +316,6 @@ void avl_free(AvlTree t)
   (t)->next = NULL;
   (t)->key = NULL;
   (t)->height = 0;
-  (t)->next = CkpvAccess(avl_list_head);
-  CkpvAccess(avl_list_head) = t;
+  (t)->next = PE_VALUE(avl_list_head);
+  PE_VALUE(avl_list_head) = t;
 }

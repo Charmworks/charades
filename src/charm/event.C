@@ -16,7 +16,6 @@ void tw_error(const char* file, int line, const char* fmt, ...);
 #endif
 
 std::stack<Event *> eventBuffers[128];
-CkpvDeclare(tw_out*, output);
 
 tw_event * allocateEvent(int needMsg = 1) {
   Event * e = eventBuffers[CkMyPe()].top();
@@ -39,9 +38,9 @@ tw_event * allocateEvent(int needMsg = 1) {
 
 inline tw_out* allocate_output_buffer() {
   tw_out* free_buf = NULL;
-  if(CkpvAccess(output)) {
-    free_buf = CkpvAccess(output);
-    CkpvAccess(output) = free_buf->next;
+  if(PE_VALUE(output)) {
+    free_buf = PE_VALUE(output);
+    PE_VALUE(output) = free_buf->next;
   }
   return free_buf;
 }
@@ -61,8 +60,8 @@ static inline void freeEvent(tw_event * e) {
 }
 
 inline void free_output_buffer(tw_out *buffer) {
-  buffer->next = CkpvAccess(output);
-  CkpvAccess(output) = buffer;
+  buffer->next = PE_VALUE(output);
+  PE_VALUE(output) = buffer;
 }
 
 static inline void tw_free_output_messages(tw_event *e, int print_message)

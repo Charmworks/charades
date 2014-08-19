@@ -4,6 +4,9 @@
 #include "globals.h"
 #include "ross_util.h"
 
+// Included for calloc
+#include <stdlib.h>
+
 #ifndef NO_GLOBALS
 size_t g_tw_rng_max;
 tw_seed* g_tw_rng_seed;
