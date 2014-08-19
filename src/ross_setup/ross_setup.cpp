@@ -65,7 +65,7 @@ void tw_event_setup() {
 }
 
 void tw_init(int* argc, char*** argv) {
-  charm_init();
+  charm_init(*argc, *argv);
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
   /** Add all of the command line options before parsing them **/

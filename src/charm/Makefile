@@ -1,21 +1,22 @@
 include ../config.mk
 
-all: pe.o lp.o
+all: $(BUILD_DIR)/pe.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o
 
 ci_files: ross.ci pe.ci lp.ci event.ci
 	$(CHARMC) ross.ci pe.ci lp.ci event.ci
+	touch ci_files
 
-ross.o: ci_files ross.h ross.C
+$(BUILD_DIR)/ross.o: ci_files ross.h ross.C
 	$(CHARMC) $(OPTS) -c ross.C -o $@
 
-pe.o: ci_files pe.h pe.C
+$(BUILD_DIR)/pe.o: ci_files pe.h pe.C
 	$(CHARMC) $(OPTS) -c pe.C -o $@
 
-lp.o: ci_files lp.h lp.C
+$(BUILD_DIR)/lp.o: ci_files lp.h lp.C
 	$(CHARMC) $(OPTS) -c lp.C -o $@
 
-event.o: ci_files event.h event.C
+$(BUILD_DIR)/event.o: ci_files event.h event.C
 	$(CHARMC) $(OPTS) -c event.C -o $@
 
 clean:
-	rm -rf *.o *.decl.h *.def.h
+	rm -rf *.decl.h *.def.h ci_files

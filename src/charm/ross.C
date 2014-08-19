@@ -1,16 +1,18 @@
 #include "ross.h"
 #include "pe.h"
 
+#include "mpi-interoperate.h"
+
 extern CProxy_PE pes;
 
 // Function that starts the charm library and results in the creation of the
 // PE group chares.
-void charm_init() {
+void charm_init(int argc, char** argv) {
 /*TODO: change Charm interface */
 #if CMK_CONVERSE_MPI
-  CharmLibInit(MPI_COMM_WORLD, *argc, *argv);
+  CharmLibInit(MPI_COMM_WORLD, argc, argv);
 #else
-  CharmLibInit(0, *argc, *argv);
+  CharmLibInit(0, argc, argv);
 #endif
 }
 

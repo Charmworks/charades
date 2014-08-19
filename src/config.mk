@@ -10,6 +10,8 @@ OPTS+=-DNO_GLOBALS
 # forward decls and can just include the appropriate module.
 #OPTS+=-DNO_FORWARD_DECLS
 
+BUILD_DIR=~/ross/src/build
+
 MODULES=charm collections ross_setup ross_opts ross_util ross_rand ross_event
 
 # Add each module to the include path, as well as the top level directory.

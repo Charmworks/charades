@@ -1,4 +1,5 @@
 #include "typedefs.h"
+#include "ross_event.h"
 
 /* Copied and modified from http://pine.cs.yale.edu/pinewiki/C/AvlTree google cache */
 

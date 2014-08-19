@@ -3,7 +3,7 @@
 
 void create_lps();
 void init_lps();
-void charm_init();
+void charm_init(int argc, char** argv);
 void charm_run();
 
 #endif
