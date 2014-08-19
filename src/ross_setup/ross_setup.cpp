@@ -24,9 +24,9 @@ FILE* g_tw_csv;
 
 #ifndef NO_FORWARD_DECLS
 const tw_optdef* tw_net_init(int* argc, char*** argv);
-const tw_optdef* tw_gvt_setup();
+//const tw_optdef* tw_gvt_setup();
 // TODO: We may not use any clock stuff
-const tw_optdef* tw_clock_setup();
+//const tw_optdef* tw_clock_setup();
 
 int tw_ismaster();
 void create_lps();
@@ -72,9 +72,9 @@ void tw_init(int* argc, char*** argv) {
   tw_opt_add(tw_net_init(argc, argv));
   tw_opt_add(kernel_options);
   // TODO (nikhil): Implement tw_gvt_setup()
-  tw_opt_add(tw_gvt_setup());
+  //tw_opt_add(tw_gvt_setup());
   // TODO We may not use any clock stuff
-  tw_opt_add(tw_clock_setup());
+  //tw_opt_add(tw_clock_setup());
 
   // Print out command line, version, and time.
   if (tw_ismaster()) {
@@ -135,3 +135,5 @@ void tw_run() {
   init_lps();
   charm_run();
 }
+
+void tw_end() {}

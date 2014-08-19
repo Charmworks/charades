@@ -2,7 +2,7 @@
 #define TYPEDEFS_H_
 
 // Included for size_t and int32_t respectively
-#include <cstddef>
+#include <stdlib.h>
 #include <stdint.h>
 
 // TODO: Make this a more complete listing of types?
@@ -22,12 +22,14 @@ enum tw_synch_e {
 
 // Types used in the Charm++ backend of the framework
 typedef double Time;
+
 class LPStruct;
 class LPType;
 class LP;
 class Event;
 class ProcessedQueue;
 class PendingQueue;
+
 
 typedef unsigned long long EventID;
 //typedef enum tw_event_owner tw_event_owner;
@@ -52,7 +54,7 @@ typedef LP tw_pe;
 typedef void (*init_f) (LPStruct*);
 typedef void (*event_f) (LPStruct*, Event*);
 typedef void (*revent_f) (LPStruct*, Event*);
-typedef void (*finalize_f) (LPStruct*);
+typedef void (*final_f) (LPStruct*);
 
 // This map takes an LP chare index, and a local lpid and returns a global id.
 typedef unsigned (*init_map_f) (unsigned, tw_lpid);

@@ -4,7 +4,7 @@
 tw_peid
 phold_map(tw_lpid gid)
 {
-	return (tw_peid) gid / g_tw_nlp;
+	return (tw_peid) gid / PE_VALUE(g_tw_nlp);
 }
 
 void
@@ -18,7 +18,7 @@ phold_init(phold_state * s, tw_lp * lp)
 	      {
 		tw_event_send(
 			      tw_event_new(lp->gid,
-					   tw_rand_exponential(lp->rng, mean) + lookahead + (tw_stime)(lp->gid % (unsigned int)g_tw_ts_end),
+					   tw_rand_exponential(lp->rng, mean) + lookahead + (tw_stime)(lp->gid % (unsigned int)PE_VALUE(g_tw_ts_end)),
 					   lp));
 	      }
 	  }
@@ -53,7 +53,7 @@ phold_event_handler(phold_state * s, tw_bf * bf, phold_message * m, tw_lp * lp)
 		dest = lp->gid;
 	}
 
-	if(dest < 0 || dest >= (g_tw_nlp * tw_nnodes()))
+	if(dest < 0 || dest >= (PE_VALUE(g_tw_nlp) * tw_nnodes()))
 		tw_error(TW_LOC, "bad dest");
 
 	tw_event_send(tw_event_new(dest, tw_rand_exponential(lp->rng, mean) + lookahead, lp));
@@ -79,7 +79,7 @@ tw_lptype       mylps[] = {
 	 (event_f) phold_event_handler,
 	 (revent_f) phold_event_handler_rc,
 	 (final_f) phold_finish,
-	 (map_f) phold_map,
+	 (chare_map_f) phold_map,
 	sizeof(phold_state)},
 	{0},
 };
@@ -105,7 +105,7 @@ main(int argc, char **argv, char **env)
 	int		 i;
 
         // get rid of error if compiled w/ MEMORY queues
-        g_tw_memory_nqueues=1;
+        //PE_VALUE(g_tw_memory_nqueues)=1;
 	// set a min lookahead of 1.0
 	lookahead = 1.0;
 	tw_opt_add(app_opt);
@@ -117,19 +117,19 @@ main(int argc, char **argv, char **env)
 	//reset mean based on lookahead
         mean = mean - lookahead;
 
-        g_tw_memory_nqueues = 16; // give at least 16 memory queue event
+        //PE_VALUE(g_tw_memory_nqueues) = 16; // give at least 16 memory queue event
 
 	offset_lpid = g_tw_mynode * nlp_per_pe;
 	ttl_lps = tw_nnodes() * g_tw_npe * nlp_per_pe;
-	g_tw_events_per_pe = (mult * nlp_per_pe * g_phold_start_events) +
-				optimistic_memory;
+	//PE_VALUE(g_tw_events_per_pe) = (mult * nlp_per_pe * g_phold_start_events) +
+	//			optimistic_memory;
 	//g_tw_rng_default = TW_FALSE;
-	g_tw_lookahead = lookahead;
+	PE_VALUE(g_tw_lookahead) = lookahead;
 
 	tw_define_lps(nlp_per_pe, sizeof(phold_message), 0);
 
-	for(i = 0; i < g_tw_nlp; i++)
-		tw_lp_settype(i, &mylps[0]);
+	//for(i = 0; i < PE_VALUE(g_tw_nlp); i++)
+	//	tw_lp_settype(i, &mylps[0]);
 
         if( g_tw_mynode == 0 )
 	  {

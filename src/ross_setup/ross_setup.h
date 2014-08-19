@@ -14,5 +14,6 @@
 void tw_init(int* argc, char*** argv);
 void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed);
 void tw_run();
+void tw_end();
 
 #endif

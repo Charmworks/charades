@@ -9,13 +9,14 @@ struct LPType {
   init_f init;
   event_f execute;
   revent_f reverse;
-  finalize_f finalize;
+  final_f finalize;
   // TODO: Why is the map stored here?
   chare_map_f chare_map;
+  size_t state_size;
 };
 
 class LP;
-struct tw_rng;
+struct tw_rng_stream;
 // TODO: Need to flesh this out more
 // Right now, an LPStruct is an LPType, as well as its state.
 struct LPStruct {
@@ -23,6 +24,6 @@ struct LPStruct {
   unsigned gid;
   void* state;
   LPType* type;
-  tw_rng* rng;
+  tw_rng_stream* rng;
 };
 #endif
