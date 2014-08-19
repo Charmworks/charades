@@ -1,8 +1,9 @@
-CFLAGS  := -g -Wall
-LIBDIR  := ../../ross/
-CC	:= $(shell $(LIBDIR)/ross-config --cc)
-OPTIONS := $(shell $(LIBDIR)/ross-config --cflags)
-LDFLAGS := $(shell $(LIBDIR)/ross-config --ldflags)
+include ../../src/config.mk
+
+#CFLAGS  := -g -Wall
+CHARMC = ~/charm/bin/charmc
+LIBDIR  := ../../src/build/
+#ROSS=-I/dcsdata/home/mikida2/ross/src/
 
 all: phold
 clean:
@@ -10,5 +11,5 @@ clean:
 	rm -f *.o *~ core*
 
 
-phold: phold.c $(LIBDIR)/libROSS.a $(LIBDIR)/ross-config
-	$(CC) $(CFLAGS) $(OPTIONS) phold.c -o phold $(LDFLAGS)
+phold: phold.C $(LIBDIR)/libross.a
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) phold.C -o phold $(LDFLAGS) -L$(ROSS_SRC)/build -lross
