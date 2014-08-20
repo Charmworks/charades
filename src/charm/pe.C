@@ -1,5 +1,7 @@
 #include "pe.h"
 #include "ross_util.h"
+#include "ross_api.h"
+#include "mpi-interoperate.h"
 
 CProxy_PE pes;
 
