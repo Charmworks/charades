@@ -221,3 +221,5 @@ void tw_event_rollback(tw_event * event) {
 
   event->caused_by_me = NULL;
 }
+
+#include "event.def.h"

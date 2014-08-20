@@ -1,6 +1,6 @@
 #include "pe.h"
 
-extern CProxy_PE pes;
+CProxy_PE pes;
 
 // This is the API which allows the ROSS code to initialize and access the
 // Charm++ backend.

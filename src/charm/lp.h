@@ -24,6 +24,7 @@ struct LPToken {
 
   public:
     LPToken(LP* lp) : lp(lp) {}
+    LPToken() { }
     friend class PEQueue;
     friend class PE;
 };
@@ -55,6 +56,7 @@ class LP : public CBase_LP {
     Event *currEvent;
 
     LP(); /**< constructor */
+    LP(CkMigrateMessage*) { }
 
     void init();
     void stopScheduler(); /**< Stops the scheduler after LPs have been created */

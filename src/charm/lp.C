@@ -13,7 +13,7 @@
 
 // Readonly variables for the global proxies.
 extern CProxy_PE pes;
-extern CProxy_LP lps;
+CProxy_LP lps;
 
 // This is the API which allows the ROSS code to initialize the Charm backend.
 void create_lps() {
@@ -219,3 +219,4 @@ void LP::process_cancel_q() {
     }
   }
 }
+#include "lp.def.h"
