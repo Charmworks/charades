@@ -39,15 +39,14 @@ static unsigned int opt_index = 0;
 // Forward declarations for functions not part of the public API
 static int is_empty(const tw_optdef *def);
 
-  void tw_opt_add(const tw_optdef* options) {
-    if (!options || !options->type || is_empty(options))
-      return;
-    opt_groups[opt_index++] = options;
-    opt_groups[opt_index] = NULL;
-  }
+void tw_opt_add(const tw_optdef* options) {
+  if (!options || !options->type || is_empty(options))
+    return;
+  opt_groups[opt_index++] = options;
+  opt_groups[opt_index] = NULL;
+}
 
-static void
-show_options(void)
+static void show_options(void)
 {
   const char *s = ross_options;
   int first = 1;
@@ -80,8 +79,7 @@ show_options(void)
   }
 }
 
-static void
-show_help(void)
+static void show_help(void)
 {
   const tw_optdef **group = all_groups;
   unsigned cnt = 0;
@@ -172,8 +170,7 @@ show_help(void)
   show_options();
 }
 
-  void
-tw_opt_print(void)
+void tw_opt_print(void)
 {
   FILE *f = PE_VALUE(g_tw_csv);
   const tw_optdef **group = all_groups;
@@ -347,7 +344,7 @@ static int is_empty(const tw_optdef *def)
   return 1;
 }
 
-  void
+void
 tw_opt_parse(int *argc_p, char ***argv_p)
 {
   int argc = *argc_p;

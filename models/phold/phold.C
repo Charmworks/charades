@@ -97,8 +97,7 @@ const tw_optdef app_opt[] =
   TWOPT_END()
 };
 
-  int
-main(int argc, char **argv, char **env)
+int main(int argc, char **argv, char **env)
 {
   int		 i;
 

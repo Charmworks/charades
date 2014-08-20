@@ -16,6 +16,9 @@ void charm_run() {
 }
 
 PE::PE(CProxy_Initialize srcProxy) : batchSize(20), gvt_cnt(0), gvt_freq(10) {
+  globals = new Globals;
+  globals->abort_event = allocateEvent(0);
+  globals->abort_event->state.owner = TW_event_inf;
   contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }
 

@@ -36,6 +36,10 @@ class PE: public CBase_PE {
     //PE(int bs, int gf) : batchSize(bs), gvt_freq(gf), gvt_cnt(0) {}
     PE(CProxy_Initialize);
 
+    ~PE() {
+      delete globals;
+    }
+
     /** \brief Various schedulers
         sequential (no communication, run to end)
         conservative (find the next epoch, assume a lookahead, run to end of epoch
