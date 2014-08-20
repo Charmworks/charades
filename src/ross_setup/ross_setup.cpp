@@ -23,7 +23,7 @@ FILE* g_tw_csv;
 #endif
 
 #ifndef NO_FORWARD_DECLS
-const tw_optdef* tw_net_init(int* argc, char*** argv);
+//const tw_optdef* tw_net_init(int* argc, char*** argv);
 //const tw_optdef* tw_gvt_setup();
 // TODO: We may not use any clock stuff
 //const tw_optdef* tw_clock_setup();
@@ -69,7 +69,7 @@ void tw_init(int* argc, char*** argv) {
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
   /** Add all of the command line options before parsing them **/
-  tw_opt_add(tw_net_init(argc, argv));
+  //tw_opt_add(tw_net_init(argc, argv));
   tw_opt_add(kernel_options);
   // TODO (nikhil): Implement tw_gvt_setup()
   //tw_opt_add(tw_gvt_setup());

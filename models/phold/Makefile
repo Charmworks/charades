@@ -12,4 +12,4 @@ clean:
 
 
 phold: phold.C $(LIBDIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) phold.C -o phold $(LDFLAGS) -L$(ROSS_SRC)/build -lross
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) phold.C -o phold $(LDFLAGS) -L$(LIBDIR) -lross

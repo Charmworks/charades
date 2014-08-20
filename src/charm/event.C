@@ -36,7 +36,7 @@ tw_event * allocateEvent(int needMsg = 1) {
   return e;
 }
 
-inline tw_out* allocate_output_buffer() {
+tw_out* allocate_output_buffer() {
   tw_out* free_buf = NULL;
   if(PE_VALUE(output)) {
     free_buf = PE_VALUE(output);
