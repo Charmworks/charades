@@ -11,8 +11,7 @@
 /* implementation of an AVL tree with explicit heights */
 
 /* free a tree */
-void
-avlDestroy(AvlTree t)
+void avlDestroy(AvlTree t)
 {
   if (t != AVL_EMPTY) {
     avlDestroy(t->child[0]);
@@ -24,20 +23,17 @@ avlDestroy(AvlTree t)
 }
 
 /* return height of an AVL tree */
-int
-avlGetHeight(AvlTree t)
+int avlGetHeight(AvlTree t)
 {
   if (t != AVL_EMPTY) {
     return t->height;
-  }
-  else {
+  } else {
     return 0;
   }
 }
 
 /* return nonzero if key is present in tree */
-int
-avlSearch(AvlTree t, Event *key)
+int avlSearch(AvlTree t, Event *key)
 {
   if (t == AVL_EMPTY) {
     return 0;
@@ -50,18 +46,15 @@ avlSearch(AvlTree t, Event *key)
       if (key->send_pe == t->key->send_pe) {
         // send_pe is the same
         return 1;
-      }
-      else {
+      } else {
         // send_pe is different
         return avlSearch(t->child[key->send_pe > t->key->send_pe], key);
       }
-    }
-    else {
+    } else {
       // Event ID is different
       return avlSearch(t->child[key->event_id > t->key->event_id], key);
     }
-  }
-  else {
+  } else {
     // Timestamp is different
     return avlSearch(t->child[key->ts > t->key->ts], key);
   }
@@ -70,8 +63,7 @@ avlSearch(AvlTree t, Event *key)
 #define Max(x,y) ((x)>(y) ? (x) : (y))
 
 /* assert height fields are correct throughout tree */
-void
-avlSanityCheck(AvlTree root)
+void avlSanityCheck(AvlTree root)
 {
   int i;
 
@@ -85,8 +77,7 @@ avlSanityCheck(AvlTree root)
 }
 
 /* recompute height of a node */
-static void
-avlFixHeight(AvlTree t)
+static void avlFixHeight(AvlTree t)
 {
   assert(t != AVL_EMPTY);
 
@@ -104,8 +95,7 @@ avlFixHeight(AvlTree t)
  * A   B            B   C
  *
  */
-static void
-avlRotate(AvlTree *root, int d)
+static void avlRotate(AvlTree *root, int d)
 {
   AvlTree oldRoot;
   AvlTree newRoot;
@@ -127,8 +117,7 @@ avlRotate(AvlTree *root, int d)
 
 /* rebalance at node if necessary */
 /* also fixes height */
-static void
-avlRebalance(AvlTree *t)
+static void avlRebalance(AvlTree *t)
 {
   int d;
 
@@ -142,8 +131,7 @@ avlRebalance(AvlTree *t)
         if (avlGetHeight((*t)->child[d]->child[d]) > avlGetHeight((*t)->child[d]->child[!d])) {
           /* same direction grandchild wins, do single rotation */
           avlRotate(t, d);
-        }
-        else {
+        } else {
           /* opposite direction grandchild moves up, do double rotation */
           avlRotate(&(*t)->child[d], !d);
           avlRotate(t, d);
@@ -161,8 +149,7 @@ avlRebalance(AvlTree *t)
 /* insert into tree */
 /* this may replace root, which is why we pass
  * in a AvlTree * */
-void
-avlInsert(AvlTree *t, Event *key)
+void avlInsert(AvlTree *t, Event *key)
 {
   /* insertion procedure */
   if (*t == AVL_EMPTY) {
@@ -193,15 +180,13 @@ avlInsert(AvlTree *t, Event *key)
       }
       avlInsert(&(*t)->child[key->send_pe > (*t)->key->send_pe], key);
       avlRebalance(t);
-    }
-    else {
+    } else {
       // Event IDs are different
       avlInsert(&(*t)->child[key->event_id > (*t)->key->event_id], key);
       avlRebalance(t);
     }
     return;
-  }
-  else {
+  } else {
     // Timestamps are different
     avlInsert(&(*t)->child[key->ts > (*t)->key->ts], key);
     avlRebalance(t);
@@ -210,8 +195,7 @@ avlInsert(AvlTree *t, Event *key)
 
 
 /* print all elements of the tree in order */
-void
-avlPrintKeys(AvlTree t)
+void avlPrintKeys(AvlTree t)
 {
   if (t != AVL_EMPTY) {
     avlPrintKeys(t->child[0]);
@@ -222,8 +206,7 @@ avlPrintKeys(AvlTree t)
 
 
 /* delete and return minimum value in a tree */
-Event *
-avlDeleteMin(AvlTree *t)
+Event * avlDeleteMin(AvlTree *t)
 {
   AvlTree oldroot;
   Event *event_with_lowest_ts = NULL;
@@ -236,8 +219,7 @@ avlDeleteMin(AvlTree *t)
     event_with_lowest_ts = oldroot->key;
     *t = oldroot->child[1];
     avl_free(oldroot);
-  }
-  else {
+  } else {
     /* min value is in left subtree */
     event_with_lowest_ts = avlDeleteMin(&(*t)->child[0]);
   }
@@ -247,8 +229,7 @@ avlDeleteMin(AvlTree *t)
 }
 
 /* delete the given value */
-Event *
-avlDelete(AvlTree *t, Event *key)
+Event * avlDelete(AvlTree *t, Event *key)
 {
   Event *target = NULL;
   AvlTree oldroot;
@@ -269,25 +250,21 @@ avlDelete(AvlTree *t, Event *key)
         if ((*t)->child[1] != AVL_EMPTY) {
           /* give root min value in right subtree */
           (*t)->key = avlDeleteMin(&(*t)->child[1]);
-        }
-        else {
+        } else {
           /* splice out root */
           oldroot = (*t);
           *t = (*t)->child[0];
           avl_free(oldroot);
         }
-      }
-      else {
+      } else {
         // Timestamp and event IDs are the same, but different send_pe
         target = avlDelete(&(*t)->child[key->send_pe > (*t)->key->send_pe], key);
       }
-    }
-    else {
+    } else {
       // Timestamps are the same but event IDs differ
       target = avlDelete(&(*t)->child[key->event_id > (*t)->key->event_id], key);
     }
-  }
-  else {
+  } else {
     // Timestamps are different
     target = avlDelete(&(*t)->child[key->ts > (*t)->key->ts], key);
   }
@@ -315,7 +292,6 @@ void avl_free(AvlTree t)
 {
   (t)->child[0] = AVL_EMPTY;
   (t)->child[1] = AVL_EMPTY;
-  (t)->next = NULL;
   (t)->key = NULL;
   (t)->height = 0;
   (t)->next = PE_VALUE(avl_list_head);
