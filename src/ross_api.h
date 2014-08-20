@@ -12,3 +12,5 @@
 #define tw_nnodes CkNumPes
 #define g_tw_mynode CkMyPe()
 #define g_tw_npe 1
+
+int tw_ismaster();

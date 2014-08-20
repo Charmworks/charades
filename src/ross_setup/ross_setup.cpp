@@ -24,18 +24,6 @@ tw_seed* g_tw_rng_seed;
 FILE* g_tw_csv;
 #endif
 
-#ifndef NO_FORWARD_DECLS
-//const tw_optdef* tw_net_init(int* argc, char*** argv);
-//const tw_optdef* tw_gvt_setup();
-// TODO: We may not use any clock stuff
-//const tw_optdef* tw_clock_setup();
-
-int tw_ismaster();
-void create_lps();
-void create_pes();
-void tw_error(const char* file, int line, const char* fmt, ...);
-#endif
-
 // This can probably stay as a static global since it is only used at init for
 // options. This is probably true of most options globals.
 static const tw_optdef kernel_options[] = {

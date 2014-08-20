@@ -3,6 +3,7 @@
 #include "event.h"
 
 #include "globals.h"
+#include "ross_api.h"
 
 #include "ross_util.h"
 #include "ross_random.h"
