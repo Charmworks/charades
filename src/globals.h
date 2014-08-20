@@ -18,6 +18,7 @@ struct Globals {
   unsigned g_tw_synchronization_protocol;
   tw_stime g_tw_ts_end; //end time of simulation
   unsigned g_tw_mblock; //batchSize
+  unsigned g_tw_gvt_interval; //frequency of gvt
   unsigned g_tw_events_per_pe_extra;
 
   unsigned g_tw_nlp; //number of LP per PE

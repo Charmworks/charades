@@ -29,12 +29,13 @@ void charm_run() {
   StartCharmScheduler();
 }
 
-PE::PE(CProxy_Initialize srcProxy) : batchSize(16), gvt_cnt(0), gvt_freq(10) {
+PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals = new Globals;
   globals->g_lps_per_chare = 4;
   globals->g_tw_synchronization_protocol = CONSERVATIVE;
   globals->g_tw_ts_end = 100000;
-  globals->g_tw_mblock = batchSize;
+  globals->g_tw_mblock = 16;
+  globals->g_tw_gvt_interval = 16;
   globals->g_tw_nlp = globals->g_lps_per_chare;
   globals->g_tw_rng_seed = NULL;
   globals->g_tw_rng_max = 1;
@@ -66,14 +67,14 @@ void PE::execute_cons() {
 }
 
 void PE::execute_opt() {
-  if(++gvt_cnt > gvt_freq) {
+  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
     GVT_begin();
     gvt_cnt = 0;
     return;
   }
   process_cancel_q();
 
-  for(int events = 0; events < batchSize; events++) {
+  for(int events = 0; events < PE_VALUE(g_tw_mblock); events++) {
     if(!schedule_nextLP())  break;
   }
   thisProxy[CkMyPe()].execute_opt();

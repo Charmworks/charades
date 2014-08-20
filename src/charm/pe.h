@@ -23,17 +23,13 @@ class PE: public CBase_PE {
     PEQueue oldestEvents; /**< queue to store the time stamp for the earliest event that an LP has execute beyond the last computed GVT*/
     Time gvt, currTime, endTime; /**< current time on this PE */
     Time lookahead; /**< look ahead of conservative simulation */
-    int batchSize; /**< number of events executed before network polling */
     int gvt_cnt; /**< count since last gvt */
-    int gvt_freq; /**< frequency of GVT computation */
   public:
     // A struct of global variables stored on each PE.
     Globals* globals;
     // TODO: Do we need another queue for this?
     std::vector<LP*> cancel_q;
 
-    //PE() : batchSize(default_batch_size), gvt_freq(default_gvt_freq), gvt_cnt(0) {}
-    //PE(int bs, int gf) : batchSize(bs), gvt_freq(gf), gvt_cnt(0) {}
     PE(CProxy_Initialize);
 
     ~PE() {

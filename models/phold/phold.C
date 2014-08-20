@@ -1,14 +1,11 @@
 #include "phold.h"
 
-
-tw_peid
-phold_map(tw_lpid gid)
+tw_peid phold_map(tw_lpid gid)
 {
   return (tw_peid) gid / PE_VALUE(g_tw_nlp);
 }
 
-void
-phold_init(phold_state * s, tw_lp * lp)
+void phold_init(phold_state * s, tw_lp * lp)
 {
   int              i;
 
