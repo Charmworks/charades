@@ -1,4 +1,5 @@
 #include "pe.h"
+#include "ross_util.h"
 
 CProxy_PE pes;
 
@@ -11,8 +12,18 @@ Globals* get_globals() {
 
 // Starts the simulation by calling the scheduler on all pes
 void charm_run() {
-  // TODO (eric): Check what scheduler to run, do any other necessary init
-  pes.execute_opt();
+  if (tw_ismaster()) {
+    if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
+      pes.execute_seq();
+    } if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+      pes.execute_cons();
+    } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+      pes.execute_opt();
+    } else {
+      tw_error(TW_LOC, "Incorrect scheduler values, Aborting\n");
+    }
+  }
+  StartCharmScheduler();
 }
 
 PE::PE(CProxy_Initialize srcProxy) : batchSize(20), gvt_cnt(0), gvt_freq(10) {

@@ -22,7 +22,9 @@ void create_lps() {
 }
 
 void init_lps() {
-  lps.init();
+  if (tw_ismaster()) {
+    lps.init();
+  }
   StartCharmScheduler();
 }
 
