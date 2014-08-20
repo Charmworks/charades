@@ -45,6 +45,7 @@ class ProcessedQueue {
   }
 
   void push_back(Event *e) {
+    e->prev = tail;
     if(tail != NULL) {
       tail->next = e;
     }
