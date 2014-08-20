@@ -9,21 +9,6 @@
 #include <stdio.h>
 #include "mpi-interoperate.h"
 
-#ifndef NO_GLOBALS
-unsigned g_lps_per_chare = 16;
-unsigned g_tw_synchronization_protocol;
-tw_stime g_tw_ts_end;
-unsigned g_tw_mblock;
-unsigned g_tw_events_per_pe_extra;
-
-unsigned g_tw_nlp;
-size_t g_tw_memory_sz;
-size_t g_tw_msg_sz;
-tw_seed* g_tw_rng_seed;
-
-FILE* g_tw_csv;
-#endif
-
 // This can probably stay as a static global since it is only used at init for
 // options. This is probably true of most options globals.
 static const tw_optdef kernel_options[] = {
@@ -59,12 +44,7 @@ void tw_init(int* argc, char*** argv) {
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
   /** Add all of the command line options before parsing them **/
-  //tw_opt_add(tw_net_init(argc, argv));
   tw_opt_add(kernel_options);
-  // TODO (nikhil): Implement tw_gvt_setup()
-  //tw_opt_add(tw_gvt_setup());
-  // TODO We may not use any clock stuff
-  //tw_opt_add(tw_clock_setup());
 
   // Print out command line, version, and time.
   if (tw_ismaster()) {
@@ -119,6 +99,7 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
     // The constructor also initializes the rng for each lp.
     create_lps();
   } else {
+    /* but everyone should start their scheduler */
     StartCharmScheduler();
   }
 }
@@ -128,4 +109,5 @@ void tw_run() {
   charm_run();
 }
 
+/* TODO: Check what this is meant to do and implement */
 void tw_end() {}
