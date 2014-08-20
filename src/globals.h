@@ -14,14 +14,14 @@
 // TODO (eric): Initialization of defaultst 
 // TODO (eric): Make sure these have the right types
 struct Globals {
-  unsigned g_lps_per_chare;
+  unsigned g_lps_per_chare; //number of LPs per chare
   unsigned g_tw_synchronization_protocol;
-  tw_stime g_tw_ts_end;
-  unsigned g_tw_mblock;
+  tw_stime g_tw_ts_end; //end time of simulation
+  unsigned g_tw_mblock; //batchSize
   unsigned g_tw_events_per_pe_extra;
 
-  unsigned g_tw_nlp;
-  size_t g_tw_memory_sz;
+  unsigned g_tw_nlp; //number of LP per PE
+  size_t g_tw_memory_sz; //TBD
   size_t g_tw_msg_sz;
 
   // RNG Globals
@@ -32,12 +32,12 @@ struct Globals {
 
   FILE* g_tw_csv;
 
-  unsigned g_num_lp_chares;
+  unsigned g_num_lp_chares; //number of LP chares
 
   // Globals used in events
   size_t g_tw_user_data_size;
   unsigned g_tw_max_events_buffered;
-  unsigned g_tw_min_detected_offset;
+  tw_stime g_tw_min_detected_offset;
   tw_event* abort_event;
   tw_stime g_tw_lookahead;
 

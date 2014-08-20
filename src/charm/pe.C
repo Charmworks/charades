@@ -2,6 +2,7 @@
 #include "ross_util.h"
 #include "ross_api.h"
 #include "mpi-interoperate.h"
+#include "float.h"
 
 CProxy_PE pes;
 
@@ -28,12 +29,25 @@ void charm_run() {
   StartCharmScheduler();
 }
 
-PE::PE(CProxy_Initialize srcProxy) : batchSize(20), gvt_cnt(0), gvt_freq(10) {
+PE::PE(CProxy_Initialize srcProxy) : batchSize(16), gvt_cnt(0), gvt_freq(10) {
   globals = new Globals;
+  globals->g_lps_per_chare = 4;
+  globals->g_tw_synchronization_protocol = CONSERVATIVE;
+  globals->g_tw_ts_end = 100000;
+  globals->g_tw_mblock = batchSize;
+  globals->g_tw_nlp = globals->g_lps_per_chare;
+  globals->g_tw_rng_seed = NULL;
+  globals->g_tw_rng_max = 1;
+  globals->g_tw_nRNG_per_lp = 1;
+  globals->g_tw_rng_default = 1;
+  globals->g_tw_csv = NULL;
+  globals->g_num_lp_chares = CkNumPes();
+  globals->g_tw_min_detected_offset = DBL_MAX;
   globals->abort_event = allocateEvent(0);
   globals->abort_event->state.owner = TW_event_inf;
-  globals->g_tw_synchronization_protocol = CONSERVATIVE;
-  globals->g_lps_per_chare = 4;
+  globals->g_tw_lookahead = .005;
+  globals->g_init_map = init_block_map;
+  globals->g_local_map = local_block_map;
   contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }
 
