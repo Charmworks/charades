@@ -33,6 +33,7 @@ PE::PE(CProxy_Initialize srcProxy) : batchSize(20), gvt_cnt(0), gvt_freq(10) {
   globals->abort_event = allocateEvent(0);
   globals->abort_event->state.owner = TW_event_inf;
   globals->g_tw_synchronization_protocol = CONSERVATIVE;
+  globals->g_lps_per_chare = 4;
   contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }
 
