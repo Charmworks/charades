@@ -4,8 +4,10 @@
 #include "ross_opts.h"
 #include "globals.h"
 #include "avl_tree.h"
+#include "ross_api.h"
 
 #include <stdio.h>
+#include "mpi-interoperate.h"
 
 #ifndef NO_GLOBALS
 unsigned g_lps_per_chare = 16;
@@ -121,7 +123,7 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // Only one processor should create the chare array
   if (tw_ismaster()) {
     // First we need to figure out the number of KPs (LP Chares)
-    PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes) / PE_VALUE(g_lps_per_chare);
+    PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes()) / PE_VALUE(g_lps_per_chare);
 
     // Create the lp chare array and store it in the readonly
     // TODO: We will eventually pass in a mapping function to the chare array
