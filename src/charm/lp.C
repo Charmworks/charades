@@ -50,7 +50,7 @@ LP::LP() : next_token(this), oldest_token(this),
 }
 
 void LP::stopScheduler() {
-  // TODO (eric): Figure out how to return control to ROSS
+  CkExit();
 }
 
 void LP::init() {

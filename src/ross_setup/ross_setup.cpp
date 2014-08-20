@@ -121,13 +121,15 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // Only one processor should create the chare array
   if (tw_ismaster()) {
     // First we need to figure out the number of KPs (LP Chares)
-    unsigned num_chares = nlp / PE_VALUE(g_lps_per_chare);
+    PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes) / PE_VALUE(g_lps_per_chare);
 
     // Create the lp chare array and store it in the readonly
     // TODO: We will eventually pass in a mapping function to the chare array
     // so it can properly determine which global ids it has.
     // The constructor also initializes the rng for each lp.
     create_lps();
+  } else {
+    StartCharmScheduler();
   }
 }
 
