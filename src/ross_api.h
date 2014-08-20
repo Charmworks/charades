@@ -1,3 +1,6 @@
+#ifndef _ROSS_API_H
+#define _ROSS_API_H
+
 #include "globals.h"
 
 #include "ross_event/ross_event.h"
@@ -15,3 +18,5 @@
 #define g_tw_npe 1
 
 int tw_ismaster();
+
+#endif
