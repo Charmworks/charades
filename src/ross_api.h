@@ -6,6 +6,7 @@
 #include "ross_opts/ross_opts.h"
 #include "ross_util/ross_util.h"
 #include "ross_setup/ross_setup.h"
+#include "ross_maps/ross_block.h"
 #include "lp_struct.h"
 
 #include <charm++.h>
