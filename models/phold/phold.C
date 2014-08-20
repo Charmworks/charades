@@ -77,14 +77,15 @@ tw_lptype       mylps[] = {
     (event_f) phold_event_handler,
     (revent_f) phold_event_handler_rc,
     (final_f) phold_finish,
-    (chare_map_f) phold_map,
+    (chare_map_f)chare_block_map,
+    //(chare_map_f) phold_map,
     sizeof(phold_state)},
   {0},
 };
 
 // Every LP in the PHOLD model has the same type.
 tw_lptype* phold_type_map(tw_lpid global_id) {
-  return mylps[0];
+  return &mylps[0];
 }
 
 const tw_optdef app_opt[] =
