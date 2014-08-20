@@ -13,7 +13,7 @@ OPTS+=-DNO_GLOBALS
 
 BUILD_DIR=~/ross/src/build
 
-MODULES=charm collections ross_setup ross_opts ross_util ross_rand ross_event
+MODULES=charm collections ross_setup ross_opts ross_util ross_rand ross_event ross_maps
 
 # Add each module to the include path, as well as the top level directory.
 OPTS+=$(addprefix -I$(ROSS_SRC)/, $(MODULES)) -I$(ROSS_SRC)
