@@ -82,6 +82,11 @@ tw_lptype       mylps[] = {
   {0},
 };
 
+// Every LP in the PHOLD model has the same type.
+tw_lptype* phold_type_map(tw_lpid global_id) {
+  return mylps[0];
+}
+
 const tw_optdef app_opt[] =
 {
   TWOPT_GROUP("PHOLD Model"),
