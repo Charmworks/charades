@@ -4,22 +4,17 @@
 #include "lp.h"
 #include "pe.h"
 #include "lp_struct.h"
-#include "collections/avl_tree.h"
+#include "ross_util.h"
+#include "avl_tree.h"
 #include <assert.h>
 #include <stack>
 
 extern CProxy_LP lps;
 extern CProxy_PE pes;
 
-#ifndef NO_FORWARD_DECLS
-void tw_error(const char* file, int line, const char* fmt, ...);
-#endif
-
-std::stack<Event *> eventBuffers[128];
-
 tw_event * allocateEvent(int needMsg = 1) {
-  Event * e = eventBuffers[CkMyPe()].top();
-  eventBuffers[CkMyPe()].pop();
+  Event * e = PE_VALUE(eventBuffer).top();
+  PE_VALUE(eventBuffer).pop();
   if(e == NULL) {
     e = new Event;
   }
@@ -50,12 +45,12 @@ static inline void freeEvent(tw_event * e) {
     avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
   }
   e->state.remote = 0;
-  if(eventBuffers[CkMyPe()].size() >= PE_VALUE(g_tw_max_events_buffered)) {
+  if(PE_VALUE(eventBuffer).size() >= PE_VALUE(g_tw_max_events_buffered)) {
     if(e->eventMsg) delete e->eventMsg;
     delete e;
   } else {
     e->state.owner = TW_event_null;
-    eventBuffers[CkMyPe()].push(e);
+    PE_VALUE(eventBuffer).push(e);
   }
 }
 

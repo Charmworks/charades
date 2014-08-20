@@ -3,6 +3,7 @@
 
 #include "typedefs.h"
 #include "ross_event.h"
+#include <stack>
 
 // Included for FILE
 #include <stdio.h>
@@ -48,6 +49,7 @@ struct Globals {
 
   AvlTree avl_list_head;
   tw_out* output;
+  std::stack<Event *> eventBuffer;
 };
 
 // Defined in pe.C
