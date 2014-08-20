@@ -59,6 +59,7 @@ void LP::init() {
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].type->init(&lp_structs[i]);
   }
+  contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
 
 /* Delete an event in our pending queue */

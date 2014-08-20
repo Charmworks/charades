@@ -85,10 +85,12 @@ void PE::GVT_contribute() {
 
 void PE::GVT_end(Time newGVT) {
   gvt = newGVT;
-  collect_fossils();
-  // TODO: Write a generic execute function that knows which scheduler to call
-  // or a similar solution.
-  thisProxy[CkMyPe()].execute_opt();
+  if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+    thisProxy[CkMyPe()].execute_cons();
+  } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    collect_fossils();
+    thisProxy[CkMyPe()].execute_opt();
+  }
 }
 
 /* Go over the oldest events queue and call fossil collection on the LPs with
