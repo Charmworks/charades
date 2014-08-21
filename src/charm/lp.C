@@ -10,6 +10,8 @@
 #include "ross_clcg4.h"
 #include "avl_tree.h"
 
+#include "float.h"
+
 #include "mpi-interoperate.h"
 
 // Readonly variables for the global proxies.
@@ -67,7 +69,11 @@ void LP::init() {
 void LP::delete_pending(Event *e) {
   if(events.top() == e) {
     events.erase(e);
-    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+    if(events.top() != NULL) {
+      pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+    } else {
+      pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
+    }
   } else {
     events.erase(e);
   }
@@ -84,15 +90,14 @@ void LP::recv_event(RemoteEvent* event) {
   e->event_id = event->event_id;
   e->ts = event->ts;
   // TODO (eric): The use of map here could be cleaned up.
-  e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map(event->dest_lp))];
+  e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(event->dest_lp)];
   e->send_pe = event->send_pe;
 
   if(event->isAnti) {
     // Find the corresponding real event in the avl tree, cancel it, and
     // deallocate all involved events.
-    // TODO (nikhil): Why do we use delete rather than event_free?
     Event *real_e = avlDelete(&all_events, e);
-    delete e;
+    tw_event_free(this,e);
     e = real_e;
     event_cancel(e);
     delete event;
@@ -116,12 +121,13 @@ void LP::recv_event(RemoteEvent* event) {
     // Push the event into the queue and set its owner field.
     events.push(e);
     e->state.owner = TW_chare_q;
+    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
   }
 }
 
 void LP::execute_me_no_save(tw_stime ts) {
   // Pop the top event, update current time and event, then execute.
-  while (events.top()->ts <= ts) {
+  while (events.top()->ts <= ts && ts != DBL_MAX) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
@@ -129,7 +135,11 @@ void LP::execute_me_no_save(tw_stime ts) {
     LPStruct* lp = (LPStruct*)e->dest_lp;
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
   }
-  pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+  if(events.top() != NULL) {
+    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+  } else {
+    pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
+  }
 }
 
 // Execute events up to timestamp ts.
@@ -137,19 +147,24 @@ void LP::execute_me_no_save(tw_stime ts) {
 // 2) Execute the popped event on its destination LP.
 // 3) Update the PE with our new earliest timestamp.
 void LP::execute_me(tw_stime ts) {
-  while (events.top()->ts <= ts) {
+  while (events.top()->ts <= ts && ts != DBL_MAX) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
     currEvent = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
+    reset_bitfields(e);
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
 
     // Since we're doing optimistic execution, save the event for later.
     processed_events.push_front(e);
     e->state.owner = TW_rollback_q;
   }
-  pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+  if(events.top() != NULL) {
+    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+  } else {
+    pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
+  }
 }
 
 // Fossil collect all events older than the passed in GVT.
@@ -159,25 +174,32 @@ void LP::fossil_me(tw_stime gvt) {
   while (processed_events.back()->ts <= gvt) {
     Event* e = processed_events.back();
     processed_events.pop_back();
-    // TOOD: Does this need to be event_free instead?
-    delete e;
+    tw_event_free(this,e);
   }
-  pes.ckLocalBranch()->update_oldest(&oldest_token, processed_events.back()->ts);
+  if(processed_events.back() != NULL) {
+    pes.ckLocalBranch()->update_oldest(&oldest_token, processed_events.back()->ts);
+  } else {
+    pes.ckLocalBranch()->update_oldest(&oldest_token, gvt);
+  }
 }
 
 // Rollback all processed events up to the passed in timestamp.
 // 1) If the most recent processed event is older than the timestamp, pop it.
 // 2) Execute the reverse handler on the target lp and popped event.
 // 3) Push the popped event onto the event priority queue.
-// Note: This method is not responsible for updating the PE.
 void LP::rollback_me(tw_stime ts) {
   Event* e;
-  while (processed_events.front()->ts > ts) {
+  while(processed_events.front() != NULL && processed_events.front()->ts > ts) {
     e = processed_events.front();
     processed_events.pop_front();
     tw_event_rollback(e);
+    if(processed_events.front() == NULL) break;
     current_time = processed_events.front()->ts;
     events.push(e);
+  }
+  if(processed_events.front() == NULL) {
+    pes.ckLocalBranch()->update_oldest(&oldest_token, PE_VALUE(lastGVT));
+    current_time = PE_VALUE(lastGVT);
   }
 }
 
@@ -187,9 +209,14 @@ void LP::rollback_me(Event *event) {
     e = processed_events.front();
     processed_events.pop_front();
     tw_event_rollback(e);
+    if(processed_events.front() == NULL) break;
     current_time = processed_events.front()->ts;
     events.push(e);
   } while (e != event);
+  if(processed_events.front() == NULL) {
+    pes.ckLocalBranch()->update_oldest(&oldest_token, PE_VALUE(lastGVT));
+    current_time = PE_VALUE(lastGVT);
+  }
 }
 
 void LP::process_cancel_q() {
@@ -203,8 +230,8 @@ void LP::process_cancel_q() {
       nev = cev->cancel_next;
 
       switch (cev->state.owner) {
-        case TW_anti_msg:
-          tw_event_free(this, cev);
+        case TW_rollback_q:
+          rollback_me(cev);
           break;
 
         case TW_chare_q:
@@ -212,8 +239,7 @@ void LP::process_cancel_q() {
           tw_event_free(this, cev);
           break;
 
-        case TW_rollback_q:
-          rollback_me(cev);
+        case TW_anti_msg:
           tw_event_free(this, cev);
           break;
 

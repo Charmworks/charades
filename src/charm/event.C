@@ -52,7 +52,6 @@ static inline void freeEvent(tw_event * e) {
     delete e;
   } else {
     e->state.owner = TW_event_null;
-    reset_bitfields(e);
     PE_VALUE(eventBuffer).push(e);
   }
 }

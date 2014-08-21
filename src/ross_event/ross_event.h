@@ -74,7 +74,6 @@ class Event {
     cancel_next = NULL;
     out_msgs = NULL;
     state.remote = 0;
-    reset_bitfields(this);
   }
 
   Event *next, *prev; //for processed queue

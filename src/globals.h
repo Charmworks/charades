@@ -49,6 +49,7 @@ struct Globals {
   AvlTree avl_list_head;
   tw_out* output;
   std::stack<Event *> eventBuffer;
+  tw_stime lastGVT;
 };
 
 // Defined in pe.C

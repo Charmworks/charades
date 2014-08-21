@@ -50,6 +50,8 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->g_tw_lookahead = .005;
   globals->g_init_map = init_block_map;
   globals->g_local_map = local_block_map;
+  globals->lastGVT = 0.0;
+  gvt = 0.0;
   contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }
 
@@ -105,6 +107,7 @@ void PE::GVT_contribute() {
 }
 
 void PE::GVT_end(Time newGVT) {
+  globals->lastGVT = gvt;
   gvt = newGVT;
   if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
     thisProxy[CkMyPe()].execute_cons();
@@ -137,8 +140,8 @@ int PE::schedule_nextLP() {
   LPToken *min = nextEvents.top();
   if(min == NULL) return 0;
   /* TODO: this is not right, we want to pass the time stamp of the next event */
-  min->lp->execute_me(nextEvents.top()->ts);
   currTime = min->ts;
+  min->lp->execute_me(nextEvents.top()->ts);
   return 1;
 }
 
@@ -146,8 +149,8 @@ int PE::schedule_nextLP_no_save() {
   LPToken *min = nextEvents.top();
   if(min == NULL) return 0;
   /* TODO: this is not right, we want to pass the time stamp of the next event */
-  min->lp->execute_me_no_save(nextEvents.top()->ts);
   currTime = min->ts;
+  min->lp->execute_me_no_save(nextEvents.top()->ts);
   return 1;
 }
 #include "pe.def.h"
