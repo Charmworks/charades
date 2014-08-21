@@ -5,6 +5,7 @@
 #include "float.h"
 
 CProxy_PE pes;
+int isPeSet = 0;
 
 // This is the API which allows the ROSS code to initialize and access the
 // Charm++ backend.
@@ -30,6 +31,10 @@ void charm_run() {
 }
 
 PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
+  if(isPeSet == 0) {
+    pes = thisProxy;
+    isPeSet = 1;
+  }
   globals = new Globals;
   globals->g_lps_per_chare = 4;
   globals->g_tw_synchronization_protocol = CONSERVATIVE;

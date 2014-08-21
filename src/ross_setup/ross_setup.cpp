@@ -11,20 +11,6 @@
 
 // This can probably stay as a static global since it is only used at init for
 // options. This is probably true of most options globals.
-static const tw_optdef kernel_options[] = {
-    TWOPT_GROUP("ROSS Kernel"),
-    TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
-// TODO: This will probably be replaced by number of chares
-//    TWOPT_UINT("nkp", nkp_per_pe, "number of kernel processes (KPs) per pe"),
-    TWOPT_STIME("end", PE_VALUE(g_tw_ts_end), "simulation end timestamp"),
-    TWOPT_UINT("batch", PE_VALUE(g_tw_mblock), "messages per scheduler block"),
-    TWOPT_UINT("extramem", PE_VALUE(g_tw_events_per_pe_extra), "Number of extra events allocated per PE."),
-    TWOPT_UINT("gvt-interval", PE_VALUE(g_tw_gvt_interval), "GVT Interval"),
-    TWOPT_UINT("lps-per-chare", PE_VALUE(g_lps_per_chare), "LPs per chare"),
-    TWOPT_UINT("num-chares", PE_VALUE(g_num_lp_chares), "Number of chares"),
-    TWOPT_END()
-};
-
 void tw_event_setup() {
   /* TODO : Make AVL_NODE_COUNT compile time */
   AvlTree avl_list = (AvlTree)calloc(sizeof(struct avlNode), AVL_NODE_COUNT);
@@ -47,6 +33,20 @@ void tw_init(int* argc, char*** argv) {
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
   /** Add all of the command line options before parsing them **/
+  static const tw_optdef kernel_options[] = {
+    TWOPT_GROUP("ROSS Kernel"),
+    TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
+// TODO: This will probably be replaced by number of chares
+//    TWOPT_UINT("nkp", nkp_per_pe, "number of kernel processes (KPs) per pe"),
+    TWOPT_STIME("end", PE_VALUE(g_tw_ts_end), "simulation end timestamp"),
+    TWOPT_UINT("batch", PE_VALUE(g_tw_mblock), "messages per scheduler block"),
+    TWOPT_UINT("extramem", PE_VALUE(g_tw_events_per_pe_extra), "Number of extra events allocated per PE."),
+    TWOPT_UINT("gvt-interval", PE_VALUE(g_tw_gvt_interval), "GVT Interval"),
+    TWOPT_UINT("lps-per-chare", PE_VALUE(g_lps_per_chare), "LPs per chare"),
+    TWOPT_UINT("num-chares", PE_VALUE(g_num_lp_chares), "Number of chares"),
+    TWOPT_END()
+  };
+
   tw_opt_add(kernel_options);
 
   // Print out command line, version, and time.

@@ -17,6 +17,7 @@
 // Readonly variables for the global proxies.
 extern CProxy_PE pes;
 CProxy_LP lps;
+int isLpSet = 0;
 
 // This is the API which allows the ROSS code to initialize the Charm backend.
 void create_lps() {
@@ -34,6 +35,10 @@ void init_lps() {
 // Create LPStructs based on mappings, and do initial registration with the PE.
 LP::LP() : next_token(this), oldest_token(this),
     lp_structs(PE_VALUE(g_lps_per_chare)), uniqID(0), enqueued_cancel_q(false) {
+  if(isLpSet == 0) {
+    lps = thisProxy;
+    isLpSet = 1;
+  }
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
