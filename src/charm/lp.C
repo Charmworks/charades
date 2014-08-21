@@ -58,7 +58,7 @@ void LP::stopScheduler() {
 
 void LP::init() {
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
-    lp_structs[i].type->init(&lp_structs[i]);
+    lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
   }
   contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
@@ -127,7 +127,7 @@ void LP::execute_me_no_save(tw_stime ts) {
     current_time = e->ts;
     currEvent = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
-    lp->type->execute(lp, tw_event_data(e));
+    lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
   }
   pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
 }
@@ -143,7 +143,7 @@ void LP::execute_me(tw_stime ts) {
     current_time = e->ts;
     currEvent = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
-    lp->type->execute(lp, tw_event_data(e));
+    lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
 
     // Since we're doing optimistic execution, save the event for later.
     processed_events.push_front(e);
