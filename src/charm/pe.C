@@ -60,7 +60,7 @@ void PE::execute_seq() {
 }
 
 void PE::execute_cons() {
-  while(getMinTime() < gvt + lookahead) {
+  while(getMinTime() < gvt + PE_VALUE(g_tw_lookahead)) {
     schedule_nextLP_no_save();
   }
 

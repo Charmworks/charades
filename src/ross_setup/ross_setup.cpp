@@ -19,6 +19,9 @@ static const tw_optdef kernel_options[] = {
     TWOPT_STIME("end", PE_VALUE(g_tw_ts_end), "simulation end timestamp"),
     TWOPT_UINT("batch", PE_VALUE(g_tw_mblock), "messages per scheduler block"),
     TWOPT_UINT("extramem", PE_VALUE(g_tw_events_per_pe_extra), "Number of extra events allocated per PE."),
+    TWOPT_UINT("gvt-interval", PE_VALUE(g_tw_gvt_interval), "GVT Interval"),
+    TWOPT_UINT("lps-per-chare", PE_VALUE(g_lps_per_chare), "LPs per chare"),
+    TWOPT_UINT("num-chares", PE_VALUE(g_num_lp_chares), "Number of chares"),
     TWOPT_END()
 };
 

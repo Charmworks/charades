@@ -1,5 +1,6 @@
 #ifndef ROSS_EVENT_H_
 #define ROSS_EVENT_H_
+#include "string.h"
 
 enum tw_event_owner
 {
@@ -55,6 +56,8 @@ struct tw_bf
   unsigned int    c31:1;
 };
 
+static inline void reset_bitfields(tw_event *revent);
+
 typedef struct tw_out {
     struct tw_out *next;
     char message[256 - 2*sizeof(void *)];
@@ -71,6 +74,7 @@ class Event {
     cancel_next = NULL;
     out_msgs = NULL;
     state.remote = 0;
+    reset_bitfields(this);
   }
 
   Event *next, *prev; //for processed queue
@@ -103,5 +107,19 @@ void tw_event_rollback(tw_event * event);
 void tw_event_free(tw_pe *pe, tw_event *e);
 void event_cancel(tw_event * e);
 tw_out* allocate_output_buffer();
+
+static inline void reset_bitfields(tw_event *revent)
+{
+  if (sizeof(revent->cv) == sizeof(uint32_t)){
+    *(uint32_t*)&revent->cv = 0;
+  }
+  else if (sizeof(revent->cv) == sizeof(uint64_t)){
+    *(uint64_t*)&revent->cv = 0;
+  }
+  else{
+    memset(&revent->cv, 0, sizeof(revent->cv));
+  }
+}
+
 
 #endif

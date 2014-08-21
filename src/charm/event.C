@@ -6,6 +6,7 @@
 #include "lp_struct.h"
 #include "ross_util.h"
 #include "avl_tree.h"
+#include "ross_api.h"
 #include <assert.h>
 #include <stack>
 
@@ -46,12 +47,12 @@ static inline void freeEvent(tw_event * e) {
     avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
   }
   e->state.remote = 0;
-  e->cv = 0;
   if(PE_VALUE(eventBuffer).size() >= PE_VALUE(g_tw_max_events_buffered)) {
     if(e->eventMsg) delete e->eventMsg;
     delete e;
   } else {
     e->state.owner = TW_event_null;
+    reset_bitfields(e);
     PE_VALUE(eventBuffer).push(e);
   }
 }

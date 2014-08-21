@@ -10,11 +10,6 @@
 #include "globals.h"
 #include "ross.h"
 
-// TODO: These should maybe be pushed to globals like everything else?
-// TODO: They are probably already included in the gvt cl opts
-static const unsigned default_batch_size = 16;
-static const unsigned default_gvt_freq = 1024;
-
 class LP;
 
 class PE: public CBase_PE {
@@ -22,7 +17,6 @@ class PE: public CBase_PE {
     PEQueue nextEvents; /**< queue to store the time stamp for next events that an LP has to execute*/
     PEQueue oldestEvents; /**< queue to store the time stamp for the earliest event that an LP has execute beyond the last computed GVT*/
     Time gvt, currTime, endTime; /**< current time on this PE */
-    Time lookahead; /**< look ahead of conservative simulation */
     int gvt_cnt; /**< count since last gvt */
   public:
     // A struct of global variables stored on each PE.
