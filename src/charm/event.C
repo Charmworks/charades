@@ -202,7 +202,7 @@ void tw_event_rollback(tw_event * event) {
 
   dest_lp->owner->currEvent = event;
   dest_lp->owner->current_time = event->ts;
-  dest_lp->type->reverse(dest_lp, e);
+  dest_lp->type->reverse(dest_lp, tw_event_data(e));
   // TODO (eric): The following is the type signiture for original ROSS, we may need to preserve it
   //(*dest_lp->type->reverse)(((LPStruct*)(dest_lp))->state, &event->cv, tw_event_data(event), dest_lp);
 
