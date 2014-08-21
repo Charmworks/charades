@@ -43,6 +43,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->g_tw_rng_default = 1;
   globals->g_tw_csv = NULL;
   globals->g_num_lp_chares = CkNumPes();
+  globals->g_tw_max_events_buffered = 1000;
   globals->g_tw_min_detected_offset = DBL_MAX;
   globals->abort_event = allocateEvent(0);
   globals->abort_event->state.owner = TW_event_inf;
