@@ -4,4 +4,7 @@ mainmodule ross {
     entry Initialize(CkArgMsg *);
     entry [reductiontarget] void Exit();
   };
+  extern module pe;
+  extern module lp;
+  extern module event;
 }
