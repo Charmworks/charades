@@ -1,8 +1,6 @@
 #include "ross.h"
 #include "pe.h"
 
-#include "mpi-interoperate.h"
-
 extern CProxy_PE pes;
 
 // Function that starts the charm library and results in the creation of the

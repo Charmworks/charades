@@ -5,6 +5,7 @@
 #include "lp.h"
 #include "event.h"
 #include "ross.decl.h"
+#include "mpi-interoperate.h"
 
 class Initialize : public CBase_Initialize {
   public:
