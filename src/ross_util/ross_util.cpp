@@ -6,13 +6,6 @@
 // Included for va_start etc.
 #include <stdarg.h>
 
-#ifndef NO_GLOBALS
-#endif
-
-#ifndef NO_FORWARD_DECLS
-#endif
-
-
 /**
  * Rollback-aware printf, i.e. if the event gets rolled back, undo the printf.
  * We can'd do that of course so we store the message in a buffer until GVT.
