@@ -57,6 +57,7 @@ void PE::execute_seq() {
   while(getMinTime() < endTime) {
     schedule_nextLP_no_save();
   }
+  CkExit();
 }
 
 void PE::execute_cons() {

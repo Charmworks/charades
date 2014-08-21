@@ -69,9 +69,8 @@ class LP : public CBase_LP {
     void rollback_me(Event*); /**< rollback this collection of LPs until the given ts */
     void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
 
-    // TODO (nikhil): Explain what these do
-    void process_cancel_q();
-    void delete_pending(Event *e);
+    void process_cancel_q(); /**< Cancel the events in our cancel queue */
+    void delete_pending(Event *e); /**< Delete an event that has not executed yet */
 };
 
 #endif
