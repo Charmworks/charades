@@ -11,7 +11,6 @@
 // A struct for holding global variables used by ROSS. An instance of this
 // struct will be held by each PE group chare.
 // TODO (eric): Organize the declarations by module and get rid of unecessary globals
-// TODO (eric): Initialization of defaultst 
 // TODO (eric): Make sure these have the right types
 struct Globals {
   unsigned g_lps_per_chare; //number of LPs per chare

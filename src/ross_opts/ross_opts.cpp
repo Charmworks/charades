@@ -14,9 +14,6 @@
 FILE* g_tw_csv;
 #endif
 
-// Forward declarations to functions that are declared in another module.
-// TODO: Remove these and include the appropriate headers.
-#ifndef NO_FORWARD_DECLS
 //TODO: fix this
 void tw_net_stop() { }
 
@@ -24,7 +21,6 @@ void tw_net_stop() { }
 #define ARRAY_SIZE(a) ( sizeof((a)) / sizeof((a)[0]) )
 #endif
 
-#endif
 
 // These globals are probably OK since they are just used at initialization.
 //static const char ross_options[] = ROSS_OPTION_LIST;
