@@ -1,7 +1,6 @@
 include ../../src/config.mk
 
-#CFLAGS  := -g -Wall
-CHARMC = ~/charm/bin/charmc
+CFLAGS  := -g -w
 LIBDIR  := ../../src/build/
 #ROSS=-I/dcsdata/home/mikida2/ross/src/
 
