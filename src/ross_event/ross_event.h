@@ -69,6 +69,7 @@ class Event {
     caused_by_me = NULL;
     cause_next = NULL;
     cancel_next = NULL;
+    out_msgs = NULL;
     state.remote = 0;
   }
 

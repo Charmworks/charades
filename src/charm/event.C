@@ -36,6 +36,7 @@ tw_out* allocate_output_buffer() {
   if(PE_VALUE(output)) {
     free_buf = PE_VALUE(output);
     PE_VALUE(output) = free_buf->next;
+    free_buf->next = NULL;
   }
   return free_buf;
 }
@@ -84,7 +85,6 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
       PE_VALUE(g_tw_min_detected_offset) = offset_ts;
   }
 
-  /* TODO(nikhil) : make sure abort_event is allocated as part of globals */
   if (recv_ts >= PE_VALUE(g_tw_ts_end)) {
     e = PE_VALUE(abort_event);
   } else {
@@ -186,6 +186,7 @@ void event_cancel(tw_event * e) {
       recv_pe->cancel_q = e;
       if(!recv_pe->enqueued_cancel_q) {
         pes.ckLocalBranch()->cancel_q.push_back(recv_pe);
+        recv_pe->enqueued_cancel_q = true;
       }
       return;
 
@@ -203,7 +204,7 @@ void tw_event_rollback(tw_event * event) {
 
   dest_lp->owner->currEvent = event;
   dest_lp->owner->current_time = event->ts;
-  dest_lp->type->reverse(dest_lp->state, &e->cv, tw_event_data(e), dest_lp);
+  dest_lp->type->reverse(dest_lp->state, &event->cv, tw_event_data(event), dest_lp);
 
   while (e) {
     tw_event *n = e->cause_next;
