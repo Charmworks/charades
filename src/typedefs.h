@@ -51,10 +51,10 @@ typedef LP tw_pe;
 // These typedefs are similar to function ptr typedefs used by ROSS.
 // TODO: Need to figure out how we are doing maps exactly, and how many we need.
 // TODO: How much do we need this API to match directly to the ROSS equivalent?
-typedef void (*init_f) (LPStruct*);
-typedef void (*event_f) (LPStruct*, Event*);
-typedef void (*revent_f) (LPStruct*, Event*);
-typedef void (*final_f) (LPStruct*);
+typedef void (*init_f) (void*,LPStruct*);
+typedef void (*event_f) (void*, tw_bf*, char*, LPStruct*);
+typedef void (*revent_f) (void*, tw_bf*, char*, LPStruct*);
+typedef void (*final_f) (void*, LPStruct*);
 
 // This map takes an LP chare index, and a local lpid and returns a global id.
 typedef tw_lpid (*init_map_f) (unsigned, tw_lpid);
