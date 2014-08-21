@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include "mpi-interoperate.h"
+#define DEBUG(format, ...) CkPrintf(format, ## __VA_ARGS__)
 
 // This can probably stay as a static global since it is only used at init for
 // options. This is probably true of most options globals.
@@ -26,6 +27,9 @@ void tw_event_setup() {
   }
   output_head[NUM_OUT_MESG - 1].next = NULL;
   PE_VALUE(output) = output_head;
+
+  PE_VALUE(abort_event) = allocateEvent(0);
+  PE_VALUE(abort_event)->state.owner = TW_event_inf;
 }
 
 void tw_init(int* argc, char*** argv) {
@@ -33,6 +37,7 @@ void tw_init(int* argc, char*** argv) {
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
   /** Add all of the command line options before parsing them **/
+  DEBUG("[%d] Finished charm_init\n", CkMyPe());
   static const tw_optdef kernel_options[] = {
     TWOPT_GROUP("ROSS Kernel"),
     TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),

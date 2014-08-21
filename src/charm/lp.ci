@@ -1,8 +1,6 @@
 module lp {
   extern module event;
 
-  readonly CProxy_LP lps;
-
   array [1D] LP {
     entry LP(); /**< constructor */
     entry void init();

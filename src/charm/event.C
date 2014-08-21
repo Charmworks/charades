@@ -14,9 +14,11 @@ extern CProxy_LP lps;
 extern CProxy_PE pes;
 
 tw_event * allocateEvent(int needMsg = 1) {
-  Event * e = PE_VALUE(eventBuffer).top();
-  PE_VALUE(eventBuffer).pop();
-  if(e == NULL) {
+  Event *e;
+  if(PE_VALUE(eventBuffer).size() != 0) {
+    e = PE_VALUE(eventBuffer).top();
+    PE_VALUE(eventBuffer).pop();
+  } else {
     e = new Event;
   }
   if(needMsg) {

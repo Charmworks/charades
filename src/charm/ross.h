@@ -7,6 +7,8 @@
 #include "ross.decl.h"
 #include "mpi-interoperate.h"
 
+#define DEBUG(format, ...) CkPrintf(format, ## __VA_ARGS__)
+
 class Initialize : public CBase_Initialize {
   public:
     Initialize(CkArgMsg *m);
@@ -14,6 +16,7 @@ class Initialize : public CBase_Initialize {
     Initialize(CkMigrateMessage* m) { }
 
     void Exit() {
+      DEBUG("Exit called\n");
       CkExit();
     }
 };
