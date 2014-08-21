@@ -19,4 +19,6 @@
 
 int tw_ismaster();
 
+#define tw_event_data(e) (e->userData)
+
 #endif

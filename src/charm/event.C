@@ -20,7 +20,7 @@ tw_event * allocateEvent(int needMsg = 1) {
   }
   if(needMsg) {
     if(e->eventMsg == NULL) {
-      e->eventMsg = new (PE_VALUE(g_tw_user_data_size)) RemoteEvent;
+      e->eventMsg = new (PE_VALUE(g_tw_msg_sz)) RemoteEvent;
       e->userData = e->eventMsg->userData;
     }
   } else {

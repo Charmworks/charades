@@ -127,7 +127,7 @@ void LP::execute_me_no_save(tw_stime ts) {
     current_time = e->ts;
     currEvent = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
-    lp->type->execute(lp, e);
+    lp->type->execute(lp, e->userData);
   }
   pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
 }
@@ -143,7 +143,7 @@ void LP::execute_me(tw_stime ts) {
     current_time = e->ts;
     currEvent = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
-    lp->type->execute(lp, e);
+    lp->type->execute(lp, e->userData);
 
     // Since we're doing optimistic execution, save the event for later.
     processed_events.push_front(e);

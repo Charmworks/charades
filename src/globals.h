@@ -23,7 +23,6 @@ struct Globals {
 
   unsigned g_tw_nlp; //number of LP per PE
   size_t g_tw_memory_sz; //TBD
-  size_t g_tw_msg_sz;
 
   // RNG Globals
   tw_seed* g_tw_rng_seed;
@@ -36,7 +35,7 @@ struct Globals {
   unsigned g_num_lp_chares; //number of LP chares
 
   // Globals used in events
-  size_t g_tw_user_data_size;
+  size_t g_tw_msg_sz;
   unsigned g_tw_max_events_buffered;
   tw_stime g_tw_min_detected_offset;
   tw_event* abort_event;
