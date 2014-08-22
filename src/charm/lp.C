@@ -121,10 +121,10 @@ void LP::recv_event(RemoteEvent* event) {
 
     // Check the timestamps in the queues to see if updates or rollbacks
     // need to be performed.
-    if (e->ts < events.top()->ts) {
+    if (events.top() != NULL && e->ts < events.top()->ts) {
       pes.ckLocalBranch()->update_next(&next_token, e->ts);
     }
-    if (e->ts < processed_events.back()->ts) {
+    if (processed_events.back() != NULL && e->ts < processed_events.back()->ts) {
       rollback_me(e->ts);
     }
 
@@ -137,7 +137,7 @@ void LP::recv_event(RemoteEvent* event) {
 
 void LP::execute_me_no_save(tw_stime ts) {
   // Pop the top event, update current time and event, then execute.
-  while (events.top()->ts <= ts && ts != DBL_MAX) {
+  while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
@@ -157,7 +157,7 @@ void LP::execute_me_no_save(tw_stime ts) {
 // 2) Execute the popped event on its destination LP.
 // 3) Update the PE with our new earliest timestamp.
 void LP::execute_me(tw_stime ts) {
-  while (events.top()->ts <= ts && ts != DBL_MAX) {
+  while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
@@ -181,7 +181,7 @@ void LP::execute_me(tw_stime ts) {
 // 1) If the next event is older than the current gvt pop it and delete it.
 // 2) Update the PE with our oldest unprocessed event time.
 void LP::fossil_me(tw_stime gvt) {
-  while (processed_events.back()->ts <= gvt) {
+  while (processed_events.back() != NULL && processed_events.back()->ts <= gvt) {
     Event* e = processed_events.back();
     processed_events.pop_back();
     tw_event_free(this,e);

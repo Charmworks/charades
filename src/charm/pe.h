@@ -6,6 +6,7 @@
 
 // Included for LPToken
 #include "lp.h"
+#include "float.h"
 
 #include "globals.h"
 #include "ross.h"
@@ -17,7 +18,7 @@ class PE: public CBase_PE {
   private:
     PEQueue nextEvents; /**< queue to store the time stamp for next events that an LP has to execute*/
     PEQueue oldestEvents; /**< queue to store the time stamp for the earliest event that an LP has execute beyond the last computed GVT*/
-    Time gvt, currTime, endTime; /**< current time on this PE */
+    Time gvt, currTime; /**< current time on this PE */
     int gvt_cnt; /**< count since last gvt */
   public:
     // A struct of global variables stored on each PE.
@@ -54,7 +55,11 @@ class PE: public CBase_PE {
 
     /** \brief Get time stamp of the minium event */
     Time getMinTime() {
-      return nextEvents.top()->ts;
+      if(nextEvents.top() != NULL) {
+        return nextEvents.top()->ts;
+      } else {
+        return DBL_MAX;
+      }
     }
 
     /** \brief Register the given LP to our queues */

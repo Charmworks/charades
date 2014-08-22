@@ -59,7 +59,7 @@ void PE::initialize_rand(CProxy_Initialize srcProxy) {
 }
 
 void PE::execute_seq() {
-  while(getMinTime() < endTime) {
+  while(getMinTime() < PE_VALUE(g_tw_ts_end)) {
     schedule_nextLP_no_save();
   }
   CkExit();
