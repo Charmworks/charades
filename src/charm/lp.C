@@ -21,7 +21,7 @@ int isLpSet = 0;
 
 // This is the API which allows the ROSS code to initialize the Charm backend.
 void create_lps() {
-  lps = CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
+  CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
   StartCharmScheduler();
 }
 
