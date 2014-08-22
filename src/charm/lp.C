@@ -33,7 +33,7 @@ void init_lps() {
 }
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this), uniqID(0), enqueued_cancel_q(false), current_time(0) {
+LP::LP() : next_token(this), oldest_token(this), uniqID(0), enqueued_cancel_q(false), current_time(0), all_events(0) {
   if(isLpSet == 0) {
     lps = thisProxy;
     isLpSet = 1;
@@ -43,12 +43,13 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), enqueued_cancel_q(fa
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
-  if(tw_ismaster()) DEBUG("[%d] Registered with PE for %d lps \n", CkMyPe(), PE_VALUE(g_lps_per_chare));
+  DEBUG("[%d] Registered with PE for %d lps - %d \n", CkMyPe(), PE_VALUE(g_lps_per_chare), events.size());
 
   // Create array of LPStructs based on globals
   for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].owner = this;
     lp_structs[i].gid = PE_VALUE(g_init_map)(thisIndex, i);
+    DEBUG("[%d] Created LP %d \n", CkMyPe(), lp_structs[i].gid);
     lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
     // TODO (eric): Figure out how to handle state
     lp_structs[i].state = NULL;
@@ -97,6 +98,7 @@ void LP::delete_pending(Event *e) {
 void LP::recv_event(RemoteEvent* event) {
   // TODO (nikhil): Difference between tw_event_new and allocate event?
   // Copy over the relevant fields from the remote event to the local event.
+  DEBUG2("[%d] Received event from chare %d for %lf - %d \n", CkMyPe(), event->send_pe, event->ts, events.size());
   Event *e = allocateEvent(0);
   e->event_id = event->event_id;
   e->ts = event->ts;
@@ -107,12 +109,14 @@ void LP::recv_event(RemoteEvent* event) {
   if(event->isAnti) {
     // Find the corresponding real event in the avl tree, cancel it, and
     // deallocate all involved events.
+    DEBUG2("[%d] Went into anti \n", CkMyPe());
     Event *real_e = avlDelete(&all_events, e);
     tw_event_free(this,e);
     e = real_e;
     event_cancel(e);
     delete event;
   } else {
+    DEBUG2("[%d,%d] Went into regular \n", CkMyPe(), thisIndex);
     e->state.remote = 1;
     if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
       avlInsert(&all_events, e);

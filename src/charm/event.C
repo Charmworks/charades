@@ -121,6 +121,7 @@ void tw_event_send(tw_event * e) {
   int dest_peid;
 
   tw_stime   recv_ts = e->ts;
+  DEBUG2("[%d] Sending event to %d at %lf \n", CkMyPe(), e->dest_lp, recv_ts);
 
   if (e == PE_VALUE(abort_event)) {
     /* TODO (nikhil): Handle case where abort event is caused by lack of memory */

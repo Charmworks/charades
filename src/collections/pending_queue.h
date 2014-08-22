@@ -34,7 +34,11 @@ class PendingQueue
   public:
 
   PendingQueue() {
-    PendingQueue(50000);
+    int init_size = 50000;
+    nelems = 0;
+    curr_max = (2*init_size);
+    elems = (ELEMENT_TYPE*)realloc(elems, sizeof(ELEMENT_TYPE) * curr_max);
+    memset(elems, 0, sizeof(ELEMENT_TYPE) * curr_max);
   }
 
   PendingQueue(int init_size) {

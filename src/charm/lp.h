@@ -37,9 +37,8 @@ class LP : public CBase_LP {
     LPToken oldest_token;
 
     LPList lp_structs;
-    PendingQueue events;
     ProcessedQueue processed_events;
-
+    PendingQueue events;
   public:
     // Used to give a unique EventID to every message sent
     EventID uniqID;
