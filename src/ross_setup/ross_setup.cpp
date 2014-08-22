@@ -37,7 +37,7 @@ void tw_init(int* argc, char*** argv) {
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
   /** Add all of the command line options before parsing them **/
-  DEBUG("[%d] Finished charm_init\n", CkMyPe());
+  if(tw_ismaster()) DEBUG("[%d] Finished charm_init\n", CkMyPe());
   static const tw_optdef kernel_options[] = {
     TWOPT_GROUP("ROSS Kernel"),
     TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
@@ -53,6 +53,7 @@ void tw_init(int* argc, char*** argv) {
   };
 
   tw_opt_add(kernel_options);
+  if(tw_ismaster()) DEBUG("[%d] Added kernel options\n", CkMyPe());
 
   // Print out command line, version, and time.
   if (tw_ismaster()) {
@@ -72,14 +73,18 @@ void tw_init(int* argc, char*** argv) {
   }
 
   tw_opt_parse(argc, argv);
+  if(tw_ismaster()) DEBUG("[%d] Parsed opts\n", CkMyPe());
 
   if (tw_ismaster() && NULL == (PE_VALUE(g_tw_csv) = fopen("ross.csv", "a"))) {
     tw_error(TW_LOC, "Unable to open: ross.csv\n");
   }
+  if(tw_ismaster()) DEBUG("[%d] Opened csv\n", CkMyPe());
 
   tw_opt_print();
   /** Set up all the buffers for events */
+  if(tw_ismaster()) DEBUG("[%d] Printed opts\n", CkMyPe());
   tw_event_setup();
+  if(tw_ismaster()) DEBUG("[%d] Event set up done\n", CkMyPe());
 }
 
 // TODO: In original ROSS this was defined in a processor centric way in that
@@ -105,6 +110,8 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
     // TODO: We will eventually pass in a mapping function to the chare array
     // so it can properly determine which global ids it has.
     // The constructor also initializes the rng for each lp.
+
+    if(tw_ismaster()) DEBUG("[%d] Calling create lps\n", CkMyPe());
     create_lps();
   } else {
     /* but everyone should start their scheduler */

@@ -33,21 +33,23 @@ void init_lps() {
 }
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this),
-    lp_structs(PE_VALUE(g_lps_per_chare)), uniqID(0), enqueued_cancel_q(false) {
+LP::LP() : next_token(this), oldest_token(this), uniqID(0), enqueued_cancel_q(false) {
   if(isLpSet == 0) {
     lps = thisProxy;
     isLpSet = 1;
   }
+
+  lp_structs.resize(PE_VALUE(g_lps_per_chare));
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
   pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
+  if(tw_ismaster()) DEBUG("[%d] Registered with PE for %d lps \n", CkMyPe(), PE_VALUE(g_lps_per_chare));
 
   // Create array of LPStructs based on globals
   for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].owner = this;
-    lp_structs[i].gid = PE_VALUE(g_init_map(thisIndex, i));
-    lp_structs[i].type = PE_VALUE(g_type_map(lp_structs[i].gid));
+    lp_structs[i].gid = PE_VALUE(g_init_map)(thisIndex, i);
+    lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
     // TODO (eric): Figure out how to handle state
     lp_structs[i].state = NULL;
 

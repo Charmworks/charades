@@ -125,7 +125,7 @@ int main(int argc, char **argv, char **env)
   //			optimistic_memory;
   //g_tw_rng_default = TW_FALSE;
   PE_VALUE(g_tw_lookahead) = lookahead;
-
+  PE_VALUE(g_type_map) = phold_type_map;
   tw_define_lps(nlp_per_pe, sizeof(phold_message), 0);
 
   //for(i = 0; i < PE_VALUE(g_tw_nlp); i++)
