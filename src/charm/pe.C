@@ -19,7 +19,7 @@ void charm_run() {
   if (tw_ismaster()) {
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
       pes.execute_seq();
-    } if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+    } else if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       pes.execute_cons();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
       pes.execute_opt();
