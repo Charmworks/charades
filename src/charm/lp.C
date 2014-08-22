@@ -68,6 +68,7 @@ void LP::stopScheduler() {
 }
 
 void LP::init() {
+  currEvent = PE_VALUE(abort_event);
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
   }
