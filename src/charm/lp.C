@@ -126,9 +126,6 @@ void LP::recv_event(RemoteEvent* event) {
 
     // Check the timestamps in the queues to see if updates or rollbacks
     // need to be performed.
-    if (events.top() != NULL && e->ts < events.top()->ts) {
-      pes.ckLocalBranch()->update_next(&next_token, e->ts);
-    }
     if (processed_events.front() != NULL && e->ts < processed_events.front()->ts) {
       rollback_me(e->ts);
     }

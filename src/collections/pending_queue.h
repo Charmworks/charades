@@ -10,7 +10,6 @@
 #define _PENDING_QUEUE_
 
 #include "typedefs.h"
-
 #include "ross_event.h"
 
 typedef Event *ELEMENT_TYPE;
