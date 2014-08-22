@@ -113,11 +113,17 @@ void PE::GVT_contribute() {
 void PE::GVT_end(Time newGVT) {
   globals->lastGVT = gvt;
   gvt = newGVT;
-  if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-    thisProxy[CkMyPe()].execute_cons();
-  } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-    collect_fossils();
-    thisProxy[CkMyPe()].execute_opt();
+  if(newGVT == DBL_MAX) {
+    if(!CkMyPe()) {
+      CkExit();
+    }
+  } else {
+    if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+      thisProxy[CkMyPe()].execute_cons();
+    } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+      collect_fossils();
+      thisProxy[CkMyPe()].execute_opt();
+    }
   }
 }
 
