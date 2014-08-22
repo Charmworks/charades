@@ -5,10 +5,10 @@
 #include "globals.h"
 #include "avl_tree.h"
 #include "ross_api.h"
+#include "ross.h"
 
 #include <stdio.h>
 #include "mpi-interoperate.h"
-#define DEBUG(format, ...) CkPrintf(format, ## __VA_ARGS__)
 
 // This can probably stay as a static global since it is only used at init for
 // options. This is probably true of most options globals.
