@@ -8,6 +8,7 @@
 #include "mpi-interoperate.h"
 
 #define DEBUG(format, ...) CkPrintf(format, ## __VA_ARGS__)
+#define DEBUG2(format, ...) CkPrintf(format, ## __VA_ARGS__)
 
 class Initialize : public CBase_Initialize {
   public:

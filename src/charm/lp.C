@@ -33,7 +33,7 @@ void init_lps() {
 }
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this), uniqID(0), enqueued_cancel_q(false) {
+LP::LP() : next_token(this), oldest_token(this), uniqID(0), enqueued_cancel_q(false), current_time(0) {
   if(isLpSet == 0) {
     lps = thisProxy;
     isLpSet = 1;
@@ -69,6 +69,7 @@ void LP::stopScheduler() {
 
 void LP::init() {
   currEvent = PE_VALUE(abort_event);
+  if(tw_ismaster()) DEBUG("[%d] Init lps \n", CkMyPe());
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
   }

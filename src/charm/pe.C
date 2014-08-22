@@ -15,6 +15,7 @@ Globals* get_globals() {
 
 // Starts the simulation by calling the scheduler on all pes
 void charm_run() {
+  if(tw_ismaster()) DEBUG("[%d] Initializing schedulers \n", CkMyPe());
   if (tw_ismaster()) {
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
       pes.execute_seq();
