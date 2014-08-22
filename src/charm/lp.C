@@ -125,7 +125,7 @@ void LP::recv_event(RemoteEvent* event) {
     if (events.top() != NULL && e->ts < events.top()->ts) {
       pes.ckLocalBranch()->update_next(&next_token, e->ts);
     }
-    if (processed_events.back() != NULL && e->ts < processed_events.back()->ts) {
+    if (processed_events.front() != NULL && e->ts < processed_events.front()->ts) {
       rollback_me(e->ts);
     }
 
@@ -207,6 +207,7 @@ void LP::rollback_me(tw_stime ts) {
     if(processed_events.front() == NULL) break;
     current_time = processed_events.front()->ts;
     events.push(e);
+    e->state.owner = TW_chare_q;
   }
   if(processed_events.front() == NULL) {
     pes.ckLocalBranch()->update_oldest(&oldest_token, PE_VALUE(lastGVT));
@@ -223,6 +224,7 @@ void LP::rollback_me(Event *event) {
     if(processed_events.front() == NULL) break;
     current_time = processed_events.front()->ts;
     events.push(e);
+    e->state.owner = TW_chare_q;
   } while (e != event);
   if(processed_events.front() == NULL) {
     pes.ckLocalBranch()->update_oldest(&oldest_token, PE_VALUE(lastGVT));
