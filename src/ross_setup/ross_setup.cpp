@@ -125,4 +125,6 @@ void tw_run() {
 }
 
 /* TODO: Check what this is meant to do and implement */
-void tw_end() {}
+void tw_end() {
+ CharmLibExit();
+}

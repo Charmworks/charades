@@ -40,7 +40,6 @@ class PendingQueue
   PendingQueue(int init_size) {
     nelems = 0;
     curr_max = (2*init_size);
-    elems = NULL;
     elems = (ELEMENT_TYPE*)realloc(elems, sizeof(ELEMENT_TYPE) * curr_max);
     memset(elems, 0, sizeof(ELEMENT_TYPE) * curr_max);
   }
@@ -104,8 +103,6 @@ class PendingQueue
     e->heap_index = nelems;
     elems[nelems++] = e;
     percolate_up( nelems-1 );
-
-    e->state.owner = TW_pe_pq;
   }
 
   ELEMENT_TYPE pop()
@@ -118,7 +115,6 @@ class PendingQueue
       elems[0] = elems[--nelems];
       elems[0]->heap_index = 0;
       sift_down( 0 );
-      e->state.owner = 0;
       return e;
     }
   }
@@ -134,7 +130,6 @@ class PendingQueue
     else
     {
       nelems--;
-      victim->state.owner = 0;
 
       if( elems > 0 )
       {

@@ -73,6 +73,7 @@ static inline void tw_free_output_messages(tw_event *e, int print_message)
     // Put it back
     free_output_buffer(temp);
   }
+  e->out_msgs = NULL;
 }
 
 tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
