@@ -58,10 +58,12 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), enqueued_cancel_q(fa
       tw_rand_init_streams(&lp_structs[i], PE_VALUE(g_tw_nRNG_per_lp));
     }
   }
+  if(tw_ismaster()) DEBUG("[%d] Created LPs \n", CkMyPe());
   contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
 
 void LP::stopScheduler() {
+  if(tw_ismaster()) DEBUG("[%d] Stop scheduler \n", CkMyPe());
   CkExit();
 }
 

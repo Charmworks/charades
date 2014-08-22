@@ -9,6 +9,7 @@
 
 #include "globals.h"
 #include "ross.h"
+#include "ross_random.h"
 
 class LP;
 
@@ -23,12 +24,15 @@ class PE: public CBase_PE {
     Globals* globals;
     // TODO: Do we need another queue for this?
     std::vector<LP*> cancel_q;
+    tw_rng  *rng;
 
     PE(CProxy_Initialize);
 
     ~PE() {
       delete globals;
     }
+
+    void initialize_rand(CProxy_Initialize);
 
     /** \brief Various schedulers
         sequential (no communication, run to end)

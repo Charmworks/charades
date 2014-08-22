@@ -7,6 +7,7 @@ module pe {
 
   group PE {
     entry PE(CProxy_Initialize); /**< constructor called from the mainchare */
+    entry void initialize_rand(CProxy_Initialize);
     entry void GVT_begin(); /**< begin gvt computation */
     entry void GVT_contribute(); /**< reduction target for completion of GVT */
     entry [reductiontarget] void GVT_end(Time); /**< reduction target for completion of GVT */

@@ -50,6 +50,11 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->g_local_map = local_block_map;
   globals->lastGVT = 0.0;
   gvt = 0.0;
+  thisProxy[CkMyPe()].initialize_rand(srcProxy);
+}
+
+void PE::initialize_rand(CProxy_Initialize srcProxy) {
+  rng = tw_rand_init(31, 41);
   contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }
 
