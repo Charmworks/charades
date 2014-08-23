@@ -33,7 +33,8 @@ void init_lps() {
 }
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this), uniqID(0), enqueued_cancel_q(false), current_time(0), all_events(0) {
+LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL), cancel_q_end(NULL),
+           enqueued_cancel_q(false), current_time(0), all_events(0) {
   if(isLpSet == 0) {
     lps = thisProxy;
     isLpSet = 1;
@@ -184,7 +185,7 @@ void LP::execute_me(tw_stime ts) {
 // 1) If the next event is older than the current gvt pop it and delete it.
 // 2) Update the PE with our oldest unprocessed event time.
 void LP::fossil_me(tw_stime gvt) {
-  while (processed_events.back() != NULL && processed_events.back()->ts <= gvt) {
+  while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
     Event* e = processed_events.back();
     processed_events.pop_back();
     tw_event_free(this,e);
@@ -240,6 +241,7 @@ void LP::process_cancel_q() {
   while (cancel_q) {
     cev = cancel_q;
     cancel_q = NULL;
+    cancel_q_end = NULL;
 
     for (; cev; cev = nev) {
       nev = cev->cancel_next;

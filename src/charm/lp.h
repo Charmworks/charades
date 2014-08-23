@@ -7,6 +7,7 @@
 #include "lp_struct.h"
 #include "pending_queue.h"
 #include "processed_queue.h"
+#include "float.h"
 
 #include <vector>
 
@@ -48,7 +49,7 @@ class LP : public CBase_LP {
     AvlTree all_events;
 
     // TODO (nikhil): Explain what these cancel fields do/are for.
-    Event *cancel_q;
+    Event *cancel_q, *cancel_q_end;
     bool enqueued_cancel_q;
 
     Time current_time;
@@ -69,6 +70,14 @@ class LP : public CBase_LP {
     void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
 
     void process_cancel_q(); /**< Cancel the events in our cancel queue */
+
+    Time getMinCancelTime() {
+      if(cancel_q_end != NULL) {
+        return cancel_q_end->ts;
+      } else {
+        return DBL_MAX;
+      }
+    }
     void delete_pending(Event *e); /**< Delete an event that has not executed yet */
 };
 

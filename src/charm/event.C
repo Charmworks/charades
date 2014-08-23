@@ -188,6 +188,9 @@ void event_cancel(tw_event * e) {
 
     case TW_rollback_q:
       e->cancel_next = recv_pe->cancel_q;
+      if(recv_pe->cancel_q_end == NULL) {
+        recv_pe->cancel_q_end = e;
+      }
       recv_pe->cancel_q = e;
       if(!recv_pe->enqueued_cancel_q) {
         pes.ckLocalBranch()->cancel_q.push_back(recv_pe);

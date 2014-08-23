@@ -50,6 +50,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->g_local_map = local_block_map;
   globals->lastGVT = 0.0;
   gvt = 0.0;
+  cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }
 
@@ -91,6 +92,27 @@ void PE::process_cancel_q() {
   for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
     cancel_q[pe_i]->process_cancel_q();
   }
+}
+
+Time PE::getMinTime() {
+  Time min;
+
+  if(nextEvents.top() != NULL) {
+    min = nextEvents.top()->ts;
+  } else {
+    min = DBL_MAX;
+  }
+
+  if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
+      Time newTime = cancel_q[pe_i]->getMinCancelTime();
+      if(newTime < min) {
+        min = newTime;
+      }
+    }
+  }
+
+  return min;
 }
 
 /* For now, in the synchronous version, invoke completion detection that leads

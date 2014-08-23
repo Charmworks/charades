@@ -54,13 +54,7 @@ class PE: public CBase_PE {
     void GVT_end(Time); /**< GVT computed */
 
     /** \brief Get time stamp of the minium event */
-    Time getMinTime() {
-      if(nextEvents.top() != NULL) {
-        return nextEvents.top()->ts;
-      } else {
-        return DBL_MAX;
-      }
-    }
+    Time getMinTime();
 
     /** \brief Register the given LP to our queues */
     void register_lp(LPToken* next_token, Time next_ts, LPToken* oldest_token, Time oldest_ts) {
