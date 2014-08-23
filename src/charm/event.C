@@ -50,6 +50,14 @@ static inline void freeEvent(tw_event * e) {
     DEBUG3("Delete %d %d %lf \n",e->send_pe, e->event_id, e->ts);
     avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
   }
+
+  tw_event  *event = e->caused_by_me;
+  while (event) {
+    tw_event *n = event->cause_next;
+    freeEvent(event);
+    event = n;
+  }
+
   if(PE_VALUE(eventBuffer).size() >= PE_VALUE(g_tw_max_events_buffered)) {
     if(e->eventMsg) delete e->eventMsg;
     delete e;
