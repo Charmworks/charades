@@ -235,7 +235,7 @@ Event * avlDelete(AvlTree *t, Event *key)
   AvlTree oldroot;
 
   if (*t == AVL_EMPTY) {
-    tw_error(TW_LOC, "We never look for non-existent events!");
+    tw_error(TW_LOC, "We never look for non-existent events : %d %d !", key->send_pe, key->event_id);
     return target;
   }
 

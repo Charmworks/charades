@@ -47,6 +47,7 @@ tw_out* allocate_output_buffer() {
 
 static inline void freeEvent(tw_event * e) {
   if(e->state.remote == 1) {
+    DEBUG3("Delete %d %d %lf \n",e->send_pe, e->event_id, e->ts);
     avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
   }
   if(PE_VALUE(eventBuffer).size() >= PE_VALUE(g_tw_max_events_buffered)) {
@@ -156,6 +157,7 @@ void tw_event_send(tw_event * e) {
   e->eventMsg->dest_lp = e->dest_lp;
   e->eventMsg->send_pe = e->send_pe = ((LP*)(e->send_pe))->thisIndex;
 
+  DEBUG3("Send %d %d %d\n",e->send_pe, e->event_id, e->eventMsg->isAnti);
   lps(dest_peid).recv_event(e->eventMsg);
   e->state.owner = TW_sent;
   e->eventMsg = NULL;
@@ -174,6 +176,7 @@ void event_cancel(tw_event * e) {
     eventMsg->ts = e->ts;
     eventMsg->dest_lp = e->dest_lp;
     eventMsg->send_pe = e->send_pe;
+    DEBUG3("Send %d %d %d\n",eventMsg->send_pe, eventMsg->event_id, eventMsg->isAnti);
     lps(((tw_lp*)(e->src_lp))->type->chare_map(e->dest_lp)).recv_event(eventMsg);
     tw_event_free(send_pe, e);
     return;

@@ -107,6 +107,8 @@ void LP::recv_event(RemoteEvent* event) {
   e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(event->dest_lp)];
   e->send_pe = event->send_pe;
 
+  DEBUG3("Recv %d %d %d %lf\n",event->send_pe, event->event_id, event->isAnti, event->ts);
+
   if(event->isAnti) {
     // Find the corresponding real event in the avl tree, cancel it, and
     // deallocate all involved events.
@@ -261,7 +263,7 @@ void LP::process_cancel_q() {
           break;
 
         default:
-          tw_error(TW_LOC, "Event in cancel_q, but owner %d not recognized", cev->state.owner);
+          tw_error(TW_LOC, "Event in cancel_q, but owner %d not recognized %d %d", cev->state.owner, cev->send_pe, cev->event_id);
       }
     }
   }
