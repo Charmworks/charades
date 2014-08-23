@@ -9,8 +9,10 @@
 
 #define DEBUG(format, ...) { }
 #define DEBUG2(format, ...) { }
+#define DEBUG3(format, ...) { }
 //#define DEBUG(format, ...) { CkPrintf(format, ## __VA_ARGS__); }
 //#define DEBUG2(format, ...) { CkPrintf(format, ## __VA_ARGS__); }
+//#define DEBUG3(format, ...) { CkPrintf(format, ## __VA_ARGS__); }
 
 class Initialize : public CBase_Initialize {
   public:
