@@ -49,12 +49,15 @@ static inline void freeEvent(tw_event * e) {
   if(e->state.remote == 1) {
     avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
   }
-  e->state.remote = 0;
   if(PE_VALUE(eventBuffer).size() >= PE_VALUE(g_tw_max_events_buffered)) {
     if(e->eventMsg) delete e->eventMsg;
     delete e;
   } else {
+    e->state.remote = 0;
     e->state.owner = TW_event_null;
+    e->caused_by_me = NULL;
+    e->cause_next = NULL;
+    e->cancel_next = NULL;
     PE_VALUE(eventBuffer).push(e);
   }
 }
