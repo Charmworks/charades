@@ -113,6 +113,7 @@ void LP::recv_event(RemoteEvent* event) {
     Event *real_e = avlDelete(&all_events, e);
     tw_event_free(this,e);
     e = real_e;
+    e->state.remote = 0;
     event_cancel(e);
     delete event;
   } else {
