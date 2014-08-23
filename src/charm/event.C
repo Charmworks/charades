@@ -29,6 +29,7 @@ tw_event * allocateEvent(int needMsg = 1) {
   } else {
     if(e->eventMsg != NULL) {
       delete e->eventMsg;
+      e->eventMsg = NULL;
     }
   }
   return e;
