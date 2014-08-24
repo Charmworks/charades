@@ -123,7 +123,7 @@ void PE::GVT_begin() {
   if(!CkMyPe()) {
     /* TODO: Provide option for using completion detection */
     CkStartQD(CkCallback(CkIndex_PE::GVT_contribute(), thisProxy));
-    DEBUG("***************GVT begins*******************\n");
+    DEBUG4("***************GVT begins*******************\n");
   }
 }
 
@@ -133,7 +133,7 @@ void PE::GVT_contribute() {
 }
 
 void PE::GVT_end(Time newGVT) {
-  if(tw_ismaster()) DEBUG("[%d] GVT computed %lf\n",CkMyPe(), newGVT);
+  if(tw_ismaster()) DEBUG4("[%d] GVT computed %lf\n",CkMyPe(), newGVT);
   globals->lastGVT = gvt;
   gvt = newGVT;
   if(newGVT == DBL_MAX) {

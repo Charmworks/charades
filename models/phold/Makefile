@@ -1,6 +1,6 @@
 include ../../src/config.mk
 
-CFLAGS  := -g -w
+CFLAGS  := -w -O3
 LIBDIR  := ../../src/build/
 #ROSS=-I/dcsdata/home/mikida2/ross/src/
 

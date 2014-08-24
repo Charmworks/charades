@@ -49,7 +49,8 @@ class LP : public CBase_LP {
     AvlTree all_events;
 
     // TODO (nikhil): Explain what these cancel fields do/are for.
-    Event *cancel_q, *cancel_q_end;
+    Event *cancel_q;
+    Time min_cancel_q;
     bool enqueued_cancel_q;
 
     Time current_time;
@@ -72,11 +73,7 @@ class LP : public CBase_LP {
     void process_cancel_q(); /**< Cancel the events in our cancel queue */
 
     Time getMinCancelTime() {
-      if(cancel_q_end != NULL) {
-        return cancel_q_end->ts;
-      } else {
-        return DBL_MAX;
-      }
+      return min_cancel_q;
     }
     void delete_pending(Event *e); /**< Delete an event that has not executed yet */
 };

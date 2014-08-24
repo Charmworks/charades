@@ -4,7 +4,7 @@ CC=g++
 
 # Turn on this option to test if code compiles without explicit global variable
 # declarations. We should instead use the PE_VALUE macro defined in globals.h.
-OPTS+=-DNO_GLOBALS
+OPTS+=-DNO_GLOBALS -w -O3
 
 # Turn on this option to test if code compiles without extra forward
 # declarations. Once all of the modules are complete, we should no longer need

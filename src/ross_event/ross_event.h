@@ -8,9 +8,8 @@ enum tw_event_owner
   TW_event_null = 1,      /**< event in unused queue */
   TW_chare_q = 2,     /**<  In the chare's to be executed event queue */
   TW_rollback_q = 3,     /**< In the chare's rollback queue */
-  TW_anti_msg = 4,     /**< Anti-message */
-  TW_sent = 5, /**< Event sent to someone else */
-  TW_pe_pq = 6
+  TW_sent = 4, /**< Event sent to someone else */
+  TW_pe_pq = 5
 };
 
 /**
@@ -74,6 +73,7 @@ class Event {
     cancel_next = NULL;
     out_msgs = NULL;
     state.remote = 0;
+    state.cancel_q = 0;
   }
 
   Event *next, *prev; //for processed queue

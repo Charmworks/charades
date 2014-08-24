@@ -11,6 +11,7 @@
 #include "avl_tree.h"
 
 #include "float.h"
+#include "assert.h"
 
 #include "mpi-interoperate.h"
 
@@ -33,7 +34,7 @@ void init_lps() {
 }
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL), cancel_q_end(NULL),
+LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(DBL_MAX),
            enqueued_cancel_q(false), current_time(0), all_events(0) {
   if(isLpSet == 0) {
     lps = thisProxy;
@@ -112,12 +113,12 @@ void LP::recv_event(RemoteEvent* event) {
   if(event->isAnti) {
     // Find the corresponding real event in the avl tree, cancel it, and
     // deallocate all involved events.
-    DEBUG2("[%d] Went into anti \n", CkMyPe());
     Event *real_e = avlDelete(&all_events, e);
     tw_event_free(this,e);
     e = real_e;
     e->state.remote = 0;
     event_cancel(e);
+    DEBUG2("[%d] Went into anti %d %d %d \n", CkMyPe(), e->send_pe, e->event_id, e->state.owner);
     delete event;
   } else {
     DEBUG2("[%d,%d] Went into regular \n", CkMyPe(), thisIndex);
@@ -209,10 +210,10 @@ void LP::rollback_me(tw_stime ts) {
     e = processed_events.front();
     processed_events.pop_front();
     tw_event_rollback(e);
-    if(processed_events.front() == NULL) break;
-    current_time = processed_events.front()->ts;
     events.push(e);
     e->state.owner = TW_chare_q;
+    if(processed_events.front() == NULL) break;
+    current_time = processed_events.front()->ts;
   }
   if(processed_events.front() == NULL) {
     pes.ckLocalBranch()->update_oldest(&oldest_token, PE_VALUE(lastGVT));
@@ -221,19 +222,23 @@ void LP::rollback_me(tw_stime ts) {
 }
 
 void LP::rollback_me(Event *event) {
-  Event* e;
-  do {
-    e = processed_events.front();
-    processed_events.pop_front();
+  Event* e = processed_events.front();
+  processed_events.pop_front();
+  while (e != event) {
     tw_event_rollback(e);
-    if(processed_events.front() == NULL) break;
-    current_time = processed_events.front()->ts;
     events.push(e);
     e->state.owner = TW_chare_q;
-  } while (e != event);
+    current_time = processed_events.front()->ts;
+    e = processed_events.front();
+    processed_events.pop_front();
+  }
+  assert(e == event);
+  tw_event_rollback(event);
   if(processed_events.front() == NULL) {
     pes.ckLocalBranch()->update_oldest(&oldest_token, PE_VALUE(lastGVT));
     current_time = PE_VALUE(lastGVT);
+  } else {
+    current_time = processed_events.front()->ts;
   }
 }
 
@@ -243,7 +248,7 @@ void LP::process_cancel_q() {
   while (cancel_q) {
     cev = cancel_q;
     cancel_q = NULL;
-    cancel_q_end = NULL;
+    min_cancel_q = DBL_MAX;
 
     for (; cev; cev = nev) {
       nev = cev->cancel_next;
@@ -251,6 +256,12 @@ void LP::process_cancel_q() {
       switch (cev->state.owner) {
         case TW_rollback_q:
           rollback_me(cev);
+          tw_event_free(this, cev);
+          if(events.top() != NULL) {
+            pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+          } else {
+            pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
+          }
           break;
 
         case TW_chare_q:
@@ -258,12 +269,8 @@ void LP::process_cancel_q() {
           tw_event_free(this, cev);
           break;
 
-        case TW_anti_msg:
-          tw_event_free(this, cev);
-          break;
-
         default:
-          tw_error(TW_LOC, "Event in cancel_q, but owner %d not recognized %d %d", cev->state.owner, cev->send_pe, cev->event_id);
+          tw_error(TW_LOC, "Event in cancel_q, but owner %d not recognized %d %d %d", cev->state.owner, cev->send_pe, cev->event_id, cev->ts);
       }
     }
   }

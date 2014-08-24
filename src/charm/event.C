@@ -63,6 +63,7 @@ static inline void freeEvent(tw_event * e) {
     delete e;
   } else {
     e->state.remote = 0;
+    e->state.cancel_q = 0;
     e->state.owner = TW_event_null;
     e->caused_by_me = NULL;
     e->cause_next = NULL;
@@ -120,6 +121,7 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
 void tw_event_free(tw_pe *pe, tw_event *e)
 {
   tw_free_output_messages(e, 0);
+  DEBUG2("Free event %d %d %lf\n", e->send_pe, e->event_id, e->ts);
   freeEvent(e);
 }
 
@@ -175,6 +177,11 @@ void tw_event_send(tw_event * e) {
 }
 
 void event_cancel(tw_event * e) {
+  //already in cancel q, return
+  if(e->state.cancel_q) {
+    return;
+  }
+
   /* already sent, send anti message and free me */
   if(e->state.owner == TW_sent) {
     LP *send_pe = ((tw_lp*)e->src_lp)->owner;
@@ -202,8 +209,8 @@ void event_cancel(tw_event * e) {
 
     case TW_rollback_q:
       e->cancel_next = recv_pe->cancel_q;
-      if(recv_pe->cancel_q_end == NULL) {
-        recv_pe->cancel_q_end = e;
+      if(e->ts < recv_pe->min_cancel_q) {
+        recv_pe->min_cancel_q = e->ts;
       }
       recv_pe->cancel_q = e;
       if(!recv_pe->enqueued_cancel_q) {
@@ -213,7 +220,7 @@ void event_cancel(tw_event * e) {
       return;
 
     default:
-      tw_error(TW_LOC, "unknown fast local cancel owner %d", e->state.owner);
+      tw_error(TW_LOC, "unknown fast local cancel owner %d at %lf", e->state.owner, e->ts);
   }
   tw_error(TW_LOC, "Should be remote cancel!");
 }
