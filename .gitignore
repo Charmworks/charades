@@ -1,3 +1,4 @@
+*.o
 *.def.h
 *.decl.h
 ci_files
