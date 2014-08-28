@@ -49,6 +49,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->g_init_map = init_block_map;
   globals->g_local_map = local_block_map;
   globals->lastGVT = 0.0;
+  globals->netEvents = 0;
   gvt = 0.0;
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
@@ -138,9 +139,7 @@ void PE::GVT_end(Time newGVT) {
   globals->lastGVT = gvt;
   gvt = newGVT;
   if(newGVT == DBL_MAX) {
-    if(!CkMyPe()) {
-      CkExit();
-    }
+    contribute(sizeof(size_t), &(globals->netEvents), CkReduction::sum_double, CkCallback(CkReductionTarget(PE,endExec),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       thisProxy[CkMyPe()].execute_cons();
@@ -149,6 +148,11 @@ void PE::GVT_end(Time newGVT) {
       thisProxy[CkMyPe()].execute_opt();
     }
   }
+}
+
+void PE::endExec(double totalNetEvents) {
+  CkPrintf("Total events executed: %.0lf\n", totalNetEvents);
+  CkExit();
 }
 
 /* Go over the oldest events queue and call fossil collection on the LPs with

@@ -151,6 +151,7 @@ void LP::execute_me_no_save(tw_stime ts) {
     currEvent = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
+    (PE_VALUE(netEvents))++;
   }
   if(events.top() != NULL) {
     pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
@@ -172,6 +173,7 @@ void LP::execute_me(tw_stime ts) {
     LPStruct* lp = (LPStruct*)e->dest_lp;
     reset_bitfields(e);
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
+    (PE_VALUE(netEvents))++;
 
     // Since we're doing optimistic execution, save the event for later.
     processed_events.push_front(e);

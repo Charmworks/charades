@@ -50,6 +50,7 @@ struct Globals {
   tw_out* output;
   std::stack<Event *> eventBuffer;
   tw_stime lastGVT;
+  double netEvents;
 };
 
 // Defined in pe.C
