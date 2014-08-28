@@ -108,7 +108,7 @@ void LP::recv_event(RemoteEvent* event) {
   e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(event->dest_lp)];
   e->send_pe = event->send_pe;
 
-  DEBUG3("Recv %d %d %d %lf\n",event->send_pe, event->event_id, event->isAnti, event->ts);
+  DEBUG3("[%d] Recv %d %d %d %lf\n",CkMyPe(), event->send_pe, event->event_id, event->isAnti, event->ts);
 
   if(event->isAnti) {
     // Find the corresponding real event in the avl tree, cancel it, and

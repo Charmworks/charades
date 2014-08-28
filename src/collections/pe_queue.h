@@ -27,6 +27,7 @@ class PEQueue {
     // Compares the entries at the given indices, and returns the index of the
     // smallest entry.
     unsigned smallest(unsigned, unsigned) const;
+    unsigned largest(unsigned, unsigned) const;
 
     // Helper methods for accessing parents and children based on indices.
     bool has_parent(unsigned) const;

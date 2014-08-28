@@ -123,12 +123,13 @@ void PE::GVT_begin() {
   if(!CkMyPe()) {
     /* TODO: Provide option for using completion detection */
     CkStartQD(CkCallback(CkIndex_PE::GVT_contribute(), thisProxy));
-    DEBUG4("***************GVT begins*******************\n");
   }
+  DEBUG4("[%d] ***************GVT begins*******************\n",CkMyPe());
 }
 
 void PE::GVT_contribute() {
   Time minTime = getMinTime();
+  DEBUG4("[%d] ***************GVT contribute %lf******************\n",CkMyPe(), minTime);
   contribute(sizeof(Time), &minTime,CkReduction::min_double, CkCallback(CkReductionTarget(PE,GVT_end),thisProxy));
 }
 

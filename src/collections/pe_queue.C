@@ -76,7 +76,7 @@ void PEQueue::swap(unsigned i1, unsigned i2) {
 void PEQueue::pull_up(unsigned index) {
   unsigned new_index;
   while (has_parent(index)) {
-    new_index = smallest(index, parent(index));
+    new_index = largest(index, parent(index));
     if (new_index != index) {
       swap(new_index, index);
       index = new_index;
@@ -109,6 +109,14 @@ unsigned PEQueue::smallest(unsigned i1, unsigned i2) const {
     return i1;
   } else {
     return i2;
+  }
+}
+
+unsigned PEQueue::largest(unsigned i1, unsigned i2) const {
+  if (heap[i1]->ts < heap[i2]->ts) {
+    return i2;
+  } else {
+    return i1;
   }
 }
 

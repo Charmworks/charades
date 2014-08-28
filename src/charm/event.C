@@ -111,7 +111,7 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
   e->dest_lp = dest_gid;
   e->src_lp = (tw_lpid)sender;
   e->ts = recv_ts;
-  e->send_pe = (tw_peid)sender->owner;
+  e->send_pe = (tw_peid)(sender->owner);
 
   tw_free_output_messages(e, 0);
 
@@ -165,9 +165,9 @@ void tw_event_send(tw_event * e) {
   e->eventMsg->event_id = e->event_id = ((LP*)(e->send_pe))->uniqID++;
   e->eventMsg->ts = e->ts;
   e->eventMsg->dest_lp = e->dest_lp;
+  DEBUG2("Send %d %llu %lf %lf %llu\n",((LP*)e->send_pe)->thisIndex, e->event_id, e->ts, ((LP*)e->send_pe)->currEvent->ts, ((LP*)(e->send_pe))->uniqID);
   e->eventMsg->send_pe = e->send_pe = ((LP*)(e->send_pe))->thisIndex;
 
-  DEBUG3("Send %d %d %d\n",e->send_pe, e->event_id, e->eventMsg->isAnti);
   lps(dest_peid).recv_event(e->eventMsg);
   e->state.owner = TW_sent;
   e->eventMsg = NULL;
