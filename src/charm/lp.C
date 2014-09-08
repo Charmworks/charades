@@ -53,8 +53,7 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL), min_
     lp_structs[i].gid = PE_VALUE(g_init_map)(thisIndex, i);
     DEBUG("[%d] Created LP %d \n", CkMyPe(), lp_structs[i].gid);
     lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
-    // TODO (eric): Figure out how to handle state
-    lp_structs[i].state = NULL;
+    lp_structs[i].state = malloc(lp_structs[i].type->state_size);
 
     // Initialize the RNG streams for each LP
     if (PE_VALUE(g_tw_rng_default) == 1) {
