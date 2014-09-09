@@ -1,19 +1,12 @@
-#include <charm++.h>
-#include "charm_functions.h"
 #include "ross_setup.h"
 #include "ross_opts.h"
+#include "ross_util.h"
+
+#include "charm_functions.h"
 #include "globals.h"
 #include "avl_tree.h"
-#include "ross_api.h"
-#include "ross.h"
 
-#include <stdio.h>
-#include "mpi-interoperate.h"
-
-// This can probably stay as a static global since it is only used at init for
-// options. This is probably true of most options globals.
 void tw_event_setup() {
-  /* TODO : Make AVL_NODE_COUNT compile time */
   AvlTree avl_list = (AvlTree)calloc(sizeof(struct avlNode), AVL_NODE_COUNT);
   for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
     avl_list[i].next = &avl_list[i + 1];
@@ -37,7 +30,7 @@ void tw_init(int* argc, char*** argv) {
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
   /** Add all of the command line options before parsing them **/
-  if(tw_ismaster()) DEBUG("[%d] Finished charm_init\n", CkMyPe());
+  if(tw_ismaster()) DEBUG("Finished charm_init\n");
   static const tw_optdef kernel_options[] = {
     TWOPT_GROUP("ROSS Kernel"),
     TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
@@ -103,20 +96,10 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
 
   // First we need to figure out the number of KPs (LP Chares)
   PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes()) / PE_VALUE(g_lps_per_chare);
-  // Only one processor should create the chare array
-  if (tw_ismaster()) {
 
-    // Create the lp chare array and store it in the readonly
-    // TODO: We will eventually pass in a mapping function to the chare array
-    // so it can properly determine which global ids it has.
-    // The constructor also initializes the rng for each lp.
-
-    if(tw_ismaster()) DEBUG("[%d] Calling create lps\n", CkMyPe());
-    create_lps();
-  } else {
-    /* but everyone should start their scheduler */
-    StartCharmScheduler();
-  }
+  if(tw_ismaster()) DEBUG("[%d] Calling create lps\n", CkMyPe());
+  // Create the lp chare array and store it in the readonly
+  create_lps();
 }
 
 void tw_run() {
@@ -126,5 +109,5 @@ void tw_run() {
 
 /* TODO: Check what this is meant to do and implement */
 void tw_end() {
- CharmLibExit();
+ charm_exit();
 }

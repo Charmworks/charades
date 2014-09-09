@@ -2,7 +2,6 @@
 #define ROSS_SETUP_H_
 
 #include "typedefs.h"
-#include "charm++.h"
 
 #ifndef AVL_NODE_COUNT
 #define AVL_NODE_COUNT 262144

@@ -13,7 +13,6 @@
 #include "lp_struct.h"
 
 #include <charm++.h>
-#define tw_nnodes CkNumPes
 #define g_tw_mynode CkMyPe()
 #define g_tw_npe 1
 

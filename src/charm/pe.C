@@ -3,6 +3,7 @@
 #include "ross_api.h"
 #include "mpi-interoperate.h"
 #include "float.h"
+#include "charm_functions.h"
 
 CProxy_PE pes;
 
@@ -10,8 +11,17 @@ Globals* get_globals() {
   return pes.ckLocalBranch()->globals;
 }
 
+// TODO(eric): These should probably be moved to a more general Charm backend file
 int tw_ismaster() {
   return (CkMyPe() == 0);
+}
+
+int tw_nnodes() {
+  return CkNumPes();
+}
+
+void charm_exit() {
+  CharmLibExit();
 }
 
 // Starts the simulation by calling the scheduler on all pes
