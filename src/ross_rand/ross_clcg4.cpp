@@ -1,11 +1,10 @@
 #include "ross_clcg4.h"
-#include "typedefs.h"
-#include "lp_struct.h"
-#include "globals.h"
 #include "ross_util.h"
 
-// Included for calloc
-#include <stdlib.h>
+#include "lp_struct.h" // TODO: Make this include ross_lp
+#include "globals.h"
+
+#include <stdlib.h> // Included for calloc
 
 /**
  * @file rand-clcg4.c

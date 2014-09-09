@@ -1,10 +1,10 @@
 #ifndef ROSS_CLCG4_H_
 #define ROSS_CLCG4_H_
 
-// Included for int32_t
-#include <stdint.h>
-// Included for FILE
-#include <stdio.h>
+#include "typedefs.h"
+
+#include <stdint.h> // Included for int32_t
+#include <stdio.h> // Included for FILE
 
 typedef enum SeedType {
 	InitialSeed, LastSeed, NewSeed
@@ -50,5 +50,6 @@ extern void     rng_get_state(tw_rng_stream * g, uint32_t * s);
 extern void     rng_write_state(tw_rng_stream * g, FILE *f);
 extern double   rng_gen_val(tw_rng_stream * g);
 extern double   rng_gen_reverse_val(tw_rng_stream * g);
+extern void     tw_rand_init_streams(tw_lp*, unsigned); 
 
 #endif

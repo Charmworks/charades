@@ -1,6 +1,4 @@
-#include "typedefs.h"
 #include "ross_random.h"
-#include "ross_clcg4.h"
 #include "ross_util.h"
 
 #include <math.h>
