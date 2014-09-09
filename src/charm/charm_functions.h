@@ -6,4 +6,6 @@ void init_lps();
 void charm_init(int argc, char** argv);
 void charm_run();
 
+int tw_ismaster();
+
 #endif

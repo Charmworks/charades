@@ -1,18 +1,12 @@
 #include "ross_opts.h"
 #include "ross_util.h"
+
+#include "charm_functions.h"
+
 #include "typedefs.h"
 #include "globals.h"
-#include "ross_setup.h"
 
 #include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-
-#ifndef NO_GLOBALS
-FILE* g_tw_csv;
-#endif
 
 //TODO: fix this
 void tw_net_stop() { }
@@ -20,7 +14,6 @@ void tw_net_stop() { }
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) ( sizeof((a)) / sizeof((a)[0]) )
 #endif
-
 
 // These globals are probably OK since they are just used at initialization.
 //static const char ross_options[] = ROSS_OPTION_LIST;
@@ -30,7 +23,6 @@ static const tw_optdef *all_groups[10];
 
 static const tw_optdef *opt_groups[10];
 static unsigned int opt_index = 0;
-
 
 // Forward declarations for functions not part of the public API
 static int is_empty(const tw_optdef *def);
@@ -42,8 +34,7 @@ void tw_opt_add(const tw_optdef* options) {
   opt_groups[opt_index] = NULL;
 }
 
-static void show_options(void)
-{
+static void show_options(void) {
   const char *s = ross_options;
   int first = 1;
 
@@ -75,8 +66,7 @@ static void show_options(void)
   }
 }
 
-static void show_help(void)
-{
+static void show_help(void) {
   const tw_optdef **group = all_groups;
   unsigned cnt = 0;
 
@@ -166,8 +156,7 @@ static void show_help(void)
   show_options();
 }
 
-void tw_opt_print(void)
-{
+void tw_opt_print(void) {
   FILE *f = PE_VALUE(g_tw_csv);
   const tw_optdef **group = all_groups;
 
@@ -214,9 +203,7 @@ void tw_opt_print(void)
   //print_options(f);
 }
 
-static void
-need_argument(const tw_optdef *def)
-{
+static void need_argument(const tw_optdef *def) {
   if (tw_ismaster())
     fprintf(stderr,
         "%s: option --%s requires a valid argument\n",
@@ -225,9 +212,7 @@ need_argument(const tw_optdef *def)
   exit(1);
 }
 
-static void
-apply_opt(const tw_optdef *def, const char *value)
-{
+static void apply_opt(const tw_optdef *def, const char *value) {
   switch (def->type)
   {
     case TWOPTTYPE_ULONG:
@@ -291,9 +276,7 @@ apply_opt(const tw_optdef *def, const char *value)
   }
 }
 
-static void
-match_opt(const char *arg)
-{
+static void match_opt(const char *arg) {
   const char *eq = strchr(arg + 2, '=');
   const tw_optdef **group = all_groups;
 
@@ -330,8 +313,7 @@ static const tw_optdef basic[] = {
   TWOPT_END()
 };
 
-static int is_empty(const tw_optdef *def)
-{
+static int is_empty(const tw_optdef *def) {
   for (; def->type; def++) {
     if (def->type == TWOPTTYPE_GROUP)
       continue;
@@ -340,9 +322,7 @@ static int is_empty(const tw_optdef *def)
   return 1;
 }
 
-void
-tw_opt_parse(int *argc_p, char ***argv_p)
-{
+void tw_opt_parse(int *argc_p, char ***argv_p) {
   int argc = *argc_p;
   char **argv = *argv_p;
   unsigned i;

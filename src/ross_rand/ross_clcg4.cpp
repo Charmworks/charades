@@ -7,11 +7,6 @@
 // Included for calloc
 #include <stdlib.h>
 
-#ifndef NO_GLOBALS
-size_t g_tw_rng_max;
-tw_seed* g_tw_rng_seed;
-#endif
-
 /**
  * @file rand-clcg4.c
  * @brief RNG Implementation module

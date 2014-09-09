@@ -6,11 +6,12 @@
 
 CProxy_PE pes;
 
-// This is the API which allows the ROSS code to initialize and access the
-// Charm++ backend.
-
 Globals* get_globals() {
   return pes.ckLocalBranch()->globals;
+}
+
+int tw_ismaster() {
+  return (CkMyPe() == 0);
 }
 
 // Starts the simulation by calling the scheduler on all pes
