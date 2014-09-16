@@ -10,6 +10,7 @@
 #include "ross_util/ross_util.h"
 #include "ross_setup/ross_setup.h"
 #include "ross_maps/ross_block.h"
+#include "charm/charm_functions.h"
 #include "lp_struct.h"
 
 #include <charm++.h>
