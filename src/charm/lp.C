@@ -36,6 +36,10 @@ void init_lps() {
   StartCharmScheduler();
 }
 
+Event* tw_current_event(tw_lp* lp) {
+  return lp->owner->current_event;
+}
+
 #undef PE_VALUE
 #define PE_VALUE(x) pe->globals->x
 

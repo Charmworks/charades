@@ -27,10 +27,12 @@ void tw_event_setup() {
 
 void tw_init(int* argc, char*** argv) {
   charm_init(*argc, *argv);
+  if(tw_ismaster()) DEBUG("Finished charm_init\n");
+
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
+
   /** Add all of the command line options before parsing them **/
-  if(tw_ismaster()) DEBUG("Finished charm_init\n");
   static const tw_optdef kernel_options[] = {
     TWOPT_GROUP("ROSS Kernel"),
     TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
@@ -46,7 +48,7 @@ void tw_init(int* argc, char*** argv) {
   };
 
   tw_opt_add(kernel_options);
-  if(tw_ismaster()) DEBUG("[%d] Added kernel options\n", CkMyPe());
+  if(tw_ismaster()) DEBUG("Added kernel options\n");
 
   // Print out command line, version, and time.
   if (tw_ismaster()) {
@@ -66,27 +68,21 @@ void tw_init(int* argc, char*** argv) {
   }
 
   tw_opt_parse(argc, argv);
-  if(tw_ismaster()) DEBUG("[%d] Parsed opts\n", CkMyPe());
+  if(tw_ismaster()) DEBUG("Parsed opts\n");
 
   if (tw_ismaster() && NULL == (PE_VALUE(g_tw_csv) = fopen("ross.csv", "a"))) {
     tw_error(TW_LOC, "Unable to open: ross.csv\n");
   }
-  if(tw_ismaster()) DEBUG("[%d] Opened csv\n", CkMyPe());
+  if(tw_ismaster()) DEBUG("Opened csv\n");
 
   tw_opt_print();
   /** Set up all the buffers for events */
-  if(tw_ismaster()) DEBUG("[%d] Printed opts\n", CkMyPe());
+  if(tw_ismaster()) DEBUG("Printed opts\n");
   tw_event_setup();
-  if(tw_ismaster()) DEBUG("[%d] Event set up done\n", CkMyPe());
+  if(tw_ismaster()) DEBUG("Event set up done\n");
 }
 
-// TODO: In original ROSS this was defined in a processor centric way in that
-// nlp, and g_tw_nlp were the number of lps on just this processor. Now we want
-// to know the total number of LPs so we can create a chare array of that size.
 void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
-  // TODO: This should probably be in a group chare for config variables
-  // TODO: What will this variable mean in the new ROSS? Right now it is lps on
-  // on this PE which makes no sense. It should be total lps.
   PE_VALUE(g_tw_nlp) = nlp;
   PE_VALUE(g_tw_msg_sz) = msg_sz;
   PE_VALUE(g_tw_rng_seed) = seed;
@@ -97,7 +93,7 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // First we need to figure out the number of KPs (LP Chares)
   PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes()) / PE_VALUE(g_lps_per_chare);
 
-  if(tw_ismaster()) DEBUG("[%d] Calling create lps\n", CkMyPe());
+  if(tw_ismaster()) DEBUG("Calling create lps\n");
   // Create the lp chare array and store it in the readonly
   create_lps();
 }

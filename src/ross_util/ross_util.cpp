@@ -1,7 +1,8 @@
 #include "ross_util.h"
 #include "ross_event.h"
+
+#include "charm_functions.h"
 #include "globals.h"
-#include "lp.h"
 
 // Included for va_start etc.
 #include <stdarg.h>
@@ -25,7 +26,7 @@ int tw_output(tw_lp *lp, const char *fmt, ...) {
 
   tw_out *out = allocate_output_buffer();
 
-  cev = lp->owner->current_event;
+  cev = tw_current_event(lp);
 
   if (cev->out_msgs == NULL) {
     cev->out_msgs = out;
@@ -50,8 +51,7 @@ int tw_output(tw_lp *lp, const char *fmt, ...) {
   return ret;
 }
 
-void tw_printf(const char *file, int line, const char *fmt, ...)
-{
+void tw_printf(const char *file, int line, const char *fmt, ...) {
   va_list	ap;
 
   va_start(ap, fmt);
@@ -62,18 +62,17 @@ void tw_printf(const char *file, int line, const char *fmt, ...)
   va_end(ap);
 }
 
-void tw_error(const char *file, int line, const char *fmt, ...)
-{
+void tw_error(const char *file, int line, const char *fmt, ...) {
   va_list	ap;
 
   va_start(ap, fmt);
   // TODO: C API for CkMyPE?
-  fprintf(stdout, "node: %d: error: %s:%i: ", CkMyPe(), file, line);
+  fprintf(stdout, "node: %d: error: %s:%i: ", tw_mype(), file, line);
   vfprintf(stdout, fmt, ap);
   fprintf(stdout, "\n");
   fflush(stdout);
   fflush(stdout);
   va_end(ap);
 
-  CkAbort("Abort called\n");
+  tw_abort("Abort called\n");
 }

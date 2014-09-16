@@ -25,6 +25,14 @@ int tw_nnodes() {
   return CkNumPes();
 }
 
+int tw_mype() {
+  return CkMyPe();
+}
+
+void tw_abort(const char* error) {
+  CkAbort(error);
+}
+
 void charm_exit() {
   CharmLibExit();
 }

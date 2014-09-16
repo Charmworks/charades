@@ -1,5 +1,8 @@
 #ifndef ROSS_EVENT_H_
 #define ROSS_EVENT_H_
+
+#include "typedefs.h"
+
 #include "string.h"
 
 enum tw_event_owner
@@ -55,8 +58,6 @@ struct tw_bf
   unsigned int    c31:1;
 };
 
-static inline void reset_bitfields(tw_event *revent);
-
 typedef struct tw_out {
     struct tw_out *next;
     char message[256 - 2*sizeof(void *)];
@@ -107,8 +108,7 @@ void tw_event_free(tw_pe *pe, tw_event *e);
 void event_cancel(tw_event * e);
 tw_out* allocate_output_buffer();
 
-static inline void reset_bitfields(tw_event *revent)
-{
+static inline void reset_bitfields(tw_event *revent) {
   if (sizeof(revent->cv) == sizeof(uint32_t)){
     *(uint32_t*)&revent->cv = 0;
   }
@@ -119,6 +119,5 @@ static inline void reset_bitfields(tw_event *revent)
     memset(&revent->cv, 0, sizeof(revent->cv));
   }
 }
-
 
 #endif
