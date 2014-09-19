@@ -46,16 +46,18 @@ tw_out* allocate_output_buffer() {
 }
 
 static inline void freeEvent(tw_event * e) {
-  if(e->state.remote == 1) {
-    DEBUG3("Delete %d %d %lf \n",e->send_pe, e->event_id, e->ts);
-    avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
-  }
+  if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    if(e->state.remote == 1) {
+      DEBUG3("Delete %d %d %lf \n",e->send_pe, e->event_id, e->ts);
+      avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
+    }
 
-  tw_event  *event = e->caused_by_me;
-  while (event) {
-    tw_event *n = event->cause_next;
-    freeEvent(event);
-    event = n;
+    tw_event  *event = e->caused_by_me;
+    while (event) {
+      tw_event *n = event->cause_next;
+      freeEvent(event);
+      event = n;
+    }
   }
 
   if(PE_VALUE(eventBuffer).size() >= PE_VALUE(g_tw_max_events_buffered)) {

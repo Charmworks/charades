@@ -153,6 +153,7 @@ void LP::execute_me_no_save(tw_stime ts) {
     LPStruct* lp = (LPStruct*)e->dest_lp;
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
     (PE_VALUE(netEvents))++;
+    tw_event_free(this, e);
   }
   if(events.top() != NULL) {
     pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);

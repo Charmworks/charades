@@ -8,9 +8,9 @@ extern CProxy_PE pes;
 void charm_init(int argc, char** argv) {
 /*TODO: change Charm interface */
 #if CMK_CONVERSE_MPI
-  CharmLibInit(MPI_COMM_WORLD, argc, argv);
+  CharmInit(argc, argv);
 #else
-  CharmLibInit(0, argc, argv);
+  CharmInit(argc, argv);
 #endif
 }
 

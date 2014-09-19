@@ -10,5 +10,5 @@ clean:
 	rm -f *.o *~ core*
 
 
-phold: phold.C $(LIBDIR)/libross.a
+phold: phold.C phold.h $(LIBDIR)/libross.a
 	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) phold.C -o phold $(LDFLAGS) -L$(LIBDIR) -lross

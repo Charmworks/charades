@@ -16,7 +16,9 @@
 #define g_tw_mynode CkMyPe()
 #define g_tw_npe 1
 
+// TODO: Move these
 int tw_ismaster();
+int tw_nnodes();
 
 #define tw_event_data(e) (e->userData)
 

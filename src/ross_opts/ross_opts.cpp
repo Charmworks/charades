@@ -17,7 +17,7 @@ void tw_net_stop() { }
 
 // These globals are probably OK since they are just used at initialization.
 //static const char ross_options[] = ROSS_OPTION_LIST;
-static const char ross_options[] = {};
+static const char ross_options[] = { "" };
 static const char *program;
 static const tw_optdef *all_groups[10];
 
