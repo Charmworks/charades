@@ -45,6 +45,10 @@ typedef Event tw_event;
 typedef LPStruct tw_lp;
 typedef LPType tw_lptype;
 
+// Statistics
+typedef unsigned long long tw_stat;
+typedef uint64_t tw_clock;
+
 // TODO: This doesn't really make sense;
 typedef LP tw_pe;
 
