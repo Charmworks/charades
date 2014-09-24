@@ -111,7 +111,7 @@ void PE::initialize_rand(CProxy_Initialize srcProxy) {
 
 void PE::execute_seq() {
   while(getMinTime() < PE_VALUE(g_tw_ts_end)) {
-    schedule_nextLP_no_save();
+    PE_STATS(s_nevent_processed)+= schedule_nextLP_no_save();
   }
   CkExit();
 }
@@ -236,6 +236,9 @@ int PE::schedule_nextLP_no_save() {
   LPToken *min = nextEvents.top();
   if(min == NULL) return 0;
   /* TODO: this is not right, we want to pass the time stamp of the next event */
+  if (min->ts == currTime) {
+    PE_STATS(s_pe_event_ties)++;
+  }
   currTime = min->ts;
   min->lp->execute_me_no_save(nextEvents.top()->ts);
   return 1;
