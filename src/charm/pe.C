@@ -11,6 +11,10 @@ Globals* get_globals() {
   return pes.ckLocalBranch()->globals;
 }
 
+Statistics* get_statistics() {
+  return pes.ckLocalBranch()->statistics;
+}
+
 // TODO(eric): These should probably be moved to a more general Charm backend file
 int tw_ismaster() {
   return (CkMyPe() == 0);
@@ -42,6 +46,7 @@ void charm_run() {
 }
 
 PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
+  // init globals
   globals = new Globals;
   globals->g_lps_per_chare = 4;
   globals->g_tw_synchronization_protocol = CONSERVATIVE;
@@ -62,6 +67,39 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->lastGVT = 0.0;
   globals->netEvents = 0;
   gvt = 0.0;
+
+  // init stats
+  statistics = new Statistics;
+  statistics->s_max_run_time = 0.0;
+  statistics->s_net_events = 0;
+  statistics->s_nevent_processed = 0;
+  statistics->s_nevent_abort = 0;
+  statistics->s_e_rbs = 0;
+  statistics->s_rb_total = 0;
+  statistics->s_rb_primary = 0;
+  statistics->s_rb_secondary = 0;
+  statistics->s_fc_attempts = 0;
+  statistics->s_pq_qsize = 0;
+  statistics->s_nsend_network = 0;
+  statistics->s_nread_network = 0;
+  statistics->s_nsend_remote_rb = 0;
+  statistics->s_nsend_loc_remote = 0;
+  statistics->s_nsend_net_remote = 0;
+  statistics->s_ngvts = 0;
+  statistics->s_mem_buffers_used = 0;
+  statistics->s_pe_event_ties = 0;
+  statistics->s_min_detected_offset = 0.0;
+  statistics->s_total = 0;
+  statistics->s_net_read = 0;
+  statistics->s_gvt = 0;
+  statistics->s_fossil_collect = 0;
+  statistics->s_event_abort = 0;
+  statistics->s_event_process = 0;
+  statistics->s_pq = 0;
+  statistics->s_rollback = 0;
+  statistics->s_cancel_q = 0;
+  statistics->s_avl = 0;
+
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }

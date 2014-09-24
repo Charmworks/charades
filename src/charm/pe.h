@@ -9,6 +9,7 @@
 #include "float.h"
 
 #include "globals.h"
+#include "statistics.h"
 #include "ross.h"
 #include "ross_random.h"
 
@@ -23,6 +24,9 @@ class PE: public CBase_PE {
   public:
     // A struct of global variables stored on each PE.
     Globals* globals;
+    // A sturct of statistics variables
+    Statistics* statistics;
+
     // TODO: Do we need another queue for this?
     std::vector<LP*> cancel_q;
     tw_rng  *rng;
@@ -31,6 +35,7 @@ class PE: public CBase_PE {
 
     ~PE() {
       delete globals;
+      delete statistics;
     }
 
     void initialize_rand(CProxy_Initialize);
