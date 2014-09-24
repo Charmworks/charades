@@ -2,3 +2,4 @@
 *.def.h
 *.decl.h
 ci_files
+config.mk
