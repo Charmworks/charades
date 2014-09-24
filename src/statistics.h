@@ -1,7 +1,7 @@
 #ifndef STATISTICS_H_
 #define STATISTICS_H_
 
-#include "typedef.h"
+#include "typedefs.h"
 
 // A struct for holding PE level statistics
 // An instance of this will be on each PE chare
