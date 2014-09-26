@@ -134,6 +134,10 @@ void PE::scheduler_sequential() {
 
     PE_STATS(s_nevent_processed)+= currentLPToken->lp->execute_many_no_save(nextEvents.top()->ts);
 
+    // Reinsert the LPToken
+    // TODO: make sure ->ts is getting updated
+    nextEvents.insert(currentLPToken, currentLPToken->ts);
+
   }
   PE_STATS(s_max_run_time) = CkWallTimer() - start;
 
