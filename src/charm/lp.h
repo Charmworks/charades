@@ -40,6 +40,8 @@ class LP : public CBase_LP {
     LPList lp_structs;
     ProcessedQueue processed_events;
     PendingQueue events;
+
+    bool isOptimistic;
   public:
     // Used to give a unique EventID to every message sent
     EventID uniqID;
@@ -63,8 +65,9 @@ class LP : public CBase_LP {
     void stopScheduler(); /**< Stops the scheduler after LPs have been created */
 
     void recv_event(RemoteEvent*); /**< receive an event designated for me and add to my event Q */
+    void push_event(Event*); /**< Directly push an event onto the LP queue when short-circuiting the send */
 
-    void execute_me_no_save(Time); /**< execute the events with least time stamp till the given ts*/
+    //void execute_me_no_save(Time); /**< execute the events with least time stamp till the given ts*/
     void execute_me(Time); /**< execute the events with least time stamp till the given ts*/
     void rollback_me(Time); /**< rollback this collection of LPs until the given ts */
     void rollback_me(Event*); /**< rollback this collection of LPs until the given ts */

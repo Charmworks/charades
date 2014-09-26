@@ -43,6 +43,8 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL), min_
     isLpSet = 1;
   }
 
+  isOptimistic = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
+
   lp_structs.resize(PE_VALUE(g_lps_per_chare));
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
@@ -136,14 +138,21 @@ void LP::recv_event(RemoteEvent* event) {
       rollback_me(e->ts);
     }
 
-    // Push the event into the queue and set its owner field.
-    events.push(e);
-    e->state.owner = TW_chare_q;
-    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+    // Push the event into the queue.
+    push_event(e);
   }
 }
 
-void LP::execute_me_no_save(tw_stime ts) {
+// Puts an even into the queue, updates the PE queues, and sets owner.
+// This can also be used to do a short-circuited send.
+void LP::push_event(Event* e) {
+  events.push(e);
+  e->state.owner = TW_chare_q;
+  pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+}
+
+// Doesn't save events, nor does it need to check for rollbacks.
+/*void LP::execute_me_no_save(tw_stime ts) {
   // Pop the top event, update current time and event, then execute.
   while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
     Event* e = events.top();
@@ -160,26 +169,43 @@ void LP::execute_me_no_save(tw_stime ts) {
   } else {
     pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
   }
-}
+}*/
 
 // Execute events up to timestamp ts.
 // 1) If next event is still earlier than ts, pop it.
 // 2) Execute the popped event on its destination LP.
 // 3) Update the PE with our new earliest timestamp.
+// With short-circuited sends we now need to lazily check for rollbacks.
 void LP::execute_me(tw_stime ts) {
   while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
+    // Do a lazy check for rollbacks from short-circuit sends
+    if (isOptimistic) {
+      if (events.top()->ts < processed_events.front()->ts) {
+        // Do a rollback here
+        // TODO (eric): Make sure this is right
+        rollback_me(events.top()->ts);
+      }
+    }
+
+    // Pull off the top event for execution
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
     currEvent = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
-    reset_bitfields(e);
+    if (isOptimistic) {
+      reset_bitfields(e);
+    }
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
     (PE_VALUE(netEvents))++;
 
-    // Since we're doing optimistic execution, save the event for later.
-    processed_events.push_front(e);
-    e->state.owner = TW_rollback_q;
+    // Enqueue or deallocate the event depending on sync mode
+    if (isOptimistic) {
+      processed_events.push_front(e);
+      e->state.owner = TW_rollback_q;
+    } else {
+      tw_event_free(this, e);
+    }
   }
   if(events.top() != NULL) {
     pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);

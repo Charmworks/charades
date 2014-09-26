@@ -111,14 +111,14 @@ void PE::initialize_rand(CProxy_Initialize srcProxy) {
 
 void PE::execute_seq() {
   while(getMinTime() < PE_VALUE(g_tw_ts_end)) {
-    PE_STATS(s_nevent_processed)+= schedule_nextLP_no_save();
+    PE_STATS(s_nevent_processed)+= schedule_next_LP();
   }
   CkExit();
 }
 
 void PE::execute_cons() {
   while(getMinTime() < gvt + PE_VALUE(g_tw_lookahead)) {
-    schedule_nextLP_no_save();
+    schedule_next_LP();
   }
 
   GVT_begin();
@@ -133,7 +133,7 @@ void PE::execute_opt() {
   process_cancel_q();
 
   for(int events = 0; events < PE_VALUE(g_tw_mblock); events++) {
-    if(!schedule_nextLP())  break;
+    if(!schedule_next_LP())  break;
   }
   thisProxy[CkMyPe()].execute_opt();
 }
@@ -223,24 +223,24 @@ void PE::collect_fossils() {
  * executing its events till the next time (instead of
  * only executing one event and returning the control).
  */
-int PE::schedule_nextLP() {
+int PE::schedule_next_LP() {
   LPToken *min = nextEvents.top();
   if(min == NULL) return 0;
-  /* TODO: this is not right, we want to pass the time stamp of the next event */
+  if (min->ts == currTime) {
+    PE_STATS(s_pe_event_ties)++;
+  }
+  // TODO: this is not right, we want to pass the time stamp of the next event
   currTime = min->ts;
   min->lp->execute_me(nextEvents.top()->ts);
   return 1;
 }
 
-int PE::schedule_nextLP_no_save() {
+/*int PE::schedule_nextLP_no_save() {
   LPToken *min = nextEvents.top();
   if(min == NULL) return 0;
-  /* TODO: this is not right, we want to pass the time stamp of the next event */
-  if (min->ts == currTime) {
-    PE_STATS(s_pe_event_ties)++;
-  }
+  // TODO: this is not right, we want to pass the time stamp of the next event
   currTime = min->ts;
   min->lp->execute_me_no_save(nextEvents.top()->ts);
   return 1;
-}
+}*/
 #include "pe.def.h"
