@@ -19,6 +19,17 @@ LPToken* PEQueue::top() const {
   else            return heap[0];
 }
 
+// Returns a pointer to the top token on the queue AND removes it
+LPToken* PEQueue::pop() {
+  if (size == 0) {
+    return NULL;
+  } else {
+    LPToken* top = heap[0];
+    remove(top);
+    return top;
+  }
+}
+
 // Inserts the token pointer at the bottom of the heap, then pulls it up to
 // the correct index in a log number of steps.
 void PEQueue::insert(LPToken* t, Time ts) {
