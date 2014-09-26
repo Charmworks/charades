@@ -76,6 +76,10 @@ class LP : public CBase_LP {
       return min_cancel_q;
     }
     void delete_pending(Event *e); /**< Delete an event that has not executed yet */
+
+    // Execute many events, upto given time
+    int execute_many(Time until);
+
 };
 
 #endif

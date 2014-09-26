@@ -162,6 +162,28 @@ void LP::execute_me_no_save(tw_stime ts) {
   }
 }
 
+// Execute many events, upto the given timestamp
+// events are freed after being executed
+// Returns the number of executed events
+int LP::execute_many_no_save(Time until) {
+  if (until == DBL_MAX) {
+    cout << "ALERT: lp executing all events until DBL_MAX!" << endl;
+  }
+  int event_counter = 0;
+  while (events.top() != NULL && events.top()->ts <= until) {
+    currEvent = events.pop();
+    current_time = e->ts;
+    LPStruct* lp = (LPStruct*)currEvent->dest_lp;
+
+    reset_bitfields(currEvent);
+    lp->type->execute(lp->state, &currEvent->cv, tw_event_data(e), lp);
+    event_counter++;
+    tw_event_free(this, me);
+  }
+  return event_counter;
+}
+
+
 // Execute events up to timestamp ts.
 // 1) If next event is still earlier than ts, pop it.
 // 2) Execute the popped event on its destination LP.

@@ -132,7 +132,7 @@ void PE::scheduler_sequential() {
       gvt_print(gvt);
     }
 
-    PE_STATS(s_nevent_processed)+= currentLPToken->lp->execute_many(nextEvents.top()->ts);
+    PE_STATS(s_nevent_processed)+= currentLPToken->lp->execute_many_no_save(nextEvents.top()->ts);
 
   }
   PE_STATS(s_max_run_time) = CkWallTimer() - start;
