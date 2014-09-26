@@ -51,6 +51,7 @@ struct Globals {
   std::stack<Event *> eventBuffer;
   tw_stime lastGVT;
   double netEvents;
+  double total_time;
 };
 
 // Defined in pe.C

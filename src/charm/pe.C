@@ -32,6 +32,7 @@ void charm_exit() {
 void charm_run() {
   if(tw_ismaster()) DEBUG("[%d] Initializing schedulers \n", CkMyPe());
   if (tw_ismaster()) {
+    PE_VALUE(total_time) = CkWallTimer();
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
       pes.execute_seq();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
@@ -66,6 +67,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->g_local_map = local_block_map;
   globals->lastGVT = 0.0;
   globals->netEvents = 0;
+  globals->total_time = 0.0;
   gvt = 0.0;
 
   // init stats
@@ -188,6 +190,7 @@ void PE::GVT_end(Time newGVT) {
   globals->lastGVT = gvt;
   gvt = newGVT;
   if(newGVT == DBL_MAX) {
+    PE_VALUE(total_time) = CkWallTimer() - PE_VALUE(total_time);
     contribute(sizeof(size_t), &(globals->netEvents), CkReduction::sum_double, CkCallback(CkReductionTarget(PE,endExec),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
@@ -201,6 +204,8 @@ void PE::GVT_end(Time newGVT) {
 
 void PE::endExec(double totalNetEvents) {
   CkPrintf("Total events executed: %.0lf\n", totalNetEvents);
+  CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
+  CkPrintf("Event rate: %f events/s\n", totalNetEvents/PE_VALUE(total_time));
   CkExit();
 }
 
