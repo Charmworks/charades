@@ -116,7 +116,7 @@ void PE::scheduler_sequential() {
 
   LPToken *currentLPToken;
 
-  cout << "*** START SEQUENTIAL SIMULATION ***\n\n";
+  CkPrintf("*** START SEQUENTIAL SIMULATION ***\n\n");
   
   double start = CkWallTimer();  
   while (currentLPToken = nextEvents.pop()) {
@@ -137,7 +137,7 @@ void PE::scheduler_sequential() {
   }
   PE_STATS(s_max_run_time) = CkWallTimer() - start;
 
-  cout << "*** END SIMULATION ***\n\n";
+ CkPrintf("*** END SIMULATION ***\n\n");
 
   tw_stats();
 
