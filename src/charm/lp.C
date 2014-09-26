@@ -167,18 +167,18 @@ void LP::execute_me_no_save(tw_stime ts) {
 // Returns the number of executed events
 int LP::execute_many_no_save(Time until) {
   if (until == DBL_MAX) {
-    cout << "ALERT: lp executing all events until DBL_MAX!" << endl;
+    printf("ALERT: lp executing all events until DBL_MAX!\n");
   }
   int event_counter = 0;
   while (events.top() != NULL && events.top()->ts <= until) {
     currEvent = events.pop();
-    current_time = e->ts;
+    current_time = currEvent->ts;
     LPStruct* lp = (LPStruct*)currEvent->dest_lp;
 
     reset_bitfields(currEvent);
-    lp->type->execute(lp->state, &currEvent->cv, tw_event_data(e), lp);
+    lp->type->execute(lp->state, &currEvent->cv, tw_event_data(currEvent), lp);
     event_counter++;
-    tw_event_free(this, me);
+    tw_event_free(this, currEvent);
   }
   return event_counter;
 }
