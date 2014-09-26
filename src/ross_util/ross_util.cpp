@@ -6,6 +6,29 @@
 // Included for va_start etc.
 #include <stdarg.h>
 
+inline void gvt_print(Time gvt) {
+  if(gvt_print_interval == 1.0) {
+    return;
+  }
+
+  if(percent_complete == 0.0) {
+    percent_complete = gvt_print_interval;
+    return;
+  }
+
+  printf("GVT #%d: simulation %d%% complete (", PE_VALUE(lastGVT), (int) min(100, floor(100 * (gvt/g_tw_ts_end))));
+
+  if (gvt == DBL_MAX) {
+    printf("GVT = %s", "MAX");
+  } else {
+    printf("GVT = %.4f", gvt);
+  }
+
+  printf(").\n");
+
+  percent_complete += gvt_print_interval;
+}
+
 /**
  * Rollback-aware printf, i.e. if the event gets rolled back, undo the printf.
  * We can'd do that of course so we store the message in a buffer until GVT.
