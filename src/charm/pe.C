@@ -139,7 +139,7 @@ void PE::scheduler_sequential() {
 
  CkPrintf("*** END SIMULATION ***\n\n");
 
-  tw_stats();
+  // tw_stats(); // TODO: implement this!
 
   CkExit();
 }
