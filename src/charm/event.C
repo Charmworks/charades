@@ -136,6 +136,9 @@ void tw_event_send(tw_event * e) {
   tw_lp     *src_lp = (tw_lp*)e->src_lp;
   LP        *send_pe = src_lp->owner;
   int dest_peid;
+  LP *dest_pe;
+
+  bool isOptimistic = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
 
   tw_stime   recv_ts = e->ts;
   DEBUG2("[%d] Sending event to %d at %lf \n", CkMyPe(), e->dest_lp, recv_ts);
@@ -161,20 +164,26 @@ void tw_event_send(tw_event * e) {
 
   // call LP remote mapping function to get dest_pe
   dest_peid = src_lp->type->chare_map(e->dest_lp);
-
-  // fill in entries for remote msg
-  // TODO (nikhil): Why are these set here and not at event creation?
+  // TODO: Here is where we decide (for now) whether to short circuit or not...
+  // however in the future this will be refactored to be cleaner.
+  // TODO: Does filling in the event msg need to be done even for a short-circuit
+  // TODO: May be able to further optimize conservative to not make any event copies
+  // (right now recv event allocates a new event when in cons it may not have to)
   e->eventMsg->event_id = e->event_id = ((LP*)(e->send_pe))->uniqID++;
   e->eventMsg->ts = e->ts;
   e->eventMsg->dest_lp = e->dest_lp;
-  DEBUG2("Send %d %llu %lf %lf %llu\n",((LP*)e->send_pe)->thisIndex, e->event_id, e->ts, ((LP*)e->send_pe)->currEvent->ts, ((LP*)(e->send_pe))->uniqID);
   e->eventMsg->send_pe = e->send_pe = ((LP*)(e->send_pe))->thisIndex;
-
-  lps(dest_peid).recv_event(e->eventMsg);
+  if (dest_peid == send_pe->thisIndex) {
+    send_pe->recv_event(e->eventMsg);
+  } else if ((dest_pe = lps(dest_peid).ckLocal()) != NULL) {
+    dest_pe->recv_event(e->eventMsg);
+  } else {
+    lps(dest_peid).recv_event(e->eventMsg);
+  }
   e->state.owner = TW_sent;
   e->eventMsg = NULL;
-  if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-   freeEvent(e);
+  if(!isOptimistic) {
+    freeEvent(e);
   }
 }
 

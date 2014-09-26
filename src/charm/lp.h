@@ -65,7 +65,6 @@ class LP : public CBase_LP {
     void stopScheduler(); /**< Stops the scheduler after LPs have been created */
 
     void recv_event(RemoteEvent*); /**< receive an event designated for me and add to my event Q */
-    void push_event(Event*); /**< Directly push an event onto the LP queue when short-circuiting the send */
 
     //void execute_me_no_save(Time); /**< execute the events with least time stamp till the given ts*/
     void execute_me(Time); /**< execute the events with least time stamp till the given ts*/

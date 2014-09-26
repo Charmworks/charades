@@ -139,16 +139,10 @@ void LP::recv_event(RemoteEvent* event) {
     }
 
     // Push the event into the queue.
-    push_event(e);
+    events.push(e);
+    e->state.owner = TW_chare_q;
+    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
   }
-}
-
-// Puts an even into the queue, updates the PE queues, and sets owner.
-// This can also be used to do a short-circuited send.
-void LP::push_event(Event* e) {
-  events.push(e);
-  e->state.owner = TW_chare_q;
-  pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
 }
 
 // Doesn't save events, nor does it need to check for rollbacks.
@@ -177,16 +171,14 @@ void LP::push_event(Event* e) {
 // 3) Update the PE with our new earliest timestamp.
 // With short-circuited sends we now need to lazily check for rollbacks.
 void LP::execute_me(tw_stime ts) {
-  while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
-    // Do a lazy check for rollbacks from short-circuit sends
-    if (isOptimistic) {
-      if (events.top()->ts < processed_events.front()->ts) {
-        // Do a rollback here
-        // TODO (eric): Make sure this is right
-        rollback_me(events.top()->ts);
-      }
+  // Do a lazy check for rollbacks from short-circuit sends
+  // TODO: Should this become default if we switch to expedited sends?
+  if (isOptimistic) {
+    if (events.top()->ts < processed_events.front()->ts) {
+      rollback_me(events.top()->ts);
     }
-
+  }
+  while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
     // Pull off the top event for execution
     Event* e = events.top();
     events.pop();
