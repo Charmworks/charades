@@ -109,6 +109,41 @@ void PE::initialize_rand(CProxy_Initialize srcProxy) {
   contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }
 
+void PE::scheduler_sequential() {
+  gvt = 0.0;
+
+  // Error check: should only be 1 PE
+
+  LPToken *currentLPToken;
+
+  cout << "*** START SEQUENTIAL SIMULATION ***\n\n";
+  
+  double start = CkWallTimer();  
+  while (currentLPToken = nextEvents.pop()) {
+
+    if (currentLPToken->ts == nextEvents.top()->ts) {
+      // NOTE: these are ties between LPTokens!!
+      // if we execute multiple events in one loop, we may not catch all ties      
+      PE_STATS(s_pe_event_ties)++;
+    }
+
+    gvt = currentLPToken->ts;
+    if (gvt / PE_VALUE(g_tw_ts_end) > percent_complete) {
+      gvt_print(gvt);
+    }
+
+    PE_STATS(s_nevent_processed)+= currentLPToken->execute_many(nextEvents.top()->ts);
+
+  }
+  PE_STATS(s_max_run_time) = CkWallTimer() - start;
+
+  cout << "*** END SIMULATION ***\n\n";
+
+  tw_stats();
+
+  CkExit();
+}
+
 void PE::execute_seq() {
   while(getMinTime() < PE_VALUE(g_tw_ts_end)) {
     PE_STATS(s_nevent_processed)+= schedule_nextLP_no_save();

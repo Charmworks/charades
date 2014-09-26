@@ -53,6 +53,10 @@ class PE: public CBase_PE {
     int schedule_nextLP(); /**< find the smallest time step and execute */
     void process_cancel_q();
 
+    // ROSS-style Schedulers
+    // TODO: does this need to be public?
+    void scheduler_sequential();
+
     /** \brief Methods for GVT computation */
     void GVT_begin(); /**< begin gvt computation*/
     void GVT_contribute(); /**< all sent messages received, contribute to GVT */
