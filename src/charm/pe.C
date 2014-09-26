@@ -148,6 +148,44 @@ void PE::scheduler_sequential() {
   CkExit();
 }
 
+void PE::scheduler_conservative() {
+
+  if (CkMyNode() == 0) {
+    // TODO: is this correct? is this the best way to it (hardcoding is bad)?
+    printf("*** START PARALLEL CONSERVATIVE SIMULATION ***\n\n");
+  }
+
+  double sched_start = CkWallTimer();
+  while (1) {
+    if (CkNumNodes() > 1) {
+      // Do a network read if we have to (track s_net_read stat)
+    }
+
+    // Perform GVT
+
+    if (lastGVT > PE_VALUE(g_tw_ts_end)) {
+      break;
+    }
+
+    // batch loop
+    unsigned int msg_i;
+    for (msg_i = PE_VALUE(g_tw_mblock); msg_i; msg_i--) {
+      // make sure we have some free events, or go to fossil collect
+      
+    }
+
+  }
+  PE_STATS(s_max_run_time) = CkWallTimer() - sched_start;
+
+  if (CkMyNode() == 0) {
+    // TODO: see top of function
+    printf("*** END SIMULATION ***\n\n");
+  }
+
+  // tw_stats(); // TODO: implement
+
+}
+
 void PE::execute_seq() {
   while(getMinTime() < PE_VALUE(g_tw_ts_end)) {
     PE_STATS(s_nevent_processed)+= schedule_nextLP_no_save();
