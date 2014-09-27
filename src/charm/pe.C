@@ -191,7 +191,7 @@ void PE::GVT_end(Time newGVT) {
   gvt = newGVT;
   if(newGVT == DBL_MAX) {
     PE_VALUE(total_time) = CkWallTimer() - PE_VALUE(total_time);
-    contribute(sizeof(size_t), &(globals->netEvents), CkReduction::sum_double, CkCallback(CkReductionTarget(PE,endExec),thisProxy[0]));
+    contribute(sizeof(double), &(globals->netEvents), CkReduction::sum_double, CkCallback(CkReductionTarget(PE,endExec),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       thisProxy[CkMyPe()].execute_cons();
