@@ -1,4 +1,4 @@
-#include "lp.h"
+
 #include "pe.h"
 #include "event.h"
 
@@ -174,10 +174,15 @@ void LP::execute_me(tw_stime ts) {
   // Do a lazy check for rollbacks from short-circuit sends
   // TODO: Should this become default if we switch to expedited sends?
   if (isOptimistic) {
-    if (events.top()->ts < processed_events.front()->ts) {
+    // TODO: execute me should probably never be called if events.top() is NULL
+    if (events.top() && processed_events.front() &&
+        events.top()->ts < processed_events.front()->ts) {
       rollback_me(events.top()->ts);
     }
   }
+
+  // TODO: Right now it seems to crash if the DBL_MAX check isn't there. This
+  // will cause problems when we try to batch execute.
   while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
     // Pull off the top event for execution
     Event* e = events.top();
