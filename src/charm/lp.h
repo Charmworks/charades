@@ -55,8 +55,11 @@ class LP : public CBase_LP {
     Time min_cancel_q;
     bool enqueued_cancel_q;
 
+    // A direct pointer to the PE where this LP chare resides.
+    PE* pe;
+
     Time current_time;
-    Event *currEvent;
+    Event *curr_event;
 
     LP(); /**< constructor */
     LP(CkMigrateMessage*) { }

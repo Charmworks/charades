@@ -1,4 +1,4 @@
-
+#include "lp.h"
 #include "pe.h"
 #include "event.h"
 
@@ -23,6 +23,7 @@ int isLpSet = 0;
 // This is the API which allows the ROSS code to initialize the Charm backend.
 void create_lps() {
   if (tw_ismaster()) {
+    // TODO: Why do we use the isLPSet flag rather than just setting it here?
     CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
   }
   StartCharmScheduler();
@@ -36,20 +37,21 @@ void init_lps() {
 }
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(DBL_MAX),
-           enqueued_cancel_q(false), current_time(0), all_events(0) {
+LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
+           min_cancel_q(DBL_MAX), enqueued_cancel_q(false), current_time(0),
+           all_events(0) {
   if(isLpSet == 0) {
     lps = thisProxy;
     isLpSet = 1;
   }
 
   isOptimistic = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
-
+  pe = pes.ckLocalBranch();
   lp_structs.resize(PE_VALUE(g_lps_per_chare));
+
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
-  pes.ckLocalBranch()->register_lp(&next_token, 0.0, &oldest_token, 0.0);
-  DEBUG("[%d] Registered with PE for %d lps - %d \n", CkMyPe(), PE_VALUE(g_lps_per_chare), events.size());
+  pe->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
   // Create array of LPStructs based on globals
   for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
@@ -64,7 +66,9 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL), min_
       tw_rand_init_streams(&lp_structs[i], PE_VALUE(g_tw_nRNG_per_lp));
     }
   }
-  if(tw_ismaster()) DEBUG("[%d] Created LPs \n", CkMyPe());
+
+  // Once all LP Chares have been created and set up, return control to the
+  // ROSS initialization.
   contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
 
@@ -73,8 +77,9 @@ void LP::stopScheduler() {
   CkExit();
 }
 
+// Call init on all LPs then stop the charm scheduler.
 void LP::init() {
-  currEvent = PE_VALUE(abort_event);
+  curr_event = PE_VALUE(abort_event);
   if(tw_ismaster()) DEBUG("[%d] Init lps \n", CkMyPe());
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
@@ -82,14 +87,14 @@ void LP::init() {
   contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
 
-/* Delete an event in our pending queue */
+// Delete an event in our pending queue
 void LP::delete_pending(Event *e) {
   if(events.top() == e) {
     events.erase(e);
     if(events.top() != NULL) {
-      pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+      pe->update_next(&next_token, events.top()->ts);
     } else {
-      pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
+      pe->update_next(&next_token, DBL_MAX);
     }
   } else {
     events.erase(e);
@@ -101,30 +106,24 @@ void LP::delete_pending(Event *e) {
 // 2) Check to see if we need a rollback.
 // 3) Push event into the priority queue.
 void LP::recv_event(RemoteEvent* event) {
-  // TODO (nikhil): Difference between tw_event_new and allocate event?
   // Copy over the relevant fields from the remote event to the local event.
-  DEBUG2("[%d] Received event from chare %d for %lf - %d \n", CkMyPe(), event->send_pe, event->ts, events.size());
   Event *e = allocateEvent(0);
   e->event_id = event->event_id;
   e->ts = event->ts;
-  // TODO (eric): The use of map here could be cleaned up.
   e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(event->dest_lp)];
   e->send_pe = event->send_pe;
-
-  DEBUG3("[%d] Recv %d %d %d %lf\n",CkMyPe(), event->send_pe, event->event_id, event->isAnti, event->ts);
 
   if(event->isAnti) {
     // Find the corresponding real event in the avl tree, cancel it, and
     // deallocate all involved events.
+    // TODO: Maybe we can get rid of the need to allocate e in the first place.
     Event *real_e = avlDelete(&all_events, e);
-    tw_event_free(this,e);
+    tw_event_free(this, e);
     e = real_e;
     e->state.remote = 0;
     event_cancel(e);
-    DEBUG2("[%d] Went into anti %d %d %d \n", CkMyPe(), e->send_pe, e->event_id, e->state.owner);
     delete event;
   } else {
-    DEBUG2("[%d,%d] Went into regular \n", CkMyPe(), thisIndex);
     e->state.remote = 1;
     if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
       avlInsert(&all_events, e);
@@ -137,44 +136,26 @@ void LP::recv_event(RemoteEvent* event) {
     if (processed_events.front() != NULL && e->ts < processed_events.front()->ts) {
       rollback_me(e->ts);
     }
+    if (events.top() != NULL && e->ts < events.top()->ts) {
+      pe->update_next(&next_token, events.top()->ts);
+    }
 
     // Push the event into the queue.
     events.push(e);
     e->state.owner = TW_chare_q;
-    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
   }
 }
 
-// Doesn't save events, nor does it need to check for rollbacks.
-/*void LP::execute_me_no_save(tw_stime ts) {
-  // Pop the top event, update current time and event, then execute.
-  while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
-    Event* e = events.top();
-    events.pop();
-    current_time = e->ts;
-    currEvent = e;
-    LPStruct* lp = (LPStruct*)e->dest_lp;
-    lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
-    (PE_VALUE(netEvents))++;
-    tw_event_free(this, e);
-  }
-  if(events.top() != NULL) {
-    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
-  } else {
-    pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
-  }
-}*/
-
 // Execute events up to timestamp ts.
-// 1) If next event is still earlier than ts, pop it.
-// 2) Execute the popped event on its destination LP.
+// 1) Check for lazy rollbacks if optimistic
+// 2) While next event is still earlier than ts:
+//  2a) Pop event
+//  2b) Execute event
+//  2c) Free event, or put into processed queue if optimistic
 // 3) Update the PE with our new earliest timestamp.
-// With short-circuited sends we now need to lazily check for rollbacks.
 void LP::execute_me(tw_stime ts) {
   // Do a lazy check for rollbacks from short-circuit sends
-  // TODO: Should this become default if we switch to expedited sends?
   if (isOptimistic) {
-    // TODO: execute me should probably never be called if events.top() is NULL
     if (events.top() && processed_events.front() &&
         events.top()->ts < processed_events.front()->ts) {
       rollback_me(events.top()->ts);
@@ -188,16 +169,21 @@ void LP::execute_me(tw_stime ts) {
     Event* e = events.top();
     events.pop();
     current_time = e->ts;
-    currEvent = e;
+    current_event = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
     if (isOptimistic) {
       reset_bitfields(e);
     }
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
+
+    // TODO: This may be changed when the final stats framework is done
     (PE_VALUE(netEvents))++;
 
     // Enqueue or deallocate the event depending on sync mode
     if (isOptimistic) {
+      if (processed_events.front() == NULL) {
+        pe->update_oldest(&oldest_token, e->ts);
+      }
       processed_events.push_front(e);
       e->state.owner = TW_rollback_q;
     } else {
@@ -205,9 +191,9 @@ void LP::execute_me(tw_stime ts) {
     }
   }
   if(events.top() != NULL) {
-    pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+    pe->update_next(&next_token, events.top()->ts);
   } else {
-    pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
+    pe->update_next(&next_token, DBL_MAX);
   }
 }
 
@@ -221,9 +207,9 @@ void LP::fossil_me(tw_stime gvt) {
     tw_event_free(this,e);
   }
   if(processed_events.back() != NULL) {
-    pes.ckLocalBranch()->update_oldest(&oldest_token, processed_events.back()->ts);
+    pe->update_oldest(&oldest_token, processed_events.back()->ts);
   } else {
-    pes.ckLocalBranch()->update_oldest(&oldest_token, gvt);
+    pe->update_oldest(&oldest_token, gvt);
   }
 }
 
@@ -239,11 +225,13 @@ void LP::rollback_me(tw_stime ts) {
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
-    if(processed_events.front() == NULL) break;
-    current_time = processed_events.front()->ts;
+    // TODO: Do we also need to update current_event?
+    if(processed_events.front() != NULL) {
+      current_time = processed_events.front()->ts;
+    }
   }
   if(processed_events.front() == NULL) {
-    pes.ckLocalBranch()->update_oldest(&oldest_token, PE_VALUE(lastGVT));
+    pe->update_oldest(&oldest_token, DBL_MAX);
     current_time = PE_VALUE(lastGVT);
   }
 }
@@ -255,14 +243,17 @@ void LP::rollback_me(Event *event) {
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
+    // TODO: Do we also need to update current_event?
     current_time = processed_events.front()->ts;
     e = processed_events.front();
     processed_events.pop_front();
   }
   assert(e == event);
+  // TODO: Make sure this is only ever called in cases where we don't have to
+  // push event back onto the pending queue.
   tw_event_rollback(event);
   if(processed_events.front() == NULL) {
-    pes.ckLocalBranch()->update_oldest(&oldest_token, PE_VALUE(lastGVT));
+    pe->update_oldest(&oldest_token, DBL_MAX);
     current_time = PE_VALUE(lastGVT);
   } else {
     current_time = processed_events.front()->ts;
@@ -284,10 +275,11 @@ void LP::process_cancel_q() {
         case TW_rollback_q:
           rollback_me(cev);
           tw_event_free(this, cev);
+          // TODO: Move this into rollback_me and only call if needed
           if(events.top() != NULL) {
-            pes.ckLocalBranch()->update_next(&next_token, events.top()->ts);
+            pe->update_next(&next_token, events.top()->ts);
           } else {
-            pes.ckLocalBranch()->update_next(&next_token, DBL_MAX);
+            pe->update_next(&next_token, DBL_MAX);
           }
           break;
 
