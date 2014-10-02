@@ -122,7 +122,6 @@ void PE::execute_cons() {
   while(getMinTime() < gvt + PE_VALUE(g_tw_lookahead)) {
     schedule_next_LP();
   }
-
   GVT_begin();
 }
 
@@ -155,6 +154,7 @@ Time PE::getMinTime() {
     min = DBL_MAX;
   }
 
+  // TODO: This could probably be optimized
   if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
     for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
       Time newTime = cancel_q[pe_i]->getMinCancelTime();
@@ -240,12 +240,4 @@ int PE::schedule_next_LP() {
   return 1;
 }
 
-/*int PE::schedule_nextLP_no_save() {
-  LPToken *min = nextEvents.top();
-  if(min == NULL) return 0;
-  // TODO: this is not right, we want to pass the time stamp of the next event
-  currTime = min->ts;
-  min->lp->execute_me_no_save(nextEvents.top()->ts);
-  return 1;
-}*/
 #include "pe.def.h"
