@@ -59,7 +59,7 @@ class LP : public CBase_LP {
     PE* pe;
 
     Time current_time;
-    Event *curr_event;
+    Event *current_event;
 
     LP(); /**< constructor */
     LP(CkMigrateMessage*) { }

@@ -160,7 +160,7 @@ void tw_event_send(tw_event * e) {
     tw_error(TW_LOC, "It is an error to send an event with pre-loaded output message.");
   }
 
-  link_causality(e, send_pe->currEvent);
+  link_causality(e, send_pe->current_event);
 
   // call LP remote mapping function to get dest_pe
   dest_peid = src_lp->type->chare_map(e->dest_lp);
@@ -242,7 +242,7 @@ void tw_event_rollback(tw_event * event) {
 
   tw_free_output_messages(event, 0);
 
-  dest_lp->owner->currEvent = event;
+  dest_lp->owner->current_event = event;
   dest_lp->owner->current_time = event->ts;
   dest_lp->type->reverse(dest_lp->state, &event->cv, tw_event_data(event), dest_lp);
   (PE_VALUE(netEvents))--;

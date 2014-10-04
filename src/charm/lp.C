@@ -36,6 +36,9 @@ void init_lps() {
   StartCharmScheduler();
 }
 
+#undef PE_VALUE
+#define PE_VALUE(x) pe->globals->x
+
 // Create LPStructs based on mappings, and do initial registration with the PE.
 LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
            min_cancel_q(DBL_MAX), enqueued_cancel_q(false), current_time(0),
@@ -45,15 +48,17 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
     isLpSet = 1;
   }
 
-  isOptimistic = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
+  // Cache the pointer to the local PE chare
   pe = pes.ckLocalBranch();
-  lp_structs.resize(PE_VALUE(g_lps_per_chare));
 
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
   pe->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
+  isOptimistic = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
+
   // Create array of LPStructs based on globals
+  lp_structs.resize(PE_VALUE(g_lps_per_chare));
   for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].owner = this;
     lp_structs[i].gid = PE_VALUE(g_init_map)(thisIndex, i);
@@ -79,7 +84,7 @@ void LP::stopScheduler() {
 
 // Call init on all LPs then stop the charm scheduler.
 void LP::init() {
-  curr_event = PE_VALUE(abort_event);
+  current_event = PE_VALUE(abort_event);
   if(tw_ismaster()) DEBUG("[%d] Init lps \n", CkMyPe());
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
@@ -90,7 +95,7 @@ void LP::init() {
 // Delete an event in our pending queue
 void LP::delete_pending(Event *e) {
   if(events.top() == e) {
-    events.erase(e);
+    events.pop();
     if(events.top() != NULL) {
       pe->update_next(&next_token, events.top()->ts);
     } else {
@@ -119,30 +124,30 @@ void LP::recv_event(RemoteEvent* event) {
     // TODO: Maybe we can get rid of the need to allocate e in the first place.
     Event *real_e = avlDelete(&all_events, e);
     tw_event_free(this, e);
-    e = real_e;
-    e->state.remote = 0;
-    event_cancel(e);
+    real_e->state.remote = 0;
+    event_cancel(real_e);
     delete event;
   } else {
     e->state.remote = 1;
-    if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-      avlInsert(&all_events, e);
-    }
     e->userData = event->userData;
     e->eventMsg = event;
 
-    // Check the timestamps in the queues to see if updates or rollbacks
-    // need to be performed.
-    if (processed_events.front() != NULL && e->ts < processed_events.front()->ts) {
-      rollback_me(e->ts);
-    }
-    if (events.top() != NULL && e->ts < events.top()->ts) {
-      pe->update_next(&next_token, events.top()->ts);
+    // If this event is now the earliest, update the PE
+    if (events.top() == NULL || e->ts < events.top()->ts) {
+      pe->update_next(&next_token, e->ts);
     }
 
-    // Push the event into the queue.
+    // Push the event into the queue
     events.push(e);
     e->state.owner = TW_chare_q;
+
+    // If optimistic, then we also have to hash the event and check for rollback
+    if(isOptimistic) {
+      avlInsert(&all_events, e);
+      if (processed_events.front() != NULL && e->ts < processed_events.front()->ts) {
+        rollback_me(e->ts);
+      }
+    }
   }
 }
 
@@ -190,6 +195,8 @@ void LP::execute_me(tw_stime ts) {
       tw_event_free(this, e);
     }
   }
+
+  // Events were popped, so it is guaranteed we will need to update the PE.
   if(events.top() != NULL) {
     pe->update_next(&next_token, events.top()->ts);
   } else {
@@ -209,14 +216,11 @@ void LP::fossil_me(tw_stime gvt) {
   if(processed_events.back() != NULL) {
     pe->update_oldest(&oldest_token, processed_events.back()->ts);
   } else {
-    pe->update_oldest(&oldest_token, gvt);
+    pe->update_oldest(&oldest_token, DBL_MAX);
   }
 }
 
 // Rollback all processed events up to the passed in timestamp.
-// 1) If the most recent processed event is older than the timestamp, pop it.
-// 2) Execute the reverse handler on the target lp and popped event.
-// 3) Push the popped event onto the event priority queue.
 void LP::rollback_me(tw_stime ts) {
   Event* e;
   while(processed_events.front() != NULL && processed_events.front()->ts > ts) {
@@ -225,38 +229,56 @@ void LP::rollback_me(tw_stime ts) {
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
-    // TODO: Do we also need to update current_event?
     if(processed_events.front() != NULL) {
-      current_time = processed_events.front()->ts;
+      current_event = processed_events.front();
+      current_time = current_event->ts;
     }
   }
+
+  pe->update_next(&next_token, events.top()->ts);
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
+    current_event = NULL;
+    // TODO: Need to make sure that this technically is correct. Or at least
+    // correct enough to work.
     current_time = PE_VALUE(lastGVT);
   }
 }
 
 void LP::rollback_me(Event *event) {
+  bool need_update = false;
   Event* e = processed_events.front();
   processed_events.pop_front();
   while (e != event) {
+    // Rollback the event, and push it back onto the event queue.
+    // This means we will also need to update the PE with our new next event.
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
-    // TODO: Do we also need to update current_event?
+    need_update = true;
+
+    // Get ready for the next iteration
+    //current_event = processed_events.front();
     current_time = processed_events.front()->ts;
     e = processed_events.front();
     processed_events.pop_front();
   }
+  // We've found the event in question so roll it back.
+  // The caller will correctly handle what else to do with the event.
   assert(e == event);
-  // TODO: Make sure this is only ever called in cases where we don't have to
-  // push event back onto the pending queue.
   tw_event_rollback(event);
+
+  // Update the queues, and current variables.
+  if (need_update) {
+    pe->update_next(&next_token, events.top()->ts);
+  }
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
+    current_event = NULL;
     current_time = PE_VALUE(lastGVT);
   } else {
-    current_time = processed_events.front()->ts;
+    current_event = processed_events.front();
+    current_time = current_event->ts;
   }
 }
 
@@ -275,12 +297,6 @@ void LP::process_cancel_q() {
         case TW_rollback_q:
           rollback_me(cev);
           tw_event_free(this, cev);
-          // TODO: Move this into rollback_me and only call if needed
-          if(events.top() != NULL) {
-            pe->update_next(&next_token, events.top()->ts);
-          } else {
-            pe->update_next(&next_token, DBL_MAX);
-          }
           break;
 
         case TW_chare_q:

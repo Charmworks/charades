@@ -25,7 +25,7 @@ int tw_output(tw_lp *lp, const char *fmt, ...) {
 
   tw_out *out = allocate_output_buffer();
 
-  cev = lp->owner->currEvent;
+  cev = lp->owner->current_event;
 
   if (cev->out_msgs == NULL) {
     cev->out_msgs = out;

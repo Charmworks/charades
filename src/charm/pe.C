@@ -46,6 +46,9 @@ void charm_run() {
   StartCharmScheduler();
 }
 
+#undef PE_VALUE
+#define PE_VALUE(x) globals->x
+
 PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   // init globals
   globals = new Globals;
