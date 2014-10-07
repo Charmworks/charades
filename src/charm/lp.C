@@ -137,17 +137,17 @@ void LP::recv_event(RemoteEvent* event) {
       pe->update_next(&next_token, e->ts);
     }
 
-    // Push the event into the queue
-    events.push(e);
-    e->state.owner = TW_chare_q;
-
     // If optimistic, then we also have to hash the event and check for rollback
     if(isOptimistic) {
       avlInsert(&all_events, e);
-      if (processed_events.front() != NULL && e->ts < processed_events.front()->ts) {
+      if (e->ts < current_time) {
         rollback_me(e->ts);
       }
     }
+
+    // Push the event into the queue
+    events.push(e);
+    e->state.owner = TW_chare_q;
   }
 }
 
@@ -160,12 +160,12 @@ void LP::recv_event(RemoteEvent* event) {
 // 3) Update the PE with our new earliest timestamp.
 void LP::execute_me(tw_stime ts) {
   // Do a lazy check for rollbacks from short-circuit sends
-  if (isOptimistic) {
-    if (events.top() && processed_events.front() &&
-        events.top()->ts < processed_events.front()->ts) {
-      rollback_me(events.top()->ts);
-    }
-  }
+  //if (isOptimistic) {
+  //  if (events.top() && processed_events.front() &&
+  //      events.top()->ts < processed_events.front()->ts) {
+  //    rollback_me(events.top()->ts);
+  //  }
+  //}
 
   // TODO: Right now it seems to crash if the DBL_MAX check isn't there. This
   // will cause problems when we try to batch execute.
@@ -258,8 +258,8 @@ void LP::rollback_me(Event *event) {
     need_update = true;
 
     // Get ready for the next iteration
-    //current_event = processed_events.front();
-    current_time = processed_events.front()->ts;
+    current_event = processed_events.front();
+    current_time = current_event->ts;
     e = processed_events.front();
     processed_events.pop_front();
   }

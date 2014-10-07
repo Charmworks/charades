@@ -175,7 +175,8 @@ void tw_event_send(tw_event * e) {
   e->eventMsg->send_pe = e->send_pe = ((LP*)(e->send_pe))->thisIndex;
   if (dest_peid == send_pe->thisIndex) {
     send_pe->recv_event(e->eventMsg);
-  } else if ((dest_pe = lps(dest_peid).ckLocal()) != NULL) {
+  } else if ((dest_pe = lps(dest_peid).ckLocal()) != NULL &&
+      e->ts > dest_pe->current_time) {
     dest_pe->recv_event(e->eventMsg);
   } else {
     lps(dest_peid).recv_event(e->eventMsg);
