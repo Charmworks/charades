@@ -8,7 +8,8 @@
 CProxy_PE pes;
 
 Globals* get_globals() {
-  return pes.ckLocalBranch()->globals;
+  static PE* local_pe = pes.ckLocalBranch();
+  return local_pe->globals;
 }
 
 Statistics* get_statistics() {
