@@ -124,7 +124,7 @@ void PE::execute_seq() {
 
 void PE::execute_cons() {
   while(getMinTime() < gvt + PE_VALUE(g_tw_lookahead)) {
-    schedule_next_LP();
+    PE_STATS(s_nevent_processed)+= schedule_next_LP();
   }
   GVT_begin();
 }
@@ -138,7 +138,12 @@ void PE::execute_opt() {
   process_cancel_q();
 
   for(int events = 0; events < PE_VALUE(g_tw_mblock); events++) {
-    if(!schedule_next_LP())  break;
+    int event_count = schedule_next_LP();
+    if(!event_count) {
+      break;
+    } else {
+      PE_STATS(s_nevent_processed)+= event_count;
+    }
   }
   thisProxy[CkMyPe()].execute_opt();
 }
