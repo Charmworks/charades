@@ -3,6 +3,7 @@
 #include "ross_util.h"
 
 #include "charm_functions.h"
+#include "charm_api.h"
 #include "globals.h"
 #include "avl_tree.h"
 
@@ -21,7 +22,7 @@ void tw_event_setup() {
   output_head[NUM_OUT_MESG - 1].next = NULL;
   PE_VALUE(output) = output_head;
 
-  PE_VALUE(abort_event) = allocateEvent(0);
+  PE_VALUE(abort_event) = charm_allocate_event(0);
   PE_VALUE(abort_event)->state.owner = TW_event_inf;
 }
 

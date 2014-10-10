@@ -2,6 +2,7 @@
 #include "ross_event.h"
 
 #include "charm_functions.h"
+#include "charm_api.h"
 #include "globals.h"
 
 // Included for va_start etc.
@@ -26,7 +27,7 @@ int tw_output(tw_lp *lp, const char *fmt, ...) {
 
   tw_out *out = allocate_output_buffer();
 
-  cev = tw_current_event(lp);
+  cev = current_event(lp);
 
   if (cev->out_msgs == NULL) {
     cev->out_msgs = out;
