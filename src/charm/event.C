@@ -1,7 +1,5 @@
 #include "event.h"
-
 #include "lp.h"
-#include "pe.h"
 
 #include "typedefs.h"
 #include "globals.h"
@@ -41,7 +39,7 @@ tw_event * charm_allocate_event(int needMsg = 1) {
 void charm_free_event(tw_event * e) {
   if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
     if(e->state.remote == 1) {
-      DEBUG3("Delete %d %d %lf \n",e->send_pe, e->event_id, e->ts);
+      //DEBUG3("Delete %d %d %lf \n",e->send_pe, e->event_id, e->ts);
       avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
     }
 
@@ -92,6 +90,7 @@ void charm_event_send(unsigned dest_peid, tw_event * e) {
 
 // Fill and send an anti-message to cancel e
 void charm_anti_send(unsigned dest_peid, tw_event * e) {
+  LP* dest_pe;
   RemoteEvent * eventMsg = new (0) RemoteEvent;
   eventMsg->isAnti = true;
   eventMsg->event_id = e->event_id;
@@ -99,12 +98,23 @@ void charm_anti_send(unsigned dest_peid, tw_event * e) {
   eventMsg->dest_lp = e->dest_lp;
   eventMsg->send_pe = e->send_pe;
 
-  // TODO: Also include short-circuit logic here
-  lps(dest_peid).recv_event(eventMsg);
+  // TODO: Is it ok to short-circuit anti-messages.
+  // TODO: Move the actual short-circuiting decision for both kinds of sends
+  // to a separate place and refine it.
+  // TODO: We might want a "will cause rollback" method on LPs...also should
+  // be used for self sends
+  // Check for possible short-circuiting and send the message
+  if (dest_peid == ((LP*)e->send_pe)->thisIndex) {
+    ((LP*)e->send_pe)->recv_event(e->eventMsg);
+  } else if ((dest_pe = lps(dest_peid).ckLocal()) != NULL) {
+    dest_pe->recv_event(e->eventMsg);
+  } else {
+    lps(dest_peid).recv_event(eventMsg);
+  }
 }
 
-// TODO: Maybe split this up into it's charm and ross components
-// TODO: Could be cleaned up further. More logic can/should be pushed into LP
+// Cancels an event by either sending an anti-message, or calling cancel_event
+// on the local LP chare.
 void charm_event_cancel(tw_event * e) {
   //already in cancel q, return
   if(e->state.cancel_q) {
