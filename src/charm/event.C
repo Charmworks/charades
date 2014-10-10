@@ -120,32 +120,9 @@ void charm_event_cancel(tw_event * e) {
     return;
   }
 
-  // If not already sent, find the owner and cancel appropriately
+  // If is local, then the LP can cancel it
   LP *recv_pe = ((tw_lp*)e->dest_lp)->owner;
-  switch (e->state.owner) {
-    case TW_chare_q:
-      recv_pe->delete_pending(e);
-      tw_event_free(recv_pe, e);
-      return;
-
-    case TW_rollback_q:
-      e->cancel_next = recv_pe->cancel_q;
-      if(e->ts < recv_pe->min_cancel_q) {
-        recv_pe->min_cancel_q = e->ts;
-      }
-      recv_pe->cancel_q = e;
-      if(!recv_pe->enqueued_cancel_q) {
-        // TODO: This should be moved to the LP so PE is cached (also remove pe.h from includes)
-        pes.ckLocalBranch()->cancel_q.push_back(recv_pe);
-        recv_pe->enqueued_cancel_q = true;
-      }
-      return;
-
-    default:
-      tw_error(TW_LOC,
-          "unknown fast local cancel owner %d at %lf", e->state.owner, e->ts);
-  }
-  tw_error(TW_LOC, "Should be remote cancel!");
+  recv_pe->cancel_event(e);
 }
 
 #include "event.def.h"
