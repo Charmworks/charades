@@ -106,20 +106,6 @@ void LP::init() {
   contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
 
-// Delete an event in our pending queue
-void LP::delete_pending(Event *e) {
-  if(events.top() == e) {
-    events.pop();
-    if(events.top() != NULL) {
-      pe->update_next(&next_token, events.top()->ts);
-    } else {
-      pe->update_next(&next_token, DBL_MAX);
-    }
-  } else {
-    events.erase(e);
-  }
-}
-
 // Entry method for sending events to LPs.
 // 1) Check if the event is earlier than our earliest and update the PE.
 // 2) Check to see if we need a rollback.
@@ -283,9 +269,49 @@ void LP::rollback_me(Event *event) {
   }
 }
 
+void LP::cancel_event(Event* e) {
+  switch (e->state.owner) {
+    case TW_chare_q:
+      // If the event hasn't been executed, just free it
+      delete_pending(e);
+      tw_event_free(this, e);
+      return;
+    case TW_rollback_q:
+      // If the event has already been executed, add it to the cancel_q
+      e->cancel_next = cancel_q;
+      cancel_q = e;
+      if (e->ts < min_cancel_q) {
+        min_cancel_q = e->ts;
+      }
+      if (!enqueued_cancel_q) {
+        pe->cancel_q.push_back(this);
+        enqueued_cancel_q = true;
+      }
+      return;
+    default:
+      tw_error(TW_LOC, "Unknown owner in LP::cancel_event: %d", e->state.owner);
+  }
+}
+
+// Delete an event in our pending queue
+void LP::delete_pending(Event *e) {
+  if(events.top() == e) {
+    events.pop();
+    if(events.top() != NULL) {
+      pe->update_next(&next_token, events.top()->ts);
+    } else {
+      pe->update_next(&next_token, DBL_MAX);
+    }
+  } else {
+    events.erase(e);
+  }
+}
+
+// TODO: Clean up this and the cancel_event method for consistency
 void LP::process_cancel_q() {
   tw_event    *cev, *nev;
 
+  // TODO: Why is this a loop?
   while (cancel_q) {
     cev = cancel_q;
     cancel_q = NULL;
@@ -300,13 +326,16 @@ void LP::process_cancel_q() {
           tw_event_free(this, cev);
           break;
 
+        // TODO: Why is this case even here?
         case TW_chare_q:
           delete_pending(cev);
           tw_event_free(this, cev);
           break;
 
         default:
-          tw_error(TW_LOC, "Event in cancel_q, but owner %d not recognized %d %d %d", cev->state.owner, cev->send_pe, cev->event_id, cev->ts);
+          tw_error(TW_LOC,
+              "Event in cancel_q, but owner %d not recognized %d %d %d",
+              cev->state.owner, cev->send_pe, cev->event_id, cev->ts);
       }
     }
   }
