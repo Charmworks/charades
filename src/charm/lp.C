@@ -4,6 +4,7 @@
 
 #include "globals.h"
 #include "ross_api.h"
+#include "charm_api.h"
 
 #include "ross_util.h"
 #include "ross_random.h"
@@ -36,8 +37,17 @@ void init_lps() {
   StartCharmScheduler();
 }
 
-Event* tw_current_event(tw_lp* lp) {
+tw_stime tw_now(tw_lp* lp) {
+  return lp->owner->current_time;
+}
+
+Event* current_event(tw_lp* lp) {
   return lp->owner->current_event;
+}
+
+void set_current_event(tw_lp* lp, Event* event) {
+  lp->owner->current_event = event;
+  lp->owner->current_time = event->ts;
 }
 
 #undef PE_VALUE
@@ -116,7 +126,7 @@ void LP::delete_pending(Event *e) {
 // 3) Push event into the priority queue.
 void LP::recv_event(RemoteEvent* event) {
   // Copy over the relevant fields from the remote event to the local event.
-  Event *e = allocateEvent(0);
+  Event *e = charm_allocate_event(0);
   e->event_id = event->event_id;
   e->ts = event->ts;
   e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(event->dest_lp)];
@@ -129,7 +139,7 @@ void LP::recv_event(RemoteEvent* event) {
     Event *real_e = avlDelete(&all_events, e);
     tw_event_free(this, e);
     real_e->state.remote = 0;
-    event_cancel(real_e);
+    charm_event_cancel(real_e);
     delete event;
   } else {
     e->state.remote = 1;
@@ -233,37 +243,26 @@ void LP::rollback_me(tw_stime ts) {
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
-    if(processed_events.front() != NULL) {
-      current_event = processed_events.front();
-      current_time = current_event->ts;
-    }
   }
 
   pe->update_next(&next_token, events.top()->ts);
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
-    // TODO: Need to make sure that this technically is correct. Or at least
-    // correct enough to work.
     current_time = PE_VALUE(lastGVT);
+  } else {
+    current_event = processed_events.front();
+    current_time = current_event->ts;
   }
 }
 
 void LP::rollback_me(Event *event) {
-  bool need_update = false;
   Event* e = processed_events.front();
   processed_events.pop_front();
   while (e != event) {
-    // Rollback the event, and push it back onto the event queue.
-    // This means we will also need to update the PE with our new next event.
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
-    need_update = true;
-
-    // Get ready for the next iteration
-    current_event = processed_events.front();
-    current_time = current_event->ts;
     e = processed_events.front();
     processed_events.pop_front();
   }
@@ -273,9 +272,7 @@ void LP::rollback_me(Event *event) {
   tw_event_rollback(event);
 
   // Update the queues, and current variables.
-  if (need_update) {
-    pe->update_next(&next_token, events.top()->ts);
-  }
+  pe->update_next(&next_token, events.top()->ts);
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;

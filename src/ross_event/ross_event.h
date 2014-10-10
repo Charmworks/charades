@@ -99,15 +99,15 @@ class Event {
   char *userData;
 };
 
-// TODO (eric): Clean up this API
-void tw_event_send(tw_event * event);
+// Publicly exposed functions
 tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
-tw_event * allocateEvent(int);
-void tw_event_rollback(tw_event * event);
 void tw_event_free(tw_pe *pe, tw_event *e);
-void event_cancel(tw_event * e);
-tw_out* allocate_output_buffer();
+void tw_event_send(tw_event * event);
+void tw_event_rollback(tw_event * event);
 
+// TODO: Should this be here
+tw_out* allocate_output_buffer();
+// TODO: Should this be here?
 static inline void reset_bitfields(tw_event *revent) {
   if (sizeof(revent->cv) == sizeof(uint32_t)){
     *(uint32_t*)&revent->cv = 0;
