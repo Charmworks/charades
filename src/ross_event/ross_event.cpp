@@ -73,7 +73,7 @@ void tw_event_free(tw_pe *pe, tw_event *e) {
 }
 
 void tw_event_send(tw_event * e) {
-  tw_lp     *src_lp = (tw_lp*)e->src_lp;
+  tw_lp* src_lp = (tw_lp*)e->src_lp;
   int dest_peid;
 
   DEBUG2("[%d] Sending event to %d at %lf \n", CkMyPe(), e->dest_lp, recv_ts);

@@ -66,31 +66,39 @@ void charm_free_event(tw_event * e) {
   }
 }
 
-// Fill and send a regular message, possibly using short-circuiting
-void charm_event_send(unsigned dest_peid, tw_event * e) {
-  LP *send_pe = (LP*)(e->send_pe);
-  LP *dest_pe;
-
-  // Fill the fields of the charm message to prepare it for sending
-  e->eventMsg->event_id = e->event_id = ((LP*)(e->send_pe))->uniqID++;
-  e->eventMsg->ts = e->ts;
-  e->eventMsg->dest_lp = e->dest_lp;
-  e->eventMsg->send_pe = e->send_pe = ((LP*)(e->send_pe))->thisIndex;
-
-  // Check for possible short-circuiting and send the message
-  if (dest_peid == send_pe->thisIndex) {
-    send_pe->recv_event(e->eventMsg);
-  } else if ((dest_pe = lps(dest_peid).ckLocal()) != NULL &&
-      e->ts > dest_pe->current_time) {
-    dest_pe->recv_event(e->eventMsg);
+// TODO: Is it ok to short-circuit anti-messages.
+// TODO: We might want a "will cause rollback" method on LPs
+// Encapsulates short-circuiting logic, and sends the remote event msg
+static inline void charm_send(LP* sender, unsigned dest, RemoteEvent* msg) {
+  LP* dest_pe = NULL;
+  if (sender->thisIndex == dest) {
+    dest_pe = sender;
   } else {
-    lps(dest_peid).recv_event(e->eventMsg);
+    dest_pe = lps(dest).ckLocal();
+  }
+  if (dest_pe != NULL) {
+    dest_pe->recv_event(msg);
+  } else {
+    lps(dest).recv_event(msg);
   }
 }
 
-// Fill and send an anti-message to cancel e
+
+// Fill an event's remote message and send it
+void charm_event_send(unsigned dest_peid, tw_event * e) {
+  LP *send_pe = (LP*)(e->send_pe);
+
+  // Fill the fields of the charm message to prepare it for sending
+  e->eventMsg->event_id = e->event_id = send_pe->uniqID++;
+  e->eventMsg->ts = e->ts;
+  e->eventMsg->dest_lp = e->dest_lp;
+  e->eventMsg->send_pe = e->send_pe = send_pe->thisIndex;
+
+  charm_send(send_pe, dest_peid, e->eventMsg);
+}
+
+// Allocate a new remote message, fill it based on e, and send it
 void charm_anti_send(unsigned dest_peid, tw_event * e) {
-  LP* dest_pe;
   RemoteEvent * eventMsg = new (0) RemoteEvent;
   eventMsg->isAnti = true;
   eventMsg->event_id = e->event_id;
@@ -98,19 +106,7 @@ void charm_anti_send(unsigned dest_peid, tw_event * e) {
   eventMsg->dest_lp = e->dest_lp;
   eventMsg->send_pe = e->send_pe;
 
-  // TODO: Is it ok to short-circuit anti-messages.
-  // TODO: Move the actual short-circuiting decision for both kinds of sends
-  // to a separate place and refine it.
-  // TODO: We might want a "will cause rollback" method on LPs...also should
-  // be used for self sends
-  // Check for possible short-circuiting and send the message
-  if (dest_peid == ((LP*)e->send_pe)->thisIndex) {
-    ((LP*)e->send_pe)->recv_event(e->eventMsg);
-  } else if ((dest_pe = lps(dest_peid).ckLocal()) != NULL) {
-    dest_pe->recv_event(e->eventMsg);
-  } else {
-    lps(dest_peid).recv_event(eventMsg);
-  }
+  charm_send(((LP*)((tw_lp*)e->src_lp)->owner), dest_peid, e->eventMsg);
 }
 
 // Cancels an event by either sending an anti-message, or calling cancel_event
