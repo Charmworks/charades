@@ -106,7 +106,7 @@ void charm_anti_send(unsigned dest_peid, tw_event * e) {
   eventMsg->dest_lp = e->dest_lp;
   eventMsg->send_pe = e->send_pe;
 
-  charm_send(((LP*)((tw_lp*)e->src_lp)->owner), dest_peid, e->eventMsg);
+  charm_send(((LP*)((tw_lp*)e->src_lp)->owner), dest_peid, eventMsg);
 }
 
 // Cancels an event by either sending an anti-message, or calling cancel_event

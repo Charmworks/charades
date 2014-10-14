@@ -258,7 +258,9 @@ void LP::rollback_me(Event *event) {
   tw_event_rollback(event);
 
   // Update the queues, and current variables.
-  pe->update_next(&next_token, events.top()->ts);
+  if (events.size() > 0) {
+    pe->update_next(&next_token, events.top()->ts);
+  }
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
