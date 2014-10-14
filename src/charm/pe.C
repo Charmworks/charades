@@ -72,7 +72,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->g_tw_nRNG_per_lp = 1;
   globals->g_tw_rng_default = 1;
   globals->g_tw_csv = NULL;
-  globals->g_tw_max_events_buffered = 1000;
+  globals->g_tw_max_events_buffered = 1000000;
   globals->g_tw_min_detected_offset = DBL_MAX;
   globals->g_tw_lookahead = .005;
   globals->g_init_map = init_block_map;
@@ -81,6 +81,9 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->netEvents = 0;
   globals->total_time = 0.0;
   gvt = 0.0;
+
+  globals->event_buffer = new EventBuffer(globals->g_tw_max_events_buffered,
+                                          globals->g_tw_msg_sz);
 
   // init stats
   statistics = new Statistics;
