@@ -53,7 +53,7 @@ void charm_free_event(tw_event * e) {
 
   // TODO: Once allocation is handled correctly we shouldn't need this if
   if(PE_VALUE(eventBuffer).size() >= PE_VALUE(g_tw_max_events_buffered)) {
-    if(e->eventMsg) delete e->eventMsg;
+    delete e->eventMsg;
     delete e;
   } else {
     e->state.remote = 0;
