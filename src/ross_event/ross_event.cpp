@@ -108,6 +108,9 @@ void tw_event_send(tw_event * e) {
   // Deallocate the event or unlink the event message from the event
   // depending on the synchronization protocol
   if(PE_VALUE(g_tw_synchronization_protocol) != OPTIMISTIC) {
+    // TODO: Have logic for handling eventMsg pointers encapsulated in send/free
+    // methods rather than having ROSS needing to know how to deal with it.
+    e->eventMsg = NULL;
     charm_free_event(e);
   } else {
     e->state.owner = TW_sent;
