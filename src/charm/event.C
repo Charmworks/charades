@@ -19,24 +19,8 @@ tw_event * charm_allocate_event(int needMsg = 1) {
   e = PE_VALUE(event_buffer)->get_event();
   if (needMsg) {
     e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
+    e->userData = e->eventMsg->userData;
   }
-  /*if(PE_VALUE(event_buffer).size() != 0) {
-    e = PE_VALUE(eventBuffer).top();
-    PE_VALUE(eventBuffer).pop();
-  } else {
-    e = new Event;
-  }
-  if(needMsg) {
-    if(e->eventMsg == NULL) {
-      e->eventMsg = new (PE_VALUE(g_tw_msg_sz)) RemoteEvent;
-      e->userData = e->eventMsg->userData;
-    }
-  } else {
-    if(e->eventMsg != NULL) {
-      delete e->eventMsg;
-      e->eventMsg = NULL;
-    }
-  }*/
   return e;
 }
 
@@ -55,20 +39,13 @@ void charm_free_event(tw_event * e) {
     }
   }
 
-  // TODO: Once allocation is handled correctly we shouldn't need this if
-  //if(PE_VALUE(eventBuffer).size() >= PE_VALUE(g_tw_max_events_buffered)) {
-  //  delete e->eventMsg;
-  //  delete e;
-  //} else {
-    e->state.remote = 0;
-    e->state.cancel_q = 0;
-    e->state.owner = TW_event_null;
-    e->caused_by_me = NULL;
-    e->cause_next = NULL;
-    e->cancel_next = NULL;
-    PE_VALUE(event_buffer)->free_event(e);
-    //PE_VALUE(eventBuffer).push(e);
-  //}
+  e->state.remote = 0;
+  e->state.cancel_q = 0;
+  e->state.owner = TW_event_null;
+  e->caused_by_me = NULL;
+  e->cause_next = NULL;
+  e->cancel_next = NULL;
+  PE_VALUE(event_buffer)->free_event(e);
 }
 
 // TODO: Is it ok to short-circuit anti-messages.

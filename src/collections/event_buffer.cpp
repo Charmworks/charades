@@ -25,8 +25,10 @@ Event* EventBuffer::get_event() {
 }
 
 void EventBuffer::free_event(Event* e) {
+  assert(stack_pointer < max_events);
   if (e->eventMsg) {
     free_remote_event(e->eventMsg);
+    e->eventMsg = NULL;
   }
   buffer[stack_pointer++] = e;
 };
