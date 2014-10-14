@@ -8,7 +8,7 @@
 // Included for va_start etc.
 #include <stdarg.h>
 
-inline void gvt_print(Time gvt) {
+/*inline void gvt_print(Time gvt) {
   if(gvt_print_interval == 1.0) {
     return;
   }
@@ -29,7 +29,7 @@ inline void gvt_print(Time gvt) {
   printf(").\n");
 
   percent_complete += gvt_print_interval;
-}
+}*/
 
 /**
  * Rollback-aware printf, i.e. if the event gets rolled back, undo the printf.
