@@ -65,7 +65,6 @@ static inline void charm_send(LP* sender, unsigned dest, RemoteEvent* msg) {
   }
 }
 
-
 // Fill an event's remote message and send it
 void charm_event_send(unsigned dest_peid, tw_event * e) {
   LP *send_pe = (LP*)(e->send_pe);
@@ -85,8 +84,7 @@ void charm_event_send(unsigned dest_peid, tw_event * e) {
 
 // Allocate a new remote message, fill it based on e, and send it
 void charm_anti_send(unsigned dest_peid, tw_event * e) {
-  //RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
-  RemoteEvent * eventMsg = new (0) RemoteEvent;
+  RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
   eventMsg->isAnti = true;
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;
