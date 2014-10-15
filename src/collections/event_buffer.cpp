@@ -8,12 +8,14 @@
 
 EventBuffer::EventBuffer(unsigned max, size_t size) :
     max_events(max), msg_size(size),
-    stack_pointer(max), remote_stack_pointer(max) {
+    stack_pointer(max), remote_stack_pointer(max*0.1) {
   buffer = (Event**)malloc(max*sizeof(Event*));
   remote_buffer = (RemoteEvent**)malloc(max*sizeof(RemoteEvent*));
 
-  for (int i = 0; i < max; i++) {
+  for (int i = 0; i < stack_pointer; i++) {
     buffer[i] = new Event;
+  }
+  for (int i = 0; i < remote_stack_pointer; i++) {
     remote_buffer[i] = new (msg_size) RemoteEvent;
   }
 }

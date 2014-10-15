@@ -63,7 +63,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals = new Globals;
   globals->g_lps_per_chare = 4;
   globals->g_tw_synchronization_protocol = CONSERVATIVE;
-  globals->g_tw_ts_end = 100000;
+  globals->g_tw_ts_end = 1024;
   globals->g_tw_mblock = 16;
   globals->g_tw_gvt_interval = 16;
   globals->g_tw_nlp = globals->g_lps_per_chare;
@@ -72,7 +72,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->g_tw_nRNG_per_lp = 1;
   globals->g_tw_rng_default = 1;
   globals->g_tw_csv = NULL;
-  globals->g_tw_max_events_buffered = 1000000;
+  globals->g_tw_max_events_buffered = 1024;
   globals->g_tw_min_detected_offset = DBL_MAX;
   globals->g_tw_lookahead = .005;
   globals->g_init_map = init_block_map;
