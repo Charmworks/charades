@@ -1,7 +1,7 @@
 #include "event_buffer.h"
 
-#include "globals.h"
 #include "event.h"
+#include "globals.h"
 #include "ross_event.h"
 
 #include <assert.h>

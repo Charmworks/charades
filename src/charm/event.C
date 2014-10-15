@@ -27,7 +27,6 @@ tw_event * charm_allocate_event(int needMsg = 1) {
 void charm_free_event(tw_event * e) {
   if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
     if(e->state.remote == 1) {
-      //DEBUG3("Delete %d %d %lf \n",e->send_pe, e->event_id, e->ts);
       avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
     }
 
@@ -105,7 +104,7 @@ void charm_event_cancel(tw_event * e) {
   // If already sent, populate and send an anti-message
   if(e->state.owner == TW_sent) {
     unsigned dest_peid = ((tw_lp*)e->src_lp)->type->chare_map(e->dest_lp);
-    LP *send_pe = (LP*)e->send_pe;
+    LP *send_pe = (LP*)((tw_lp*)e->src_lp)->owner;
     charm_anti_send(dest_peid, e);
     tw_event_free(send_pe, e);
     return;
