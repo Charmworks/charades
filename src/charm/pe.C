@@ -82,9 +82,6 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   globals->total_time = 0.0;
   gvt = 0.0;
 
-  globals->event_buffer = new EventBuffer(globals->g_tw_max_events_buffered,
-                                          globals->g_tw_msg_sz);
-
   // init stats
   statistics = new Statistics;
   statistics->s_max_run_time = 0.0;

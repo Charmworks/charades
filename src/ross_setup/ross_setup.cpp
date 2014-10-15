@@ -22,7 +22,9 @@ void tw_event_setup() {
   output_head[NUM_OUT_MESG - 1].next = NULL;
   PE_VALUE(output) = output_head;
 
-  PE_VALUE(abort_event) = charm_allocate_event(0);
+  PE_VALUE(event_buffer) = new EventBuffer(PE_VALUE(g_tw_max_events_buffered),
+                                           PE_VALUE(g_tw_msg_sz));
+  PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_event();
   PE_VALUE(abort_event)->state.owner = TW_event_inf;
 }
 
@@ -37,14 +39,13 @@ void tw_init(int* argc, char*** argv) {
   static const tw_optdef kernel_options[] = {
     TWOPT_GROUP("ROSS Kernel"),
     TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
-// TODO: This will probably be replaced by number of chares
-//    TWOPT_UINT("nkp", nkp_per_pe, "number of kernel processes (KPs) per pe"),
     TWOPT_STIME("end", PE_VALUE(g_tw_ts_end), "simulation end timestamp"),
     TWOPT_UINT("batch", PE_VALUE(g_tw_mblock), "messages per scheduler block"),
     TWOPT_UINT("extramem", PE_VALUE(g_tw_events_per_pe_extra), "Number of extra events allocated per PE."),
     TWOPT_UINT("gvt-interval", PE_VALUE(g_tw_gvt_interval), "GVT Interval"),
     TWOPT_UINT("lps-per-chare", PE_VALUE(g_lps_per_chare), "LPs per chare"),
     TWOPT_UINT("num-chares", PE_VALUE(g_num_lp_chares), "Number of chares"),
+    TWOPT_UINT("buffer-size", PE_VALUE(g_tw_max_events_buffered), "Number of events buffered"),
     TWOPT_END()
   };
 

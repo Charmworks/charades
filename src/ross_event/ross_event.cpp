@@ -76,13 +76,11 @@ void tw_event_send(tw_event * e) {
   tw_lp* src_lp = (tw_lp*)e->src_lp;
   int dest_peid;
 
-  DEBUG2("[%d] Sending event to %d at %lf \n", CkMyPe(), e->dest_lp, recv_ts);
-
   if (e == PE_VALUE(abort_event)) {
-    // TODO: Handle case where abort event is caused by lack of memory
-    //if (recv_ts < PE_VALUE(g_tw_ts_end)) {
-      //send_pe->cev_abort = 1;
-    //}
+    if (e->ts < PE_VALUE(g_tw_ts_end)) {
+      tw_error(TW_LOC,
+          "Attempting to send an abort event before simulation end");
+    }
     return;
   }
 
@@ -98,23 +96,14 @@ void tw_event_send(tw_event * e) {
   }
 
   link_causality(e, current_event(src_lp));
-
-  // Call LP remote mapping function to get dest_pe
   dest_peid = src_lp->type->chare_map(e->dest_lp);
 
   // The charm backend will fill in the remote event and send it
   charm_event_send(dest_peid, e); 
 
-  // Deallocate the event or unlink the event message from the event
-  // depending on the synchronization protocol
+  // Unless we are doing optimistic simulation we can just free the event
   if(PE_VALUE(g_tw_synchronization_protocol) != OPTIMISTIC) {
-    // TODO: Have logic for handling eventMsg pointers encapsulated in send/free
-    // methods rather than having ROSS needing to know how to deal with it.
-    e->eventMsg = NULL;
     charm_free_event(e);
-  } else {
-    e->state.owner = TW_sent;
-    e->eventMsg = NULL;
   }
 }
 

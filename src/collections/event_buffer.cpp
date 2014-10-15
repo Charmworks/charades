@@ -4,6 +4,8 @@
 #include "event.h"
 #include "ross_event.h"
 
+#include <assert.h>
+
 EventBuffer::EventBuffer(unsigned max, size_t size) :
     max_events(max), msg_size(size),
     stack_pointer(max), remote_stack_pointer(max) {

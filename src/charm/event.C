@@ -77,10 +77,15 @@ void charm_event_send(unsigned dest_peid, tw_event * e) {
   e->eventMsg->send_pe = e->send_pe = send_pe->thisIndex;
 
   charm_send(send_pe, dest_peid, e->eventMsg);
+
+  // Mark the event as sent and unlink it from the remote event
+  e->state.owner = TW_sent;
+  e->eventMsg = NULL;
 }
 
 // Allocate a new remote message, fill it based on e, and send it
 void charm_anti_send(unsigned dest_peid, tw_event * e) {
+  //RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
   RemoteEvent * eventMsg = new (0) RemoteEvent;
   eventMsg->isAnti = true;
   eventMsg->event_id = e->event_id;
