@@ -133,7 +133,7 @@ void LP::recv_event(RemoteEvent* event) {
     e->eventMsg = event;
 
     // If this event is now the earliest, update the PE
-    if (events.top() == NULL || e->ts < events.top()->ts) {
+    if (e->ts < events.min()) {
       pe->update_next(&next_token, e->ts);
     }
 
@@ -159,20 +159,11 @@ void LP::recv_event(RemoteEvent* event) {
 //  2c) Free event, or put into processed queue if optimistic
 // 3) Update the PE with our new earliest timestamp.
 void LP::execute_me(tw_stime ts) {
-  // Do a lazy check for rollbacks from short-circuit sends
-  //if (isOptimistic) {
-  //  if (events.top() && processed_events.front() &&
-  //      events.top()->ts < processed_events.front()->ts) {
-  //    rollback_me(events.top()->ts);
-  //  }
-  //}
-
   // TODO: Right now it seems to crash if the DBL_MAX check isn't there. This
   // will cause problems when we try to batch execute.
-  while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
+  while (events.min() <= ts && ts != DBL_MAX) {
     // Pull off the top event for execution
-    Event* e = events.top();
-    events.pop();
+    Event* e = events.pop();
     current_time = e->ts;
     current_event = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
@@ -197,11 +188,7 @@ void LP::execute_me(tw_stime ts) {
   }
 
   // Events were popped, so it is guaranteed we will need to update the PE.
-  if(events.top() != NULL) {
-    pe->update_next(&next_token, events.top()->ts);
-  } else {
-    pe->update_next(&next_token, DBL_MAX);
-  }
+  pe->update_next(&next_token, events.min());
 }
 
 // Fossil collect all events older than the passed in GVT.
@@ -231,7 +218,7 @@ void LP::rollback_me(tw_stime ts) {
     e->state.owner = TW_chare_q;
   }
 
-  pe->update_next(&next_token, events.top()->ts);
+  pe->update_next(&next_token, events.min());
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
@@ -258,9 +245,7 @@ void LP::rollback_me(Event *event) {
   tw_event_rollback(event);
 
   // Update the queues, and current variables.
-  if (events.size() > 0) {
-    pe->update_next(&next_token, events.top()->ts);
-  }
+  pe->update_next(&next_token, events.min());
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
@@ -297,16 +282,18 @@ void LP::cancel_event(Event* e) {
 
 // Delete an event in our pending queue
 void LP::delete_pending(Event *e) {
-  if(events.top() == e) {
+  /*if(events.top() == e) {
     events.pop();
     if(events.top() != NULL) {
       pe->update_next(&next_token, events.top()->ts);
     } else {
       pe->update_next(&next_token, DBL_MAX);
     }
-  } else {
-    events.erase(e);
-  }
+  } else {*/
+  // TODO: Make sure this is optimized with new interface
+  events.erase(e);
+  pe->update_next(&next_token, events.min());
+  //}
 }
 
 // TODO: Clean up this and the cancel_event method for consistency
