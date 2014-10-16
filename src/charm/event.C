@@ -5,6 +5,7 @@
 #include "globals.h"
 #include "lp_struct.h"
 #include "avl_tree.h"
+#include "event_buffer.h"
 
 #include "ross_util.h"
 

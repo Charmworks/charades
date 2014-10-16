@@ -24,7 +24,7 @@ void tw_event_setup() {
 
   PE_VALUE(event_buffer) = new EventBuffer(PE_VALUE(g_tw_max_events_buffered),
                                            PE_VALUE(g_tw_msg_sz));
-  PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_event();
+  PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_abort_event();
   PE_VALUE(abort_event)->state.owner = TW_event_inf;
 }
 
