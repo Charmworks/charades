@@ -69,6 +69,7 @@ void charm_event_send(unsigned dest_peid, tw_event * e) {
   LP *send_pe = (LP*)(e->send_pe);
 
   // Fill the fields of the charm message to prepare it for sending
+  *(int*)CkPriorityPtr(e->eventMsg) = -2;
   e->eventMsg->event_id = e->event_id = send_pe->uniqID++;
   e->eventMsg->ts = e->ts;
   e->eventMsg->dest_lp = e->dest_lp;
@@ -84,6 +85,7 @@ void charm_event_send(unsigned dest_peid, tw_event * e) {
 // Allocate a new remote message, fill it based on e, and send it
 void charm_anti_send(unsigned dest_peid, tw_event * e) {
   RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
+  *(int*)CkPriorityPtr(eventMsg) = -3;
   eventMsg->isAnti = true;
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;

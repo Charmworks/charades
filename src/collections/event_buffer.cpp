@@ -16,7 +16,7 @@ EventBuffer::EventBuffer(unsigned max, size_t size) :
     buffer[i] = new Event;
   }
   for (int i = 0; i < remote_stack_pointer; i++) {
-    remote_buffer[i] = new (msg_size) RemoteEvent;
+    remote_buffer[i] = new (msg_size, 32) RemoteEvent;
   }
 }
 
@@ -41,7 +41,7 @@ RemoteEvent* EventBuffer::get_remote_event() {
   if (remote_stack_pointer > 0) {
     return remote_buffer[--remote_stack_pointer];
   } else {
-    return new (msg_size) RemoteEvent;
+    return new (msg_size, 32) RemoteEvent;
   }
 }
 
