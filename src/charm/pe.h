@@ -22,6 +22,7 @@ class PE: public CBase_PE {
 
     Time gvt;     /**< current gvt on this PE */
     int gvt_cnt;  /**< count since last gvt */
+    bool gvt_in_progress;
 
     tw_rng * rng; /**< ROSS rng stream */
 

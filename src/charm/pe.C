@@ -127,6 +127,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
   statistics->s_cancel_q = 0;
   statistics->s_avl = 0;
 
+  gvt_in_progress = false;
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }
@@ -199,6 +200,9 @@ void PE::execute_cons() {
 // Also process the cancellation queue each iteration.
 // After a fixed number of iterations, compute a new GVT.
 void PE::execute_opt() {
+  if (gvt_in_progress) {
+    return;
+  }
   int events_left = PE_VALUE(g_tw_mblock);
   while (events_left) {
     if(schedule_next_lp()) {
@@ -210,8 +214,7 @@ void PE::execute_opt() {
   process_cancel_q();
 
   if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
-    gvt_begin();
-    gvt_cnt = 0;
+    thisProxy.gvt_begin();
   } else {
     thisProxy[CkMyPe()].execute_opt();
   }
@@ -265,6 +268,8 @@ void PE::update_min_cancel(Time t) {
 // gvt reduction.
 void PE::gvt_begin() {
   DEBUG4("******** GVT begins ********\n");
+  gvt_in_progress = true;
+  gvt_cnt = 0;
   if(CkMyPe() == 0) {
     /* TODO: Provide option for using completion detection */
     CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
@@ -297,6 +302,7 @@ void PE::gvt_end(Time new_gvt) {
       thisProxy[CkMyPe()].execute_opt();
     }
   }
+  gvt_in_progress = false;
 }
 
 #include "pe.def.h"
