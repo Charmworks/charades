@@ -137,6 +137,7 @@ PE::PE(CProxy_Initialize srcProxy) :
   statistics = new Statistics;
   initialize_statistics(statistics);
 
+  gvt_in_progress = false;
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }
@@ -207,19 +208,18 @@ void PE::execute_cons() {
 // Also process the cancellation queue each iteration.
 // After a fixed number of iterations, compute a new GVT.
 void PE::execute_opt() {
-  int events_left = PE_VALUE(g_tw_mblock);
-  while (events_left) {
-    if(schedule_next_lp()) {
-      events_left--;
-    } else {
+  if (gvt_in_progress) {
+    return;
+  }
+  for (int i = 0; i < PE_VALUE(g_tw_mblock); i++) {
+    if(!schedule_next_lp()) {
       break;
     }
   }
   process_cancel_q();
 
   if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
-    gvt_begin();
-    gvt_cnt = 0;
+    thisProxy.gvt_begin();
   } else {
     thisProxy[CkMyPe()].execute_opt();
   }
@@ -278,11 +278,15 @@ void PE::update_min_cancel(Time t) {
 void PE::gvt_begin() {
   PE_STATS(s_ngvts)++;
   DEBUG_PE("GVT #%d: begins\n", PE_STATS(s_ngvts));
-  if(CkMyPe() == 0) {
+  gvt_in_progress = true;
+  gvt_cnt = 0;
+  if(CkMyPe() == 0 && !gvt_in_progress) {
     /* TODO: Provide option for using completion detection */
     // TODO: Can QD be started sooner? Will that improve speed?
     CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
   }
+  gvt_in_progress = true;
+  gvt_cnt = 0;
 }
 
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
@@ -310,6 +314,7 @@ void PE::gvt_contribute() {
 void PE::gvt_end(Time new_gvt) {
   PE_VALUE(g_last_gvt) = gvt;
   gvt = new_gvt;
+  gvt_in_progress = false;
   if (tw_ismaster() && gvt / PE_VALUE(g_tw_ts_end) > PE_VALUE(percent_complete)) gvt_print(gvt);
   DEBUG_MASTER("GVT #%d: simulation %d%% complete (GVT = %.4f).\n",
       PE_STATS(s_ngvts),
