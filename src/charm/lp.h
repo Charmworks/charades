@@ -5,7 +5,7 @@
 
 #include "typedefs.h"
 #include "lp_struct.h"
-#include "pending_heap.h"
+#include "pending_splay.h"
 #include "processed_queue.h"
 #include "float.h"
 
@@ -39,7 +39,7 @@ class LP : public CBase_LP {
 
     LPList lp_structs;
     ProcessedQueue processed_events;
-    PendingHeap events;
+    PendingSplay events;
 
     bool isOptimistic;
   public:

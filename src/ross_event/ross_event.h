@@ -77,11 +77,13 @@ class Event {
     state.cancel_q = 0;
   }
 
-  Event *next, *prev; //for processed queue
-  size_t heap_index; //for avl trees
-  Event *caused_by_me; //Start of event list caused by this event
-  Event *cause_next; //Next in parent's caused_by_me chain
-  Event *cancel_next; //next in cancel list
+  // Fields used in data structures storing Events
+  size_t heap_index;    // for avl trees
+  Event* up;            // for splay trees
+  Event *next, *prev;   // for splay trees and processed queue
+  Event *caused_by_me;  // Start of event list caused by this event
+  Event *cause_next;    // Next in parent's caused_by_me chain
+  Event *cancel_next;   // next in cancel list
 
   EventID event_id;
   struct {
