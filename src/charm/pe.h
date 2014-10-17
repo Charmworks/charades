@@ -21,6 +21,7 @@ class PE: public CBase_PE {
     PEQueue oldestEvents; /**< queue to store the time stamp for the earliest event that an LP has execute beyond the last computed GVT*/
     Time gvt, currTime; /**< current time on this PE */
     int gvt_cnt; /**< count since last gvt */
+    bool gvt_in_progress;
   public:
     // A struct of global variables stored on each PE.
     Globals* globals;

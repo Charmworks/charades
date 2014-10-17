@@ -114,6 +114,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   statistics->s_cancel_q = 0;
   statistics->s_avl = 0;
 
+  gvt_in_progress = false;
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }
@@ -138,9 +139,11 @@ void PE::execute_cons() {
 }
 
 void PE::execute_opt() {
+  if (gvt_in_progress) {
+    return;
+  }
   if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
-    GVT_begin();
-    gvt_cnt = 0;
+    thisProxy.GVT_begin();
     return;
   }
   process_cancel_q();
@@ -184,7 +187,9 @@ Time PE::getMinTime() {
  * target of the reduction should be the GVT_end function.
  */
 void PE::GVT_begin() {
-  if(!CkMyPe()) {
+  gvt_in_progress = true;
+  gvt_cnt = 0;
+  if(CkMyPe() == 0) {
     /* TODO: Provide option for using completion detection */
     CkStartQD(CkCallback(CkIndex_PE::GVT_contribute(), thisProxy));
   }
@@ -212,6 +217,7 @@ void PE::GVT_end(Time newGVT) {
       thisProxy[CkMyPe()].execute_opt();
     }
   }
+  gvt_in_progress = false;
 }
 
 void PE::endExec(double totalNetEvents) {
