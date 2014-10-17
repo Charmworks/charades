@@ -7,6 +7,6 @@ module lp {
     entry void init();
     entry [reductiontarget] void stopScheduler(); /**< Reduction target to stop the scheduler after LPs have been created */
 
-    entry void recv_event(RemoteEvent*); /**< recieve an event for this LP */
+    entry [expedited] void recv_event(RemoteEvent*); /**< recieve an event for this LP */
   };
 };
