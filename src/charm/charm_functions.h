@@ -1,14 +1,15 @@
 #ifndef _CHARM_FUNCTIONS_H_
 #define _CHARM_FUNCTIONS_H_
 
-void create_lps();
-void init_lps();
 void charm_init(int argc, char** argv);
 void charm_run();
 void charm_exit();
 
 int tw_ismaster();
 int tw_nnodes();
+
+int tw_mype();
+void tw_abort(const char*);
 
 #define DEBUG(format, ...) { }
 #define DEBUG2(format, ...) { }

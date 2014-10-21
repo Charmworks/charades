@@ -1,5 +1,5 @@
 ROSS_SRC=/dcsdata/home/mikida2/ross/src
-CHARMC=~/charm/bin/charmc
+CHARMC=/scratch/mikida2/charm/bin/charmc
 CC=g++
 
 # Turn on this option to test if code compiles without explicit global variable

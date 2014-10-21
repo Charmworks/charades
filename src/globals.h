@@ -3,7 +3,7 @@
 
 #include "typedefs.h"
 #include "ross_event.h"
-#include <stack>
+#include "event_buffer.h"
 
 // Included for FILE
 #include <stdio.h>
@@ -34,6 +34,7 @@ struct Globals {
   unsigned g_num_lp_chares; //number of LP chares
 
   // Globals used in events
+  EventBuffer* event_buffer;
   size_t g_tw_msg_sz;
   unsigned g_tw_max_events_buffered;
   tw_stime g_tw_min_detected_offset;
@@ -48,7 +49,6 @@ struct Globals {
 
   AvlTree avl_list_head;
   tw_out* output;
-  std::stack<Event *> eventBuffer;
   tw_stime lastGVT;
   double netEvents;
   double total_time;

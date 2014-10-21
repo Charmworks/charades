@@ -1,5 +1,8 @@
 #ifndef ROSS_EVENT_H_
 #define ROSS_EVENT_H_
+
+#include "typedefs.h"
+
 #include "string.h"
 
 enum tw_event_owner
@@ -55,8 +58,6 @@ struct tw_bf
   unsigned int    c31:1;
 };
 
-static inline void reset_bitfields(tw_event *revent);
-
 typedef struct tw_out {
     struct tw_out *next;
     char message[256 - 2*sizeof(void *)];
@@ -76,11 +77,13 @@ class Event {
     state.cancel_q = 0;
   }
 
-  Event *next, *prev; //for processed queue
-  size_t heap_index; //for avl trees
-  Event *caused_by_me; //Start of event list caused by this event
-  Event *cause_next; //Next in parent's caused_by_me chain
-  Event *cancel_next; //next in cancel list
+  // Fields used in data structures storing Events
+  size_t heap_index;    // for avl trees
+  Event* up;            // for splay trees
+  Event *next, *prev;   // for splay trees and processed queue
+  Event *caused_by_me;  // Start of event list caused by this event
+  Event *cause_next;    // Next in parent's caused_by_me chain
+  Event *cancel_next;   // next in cancel list
 
   EventID event_id;
   struct {
@@ -98,17 +101,16 @@ class Event {
   char *userData;
 };
 
-// TODO (eric): Clean up this API
-void tw_event_send(tw_event * event);
+// Publicly exposed functions
 tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
-tw_event * allocateEvent(int);
-void tw_event_rollback(tw_event * event);
 void tw_event_free(tw_pe *pe, tw_event *e);
-void event_cancel(tw_event * e);
-tw_out* allocate_output_buffer();
+void tw_event_send(tw_event * event);
+void tw_event_rollback(tw_event * event);
 
-static inline void reset_bitfields(tw_event *revent)
-{
+// TODO: Should this be here
+tw_out* allocate_output_buffer();
+// TODO: Should this be here?
+static inline void reset_bitfields(tw_event *revent) {
   if (sizeof(revent->cv) == sizeof(uint32_t)){
     *(uint32_t*)&revent->cv = 0;
   }
@@ -119,6 +121,5 @@ static inline void reset_bitfields(tw_event *revent)
     memset(&revent->cv, 0, sizeof(revent->cv));
   }
 }
-
 
 #endif

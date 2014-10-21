@@ -6,9 +6,9 @@
 
 // API functions
 
-static tw_stime gvt_print_interval = 0.01;
-static tw_stime percent_complete = 0.0;
-inline void gvt_print(Time gvt);
+//static tw_stime gvt_print_interval = 0.01;
+//static tw_stime percent_complete = 0.0;
+//inline void gvt_print(Time gvt);
 
 void tw_stats(Statistics *me);
 

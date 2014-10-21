@@ -4,6 +4,7 @@
 
 #include "globals.h"
 #include "ross_api.h"
+#include "charm_api.h"
 
 #include "ross_util.h"
 #include "ross_random.h"
@@ -34,6 +35,19 @@ void init_lps() {
     lps.init();
   }
   StartCharmScheduler();
+}
+
+tw_stime tw_now(tw_lp* lp) {
+  return lp->owner->current_time;
+}
+
+Event* current_event(tw_lp* lp) {
+  return lp->owner->current_event;
+}
+
+void set_current_event(tw_lp* lp, Event* event) {
+  lp->owner->current_event = event;
+  lp->owner->current_time = event->ts;
 }
 
 #undef PE_VALUE
@@ -92,27 +106,13 @@ void LP::init() {
   contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
 
-// Delete an event in our pending queue
-void LP::delete_pending(Event *e) {
-  if(events.top() == e) {
-    events.pop();
-    if(events.top() != NULL) {
-      pe->update_next(&next_token, events.top()->ts);
-    } else {
-      pe->update_next(&next_token, DBL_MAX);
-    }
-  } else {
-    events.erase(e);
-  }
-}
-
 // Entry method for sending events to LPs.
 // 1) Check if the event is earlier than our earliest and update the PE.
 // 2) Check to see if we need a rollback.
 // 3) Push event into the priority queue.
 void LP::recv_event(RemoteEvent* event) {
   // Copy over the relevant fields from the remote event to the local event.
-  Event *e = allocateEvent(0);
+  Event *e = charm_allocate_event(0);
   e->event_id = event->event_id;
   e->ts = event->ts;
   e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(event->dest_lp)];
@@ -125,7 +125,7 @@ void LP::recv_event(RemoteEvent* event) {
     Event *real_e = avlDelete(&all_events, e);
     tw_event_free(this, e);
     real_e->state.remote = 0;
-    event_cancel(real_e);
+    charm_event_cancel(real_e);
     delete event;
   } else {
     e->state.remote = 1;
@@ -133,7 +133,7 @@ void LP::recv_event(RemoteEvent* event) {
     e->eventMsg = event;
 
     // If this event is now the earliest, update the PE
-    if (events.top() == NULL || e->ts < events.top()->ts) {
+    if (e->ts < events.min()) {
       pe->update_next(&next_token, e->ts);
     }
 
@@ -159,20 +159,11 @@ void LP::recv_event(RemoteEvent* event) {
 //  2c) Free event, or put into processed queue if optimistic
 // 3) Update the PE with our new earliest timestamp.
 void LP::execute_me(tw_stime ts) {
-  // Do a lazy check for rollbacks from short-circuit sends
-  //if (isOptimistic) {
-  //  if (events.top() && processed_events.front() &&
-  //      events.top()->ts < processed_events.front()->ts) {
-  //    rollback_me(events.top()->ts);
-  //  }
-  //}
-
   // TODO: Right now it seems to crash if the DBL_MAX check isn't there. This
   // will cause problems when we try to batch execute.
-  while (events.top() != NULL && events.top()->ts <= ts && ts != DBL_MAX) {
+  while (events.min() <= ts && ts != DBL_MAX) {
     // Pull off the top event for execution
-    Event* e = events.top();
-    events.pop();
+    Event* e = events.pop();
     current_time = e->ts;
     current_event = e;
     LPStruct* lp = (LPStruct*)e->dest_lp;
@@ -197,11 +188,7 @@ void LP::execute_me(tw_stime ts) {
   }
 
   // Events were popped, so it is guaranteed we will need to update the PE.
-  if(events.top() != NULL) {
-    pe->update_next(&next_token, events.top()->ts);
-  } else {
-    pe->update_next(&next_token, DBL_MAX);
-  }
+  pe->update_next(&next_token, events.min());
 }
 
 // Fossil collect all events older than the passed in GVT.
@@ -229,49 +216,9 @@ void LP::rollback_me(tw_stime ts) {
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
-    if(processed_events.front() != NULL) {
-      current_event = processed_events.front();
-      current_time = current_event->ts;
-    }
   }
 
-  pe->update_next(&next_token, events.top()->ts);
-  if(processed_events.front() == NULL) {
-    pe->update_oldest(&oldest_token, DBL_MAX);
-    current_event = NULL;
-    // TODO: Need to make sure that this technically is correct. Or at least
-    // correct enough to work.
-    current_time = PE_VALUE(lastGVT);
-  }
-}
-
-void LP::rollback_me(Event *event) {
-  bool need_update = false;
-  Event* e = processed_events.front();
-  processed_events.pop_front();
-  while (e != event) {
-    // Rollback the event, and push it back onto the event queue.
-    // This means we will also need to update the PE with our new next event.
-    tw_event_rollback(e);
-    events.push(e);
-    e->state.owner = TW_chare_q;
-    need_update = true;
-
-    // Get ready for the next iteration
-    current_event = processed_events.front();
-    current_time = current_event->ts;
-    e = processed_events.front();
-    processed_events.pop_front();
-  }
-  // We've found the event in question so roll it back.
-  // The caller will correctly handle what else to do with the event.
-  assert(e == event);
-  tw_event_rollback(event);
-
-  // Update the queues, and current variables.
-  if (need_update) {
-    pe->update_next(&next_token, events.top()->ts);
-  }
+  pe->update_next(&next_token, events.min());
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
@@ -282,9 +229,78 @@ void LP::rollback_me(Event *event) {
   }
 }
 
+void LP::rollback_me(Event *event) {
+  Event* e = processed_events.front();
+  processed_events.pop_front();
+  while (e != event) {
+    tw_event_rollback(e);
+    events.push(e);
+    e->state.owner = TW_chare_q;
+    e = processed_events.front();
+    processed_events.pop_front();
+  }
+  // We've found the event in question so roll it back.
+  // The caller will correctly handle what else to do with the event.
+  assert(e == event);
+  tw_event_rollback(event);
+
+  // Update the queues, and current variables.
+  pe->update_next(&next_token, events.min());
+  if(processed_events.front() == NULL) {
+    pe->update_oldest(&oldest_token, DBL_MAX);
+    current_event = NULL;
+    current_time = PE_VALUE(lastGVT);
+  } else {
+    current_event = processed_events.front();
+    current_time = current_event->ts;
+  }
+}
+
+void LP::cancel_event(Event* e) {
+  switch (e->state.owner) {
+    case TW_chare_q:
+      // If the event hasn't been executed, just free it
+      delete_pending(e);
+      tw_event_free(this, e);
+      return;
+    case TW_rollback_q:
+      // If the event has already been executed, add it to the cancel_q
+      e->cancel_next = cancel_q;
+      cancel_q = e;
+      if (e->ts < min_cancel_q) {
+        min_cancel_q = e->ts;
+      }
+      if (!enqueued_cancel_q) {
+        pe->cancel_q.push_back(this);
+        enqueued_cancel_q = true;
+      }
+      return;
+    default:
+      tw_error(TW_LOC, "Unknown owner in LP::cancel_event: %d", e->state.owner);
+  }
+}
+
+// Delete an event in our pending queue
+void LP::delete_pending(Event *e) {
+  /*if(events.top() == e) {
+    events.pop();
+    if(events.top() != NULL) {
+      pe->update_next(&next_token, events.top()->ts);
+    } else {
+      pe->update_next(&next_token, DBL_MAX);
+    }
+  } else {*/
+  // TODO: Make sure this is optimized with new interface
+  events.erase(e);
+  pe->update_next(&next_token, events.min());
+  //}
+}
+
+// TODO: Clean up this and the cancel_event method for consistency
 void LP::process_cancel_q() {
   tw_event    *cev, *nev;
 
+  // TODO: Why is this a loop?
   while (cancel_q) {
     cev = cancel_q;
     cancel_q = NULL;
@@ -299,13 +315,16 @@ void LP::process_cancel_q() {
           tw_event_free(this, cev);
           break;
 
+        // TODO: Why is this case even here?
         case TW_chare_q:
           delete_pending(cev);
           tw_event_free(this, cev);
           break;
 
         default:
-          tw_error(TW_LOC, "Event in cancel_q, but owner %d not recognized %d %d %d", cev->state.owner, cev->send_pe, cev->event_id, cev->ts);
+          tw_error(TW_LOC,
+              "Event in cancel_q, but owner %d not recognized %d %d %d",
+              cev->state.owner, cev->send_pe, cev->event_id, cev->ts);
       }
     }
   }
