@@ -2,34 +2,30 @@
 #define _PE_H
 
 #include "pe.decl.h"
-#include "pe_queue.h"
 
-// Included for LPToken
-#include "lp.h"
-#include "float.h"
-
+#include "typedefs.h"
 #include "globals.h"
 #include "statistics.h"
-#include "ross.h"
-#include "ross_random.h"
+
+#include "pe_queue.h"
 
 class LP;
+class LPToken;
+struct tw_rng;
+
+using std::vector;
 
 class PE: public CBase_PE {
   private:
-    PEQueue nextEvents; /**< queue to store the time stamp for next events that an LP has to execute*/
-    PEQueue oldestEvents; /**< queue to store the time stamp for the earliest event that an LP has execute beyond the last computed GVT*/
-    Time gvt, currTime; /**< current time on this PE */
-    int gvt_cnt; /**< count since last gvt */
+    PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
+    PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
+    Time gvt;           /**< current gvt on this PE */
+    int gvt_cnt;        /**< count since last gvt */
+    tw_rng * rng;       /**< ROSS rng stream */
   public:
-    // A struct of global variables stored on each PE.
-    Globals* globals;
-    // A sturct of statistics variables
-    Statistics* statistics;
-
-    // TODO: Do we need another queue for this?
-    std::vector<LP*> cancel_q;
-    tw_rng  *rng;
+    Globals* globals;       /**< global variables accessed with PE_VALUE */
+    Statistics* statistics; /**< statistics variables accessed with PE_STATS */
+    vector<LP*> cancel_q;   /**< list of LPs with events for cancellation */
 
     PE(CProxy_Initialize);
 
@@ -41,47 +37,56 @@ class PE: public CBase_PE {
     void initialize_rand(CProxy_Initialize);
 
     /** \brief Various schedulers
-        sequential (no communication, run to end)
-        conservative (find the next epoch, assume a lookahead, run to end of epoch
-        optimistic (run till you are forced to rollback, compute GVT once in a while)
+        sequential: single PE, run to end
+        conservative: find next epoch, assume a lookahead, run to end of epoch
+        optimistic: execute events, rollback as needed, compute GVT periodically
       */
     void execute_seq();
     void execute_cons();
     void execute_opt();
-    void collect_fossils(); /**< collect fossils */
-    //int schedule_nextLP_no_save(); /**< find the smallest time step and execute for non-optimistic */
-    int schedule_next_LP(tw_stime, int); /**< find the smallest time step and execute */
-    void process_cancel_q();
 
-    /** \brief Methods for GVT computation */
-    void GVT_begin(); /**< begin gvt computation*/
-    void GVT_contribute(); /**< all sent messages received, contribute to GVT */
-    void GVT_end(Time); /**< GVT computed */
-    void endExec(double);
+    int schedule_next_lp(Time, int); /**< call execute_me on the next LP */
+
+    /** \brief Methods only used in optimistic mode */
+    void collect_fossils();   /**< collect fossils */
+    void process_cancel_q();  /**< process the cancel_q */
+
+    /** \brief Methods for GVT computation
+        GVT is only used in conservative and optimistic
+        In conservative it is equivalent to finding the next epoch
+      */
+    void gvt_begin(); /**< begin gvt computation */
+    void gvt_contribute(); /**< all sent messages received, contribute to GVT */
+    void gvt_end(Time); /**< gvt done, either restart the scheduler or end */
+
+    /** \brief Print final stats at the end of a simulation */
+    void print_final_stats(double);
 
     /** \brief Get time stamp of the minium event */
-    Time getMinTime();
+    Time get_min_time();
 
     /** \brief Register the given LP to our queues */
-    void register_lp(LPToken* next_token, Time next_ts, LPToken* oldest_token, Time oldest_ts) {
-        nextEvents.insert(next_token, next_ts);
-        oldestEvents.insert(oldest_token, oldest_ts);
+    void register_lp(LPToken* next_token, Time next_ts,
+                     LPToken* oldest_token, Time oldest_ts) {
+        next_lps.insert(next_token, next_ts);
+        oldest_lps.insert(oldest_token, oldest_ts);
     }
 
     /** \brief Unregister the given LP from our queues */
     void unregister_lp(LPToken* next_token, LPToken* oldest_token) {
-        nextEvents.remove(next_token);
-        oldestEvents.remove(next_token);
+        next_lps.remove(next_token);
+        oldest_lps.remove(next_token);
     }
 
-    /** \brief Update the entry for a given LP in the nextEvents */
+    /** \brief Update the entry for a given LP in the next_lps */
     void update_next(LPToken* token, Time ts) {
-        nextEvents.update(token, ts);
+        next_lps.update(token, ts);
     }
 
-    /** \brief Update the entry for a given LP in the oldestEvents */
+    /** \brief Update the entry for a given LP in the oldest_lps */
     void update_oldest(LPToken* token, Time ts) {
-        oldestEvents.update(token, ts);
+        oldest_lps.update(token, ts);
     }
 };
+
 #endif

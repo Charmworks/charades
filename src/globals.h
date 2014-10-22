@@ -49,6 +49,8 @@ struct Globals {
 
   AvlTree avl_list_head;
   tw_out* output;
+  // TODO: Does this really belong in globals? Could just be a PE level variable.
+  // TODO: Along those lines...maybe this should just be used for read_onlys.
   tw_stime lastGVT;
   double netEvents;
   double total_time;

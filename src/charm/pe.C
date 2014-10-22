@@ -1,9 +1,13 @@
 #include "pe.h"
+
+#include "lp.h"
+#include "charm_functions.h"
+
 #include "ross_util.h"
 #include "ross_api.h"
+
 #include "mpi-interoperate.h"
-#include "float.h"
-#include "charm_functions.h"
+#include <float.h> // Included for DBL_MAX
 
 CProxy_PE pes;
 
@@ -13,10 +17,11 @@ Globals* get_globals() {
 }
 
 Statistics* get_statistics() {
-  return pes.ckLocalBranch()->statistics;
+  static PE* local_pe = pes.ckLocalBranch();
+  return local_pe->statistics;
 }
 
-// TODO(eric): These should probably be moved to a more general Charm backend file
+// TODO(eric): These should probably be moved to charm_api.C
 int tw_ismaster() {
   return (CkMyPe() == 0);
 }
@@ -55,11 +60,17 @@ void charm_run() {
   StartCharmScheduler();
 }
 
+// Instead of using the general purpose macros we can use optimized ones
 #undef PE_VALUE
 #define PE_VALUE(x) globals->x
 
+#undef PE_STATS
+#define PE_STATS(x) statistics->x
+
 PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   // init globals
+  // TODO: Maybe make this a function
+  // TODO: Make sure all are initialized and make sense
   globals = new Globals;
   globals->g_lps_per_chare = 4;
   globals->g_tw_synchronization_protocol = CONSERVATIVE;
@@ -83,6 +94,8 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
   gvt = 0.0;
 
   // init stats
+  // TODO: Maybe make this a function
+  // TODO: Make sure all are initialized and make sense
   statistics = new Statistics;
   statistics->s_max_run_time = 0.0;
   statistics->s_net_events = 0;
@@ -123,35 +136,91 @@ void PE::initialize_rand(CProxy_Initialize srcProxy) {
   contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
 }
 
+// Pull the next LP from the queue and have it execute events until it hits
+// execute_until, or executes max events.
+int PE::schedule_next_lp(Time execute_until, int max) {
+  LPToken *min = next_lps.top();
+  if(min == NULL) return 0;
+  int num_executed = min->lp->execute_me(execute_until, max);
+  PE_STATS(s_nevent_processed) += num_executed;
+  return num_executed;
+}
+
+// Compute the minimum time for gvt purposes. We not only need to take into
+// account the earliest pending event in the system, but also the earliest
+// pending cancellation event.
+Time PE::get_min_time() {
+  Time min;
+
+  if(next_lps.top() != NULL) {
+    min = next_lps.top()->ts;
+  } else {
+    min = DBL_MAX;
+  }
+
+  // TODO: This could probably be optimized
+  if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
+      Time new_min = cancel_q[pe_i]->getMinCancelTime();
+      if(new_min < min) {
+        min = new_min;
+      }
+    }
+  }
+
+  return min;
+}
+
+// Receives the reduction of the final event count, prints stats, and exits.
+void PE::print_final_stats(double total_events) {
+  CkPrintf("Total events executed: %.0lf\n", total_events);
+  CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
+  CkPrintf("Event rate: %f events/s\n", total_events/PE_VALUE(total_time));
+  CkExit();
+}
+
+
+/******************************************************************************/
+/* Schedulers                                                                 */
+/******************************************************************************/
+
+// Just execute events one at a time until the end time.
 void PE::execute_seq() {
-  while(getMinTime() < PE_VALUE(g_tw_ts_end)) {
-    if (schedule_next_LP(DBL_MAX, 1) == 0) {
+  while(get_min_time() < PE_VALUE(g_tw_ts_end)) {
+    if (schedule_next_lp(PE_VALUE(g_tw_ts_end), 1) == 0) {
       break;
     }
   }
   CkExit();
 }
 
+// Execute events within the current window based on lookahead.
+// Because of lookahead constraints we can batch execution by having each LP
+// execute all the way up to the next window.
 void PE::execute_cons() {
-  while(getMinTime() < gvt + PE_VALUE(g_tw_lookahead)) {
-    if (schedule_next_LP(gvt + PE_VALUE(g_tw_lookahead), -1) == 0) {
+  Time next = std::min(gvt + PE_VALUE(g_tw_lookahead), PE_VALUE(g_tw_ts_end));
+  while(get_min_time() < next) {
+    if (schedule_next_lp(next, -1) == 0) {
       break;
     }
   }
-  GVT_begin();
+  gvt_begin();
 }
 
+// Execute events speculatively, processing g_tw_mblock messages each iteration.
+// Also process the cancellation queue each iteration.
+// After a fixed number of iterations, compute a new GVT.
 void PE::execute_opt() {
   int event_count;
   int events_left = PE_VALUE(g_tw_mblock);
-  tw_stime execute_until;
+  Time execute_until;
   while(events_left) {
-    if (nextEvents.second()) {
-      execute_until = nextEvents.second()->ts;
+    if (next_lps.second() && next_lps.second()->ts < PE_VALUE(g_tw_ts_end)) {
+      execute_until = next_lps.second()->ts;
     } else {
-      execute_until = DBL_MAX;
+      execute_until = PE_VALUE(g_tw_ts_end);
     }
-    event_count = schedule_next_LP(execute_until, events_left);
+    event_count = schedule_next_lp(execute_until, events_left);
     events_left -= event_count;
     if(event_count == 0) {
       break;
@@ -160,82 +229,66 @@ void PE::execute_opt() {
   process_cancel_q();
 
   if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
-    GVT_begin();
+    gvt_begin();
     gvt_cnt = 0;
   } else {
     thisProxy[CkMyPe()].execute_opt();
   }
 }
 
-// Pull the next LP from the queue and have it execute events until it hits
-// execute_until, or executes max events.
-int PE::schedule_next_LP(tw_stime execute_until, int max) {
-  LPToken *min = nextEvents.top();
-  if(min == NULL) return 0;
-  if (min->ts == currTime) {
-    // TODO: I don't know if this is sufficient with batch processing?
-    // TODO: Is currTime only for detecting ties?
-    PE_STATS(s_pe_event_ties)++;
+/******************************************************************************/
+/* Methods for optimistic execution only                                      */
+/******************************************************************************/
+
+// Call fossil_me on all lps that have fossils older than the current gvt.
+// The oldest_lps queue ensures we will only call fossil_me on lps that need it.
+void PE::collect_fossils() {
+  LPToken *min = oldest_lps.top();
+  while((min != NULL) && (min->ts < gvt)) {
+    min->lp->fossil_me(gvt);
+    min = oldest_lps.top();
   }
-  currTime = min->ts;
-  int num_executed = min->lp->execute_me(execute_until, max);
-  PE_STATS(s_nevent_processed) += num_executed;
-  return num_executed;
 }
 
+// Call process_cancel_q on every LP chare in our PE level cancel_q.
 void PE::process_cancel_q() {
   for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
     cancel_q[pe_i]->process_cancel_q();
   }
 }
 
-Time PE::getMinTime() {
-  Time min;
+/******************************************************************************/
+/* GVT methods                                                                */
+/******************************************************************************/
 
-  if(nextEvents.top() != NULL) {
-    min = nextEvents.top()->ts;
-  } else {
-    min = DBL_MAX;
-  }
-
-  // TODO: This could probably be optimized
-  if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-    for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
-      Time newTime = cancel_q[pe_i]->getMinCancelTime();
-      if(newTime < min) {
-        min = newTime;
-      }
-    }
-  }
-
-  return min;
-}
-
-/* For now, in the synchronous version, invoke completion detection that leads
- * to a global reduction to find GVT - these may be merged later. The
- * target of the reduction should be the GVT_end function.
- */
-void PE::GVT_begin() {
-  if(!CkMyPe()) {
+// Wait for total quiessence before allowing anyone to contribute to the
+// gvt reduction.
+void PE::gvt_begin() {
+  DEBUG4("******** GVT begins ********\n");
+  if(CkMyPe() == 0) {
     /* TODO: Provide option for using completion detection */
-    CkStartQD(CkCallback(CkIndex_PE::GVT_contribute(), thisProxy));
+    CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
   }
-  DEBUG4("[%d] ***************GVT begins*******************\n",CkMyPe());
 }
 
-void PE::GVT_contribute() {
-  Time minTime = getMinTime();
-  DEBUG4("[%d] ***************GVT contribute %lf******************\n",CkMyPe(), minTime);
-  contribute(sizeof(Time), &minTime,CkReduction::min_double, CkCallback(CkReductionTarget(PE,GVT_end),thisProxy));
+// Contribute this PEs minimum time to a min reduction to compute the gvt.
+void PE::gvt_contribute() {
+  Time min_time = get_min_time();
+  DEBUG4("******** GVT contribute %lf ********\n", min_time);
+  contribute(sizeof(Time), &min_time, CkReduction::min_double,
+      CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 }
 
-void PE::GVT_end(Time newGVT) {
-  if(tw_ismaster()) DEBUG4("[%d] GVT computed %lf\n",CkMyPe(), newGVT);
-  globals->lastGVT = gvt;
-  gvt = newGVT;
-  if(newGVT == DBL_MAX) {
+// Check to see if we are complete. If not, re-enter the appropriate
+// scheduler loop, and possibly do fossil collection.
+void PE::gvt_end(Time new_gvt) {
+  DEBUG4("******** GVT computed %lf ********\n", new_gvt);
+  PE_VALUE(lastGVT) = gvt;
+  gvt = new_gvt;
+  if(new_gvt >= PE_VALUE(g_tw_ts_end)) {
     PE_VALUE(total_time) = CkWallTimer() - PE_VALUE(total_time);
-    contribute(sizeof(double), &(globals->netEvents), CkReduction::sum_double, CkCallback(CkReductionTarget(PE,endExec),thisProxy[0]));
+    contribute(sizeof(double), &(globals->netEvents), CkReduction::sum_double,
+        CkCallback(CkReductionTarget(PE,print_final_stats),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       thisProxy[CkMyPe()].execute_cons();
@@ -243,25 +296,6 @@ void PE::GVT_end(Time newGVT) {
       collect_fossils();
       thisProxy[CkMyPe()].execute_opt();
     }
-  }
-}
-
-void PE::endExec(double totalNetEvents) {
-  CkPrintf("Total events executed: %.0lf\n", totalNetEvents);
-  CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
-  CkPrintf("Event rate: %f events/s\n", totalNetEvents/PE_VALUE(total_time));
-  CkExit();
-}
-
-/* Go over the oldest events queue and call fossil collection on the LPs with
- * entries less than equal to the new GVT. This may in turn lead to several updates
- * on this queue for LP's time stamps.
- */
-void PE::collect_fossils() {
-  LPToken *min = oldestEvents.top();
-  while((min != NULL) && (min->ts < gvt)) {
-    min->lp->fossil_me(gvt);
-    min = oldestEvents.top();
   }
 }
 

@@ -8,12 +8,16 @@ module pe {
   group PE {
     entry PE(CProxy_Initialize); /**< constructor called from the mainchare */
     entry void initialize_rand(CProxy_Initialize);
-    entry void GVT_begin(); /**< begin gvt computation */
-    entry void GVT_contribute(); /**< reduction target for completion of GVT */
-    entry [reductiontarget] void GVT_end(Time); /**< reduction target for completion of GVT */
-    entry [reductiontarget] void endExec(double);
-    entry void execute_seq(); /**< execute till the end of simulation */
+    entry [reductiontarget] void print_final_stats(double);
+
+    // GVT methods
+    entry void gvt_begin(); /**< begin gvt computation */
+    entry void gvt_contribute(); /**< contribute to gvt reduction */
+    entry [reductiontarget] void gvt_end(Time); /**< end of gvt computation */
+
+    // Scheduler methods
+    entry void execute_seq(); /**< execute until the end of simulation */
     entry void execute_cons(); /**< move to the end of this epoch */
-    entry void execute_opt(); /**< move one step further optimistically  */
+    entry void execute_opt(); /**< move one step further optimistically */
   };
 }
