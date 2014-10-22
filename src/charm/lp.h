@@ -70,7 +70,7 @@ class LP : public CBase_LP {
     void recv_event(RemoteEvent*); /**< receive an event designated for me and add to my event Q */
 
     //void execute_me_no_save(Time); /**< execute the events with least time stamp till the given ts*/
-    void execute_me(Time); /**< execute the events with least time stamp till the given ts*/
+    int execute_me(Time, int); /**< execute the events with least time stamp till the given ts*/
     void rollback_me(Time); /**< rollback this collection of LPs until the given ts */
     void rollback_me(Event*); /**< rollback this collection of LPs until the given ts */
     void fossil_me(Time); /**< collect fossils till next the given gvt_ts */

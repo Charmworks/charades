@@ -39,8 +39,8 @@ void charm_exit() {
 
 // Starts the simulation by calling the scheduler on all pes
 void charm_run() {
-  if(tw_ismaster()) DEBUG("[%d] Initializing schedulers \n", CkMyPe());
   if (tw_ismaster()) {
+    DEBUG("[%d] Initializing schedulers \n", CkMyPe());
     PE_VALUE(total_time) = CkWallTimer();
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
       pes.execute_seq();
@@ -125,35 +125,62 @@ void PE::initialize_rand(CProxy_Initialize srcProxy) {
 
 void PE::execute_seq() {
   while(getMinTime() < PE_VALUE(g_tw_ts_end)) {
-    PE_STATS(s_nevent_processed)+= schedule_next_LP();
+    if (schedule_next_LP(DBL_MAX, 1) == 0) {
+      break;
+    }
   }
   CkExit();
 }
 
 void PE::execute_cons() {
   while(getMinTime() < gvt + PE_VALUE(g_tw_lookahead)) {
-    PE_STATS(s_nevent_processed)+= schedule_next_LP();
+    if (schedule_next_LP(gvt + PE_VALUE(g_tw_lookahead), -1) == 0) {
+      break;
+    }
   }
   GVT_begin();
 }
 
 void PE::execute_opt() {
-  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
-    GVT_begin();
-    gvt_cnt = 0;
-    return;
+  int event_count;
+  int events_left = PE_VALUE(g_tw_mblock);
+  tw_stime execute_until;
+  while(events_left) {
+    if (nextEvents.second()) {
+      execute_until = nextEvents.second()->ts;
+    } else {
+      execute_until = DBL_MAX;
+    }
+    event_count = schedule_next_LP(execute_until, events_left);
+    events_left -= event_count;
+    if(event_count == 0) {
+      break;
+    }
   }
   process_cancel_q();
 
-  for(int events = 0; events < PE_VALUE(g_tw_mblock); events++) {
-    int event_count = schedule_next_LP();
-    if(!event_count) {
-      break;
-    } else {
-      PE_STATS(s_nevent_processed)+= event_count;
-    }
+  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
+    GVT_begin();
+    gvt_cnt = 0;
+  } else {
+    thisProxy[CkMyPe()].execute_opt();
   }
-  thisProxy[CkMyPe()].execute_opt();
+}
+
+// Pull the next LP from the queue and have it execute events until it hits
+// execute_until, or executes max events.
+int PE::schedule_next_LP(tw_stime execute_until, int max) {
+  LPToken *min = nextEvents.top();
+  if(min == NULL) return 0;
+  if (min->ts == currTime) {
+    // TODO: I don't know if this is sufficient with batch processing?
+    // TODO: Is currTime only for detecting ties?
+    PE_STATS(s_pe_event_ties)++;
+  }
+  currTime = min->ts;
+  int num_executed = min->lp->execute_me(execute_until, max);
+  PE_STATS(s_nevent_processed) += num_executed;
+  return num_executed;
 }
 
 void PE::process_cancel_q() {
@@ -236,25 +263,6 @@ void PE::collect_fossils() {
     min->lp->fossil_me(gvt);
     min = oldestEvents.top();
   }
-}
-
-/* Using the nextEvents queue, execute events
- * on the LPs in chronological order. Eric noted
- * that we may be able to optimize here by passing
- * the next time to the LP which can continue
- * executing its events till the next time (instead of
- * only executing one event and returning the control).
- */
-int PE::schedule_next_LP() {
-  LPToken *min = nextEvents.top();
-  if(min == NULL) return 0;
-  if (min->ts == currTime) {
-    PE_STATS(s_pe_event_ties)++;
-  }
-  // TODO: this is not right, we want to pass the time stamp of the next event
-  currTime = min->ts;
-  min->lp->execute_me(nextEvents.top()->ts);
-  return 1;
 }
 
 #include "pe.def.h"

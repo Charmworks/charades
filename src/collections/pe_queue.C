@@ -19,6 +19,13 @@ LPToken* PEQueue::top() const {
   else            return heap[0];
 }
 
+LPToken* PEQueue::second() const {
+  if (size < 2) return NULL;
+  if (size == 2) return heap[1];
+  if (heap[1]->ts < heap[2]->ts) return heap[1];
+  else return heap[2];
+}
+
 // Inserts the token pointer at the bottom of the heap, then pulls it up to
 // the correct index in a log number of steps.
 void PEQueue::insert(LPToken* t, Time ts) {

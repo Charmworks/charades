@@ -158,10 +158,9 @@ void LP::recv_event(RemoteEvent* event) {
 //  2b) Execute event
 //  2c) Free event, or put into processed queue if optimistic
 // 3) Update the PE with our new earliest timestamp.
-void LP::execute_me(tw_stime ts) {
-  // TODO: Right now it seems to crash if the DBL_MAX check isn't there. This
-  // will cause problems when we try to batch execute.
-  while (events.min() <= ts && ts != DBL_MAX) {
+int LP::execute_me(tw_stime ts, int max) {
+  int num_executed = 0;
+  while (events.size() && events.min() <= ts && num_executed != max) {
     // Pull off the top event for execution
     Event* e = events.pop();
     current_time = e->ts;
@@ -171,6 +170,7 @@ void LP::execute_me(tw_stime ts) {
       reset_bitfields(e);
     }
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
+    num_executed++;
 
     // TODO: This may be changed when the final stats framework is done
     (PE_VALUE(netEvents))++;
@@ -189,6 +189,8 @@ void LP::execute_me(tw_stime ts) {
 
   // Events were popped, so it is guaranteed we will need to update the PE.
   pe->update_next(&next_token, events.min());
+
+  return num_executed;
 }
 
 // Fossil collect all events older than the passed in GVT.

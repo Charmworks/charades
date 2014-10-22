@@ -43,6 +43,7 @@ class PEQueue {
     // Returns the token on top of the queue.
     // TODO: We may also want to be able to see the second token.
     LPToken* top() const;
+    LPToken* second() const;
 
     // Inserts and removes tokens from the queue.
     void insert(LPToken*, Time);

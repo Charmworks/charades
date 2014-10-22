@@ -50,7 +50,7 @@ class PE: public CBase_PE {
     void execute_opt();
     void collect_fossils(); /**< collect fossils */
     //int schedule_nextLP_no_save(); /**< find the smallest time step and execute for non-optimistic */
-    int schedule_next_LP(); /**< find the smallest time step and execute */
+    int schedule_next_LP(tw_stime, int); /**< find the smallest time step and execute */
     void process_cancel_q();
 
     /** \brief Methods for GVT computation */
