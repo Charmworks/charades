@@ -67,7 +67,7 @@ void charm_run() {
 #undef PE_STATS
 #define PE_STATS(x) statistics->x
 
-PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0) {
+PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
   // init globals
   // TODO: Maybe make this a function
   // TODO: Make sure all are initialized and make sense
@@ -153,25 +153,11 @@ bool PE::schedule_next_lp() {
 // account the earliest pending event in the system, but also the earliest
 // pending cancellation event.
 Time PE::get_min_time() {
-  Time min;
-
   if(next_lps.top() != NULL) {
-    min = next_lps.top()->ts;
+    return std::min(next_lps.top()->ts, min_cancel_time);
   } else {
-    min = DBL_MAX;
+    return min_cancel_time;
   }
-
-  // TODO: This could probably be optimized
-  if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-    for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
-      Time new_min = cancel_q[pe_i]->min_cancel_time();
-      if(new_min < min) {
-        min = new_min;
-      }
-    }
-  }
-
-  return min;
 }
 
 // Receives the reduction of the final event count, prints stats, and exits.
@@ -247,8 +233,27 @@ void PE::collect_fossils() {
 
 // Call process_cancel_q on every LP chare in our PE level cancel_q.
 void PE::process_cancel_q() {
+  vector<LP*> temp_q;
+  temp_q.swap(cancel_q);
+  min_cancel_time = DBL_MAX;
+
   for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
     cancel_q[pe_i]->process_cancel_q();
+  }
+}
+
+// Add an lp to the cancel queue and check for a new min time.
+void PE::add_to_cancel_q(LP* lp) {
+  cancel_q.push_back(lp);
+  if (lp->min_cancel_time() < min_cancel_time) {
+    min_cancel_time = lp->min_cancel_time();
+  }
+}
+
+// Check for a new min cancel time.
+void PE::update_min_cancel(Time t) {
+  if (t < min_cancel_time) {
+    min_cancel_time = t;
   }
 }
 

@@ -56,7 +56,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
 LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
-           min_cancel_q(DBL_MAX), enqueued_cancel_q(false), current_time(0),
+           min_cancel_q(DBL_MAX), in_pe_queue(false), current_time(0),
            all_events(0) {
   if(isLpSet == 0) {
     lps = thisProxy;
@@ -265,12 +265,13 @@ void LP::cancel_event(Event* e) {
       // If the event has already been executed, add it to the cancel_q
       e->cancel_next = cancel_q;
       cancel_q = e;
-      if (e->ts < min_cancel_q) {
+      if (!in_pe_queue) {
         min_cancel_q = e->ts;
-      }
-      if (!enqueued_cancel_q) {
-        pe->cancel_q.push_back(this);
-        enqueued_cancel_q = true;
+        in_pe_queue = true;
+        pe->add_to_cancel_q(this);
+      } else if (e->ts < min_cancel_q) {
+        min_cancel_q = e->ts;
+        pe->update_min_cancel(min_cancel_q);
       }
       return;
     default:
@@ -284,36 +285,29 @@ void LP::delete_pending(Event *e) {
   pe->update_next(&next_token, events.min());
 }
 
-// TODO: Clean up this and the cancel_event method for consistency
+// Process the cancel queue, which should only contain events for which
+// cancellation will cause a rollback.
 void LP::process_cancel_q() {
   tw_event    *cev, *nev;
 
-  // TODO: Why is this a loop?
-  while (cancel_q) {
-    cev = cancel_q;
-    cancel_q = NULL;
-    min_cancel_q = DBL_MAX;
+  cev = cancel_q;
+  cancel_q = NULL;
+  min_cancel_q = DBL_MAX;
+  in_pe_queue = false;
 
-    for (; cev; cev = nev) {
-      nev = cev->cancel_next;
+  for (; cev; cev = nev) {
+    nev = cev->cancel_next;
 
-      switch (cev->state.owner) {
-        case TW_rollback_q:
-          rollback_me(cev);
-          tw_event_free(this, cev);
-          break;
+    switch (cev->state.owner) {
+      case TW_rollback_q:
+        rollback_me(cev);
+        tw_event_free(this, cev);
+        break;
 
-        // TODO: Why is this case even here?
-        case TW_chare_q:
-          delete_pending(cev);
-          tw_event_free(this, cev);
-          break;
-
-        default:
-          tw_error(TW_LOC,
-              "Event in cancel_q, but owner %d not recognized %d %d %d",
-              cev->state.owner, cev->send_pe, cev->event_id, cev->ts);
-      }
+      default:
+        tw_error(TW_LOC,
+            "Event in cancel_q, but not in rollback_q %d %d %d",
+            cev->send_pe, cev->event_id, cev->ts);
     }
   }
 }

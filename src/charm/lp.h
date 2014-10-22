@@ -46,9 +46,9 @@ class LP : public CBase_LP {
     ProcessedQueue processed_events;
 
     // Cancel queue management
-    Event *cancel_q;        // Queue of events this LP needs to cancel
-    Time min_cancel_q;      // Minimum time in this LPs cancel queue
-    bool enqueued_cancel_q; // Whether or not this LP is in the PE cancel queue
+    Event *cancel_q;    // Queue of events this LP needs to cancel
+    Time min_cancel_q;  // Minimum time in this LPs cancel queue
+    bool in_pe_queue;   // Whether or not this LP is in the PE cancel queue
 
     // A direct pointer to the PE where this LP chare resides
     PE* pe;
