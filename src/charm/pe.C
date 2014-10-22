@@ -237,8 +237,8 @@ void PE::process_cancel_q() {
   temp_q.swap(cancel_q);
   min_cancel_time = DBL_MAX;
 
-  for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
-    cancel_q[pe_i]->process_cancel_q();
+  for(int i = 0; i < temp_q.size(); i++) {
+    temp_q[i]->process_cancel_q();
   }
 }
 

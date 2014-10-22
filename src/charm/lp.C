@@ -276,6 +276,7 @@ void LP::cancel_event(Event* e) {
       return;
     default:
       tw_error(TW_LOC, "Unknown owner in LP::cancel_event: %d", e->state.owner);
+      return;
   }
 }
 
@@ -285,29 +286,39 @@ void LP::delete_pending(Event *e) {
   pe->update_next(&next_token, events.min());
 }
 
-// Process the cancel queue, which should only contain events for which
-// cancellation will cause a rollback.
+// Cancel all events in the cancel queue.
+// NOTE: Even though only events in the rollback queue are place in the cancel
+// queue, they can be rolled back during execution and end up back in the
+// chare queue.
 void LP::process_cancel_q() {
-  tw_event    *cev, *nev;
+  Event *curr, *next;
+  curr = cancel_q;
 
-  cev = cancel_q;
-  cancel_q = NULL;
-  min_cancel_q = DBL_MAX;
-  in_pe_queue = false;
+  while (cancel_q) {
+    cancel_q = NULL;
+    min_cancel_q = DBL_MAX;
+    in_pe_queue = false;
 
-  for (; cev; cev = nev) {
-    nev = cev->cancel_next;
+    while(curr) {
+      next = curr->cancel_next;
+      switch (curr->state.owner) {
+        case TW_chare_q:
+          delete_pending(curr);
+          tw_event_free(this, curr);
+          break;
 
-    switch (cev->state.owner) {
-      case TW_rollback_q:
-        rollback_me(cev);
-        tw_event_free(this, cev);
-        break;
+        case TW_rollback_q:
+          rollback_me(curr);
+          tw_event_free(this, curr);
+          break;
 
-      default:
-        tw_error(TW_LOC,
-            "Event in cancel_q, but not in rollback_q %d %d %d",
-            cev->send_pe, cev->event_id, cev->ts);
+        default:
+          tw_error(TW_LOC,
+              "Unknown event owner in cancel_q: %d %d %d %f",
+              curr->state.owner, curr->send_pe, curr->event_id, curr->ts);
+          break;
+      }
+      curr = next;
     }
   }
 }
