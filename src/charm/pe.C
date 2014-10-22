@@ -186,7 +186,11 @@ void PE::print_final_stats(double total_events) {
 
 // Just execute events one at a time until the end time.
 void PE::execute_seq() {
-  while (schedule_next_lp(DBL_MAX, 1)) {}
+  while (get_min_time() < PE_VALUE(g_tw_ts_end)) {
+    if (schedule_next_lp(PE_VALUE(g_tw_ts_end), 1) == 0) {
+      break;
+    }
+  }
   CkExit();
 }
 
@@ -194,7 +198,11 @@ void PE::execute_seq() {
 // Because of lookahead constraints we can batch execution by having each LP
 // execute all the way up to the next window.
 void PE::execute_cons() {
-  while (schedule_next_lp(gvt + PE_VALUE(g_tw_lookahead), -1)) {}
+  while (get_min_time() < gvt + PE_VALUE(g_tw_lookahead)) {
+    if (schedule_next_lp(gvt + PE_VALUE(g_tw_lookahead), -1) == 0) {
+      break;
+    }
+  }
   gvt_begin();
 }
 
