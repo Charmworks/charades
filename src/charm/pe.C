@@ -138,12 +138,15 @@ void PE::initialize_rand(CProxy_Initialize srcProxy) {
 
 // Pull the next LP from the queue and have it execute events until it hits
 // execute_until, or executes max events.
-int PE::schedule_next_lp(Time execute_until, int max) {
+bool PE::schedule_next_lp() {
   LPToken *min = next_lps.top();
   if(min == NULL) return 0;
-  int num_executed = min->lp->execute_me(execute_until, max);
-  PE_STATS(s_nevent_processed) += num_executed;
-  return num_executed;
+  if (min->lp->execute_me()) {
+    PE_STATS(s_nevent_processed)++;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 // Compute the minimum time for gvt purposes. We not only need to take into
@@ -187,7 +190,7 @@ void PE::print_final_stats(double total_events) {
 // Just execute events one at a time until the end time.
 void PE::execute_seq() {
   while (get_min_time() < PE_VALUE(g_tw_ts_end)) {
-    if (schedule_next_lp(PE_VALUE(g_tw_ts_end), 1) == 0) {
+    if (!schedule_next_lp()) {
       break;
     }
   }
@@ -199,7 +202,7 @@ void PE::execute_seq() {
 // execute all the way up to the next window.
 void PE::execute_cons() {
   while (get_min_time() < gvt + PE_VALUE(g_tw_lookahead)) {
-    if (schedule_next_lp(gvt + PE_VALUE(g_tw_lookahead), -1) == 0) {
+    if (!schedule_next_lp()) {
       break;
     }
   }
@@ -210,18 +213,11 @@ void PE::execute_cons() {
 // Also process the cancellation queue each iteration.
 // After a fixed number of iterations, compute a new GVT.
 void PE::execute_opt() {
-  int event_count;
   int events_left = PE_VALUE(g_tw_mblock);
-  Time execute_until;
   while (events_left) {
-    if (next_lps.second()) {
-      execute_until = next_lps.second()->ts;
+    if(schedule_next_lp()) {
+      events_left--;
     } else {
-      execute_until = DBL_MAX;
-    }
-    event_count = schedule_next_lp(execute_until, events_left);
-    events_left -= event_count;
-    if(event_count == 0) {
       break;
     }
   }

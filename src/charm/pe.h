@@ -45,7 +45,7 @@ class PE: public CBase_PE {
     void execute_cons();
     void execute_opt();
 
-    int schedule_next_lp(Time, int); /**< call execute_me on the next LP */
+    bool schedule_next_lp(); /**< call execute_me on the next LP */
 
     /** \brief Methods only used in optimistic mode */
     void collect_fossils();   /**< collect fossils */

@@ -158,9 +158,8 @@ void LP::recv_event(RemoteEvent* event) {
 //  2b) Execute event
 //  2c) Free event, or put into processed queue if optimistic
 // 3) Update the PE with our new earliest timestamp.
-int LP::execute_me(tw_stime ts, int max) {
-  int num_executed = 0;
-  while (events.size() && events.min() <= ts && num_executed != max) {
+bool LP::execute_me() {
+  if (events.size()) {
     // Pull off the top event for execution
     Event* e = events.pop();
     current_time = e->ts;
@@ -170,7 +169,6 @@ int LP::execute_me(tw_stime ts, int max) {
       reset_bitfields(e);
     }
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
-    num_executed++;
 
     // TODO: This may be changed when the final stats framework is done
     (PE_VALUE(netEvents))++;
@@ -185,12 +183,10 @@ int LP::execute_me(tw_stime ts, int max) {
     } else {
       tw_event_free(this, e);
     }
+    pe->update_next(&next_token, events.min());
+    return true;
   }
-
-  // Events were popped, so it is guaranteed we will need to update the PE.
-  pe->update_next(&next_token, events.min());
-
-  return num_executed;
+  return false;
 }
 
 // Fossil collect all events older than the passed in GVT.
