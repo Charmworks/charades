@@ -5,9 +5,9 @@
 
 #include "typedefs.h"
 #include "lp_struct.h"
+
 #include "pending_splay.h"
 #include "processed_queue.h"
-#include "float.h"
 
 #include <vector>
 
@@ -34,13 +34,26 @@ typedef std::vector<LPStruct> LPList;
 
 class LP : public CBase_LP {
   private:
+    // LP Tokens for pending events and fossils
     LPToken next_token;
     LPToken oldest_token;
 
+    // All lps managed by this chare
     LPList lp_structs;
-    ProcessedQueue processed_events;
-    PendingSplay events;
 
+    // Queues for storing events
+    PendingSplay events;
+    ProcessedQueue processed_events;
+
+    // Cancel queue management
+    Event *cancel_q;        // Queue of events this LP needs to cancel
+    Time min_cancel_q;      // Minimum time in this LPs cancel queue
+    bool enqueued_cancel_q; // Whether or not this LP is in the PE cancel queue
+
+    // A direct pointer to the PE where this LP chare resides
+    PE* pe;
+
+    // Some control flow varies when we are in optimistic mode
     bool isOptimistic;
   public:
     // Used to give a unique EventID to every message sent
@@ -50,36 +63,46 @@ class LP : public CBase_LP {
     // used for cancellation purposes.
     AvlTree all_events;
 
-    // TODO (nikhil): Explain what these cancel fields do/are for.
-    Event *cancel_q;
-    Time min_cancel_q;
-    bool enqueued_cancel_q;
-
-    // A direct pointer to the PE where this LP chare resides.
-    PE* pe;
-
+    // Current state of this LP chare. Accessed through a C-style API by ROSS.
     Time current_time;
     Event *current_event;
 
-    LP(); /**< constructor */
-    LP(CkMigrateMessage*) { }
+    LP();
+    LP(CkMigrateMessage*) {}
 
+    // After initializing lps, we stop the charm scheduler and return control
+    // to ROSS until we are ready to start the simulation.
     void init();
-    void stopScheduler(); /**< Stops the scheduler after LPs have been created */
+    void stop_scheduler();
 
-    void recv_event(RemoteEvent*); /**< receive an event designated for me and add to my event Q */
+    // When receiving an event, place it in the pending queue. If optimistic
+    // also check for rollbacks.
+    void recv_event(RemoteEvent*);
 
-    bool execute_me(); /**< execute the events with least time stamp till the given ts*/
-    void rollback_me(Time); /**< rollback this collection of LPs until the given ts */
-    void rollback_me(Event*); /**< rollback this collection of LPs until the given ts */
-    void fossil_me(Time); /**< collect fossils till next the given gvt_ts */
+    // Execute a single event from the pending queue. If optimistic, we also
+    // push the event onto the processed queue.
+    bool execute_me();
 
-    Time getMinCancelTime() {
+    // Rollback and fossil collection only occur in optimistic mode.
+    // When detecting a rollback upon receiving an event, we rollback to that
+    // timestamp. When cancelling and event that would cause a rollback, we
+    // rollback to that event before deleting it.
+    // Fossil collection is called by the PE after GVT computation.
+    void rollback_me(Time);
+    void rollback_me(Event*);
+    void fossil_me(Time);
+
+    // Event cancellation events (only in optimistic)
+    // When cancelling an event, we either delete it from our pending event
+    // queue, or put it in the cancel_q for later if it would cause a rollback.
+    // The PE will periodically call process_cancel_q() on LPs.
+    void cancel_event(Event*);
+    void delete_pending(Event*);
+    void process_cancel_q();
+
+    Time min_cancel_time() const {
       return min_cancel_q;
     }
-    void cancel_event(Event*); /**< Cancel an event by deleting it, or adding it to the cancel queue */
-    void delete_pending(Event *e); /**< Delete an event that has not executed yet */
-    void process_cancel_q(); /**< Cancel the events in our cancel queue */
 };
 
 #endif

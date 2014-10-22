@@ -164,7 +164,7 @@ Time PE::get_min_time() {
   // TODO: This could probably be optimized
   if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
     for(int pe_i = 0; pe_i < cancel_q.size(); pe_i++) {
-      Time new_min = cancel_q[pe_i]->getMinCancelTime();
+      Time new_min = cancel_q[pe_i]->min_cancel_time();
       if(new_min < min) {
         min = new_min;
       }

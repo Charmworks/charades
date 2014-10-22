@@ -3,25 +3,26 @@
 #include "event.h"
 
 #include "globals.h"
-#include "ross_api.h"
-#include "charm_api.h"
+#include "ross_api.h"   // TODO: Why do we need this
+#include "charm_api.h"  // TODO: Why do we need this
 
 #include "ross_util.h"
 #include "ross_random.h"
 #include "ross_clcg4.h"
+
 #include "avl_tree.h"
 
-#include "float.h"
-#include "assert.h"
-
 #include "mpi-interoperate.h"
+
+#include <float.h>
+#include <assert.h>
 
 // Readonly variables for the global proxies.
 extern CProxy_PE pes;
 CProxy_LP lps;
 int isLpSet = 0;
 
-// This is the API which allows the ROSS code to initialize the Charm backend.
+// TODO: Move this API to an appropriate place
 void create_lps() {
   if (tw_ismaster()) {
     // TODO: Why do we use the isLPSet flag rather than just setting it here?
@@ -37,7 +38,7 @@ void init_lps() {
   StartCharmScheduler();
 }
 
-tw_stime tw_now(tw_lp* lp) {
+Time tw_now(tw_lp* lp) {
   return lp->owner->current_time;
 }
 
@@ -88,12 +89,7 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
 
   // Once all LP Chares have been created and set up, return control to the
   // ROSS initialization.
-  contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
-}
-
-void LP::stopScheduler() {
-  if(tw_ismaster()) DEBUG("[%d] Stop scheduler \n", CkMyPe());
-  CkExit();
+  contribute(CkCallback(CkIndex_LP::stop_scheduler(), thisProxy(0)));
 }
 
 // Call init on all LPs then stop the charm scheduler.
@@ -103,11 +99,16 @@ void LP::init() {
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
   }
-  contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
+  contribute(CkCallback(CkIndex_LP::stop_scheduler(), thisProxy(0)));
+}
+
+void LP::stop_scheduler() {
+  if(tw_ismaster()) DEBUG("[%d] Stop scheduler \n", CkMyPe());
+  CkExit();
 }
 
 // Entry method for sending events to LPs.
-// 1) Check if the event is earlier than our earliest and update the PE.
+// 1) Check if the event is an anti-event.
 // 2) Check to see if we need a rollback.
 // 3) Push event into the priority queue.
 void LP::recv_event(RemoteEvent* event) {
@@ -121,7 +122,6 @@ void LP::recv_event(RemoteEvent* event) {
   if(event->isAnti) {
     // Find the corresponding real event in the avl tree, cancel it, and
     // deallocate all involved events.
-    // TODO: Maybe we can get rid of the need to allocate e in the first place.
     Event *real_e = avlDelete(&all_events, e);
     tw_event_free(this, e);
     real_e->state.remote = 0;
@@ -151,13 +151,11 @@ void LP::recv_event(RemoteEvent* event) {
   }
 }
 
-// Execute events up to timestamp ts.
-// 1) Check for lazy rollbacks if optimistic
-// 2) While next event is still earlier than ts:
-//  2a) Pop event
-//  2b) Execute event
-//  2c) Free event, or put into processed queue if optimistic
-// 3) Update the PE with our new earliest timestamp.
+// Execute the next event in the pending queue (returns false if no events).
+// 1) Pop event
+// 2) Execute event
+// 3) Free event, or put into processed queue if optimistic
+// 4) Update the PE with our new earliest timestamp
 bool LP::execute_me() {
   if (events.size()) {
     // Pull off the top event for execution
@@ -170,7 +168,7 @@ bool LP::execute_me() {
     }
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
 
-    // TODO: This may be changed when the final stats framework is done
+    // TODO: Use stats framework
     (PE_VALUE(netEvents))++;
 
     // Enqueue or deallocate the event depending on sync mode
@@ -187,22 +185,6 @@ bool LP::execute_me() {
     return true;
   }
   return false;
-}
-
-// Fossil collect all events older than the passed in GVT.
-// 1) If the next event is older than the current gvt pop it and delete it.
-// 2) Update the PE with our oldest unprocessed event time.
-void LP::fossil_me(tw_stime gvt) {
-  while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
-    Event* e = processed_events.back();
-    processed_events.pop_back();
-    tw_event_free(this,e);
-  }
-  if(processed_events.back() != NULL) {
-    pe->update_oldest(&oldest_token, processed_events.back()->ts);
-  } else {
-    pe->update_oldest(&oldest_token, DBL_MAX);
-  }
 }
 
 // Rollback all processed events up to the passed in timestamp.
@@ -227,6 +209,7 @@ void LP::rollback_me(tw_stime ts) {
   }
 }
 
+// Rollback until we get to event, and roll it back.
 void LP::rollback_me(Event *event) {
   Event* e = processed_events.front();
   processed_events.pop_front();
@@ -254,6 +237,23 @@ void LP::rollback_me(Event *event) {
   }
 }
 
+// Fossil collect all events older than the passed in GVT.
+// 1) If the next event is older than the current gvt pop it and delete it.
+// 2) Update the PE with our oldest unprocessed event time.
+void LP::fossil_me(tw_stime gvt) {
+  while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
+    Event* e = processed_events.back();
+    processed_events.pop_back();
+    tw_event_free(this,e);
+  }
+  if(processed_events.back() != NULL) {
+    pe->update_oldest(&oldest_token, processed_events.back()->ts);
+  } else {
+    pe->update_oldest(&oldest_token, DBL_MAX);
+  }
+}
+
+// Cancel the event e, which should be stored on this chare.
 void LP::cancel_event(Event* e) {
   switch (e->state.owner) {
     case TW_chare_q:
@@ -278,20 +278,10 @@ void LP::cancel_event(Event* e) {
   }
 }
 
-// Delete an event in our pending queue
+// Delete an event in our pending queue.
 void LP::delete_pending(Event *e) {
-  /*if(events.top() == e) {
-    events.pop();
-    if(events.top() != NULL) {
-      pe->update_next(&next_token, events.top()->ts);
-    } else {
-      pe->update_next(&next_token, DBL_MAX);
-    }
-  } else {*/
-  // TODO: Make sure this is optimized with new interface
   events.erase(e);
   pe->update_next(&next_token, events.min());
-  //}
 }
 
 // TODO: Clean up this and the cancel_event method for consistency
@@ -327,4 +317,5 @@ void LP::process_cancel_q() {
     }
   }
 }
+
 #include "lp.def.h"
