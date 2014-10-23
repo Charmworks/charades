@@ -239,7 +239,11 @@ void PE::execute_opt() {
 // Call fossil_me on all lps that have fossils older than the current gvt.
 // The oldest_lps queue ensures we will only call fossil_me on lps that need it.
 void PE::collect_fossils() {
+  PE_STATS(s_fc_attempts)++;
   LPToken *min = oldest_lps.top();
+  if ((min != NULL) && (min->ts < gvt)) {
+    PE_STATS(s_fossil_collect)++;
+  }
   while((min != NULL) && (min->ts < gvt)) {
     min->lp->fossil_me(gvt);
     min = oldest_lps.top();

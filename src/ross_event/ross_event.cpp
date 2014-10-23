@@ -98,7 +98,7 @@ void tw_event_send(tw_event * e) {
   dest_peid = src_lp->type->chare_map(e->dest_lp);
 
   // The charm backend will fill in the remote event and send it
-  charm_event_send(dest_peid, e); 
+  charm_event_send(dest_peid, e);
 
   // Unless we are doing optimistic simulation we can just free the event
   if(PE_VALUE(g_tw_synchronization_protocol) != OPTIMISTIC) {
@@ -126,6 +126,8 @@ void tw_event_rollback(tw_event * event) {
   }
 
   event->caused_by_me = NULL;
+
+  PE_STATS(s_e_rbs)++;
 }
 
 // TODO: Is this supposed to be publicly exposed?

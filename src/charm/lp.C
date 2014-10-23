@@ -208,6 +208,7 @@ void LP::fossil_me(tw_stime gvt) {
 // Rollback all processed events up to the passed in timestamp.
 void LP::rollback_me(tw_stime ts) {
   Event* e;
+  PE_STATS(s_rb_total)++;
   while(processed_events.front() != NULL && processed_events.front()->ts > ts) {
     e = processed_events.front();
     processed_events.pop_front();
@@ -228,6 +229,8 @@ void LP::rollback_me(tw_stime ts) {
 }
 
 void LP::rollback_me(Event *event) {
+  PE_STATS(s_rb_total)++;
+  PE_STATS(s_rb_secondary)++;
   Event* e = processed_events.front();
   processed_events.pop_front();
   while (e != event) {
