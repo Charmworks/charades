@@ -195,7 +195,7 @@ void PE::execute_seq() {
       break;
     }
   }
-  CkExit();
+  print_final_stats(PE_STATS(s_net_events));
 }
 
 // Execute events within the current window based on lookahead.
