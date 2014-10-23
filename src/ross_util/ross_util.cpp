@@ -32,22 +32,22 @@
 }*/
 
 // From tw-stats.c
-static void show_lld(const char *name, tw_stat v) {
+void show_lld(const char *name, tw_stat v) {
   printf("\t%-50s %11lld\n", name, v);
   fprintf(PE_VALUE(g_tw_csv), "%lld,", v);
 }
 
-static void show_2f(const char *name, double v) {
+void show_2f(const char *name, double v) {
   printf("\t%-50s %11.2f %%\n", name, v);
   fprintf(PE_VALUE(g_tw_csv), "%.2f,", v);
 }
 
-static void show_1f(const char *name, double v) {
+void show_1f(const char *name, double v) {
   printf("\t%-50s %11.1f\n", name, v);
   fprintf(PE_VALUE(g_tw_csv), "%.2f,", v);
 }
 
-static void show_4f(const char *name, double v) {
+void show_4f(const char *name, double v) {
   printf("\t%-50s %11.4lf\n", name, v);
   fprintf(PE_VALUE(g_tw_csv), "%.4lf,", v);
 }
