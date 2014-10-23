@@ -179,7 +179,7 @@ void PE::print_final_stats(double total_events) {
   CkPrintf("Total events executed: %.0lf\n", total_events);
   CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
   CkPrintf("Event rate: %f events/s\n", total_events/PE_VALUE(total_time));
-  tw_stats(pes.ckLocalBranch()->statistics);
+  tw_stats_old(pes.ckLocalBranch()->statistics);
   CkExit();
 }
 
