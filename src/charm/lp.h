@@ -68,6 +68,7 @@ class LP : public CBase_LP {
     void stopScheduler(); /**< Stops the scheduler after LPs have been created */
 
     void recv_event(RemoteEvent*); /**< receive an event designated for me and add to my event Q */
+    void LP::recv_local_event(Event*); /** < receive a local event */
 
     bool execute_me(); /**< execute the events with least time stamp till the given ts*/
     void rollback_me(Time); /**< rollback this collection of LPs until the given ts */

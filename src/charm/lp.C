@@ -151,6 +151,31 @@ void LP::recv_event(RemoteEvent* event) {
   }
 }
 
+// Local version of Entry method for receiving events on LPs.
+// 1) Check if the event is earlier than our earliest and update the PE.
+// 2) Check to see if we need a rollback.
+// 3) Push event into the priority queue.
+void LP::recv_local_event(Event* e) {
+  RemoteEvent *rEvent = e->eventMsg;
+  e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(rEvent->dest_lp)];
+
+  // If this event is now the earliest, update the PE
+  if (e->ts < events.min()) {
+    pe->update_next(&next_token, e->ts);
+  }
+
+  // If optimistic, then we also have to hash the event and check for rollback
+  if(isOptimistic) {
+    if (e->ts < current_time) {
+      rollback_me(e->ts);
+    }
+  }
+
+  // Push the event into the queue
+  events.push(e);
+  e->state.owner = TW_chare_q;
+}
+
 // Execute events up to timestamp ts.
 // 1) Check for lazy rollbacks if optimistic
 // 2) While next event is still earlier than ts:

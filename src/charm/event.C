@@ -34,7 +34,9 @@ void charm_free_event(tw_event * e) {
     tw_event  *event = e->caused_by_me;
     while (event) {
       tw_event *n = event->cause_next;
-      charm_free_event(event);
+      if(event->state.owner == TW_sent) {
+        charm_free_event(event);
+      }
       event = n;
     }
   }
@@ -51,7 +53,7 @@ void charm_free_event(tw_event * e) {
 // TODO: Is it ok to short-circuit anti-messages.
 // TODO: We might want a "will cause rollback" method on LPs
 // Encapsulates short-circuiting logic, and sends the remote event msg
-static inline void charm_send(LP* sender, unsigned dest, RemoteEvent* msg) {
+static inline int charm_send(LP* sender, unsigned dest, RemoteEvent* msg, Event *e) {
   LP* dest_pe = NULL;
   if (sender->thisIndex == dest) {
     dest_pe = sender;
@@ -59,14 +61,16 @@ static inline void charm_send(LP* sender, unsigned dest, RemoteEvent* msg) {
     dest_pe = lps(dest).ckLocal();
   }
   if (dest_pe != NULL) {
-    dest_pe->recv_event(msg);
+    dest_pe->recv_local_event(e);
+    return 0;
   } else {
     lps(dest).recv_event(msg);
+    return 1;
   }
 }
 
 // Fill an event's remote message and send it
-void charm_event_send(unsigned dest_peid, tw_event * e) {
+int charm_event_send(unsigned dest_peid, tw_event * e) {
   LP *send_pe = (LP*)(e->send_pe);
 
   // Fill the fields of the charm message to prepare it for sending
@@ -76,11 +80,13 @@ void charm_event_send(unsigned dest_peid, tw_event * e) {
   e->eventMsg->dest_lp = e->dest_lp;
   e->eventMsg->send_pe = e->send_pe = send_pe->thisIndex;
 
-  charm_send(send_pe, dest_peid, e->eventMsg);
-
-  // Mark the event as sent and unlink it from the remote event
-  e->state.owner = TW_sent;
-  e->eventMsg = NULL;
+  int isRemote = charm_send(send_pe, dest_peid, e->eventMsg, e);
+  if(isRemote) {
+    // Mark the event as sent and unlink it from the remote event
+    e->state.owner = TW_sent;
+    e->eventMsg = NULL;
+  }
+  return isRemote;
 }
 
 // Allocate a new remote message, fill it based on e, and send it
@@ -93,7 +99,7 @@ void charm_anti_send(unsigned dest_peid, tw_event * e) {
   eventMsg->dest_lp = e->dest_lp;
   eventMsg->send_pe = e->send_pe;
 
-  charm_send(((LP*)((tw_lp*)e->src_lp)->owner), dest_peid, eventMsg);
+  charm_send(((LP*)((tw_lp*)e->src_lp)->owner), dest_peid, eventMsg, e);
 }
 
 // Cancels an event by either sending an anti-message, or calling cancel_event

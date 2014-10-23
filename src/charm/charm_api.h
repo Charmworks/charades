@@ -13,5 +13,5 @@ tw_stime tw_now(tw_lp*);
 tw_event * charm_allocate_event(int needMsg = 1);
 void charm_free_event(tw_event * e);
 void charm_event_cancel(tw_event * e);
-void charm_event_send(unsigned, tw_event * e);
+int charm_event_send(unsigned, tw_event * e);
 void charm_anti_send(unsigned, tw_event * e);
