@@ -156,7 +156,7 @@ void tw_stats(Statistics *s) {
   show_lld("Primary Roll Backs ", s->s_rb_primary);
   show_lld("Secondary Roll Backs ", s->s_rb_secondary);
   show_lld("Fossil Collect Attempts", s->s_fc_attempts);
-  show_lld("Total GVT Computations", PE_VALUE(g_tw_gvt_done));
+  show_lld("Total GVT Computations", s->s_ngvts);
 
   printf("\n");
   show_lld("Net Events Processed", s->s_net_events);
@@ -166,7 +166,7 @@ void tw_stats(Statistics *s) {
   );
 
   printf("\nTW Memory Statistics:\n");
-  show_lld("Events Allocated", PE_VALUE(g_tw_events_per_pe) * PE_VALUE(g_tw_npe));
+  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered) * PE_VALUE(g_num_lp_chares));
   show_lld("Memory Allocated", m_alloc / 1024);
   show_lld("Memory Wasted", m_waste / 1024);
 
@@ -206,7 +206,7 @@ void tw_stats(Statistics *s) {
 
   //tw_gvt_stats(stdout);
 #endif
-*/
+
 }
 
 
