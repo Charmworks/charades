@@ -177,6 +177,7 @@ void tw_stats(Statistics *s) {
     show_lld("Remote recvs", s->s_nread_network);
   }
 
+/*
   printf("\nTW Data Structure sizes in bytes (sizeof):\n");
   show_lld("PE struct", sizeof(tw_pe));
   show_lld("KP struct", sizeof(tw_kp));
@@ -186,6 +187,7 @@ void tw_stats(Statistics *s) {
   show_lld("Total LP", sizeof(tw_lp) + lp->type->state_sz + sizeof(*lp->rng));
   show_lld("Event struct", sizeof(tw_event));
   show_lld("Event struct with Model", sizeof(tw_event) + PE_VALUE(g_tw_msg_sz));
+*/
 
 #ifdef ROSS_timing
   printf("\nTW Clock Cycle Statistics (MAX values in secs at %1.4lf GHz):\n", PE_VALUE(g_tw_clock_rate) / 1000000000.0);
