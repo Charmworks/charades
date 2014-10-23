@@ -15,6 +15,8 @@ struct tw_rng;
 
 using std::vector;
 
+CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs);
+
 class PE: public CBase_PE {
   private:
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
@@ -61,6 +63,8 @@ class PE: public CBase_PE {
 
     /** \brief Print final stats at the end of a simulation */
     void print_final_stats(double);
+
+    void tw_stats(CkReductionMsg *m);
 
     /** \brief Get time stamp of the minium event */
     Time get_min_time();

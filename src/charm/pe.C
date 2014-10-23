@@ -10,6 +10,7 @@
 #include <float.h> // Included for DBL_MAX
 
 CProxy_PE pes;
+CkReduction::reducerType statsReductionType;
 
 Globals* get_globals() {
   static PE* local_pe = pes.ckLocalBranch();
@@ -179,7 +180,9 @@ void PE::print_final_stats(double total_events) {
   CkPrintf("Total events executed: %.0lf\n", total_events);
   CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
   CkPrintf("Event rate: %f events/s\n", total_events/PE_VALUE(total_time));
-  tw_stats(pes.ckLocalBranch()->statistics);
+  //tw_stats(pes.ckLocalBranch()->statistics);
+  contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
+    CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
   CkExit();
 }
 
@@ -294,6 +297,190 @@ void PE::gvt_end(Time new_gvt) {
       thisProxy[CkMyPe()].execute_opt();
     }
   }
+}
+
+void PE::tw_stats(CkReductionMsg *m) {
+  printf("HEREHERHERHERHEREHREHRHE in PE::tw_stats\n");
+  int  i;
+  Statistics *s = (Statistics *)m->getData();
+  size_t m_alloc, m_waste;
+
+  // if (0 == g_tw_sim_started)
+  //   return;
+
+  // tw_calloc_stats(&m_alloc, &m_waste);
+
+  // This is the target of a group reduction
+  // s has been reduced already
+
+  // should never happen
+  // if (!tw_ismaster())
+  //   return;
+
+#ifndef ROSS_DO_NOT_PRINT
+  printf("\n\t: Running Time = %.4f seconds\n", s->s_max_run_time);
+  fprintf(PE_VALUE(g_tw_csv), "%.4f,", s->s_max_run_time);
+
+  printf("\nTW Library Statistics:\n");
+  show_lld("Total Events Processed", s->s_nevent_processed);
+  show_lld("Events Aborted (part of RBs)", s->s_nevent_abort);
+  show_lld("Events Rolled Back", s->s_e_rbs);
+  show_lld("Event Ties Detected in PE Queues", s->s_pe_event_ties);
+        if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE)
+            printf("\t%-50s %11.9lf\n",
+               "Minimum TS Offset Detected in Conservative Mode",
+               (double) s->s_min_detected_offset);
+  show_2f("Efficiency", 100.0 * (1.0 - ((double) s->s_e_rbs / (double) s->s_net_events)));
+  show_lld("Total Remote (shared mem) Events Processed", s->s_nsend_loc_remote);
+
+  show_2f(
+    "Percent Remote Events",
+    ( (double)s->s_nsend_loc_remote
+    / (double)s->s_net_events)
+    * 100.0
+  );
+
+  show_lld("Total Remote (network) Events Processed", s->s_nsend_net_remote);
+  show_2f(
+    "Percent Remote Events",
+    ( (double)s->s_nsend_net_remote
+    / (double)s->s_net_events)
+    * 100.0
+  );
+
+  printf("\n");
+  show_lld("Total Roll Backs ", s->s_rb_total);
+  show_lld("Primary Roll Backs ", s->s_rb_primary);
+  show_lld("Secondary Roll Backs ", s->s_rb_secondary);
+  show_lld("Fossil Collect Attempts", s->s_fc_attempts);
+  show_lld("Total GVT Computations", s->s_ngvts);
+
+  printf("\n");
+  show_lld("Net Events Processed", s->s_net_events);
+  show_1f(
+    "Event Rate (events/sec)",
+    ((double)s->s_net_events / s->s_max_run_time)
+  );
+
+  printf("\nTW Memory Statistics:\n");
+  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered) * PE_VALUE(g_num_lp_chares));
+  show_lld("Memory Allocated", m_alloc / 1024);
+  show_lld("Memory Wasted", m_waste / 1024);
+
+  if (tw_nnodes() > 1) {
+    printf("\n");
+    printf("TW Network Statistics:\n");
+    show_lld("Remote sends", s->s_nsend_network);
+    show_lld("Remote recvs", s->s_nread_network);
+  }
+
+/*
+  printf("\nTW Data Structure sizes in bytes (sizeof):\n");
+  show_lld("PE struct", sizeof(tw_pe));
+  show_lld("KP struct", sizeof(tw_kp));
+  show_lld("LP struct", sizeof(tw_lp));
+  show_lld("LP Model struct", lp->type->state_sz);
+  show_lld("LP RNGs", sizeof(*lp->rng));
+  show_lld("Total LP", sizeof(tw_lp) + lp->type->state_sz + sizeof(*lp->rng));
+  show_lld("Event struct", sizeof(tw_event));
+  show_lld("Event struct with Model", sizeof(tw_event) + PE_VALUE(g_tw_msg_sz));
+*/
+
+#ifdef ROSS_timing
+  printf("\nTW Clock Cycle Statistics (MAX values in secs at %1.4lf GHz):\n", PE_VALUE(g_tw_clock_rate) / 1000000000.0);
+  show_4f("Priority Queue (enq/deq)", (double) s->s_pq / PE_VALUE(g_tw_clock_rate));
+    show_4f("AVL Tree (insert/delete)", (double) s->s_avl / PE_VALUE(g_tw_clock_rate));
+  show_4f("Event Processing", (double) s->s_event_process / PE_VALUE(g_tw_clock_rate));
+  show_4f("Event Cancel", (double) s->s_cancel_q / PE_VALUE(g_tw_clock_rate));
+  show_4f("Event Abort", (double) s->s_event_abort / PE_VALUE(g_tw_clock_rate));
+  printf("\n");
+  show_4f("GVT", (double) s->s_gvt / PE_VALUE(g_tw_clock_rate));
+  show_4f("Fossil Collect", (double) s->s_fossil_collect / PE_VALUE(g_tw_clock_rate));
+  show_4f("Primary Rollbacks", (double) s->s_rollback / PE_VALUE(g_tw_clock_rate));
+  show_4f("Network Read", (double) s->s_net_read / PE_VALUE(g_tw_clock_rate));
+  show_4f("Total Time (Note: Using Running Time above for Speedup)", (double) s->s_total / PE_VALUE(g_tw_clock_rate));
+#endif
+
+  //tw_gvt_stats(stdout);
+#endif
+
+}
+
+void registerStatsReduction(void) {
+  statsReductionType = CkReduction::addReducer(statsReduction);
+}
+
+CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
+  Statistics *s = new Statistics;
+  s->s_max_run_time = 0.0;
+  s->s_net_events = 0;
+  s->s_nevent_processed = 0;
+  s->s_nevent_abort = 0;
+  s->s_e_rbs = 0;
+  s->s_rb_total = 0;
+  s->s_rb_primary = 0;
+  s->s_rb_secondary = 0;
+  s->s_fc_attempts = 0;
+  s->s_pq_qsize = 0;
+  s->s_nsend_network = 0;
+  s->s_nread_network = 0;
+  s->s_nsend_remote_rb = 0;
+  s->s_nsend_loc_remote = 0;
+  s->s_nsend_net_remote = 0;
+  s->s_ngvts = 0;
+  s->s_mem_buffers_used = 0;
+  s->s_pe_event_ties = 0;
+  s->s_min_detected_offset = DBL_MAX;
+  s->s_total = 0;
+  s->s_net_read = 0;
+  s->s_gvt = 0;
+  s->s_fossil_collect = 0;
+  s->s_event_abort = 0;
+  s->s_event_process = 0;
+  s->s_pq = 0;
+  s->s_rollback = 0;
+  s->s_cancel_q = 0;
+  s->s_avl = 0;
+
+  for (int i = 0; i < nMsg; i++){
+    CkAssert(msgs[i]->getSize() == sizeof(Statistics));
+
+    Statistics *c = (Statistics *)msgs[i]->getData();
+    s->s_max_run_time = fmax(s->s_max_run_time, c->s_max_run_time);
+
+    s->s_net_events += c->s_net_events;
+    s->s_nevent_processed += c->s_nevent_processed;
+    s->s_nevent_abort += c->s_nevent_abort;
+    s->s_e_rbs += c->s_e_rbs;
+    s->s_rb_total += c->s_rb_total;
+    s->s_rb_primary += c->s_rb_primary;
+    s->s_rb_secondary += c->s_rb_secondary;
+    s->s_fc_attempts += c->s_fc_attempts;
+    s->s_pq_qsize += c->s_pq_qsize;
+    s->s_nsend_network += c->s_nsend_network;
+    s->s_nread_network += c->s_nread_network;
+    s->s_nsend_remote_rb += c->s_nsend_remote_rb;
+    s->s_nsend_loc_remote += c->s_nsend_loc_remote;
+    s->s_nsend_net_remote += c->s_nsend_net_remote;
+    s->s_ngvts += c->s_ngvts;
+    s->s_mem_buffers_used += c->s_mem_buffers_used;
+
+    s->s_pe_event_ties += c->s_pe_event_ties;
+    s->s_min_detected_offset = fmin(s->s_min_detected_offset, c->s_min_detected_offset);
+
+    s->s_total = fmax(s->s_total, c->s_total);
+    s->s_net_read = fmax(s->s_net_read, c->s_net_read);
+    s->s_gvt = fmax(s->s_gvt, c->s_gvt);
+    s->s_fossil_collect = fmax(s->s_fossil_collect, c->s_fossil_collect);
+    s->s_event_abort = fmax(s->s_event_abort, c->s_event_abort);
+    s->s_event_process = fmax(s->s_event_process, c->s_event_process);
+    s->s_pq = fmax(s->s_pq, c->s_pq);
+    s->s_rollback = fmax(s->s_rollback, c->s_rollback);
+
+    s->s_avl = fmax(s->s_avl, c->s_avl);
+  }
+
+  return CkReductionMsg::buildNew(sizeof(Statistics), s);
 }
 
 #include "pe.def.h"
