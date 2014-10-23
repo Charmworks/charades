@@ -260,6 +260,7 @@ void PE::process_cancel_q() {
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.
 void PE::gvt_begin() {
+  PE_STATS(s_ngvts)++;
   DEBUG4("******** GVT begins ********\n");
   if(CkMyPe() == 0) {
     /* TODO: Provide option for using completion detection */
