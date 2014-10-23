@@ -10,7 +10,7 @@
 //static tw_stime percent_complete = 0.0;
 //inline void gvt_print(Time gvt);
 
-void tw_stats(Statistics *me);
+void tw_stats_old(Statistics *me);
 
 int tw_output (tw_lp *lp, const char *fmt, ...);
 void tw_printf(const char *file, int line, const char *fmt, ...);
