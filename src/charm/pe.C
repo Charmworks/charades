@@ -176,6 +176,7 @@ Time PE::get_min_time() {
 
 // Receives the reduction of the final event count, prints stats, and exits.
 void PE::print_final_stats(double total_events) {
+    tw_stats(pes.ckLocalBranch()->statistics);
   CkPrintf("Total events executed: %.0lf\n", total_events);
   CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
   CkPrintf("Event rate: %f events/s\n", total_events/PE_VALUE(total_time));
