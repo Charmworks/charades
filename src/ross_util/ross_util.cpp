@@ -52,7 +52,7 @@ static void show_4f(const char *name, double v) {
   fprintf(PE_VALUE(g_tw_csv), "%.4lf,", v);
 }
 
-void tw_stats(Statistics *s) {
+void tw_stats_old(Statistics *s) {
   int  i;
 
   size_t m_alloc, m_waste;
