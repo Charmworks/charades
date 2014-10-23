@@ -183,7 +183,7 @@ void PE::print_final_stats(double total_events) {
   //tw_stats(pes.ckLocalBranch()->statistics);
   contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
     CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
-  CkExit();
+  // CkExit();
 }
 
 
@@ -300,7 +300,7 @@ void PE::gvt_end(Time new_gvt) {
 }
 
 void PE::tw_stats(CkReductionMsg *m) {
-  printf("HEREHERHERHERHEREHREHRHE in PE::tw_stats\n");
+
   int  i;
   Statistics *s = (Statistics *)m->getData();
   size_t m_alloc, m_waste;
@@ -404,6 +404,7 @@ void PE::tw_stats(CkReductionMsg *m) {
   //tw_gvt_stats(stdout);
 #endif
 
+  CkExit();
 }
 
 void registerStatsReduction(void) {
