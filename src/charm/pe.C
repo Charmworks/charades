@@ -297,6 +297,7 @@ void PE::gvt_end(Time new_gvt) {
       thisProxy[CkMyPe()].execute_opt();
     }
   }
+  gvt_in_progress = false;
 }
 
 #include "pe.def.h"
