@@ -75,9 +75,10 @@ class LP : public CBase_LP {
     void init();
     void stop_scheduler();
 
-    // When receiving an event, place it in the pending queue. If optimistic
-    // also check for rollbacks.
-    void recv_event(RemoteEvent*);
+    // Methods for receiving events and anti events.
+    void recv_remote_event(RemoteEvent*);
+    void recv_anti_event(RemoteEvent*);
+    void recv_local_event(Event*);
 
     // Execute a single event from the pending queue. If optimistic, we also
     // push the event onto the processed queue.

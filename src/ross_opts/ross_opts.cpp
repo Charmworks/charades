@@ -349,7 +349,7 @@ void tw_opt_parse(int *argc_p, char ***argv_p) {
     const char *s = argv[1];
     if (strncmp(s, "--", 2))
     {
-      printf("Warning: found ill-formated argument: %s, stopping arg parsing here!! \n", s );
+      //printf("Warning: found ill-formated argument: %s, stopping arg parsing here!! \n", s );
       break;
     }
     if (strcmp(s, "--"))

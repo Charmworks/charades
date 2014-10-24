@@ -28,8 +28,20 @@ void tw_event_setup() {
   PE_VALUE(abort_event)->state.owner = TW_event_inf;
 }
 
+char **CopyArgs(char **argv)
+{
+  int argc=CmiGetArgc(argv);
+  char **ret=(char **)malloc(sizeof(char *)*(argc+1));
+  int i;
+  for (i=0;i<=argc;i++)
+    ret[i]=argv[i];
+  return ret;
+}
+
+
 void tw_init(int* argc, char*** argv) {
-  charm_init(*argc, *argv);
+  char **charmArg = CopyArgs(*argv);
+  charm_init(*argc, charmArg);
   if(tw_ismaster()) DEBUG("Finished charm_init\n");
 
   // TODO (eric): After the charm_lib_init() returns we need to copy user
