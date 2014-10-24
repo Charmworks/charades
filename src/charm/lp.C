@@ -112,15 +112,18 @@ void LP::init() {
 // 3) Pass control to the local receive method.
 void LP::recv_remote_event(RemoteEvent* event) {
   Event *e = charm_allocate_event(0);
-  e->event_id = event->event_id;
-  e->ts = event->ts;
-  e->send_pe = event->send_pe;
 
-  e->state.remote = 1;
-  e->userData = event->userData;
+  // Fill in event
   e->eventMsg = event;
+  e->event_id = event->event_id;
+  e->ts       = event->ts;
+  e->send_pe  = event->send_pe;
+  e->dest_lp  = event->dest_lp;
+  e->userData = event->userData;
 
+  // Hash event
   if (isOptimistic) {
+    e->state.remote = 1;
     avlInsert(&all_events, e);
   }
 
