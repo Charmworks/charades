@@ -203,11 +203,8 @@ void PE::execute_opt() {
   if (gvt_in_progress) {
     return;
   }
-  int events_left = PE_VALUE(g_tw_mblock);
-  while (events_left) {
-    if(schedule_next_lp()) {
-      events_left--;
-    } else {
+  for (int i = 0; i < PE_VALUE(g_tw_mblock); i++) {
+    if(!schedule_next_lp()) {
       break;
     }
   }
@@ -267,19 +264,17 @@ void PE::update_min_cancel(Time t) {
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.
 void PE::gvt_begin() {
-  DEBUG4("******** GVT begins ********\n");
-  gvt_in_progress = true;
-  gvt_cnt = 0;
-  if(CkMyPe() == 0) {
+  if(CkMyPe() == 0 && !gvt_in_progress) {
     /* TODO: Provide option for using completion detection */
     CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
   }
+  gvt_in_progress = true;
+  gvt_cnt = 0;
 }
 
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
 void PE::gvt_contribute() {
   Time min_time = get_min_time();
-  DEBUG4("******** GVT contribute %lf ********\n", min_time);
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 }
@@ -287,9 +282,9 @@ void PE::gvt_contribute() {
 // Check to see if we are complete. If not, re-enter the appropriate
 // scheduler loop, and possibly do fossil collection.
 void PE::gvt_end(Time new_gvt) {
-  DEBUG4("******** GVT computed %lf ********\n", new_gvt);
   PE_VALUE(lastGVT) = gvt;
   gvt = new_gvt;
+  gvt_in_progress = false;
   if(new_gvt >= PE_VALUE(g_tw_ts_end)) {
     PE_VALUE(total_time) = CkWallTimer() - PE_VALUE(total_time);
     contribute(sizeof(double), &(globals->netEvents), CkReduction::sum_double,
@@ -302,7 +297,6 @@ void PE::gvt_end(Time new_gvt) {
       thisProxy[CkMyPe()].execute_opt();
     }
   }
-  gvt_in_progress = false;
 }
 
 #include "pe.def.h"
