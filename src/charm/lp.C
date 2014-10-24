@@ -106,76 +106,62 @@ void LP::init() {
   contribute(CkCallback(CkIndex_LP::stopScheduler(), thisProxy(0)));
 }
 
-// Entry method for sending events to LPs.
-// 1) Check if the event is earlier than our earliest and update the PE.
-// 2) Check to see if we need a rollback.
-// 3) Push event into the priority queue.
-void LP::recv_event(RemoteEvent* event) {
-  // Copy over the relevant fields from the remote event to the local event.
+// Entry method for receiving remote events.
+// 1) Allocate a new event and fill it based on the remote event.
+// 2) Hash the event if optimistic.
+// 3) Pass control to the local receive method.
+void LP::recv_remote_event(RemoteEvent* event) {
   Event *e = charm_allocate_event(0);
   e->event_id = event->event_id;
   e->ts = event->ts;
-  e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(event->dest_lp)];
   e->send_pe = event->send_pe;
 
-  if(event->isAnti) {
-    // Find the corresponding real event in the avl tree, cancel it, and
-    // deallocate all involved events.
-    // TODO: Maybe we can get rid of the need to allocate e in the first place.
-    Event *real_e = avlDelete(&all_events, e);
-    tw_event_free(this, e);
-    real_e->state.remote = 0;
-    charm_event_cancel(real_e);
-    delete event;
-  } else {
-    e->state.remote = 1;
-    e->userData = event->userData;
-    e->eventMsg = event;
+  e->state.remote = 1;
+  e->userData = event->userData;
+  e->eventMsg = event;
 
-    // If this event is now the earliest, update the PE
-    if (e->ts < events.min()) {
-      pe->update_next(&next_token, e->ts);
-    }
-
-    // If optimistic, then we also have to hash the event and check for rollback
-    if(isOptimistic) {
-      avlInsert(&all_events, e);
-      if (e->ts < current_time) {
-        rollback_me(e->ts);
-      }
-    }
-
-    // Push the event into the queue
-    events.push(e);
-    e->state.owner = TW_chare_q;
+  if (isOptimistic) {
+    avlInsert(&all_events, e);
   }
+
+  recv_local_event(e);
 }
 
-// Local version of Entry method for receiving events on LPs.
-// 1) Check if the event is earlier than our earliest and update the PE.
-// 2) Check to see if we need a rollback.
+// Local method for receiving an event.
+// 1) Get the local lp_struct pointer.
+// 2) Do any required PE updates or rollbacks.
 // 3) Push event into the priority queue.
 void LP::recv_local_event(Event* e) {
-  RemoteEvent *rEvent = e->eventMsg;
-  e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(rEvent->dest_lp)];
+  e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)];
 
-  // If this event is now the earliest, update the PE
   if (e->ts < events.min()) {
     pe->update_next(&next_token, e->ts);
   }
-
-  // If optimistic, then we also have to hash the event and check for rollback
-  if(isOptimistic) {
-    if (e->ts < current_time) {
-      rollback_me(e->ts);
-    }
+  if(isOptimistic && e->ts < current_time) {
+    rollback_me(e->ts);
   }
 
-  // Push the event into the queue
   events.push(e);
   e->state.owner = TW_chare_q;
 }
 
+// Entry method for receiving anti events.
+// 1) Create a key event based on the remote event.
+// 2) Use the key to find the real event and cancel it.
+void LP::recv_anti_event(RemoteEvent* event) {
+  Event* key = charm_allocate_event(0);
+  key->event_id = event->event_id;
+  key->ts = event->ts;
+  key->send_pe = event->send_pe;
+
+  Event* real_event = avlDelete(&all_events, key);
+  real_event->state.remote = 0;
+  charm_event_cancel(real_event);
+
+  tw_event_free(this, key);
+  delete event;
+}
+  
 // Execute events up to timestamp ts.
 // 1) Check for lazy rollbacks if optimistic
 // 2) While next event is still earlier than ts:
