@@ -8,7 +8,7 @@ module pe {
   group PE {
     entry PE(CProxy_Initialize); /**< constructor called from the mainchare */
     entry void initialize_rand(CProxy_Initialize);
-    entry [reductiontarget] void print_final_stats(double);
+    entry [reductiontarget] void print_final_stats(double, double);
 
     // GVT methods
     entry void gvt_begin(); /**< begin gvt computation */

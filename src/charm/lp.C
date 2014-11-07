@@ -32,10 +32,20 @@ void create_lps() {
     // TODO: Why do we use the isLPSet flag rather than just setting it here?
     CProxy_LP lps_local = CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
     TopoManager tmgr;
-    int dims[6] = {tmgr.getDimNA(), tmgr.getDimNB(), tmgr.getDimNC(), 
-      tmgr.getDimND(), tmgr.getDimNE(), tmgr.getDimNT()};
-    aggregator = CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, 
-               SimpleMeshRouter>::ckNew(6, dims, lps_local, 16, 0, 0.1);
+    unsigned buf_size = PE_VALUE(g_tw_tram_buf);
+    double flush = PE_VALUE(g_tw_tram_flush)/1000.0;
+    if(PE_VALUE(g_tw_tram_dim) == 3) {
+      printf("Using 3D topology %d %lf\n", buf_size, flush);
+      const int meshTopology[] = { 32, 32, 64};
+      aggregator = CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, 
+                 SimpleMeshRouter>::ckNew(3, meshTopology, lps_local, buf_size, 0, flush);
+    } else {
+      printf("Using 6D topology %d %lf\n", buf_size, flush);
+      int dims[6] = {tmgr.getDimNA(), tmgr.getDimNB(), tmgr.getDimNC(), 
+        tmgr.getDimND(), tmgr.getDimNE(), tmgr.getDimNT()};
+      aggregator = CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, 
+                 SimpleMeshRouter>::ckNew(6, dims, lps_local, buf_size, 0, flush);
+    }
     pes.setAggregator(aggregator);
   }
   StartCharmScheduler();
@@ -195,6 +205,7 @@ bool LP::execute_me() {
 
     // TODO: Use stats framework
     (PE_VALUE(netEvents))++;
+    (PE_VALUE(totalEvents))++;
 
     // Enqueue or deallocate the event depending on sync mode
     if (isOptimistic) {

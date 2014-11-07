@@ -101,6 +101,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
   globals->g_local_map = local_block_map;
   globals->lastGVT = 0.0;
   globals->netEvents = 0;
+  globals->totalEvents = 0;
   globals->total_time = 0.0;
   gvt = 0.0;
 
@@ -177,10 +178,13 @@ Time PE::get_min_time() {
 }
 
 // Receives the reduction of the final event count, prints stats, and exits.
-void PE::print_final_stats(double total_events) {
+void PE::print_final_stats(double net_events, double total_events) {
   CkPrintf("Total events executed: %.0lf\n", total_events);
+  CkPrintf("Net events executed: %.0lf\n", net_events);
+  CkPrintf("Rollbacks executed: %.0lf (%.2lf)\n", total_events - net_events, 
+                          (total_events - net_events)*100/total_events);
   CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
-  CkPrintf("Event rate: %f events/s\n", total_events/PE_VALUE(total_time));
+  CkPrintf("Event rate: %f events/s\n", net_events/PE_VALUE(total_time));
   CkExit();
 }
 
@@ -303,7 +307,8 @@ void PE::gvt_end(Time new_gvt) {
   gvt = new_gvt;
   if(new_gvt >= PE_VALUE(g_tw_ts_end)) {
     PE_VALUE(total_time) = CkWallTimer() - PE_VALUE(total_time);
-    contribute(sizeof(double), &(globals->netEvents), CkReduction::sum_double,
+    double eventCounts[] = { globals->netEvents, globals->totalEvents};
+    contribute(2*sizeof(double), eventCounts, CkReduction::sum_double,
         CkCallback(CkReductionTarget(PE,print_final_stats),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {

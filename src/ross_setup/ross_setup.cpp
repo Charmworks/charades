@@ -58,6 +58,9 @@ void tw_init(int* argc, char*** argv) {
     TWOPT_UINT("lps-per-chare", PE_VALUE(g_lps_per_chare), "LPs per chare"),
     TWOPT_UINT("num-chares", PE_VALUE(g_num_lp_chares), "Number of chares"),
     TWOPT_UINT("buffer-size", PE_VALUE(g_tw_max_events_buffered), "Number of events buffered"),
+    TWOPT_UINT("tram-dim", PE_VALUE(g_tw_tram_dim), "Number of dims in TRAM"),
+    TWOPT_UINT("tram-buf", PE_VALUE(g_tw_tram_buf), "Buffer size in TRAM"),
+    TWOPT_UINT("tram-flush", PE_VALUE(g_tw_tram_flush), "Flush period in TRAM"),
     TWOPT_END()
   };
 

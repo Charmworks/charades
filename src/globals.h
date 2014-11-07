@@ -53,7 +53,13 @@ struct Globals {
   // TODO: Along those lines...maybe this should just be used for read_onlys.
   tw_stime lastGVT;
   double netEvents;
+  double totalEvents;
   double total_time;
+    
+  //TRAM  
+  unsigned g_tw_tram_dim;
+  unsigned g_tw_tram_buf;
+  unsigned g_tw_tram_flush;
 };
 
 // Defined in pe.C
