@@ -1,6 +1,8 @@
 #ifndef _LP_H
 #define _LP_H
 
+#include "NDMeshStreamer.h"
+#include "event.h"
 #include "lp.decl.h"
 
 #include "typedefs.h"
@@ -76,8 +78,7 @@ class LP : public CBase_LP {
     void stop_scheduler();
 
     // Methods for receiving events and anti events.
-    void recv_remote_event(RemoteEvent*);
-    void recv_anti_event(RemoteEvent*);
+    void process(const RemoteEvent&);
     void recv_local_event(Event*);
 
     // Execute a single event from the pending queue. If optimistic, we also

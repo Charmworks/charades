@@ -1,6 +1,8 @@
 #ifndef _PE_H
 #define _PE_H
 
+#include "NDMeshStreamer.h"
+#include "event.h"
 #include "pe.decl.h"
 
 #include "typedefs.h"
@@ -14,6 +16,8 @@ class LPToken;
 struct tw_rng;
 
 using std::vector;
+
+ArrayMeshStreamer<RemoteEvent, int, LP, SimpleMeshRouter>* get_aggregator();
 
 class PE: public CBase_PE {
   private:
@@ -93,6 +97,8 @@ class PE: public CBase_PE {
     void update_oldest(LPToken* token, Time ts) {
         oldest_lps.update(token, ts);
     }
+
+    void setAggregator(CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, SimpleMeshRouter>);
 };
 
 #endif

@@ -4,9 +4,10 @@
 #include "event.decl.h"
 #include "typedefs.h"
 
-struct RemoteEvent : public CMessage_RemoteEvent {
+class RemoteEvent {
   public:
-    char *userData;
+    int isAnti;
+    char userData[0];
 
     // These three fields make up the unique key for identifying events
     EventID event_id;

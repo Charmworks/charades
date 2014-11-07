@@ -1,6 +1,3 @@
 module event {
   /** \brief RemoteEvent in ROSS wrapped by Charm++ message. Contains minimum data required */
-  message RemoteEvent {
-    char userData[];
-  };
 }

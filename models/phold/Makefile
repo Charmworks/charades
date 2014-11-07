@@ -11,4 +11,4 @@ clean:
 
 
 phold: phold.C phold.h $(LIBDIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) phold.C -o phold $(LDFLAGS) -L$(LIBDIR) -lross
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) phold.C -o phold $(LDFLAGS) -L$(LIBDIR) -lross -module NDMeshStreamer -module completion

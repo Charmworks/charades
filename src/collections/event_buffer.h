@@ -8,7 +8,6 @@
 #include <assert.h>
 
 class Event;
-class RemoteEvent;
 
 class EventBuffer {
   private:
@@ -18,7 +17,6 @@ class EventBuffer {
     unsigned remote_stack_pointer;
     Event* abort_event;
     Event** buffer;
-    RemoteEvent** remote_buffer;
 
   public:
     EventBuffer(unsigned max, size_t sz) :
@@ -27,13 +25,9 @@ class EventBuffer {
       abort_event = new Event;
 
       buffer = (Event**)malloc(max*sizeof(Event*));
-      remote_buffer = (RemoteEvent**)malloc(max*sizeof(RemoteEvent*));
 
       for (int i = 0; i < stack_pointer; i++) {
         buffer[i] = new Event;
-      }
-      for (int i = 0; i < remote_stack_pointer; i++) {
-        remote_buffer[i] = new (msg_size, 32) RemoteEvent;
       }
     }
 
@@ -50,27 +44,7 @@ class EventBuffer {
     }
     void free_event(Event* e) {
       assert(stack_pointer < max_events);
-      if (e->eventMsg) {
-        free_remote_event(e->eventMsg);
-        e->eventMsg = NULL;
-      }
       buffer[stack_pointer++] = e;
-    }
-
-
-    RemoteEvent* get_remote_event() {
-      if (remote_stack_pointer > 0) {
-        return remote_buffer[--remote_stack_pointer];
-      } else {
-        return new (msg_size, 32) RemoteEvent;
-      }
-    }
-    void free_remote_event(RemoteEvent* e) {
-      if (remote_stack_pointer < max_events) {
-        remote_buffer[remote_stack_pointer++] = e;
-      } else {
-        delete e;
-      }
     }
 };
 

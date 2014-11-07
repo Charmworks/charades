@@ -10,6 +10,9 @@
 #include <float.h> // Included for DBL_MAX
 
 CProxy_PE pes;
+extern CProxy_LP lps;
+extern CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, 
+                  SimpleMeshRouter> aggregator;
 
 Globals* get_globals() {
   static PE* local_pe = pes.ckLocalBranch();
@@ -19,6 +22,11 @@ Globals* get_globals() {
 Statistics* get_statistics() {
   static PE* local_pe = pes.ckLocalBranch();
   return local_pe->statistics;
+}
+
+ArrayMeshStreamer<RemoteEvent, int, LP, SimpleMeshRouter>* get_aggregator() {
+  static ArrayMeshStreamer<RemoteEvent, int, LP, SimpleMeshRouter>* aggregator_local = aggregator.ckLocalBranch();
+  return aggregator_local;
 }
 
 // TODO(eric): These should probably be moved to charm_api.C
@@ -48,11 +56,14 @@ void charm_run() {
     DEBUG("[%d] Initializing schedulers \n", CkMyPe());
     PE_VALUE(total_time) = CkWallTimer();
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
-      pes.execute_seq();
+      CkCallback startCb(CkIndex_PE::execute_seq(), pes);
+      aggregator.init(startCb, -1);
     } else if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-      pes.execute_cons();
+      CkCallback startCb(CkIndex_PE::execute_cons(), pes);
+      aggregator.init(startCb, -1);
     } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-      pes.execute_opt();
+      CkCallback startCb(CkIndex_PE::execute_opt(), pes);
+      aggregator.init(startCb, -1);
     } else {
       tw_error(TW_LOC, "Incorrect scheduler values, Aborting\n");
     }
@@ -129,6 +140,11 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
 
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
+}
+
+void PE::setAggregator(CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, SimpleMeshRouter> agg) {
+  aggregator = agg;
+  contribute(CkCallback(CkIndex_LP::stop_scheduler(), lps(0)));
 }
 
 void PE::initialize_rand(CProxy_Initialize srcProxy) {

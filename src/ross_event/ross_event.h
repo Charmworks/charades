@@ -67,8 +67,6 @@ class RemoteEvent;
 class Event {
   public:
   Event() {
-    userData = NULL;
-    eventMsg = NULL;
     caused_by_me = NULL;
     cause_next = NULL;
     cancel_next = NULL;
@@ -96,9 +94,9 @@ class Event {
   tw_lpid dest_lp, src_lp;
   Time ts;
   tw_peid send_pe;
-  RemoteEvent * eventMsg;
   tw_out *out_msgs;
-  char *userData;
+  char userData[0];
+
 };
 
 // Publicly exposed functions

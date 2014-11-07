@@ -1,4 +1,6 @@
+#include "NDMeshStreamer.h"
 #include "event.h"
+#include "pe.h"
 #include "lp.h"
 
 #include "typedefs.h"
@@ -14,14 +16,12 @@
 
 extern CProxy_LP lps;
 extern CProxy_PE pes;
+CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, 
+                  SimpleMeshRouter> aggregator;
 
 Event* charm_allocate_event(int needMsg = 1) {
   Event* e;
   e = PE_VALUE(event_buffer)->get_event();
-  if (needMsg) {
-    e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
-    e->userData = e->eventMsg->userData;
-  }
   return e;
 }
 
@@ -57,6 +57,7 @@ void charm_free_event(Event* e) {
 // Fill an event's remote message and send it.
 // Returns 1 if the send was remote, 0 if it was local.
 int charm_event_send(unsigned dest_peid, Event * e) {
+  RemoteEvent eventMsg;
   LP* send_pe = (LP*)(e->send_pe);
   LP* dest_pe;
 
@@ -73,15 +74,14 @@ int charm_event_send(unsigned dest_peid, Event * e) {
     return 0;
   } else {
     // Fill the fields of the charm message to prepare it for sending.
-    *(int*)CkPriorityPtr(e->eventMsg) = -2;
-    e->eventMsg->event_id = e->event_id = send_pe->uniqID++;
-    e->eventMsg->ts = e->ts;
-    e->eventMsg->dest_lp = e->dest_lp;
-    e->eventMsg->send_pe = e->send_pe = send_pe->thisIndex;
+    eventMsg.event_id = e->event_id = send_pe->uniqID++;
+    eventMsg.ts = e->ts;
+    eventMsg.dest_lp = e->dest_lp;
+    eventMsg.send_pe = e->send_pe = send_pe->thisIndex;
+    eventMsg.isAnti = 0;
 
-    lps(dest_peid).recv_remote_event(e->eventMsg);
+    get_aggregator()->insertData(eventMsg, dest_peid);
     e->state.owner = TW_sent;
-    e->eventMsg = NULL;
     return 1;
   }
 }
@@ -90,14 +90,14 @@ int charm_event_send(unsigned dest_peid, Event * e) {
 // An anti send will never be to a local chare, because locally sent events
 // will never have the owner set to TW_sent.
 void charm_anti_send(unsigned dest_peid, Event * e) {
-  RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
-  *(int*)CkPriorityPtr(eventMsg) = -3;
-  eventMsg->event_id = e->event_id;
-  eventMsg->ts = e->ts;
-  eventMsg->dest_lp = e->dest_lp;
-  eventMsg->send_pe = e->send_pe;
+  RemoteEvent eventMsg;
+  eventMsg.event_id = e->event_id;
+  eventMsg.ts = e->ts;
+  eventMsg.dest_lp = e->dest_lp;
+  eventMsg.send_pe = e->send_pe;
+  eventMsg.isAnti = 1;
 
-  lps(dest_peid).recv_anti_event(eventMsg);
+  get_aggregator()->insertData(eventMsg, dest_peid);
 }
 
 // Cancels an event by either sending an anti-message, or calling cancel_event

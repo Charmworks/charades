@@ -7,4 +7,11 @@ mainmodule ross {
   extern module pe;
   extern module lp;
   extern module event;
+
+  readonly CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, 
+                                  SimpleMeshRouter> aggregator;
+
+  message MeshStreamerMessage<ArrayDataItem<RemoteEvent, int> >;
+  group ArrayMeshStreamer<RemoteEvent, int, LP, SimpleMeshRouter>;
+  group MeshStreamer<ArrayDataItem<RemoteEvent, int>, SimpleMeshRouter>;
 }

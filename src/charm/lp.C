@@ -1,6 +1,7 @@
+#include "NDMeshStreamer.h"
+#include "event.h"
 #include "lp.h"
 #include "pe.h"
-#include "event.h"
 
 #include "globals.h"
 #include "ross_api.h"   // TODO: Why do we need this
@@ -13,6 +14,7 @@
 #include "avl_tree.h"
 
 #include "mpi-interoperate.h"
+#include "TopoManager.h"
 
 #include <float.h>
 #include <assert.h>
@@ -21,12 +23,20 @@
 extern CProxy_PE pes;
 CProxy_LP lps;
 int isLpSet = 0;
+extern CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, 
+                  SimpleMeshRouter> aggregator;
 
 // TODO: Move this API to an appropriate place
 void create_lps() {
   if (tw_ismaster()) {
     // TODO: Why do we use the isLPSet flag rather than just setting it here?
-    CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
+    CProxy_LP lps_local = CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
+    TopoManager tmgr;
+    int dims[6] = {tmgr.getDimNA(), tmgr.getDimNB(), tmgr.getDimNC(), 
+      tmgr.getDimND(), tmgr.getDimNE(), tmgr.getDimNT()};
+    aggregator = CProxy_ArrayMeshStreamer<RemoteEvent, int, LP, 
+               SimpleMeshRouter>::ckNew(6, dims, lps_local, 16, 0, 0.1);
+    pes.setAggregator(aggregator);
   }
   StartCharmScheduler();
 }
@@ -103,6 +113,11 @@ void LP::init() {
 }
 
 void LP::stop_scheduler() {
+  static int flag = 0;
+  if(flag == 0) { 
+    flag = 1; 
+    return; 
+  }
   if(tw_ismaster()) DEBUG("[%d] Stop scheduler \n", CkMyPe());
   CkExit();
 }
@@ -111,24 +126,36 @@ void LP::stop_scheduler() {
 // 1) Allocate a new event and fill it based on the remote event.
 // 2) Hash the event if optimistic.
 // 3) Pass control to the local receive method.
-void LP::recv_remote_event(RemoteEvent* event) {
-  Event *e = charm_allocate_event(0);
+void LP::process(const RemoteEvent& event) {
+  if(!event.isAnti) {
+    Event *e = charm_allocate_event(0);
+    // Fill in event
+    e->event_id = event.event_id;
+    e->ts       = event.ts;
+    e->send_pe  = event.send_pe;
+    e->dest_lp  = event.dest_lp;
+    //copy user data
+    //e->userData = eventuserData;
 
-  // Fill in event
-  e->eventMsg = event;
-  e->event_id = event->event_id;
-  e->ts       = event->ts;
-  e->send_pe  = event->send_pe;
-  e->dest_lp  = event->dest_lp;
-  e->userData = event->userData;
+    // Hash event
+    if (isOptimistic) {
+      e->state.remote = 1;
+      avlInsert(&all_events, e);
+    }
 
-  // Hash event
-  if (isOptimistic) {
-    e->state.remote = 1;
-    avlInsert(&all_events, e);
+    recv_local_event(e);
+  } else {
+    Event* key = charm_allocate_event(0);
+    key->event_id = event.event_id;
+    key->ts = event.ts;
+    key->send_pe = event.send_pe;
+
+    Event* real_event = avlDelete(&all_events, key);
+    real_event->state.remote = 0;
+    charm_event_cancel(real_event);
+
+    tw_event_free(this, key);
   }
-
-  recv_local_event(e);
 }
 
 // Local method for receiving an event.
@@ -148,24 +175,7 @@ void LP::recv_local_event(Event* e) {
   events.push(e);
   e->state.owner = TW_chare_q;
 }
-
-// Entry method for receiving anti events.
-// 1) Create a key event based on the remote event.
-// 2) Use the key to find the real event and cancel it.
-void LP::recv_anti_event(RemoteEvent* event) {
-  Event* key = charm_allocate_event(0);
-  key->event_id = event->event_id;
-  key->ts = event->ts;
-  key->send_pe = event->send_pe;
-
-  Event* real_event = avlDelete(&all_events, key);
-  real_event->state.remote = 0;
-  charm_event_cancel(real_event);
-
-  tw_event_free(this, key);
-  delete event;
-}
-  
+ 
 // Execute the next event in the pending queue (returns false if no events).
 // 1) Pop event
 // 2) Execute event

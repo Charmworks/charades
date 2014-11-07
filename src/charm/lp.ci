@@ -6,7 +6,5 @@ module lp {
     entry LP(); /**< constructor */
     entry void init(); /**< call the init handler on all lps on all lp chares */
     entry [reductiontarget] void stop_scheduler(); /**< stops charm scheduler */
-    entry [expedited] void recv_remote_event(RemoteEvent*); /**< receive an event for this LP */
-    entry [expedited] void recv_anti_event(RemoteEvent*);   /**< receive an anti event for this LP */
   };
 };
