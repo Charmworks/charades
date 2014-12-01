@@ -9,6 +9,7 @@
 #include "mpi-interoperate.h"
 #include <float.h> // Included for DBL_MAX
 
+extern CProxy_Initialize mainProxy;
 CProxy_PE pes;
 
 Globals* get_globals() {
@@ -68,6 +69,15 @@ void charm_run() {
 #define PE_STATS(x) statistics->x
 
 PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
+  // Initialize completion detectors
+  current_phase = -1;
+  detector_ready[0] = detector_ready[1] = false;
+  if (CkMyPe() == 0) {
+    detector_proxies[0] = CProxy_CompletionDetector::ckNew();
+    detector_proxies[1] = CProxy_CompletionDetector::ckNew();
+    thisProxy.broadcast_detector_proxies(detector_proxies);
+  }
+
   // init globals
   // TODO: Maybe make this a function
   // TODO: Make sure all are initialized and make sense
@@ -128,12 +138,46 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
   statistics->s_avl = 0;
 
   cancel_q.resize(0);
-  thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }
 
-void PE::initialize_rand(CProxy_Initialize srcProxy) {
+// Called by initialize_detector after both are ready
+void PE::initialize_rand() {
   rng = tw_rand_init(31, 41);
-  contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
+  contribute(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
+}
+
+void PE::broadcast_detector_proxies(CProxy_CompletionDetector* proxies) {
+  detector_proxies[0] = proxies[0];
+  detector_proxies[1] = proxies[1];
+  detector_pointers[0] = detector_proxies[0].ckLocalBranch();
+  detector_pointers[1] = detector_proxies[1].ckLocalBranch();
+  contribute(CkCallback(CkIndex_PE::initialize_detector(), thisProxy));
+}
+
+void PE::initialize_detector() {
+  if (current_phase == -1) {
+    current_phase = 0;
+  } else if (current_phase == 0) {
+    detector_ready[0] = true;
+    current_phase = 1;
+  } else if (current_phase == 1) {
+    detector_ready[1] = true;
+    current_phase = 0;
+    next_phase = 1;
+    thisProxy[CkMyPe()].initialize_rand();
+    return;
+  }
+
+  if (CkMyPe() == 0) {
+    detector_proxies[current_phase].start_detection(CkNumPes(),
+        CkCallback(CkIndex_PE::initialize_detector(), thisProxy),
+        CkCallback(),
+        CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
+  }
+}
+
+void PE::detector_started() {
+  detector_ready[next_phase] = true;
 }
 
 // Pull the next LP from the queue and have it execute events until it hits
@@ -209,12 +253,11 @@ void PE::execute_opt() {
   }
   process_cancel_q();
 
-  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
+  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) && detector_ready[next_phase]) {
     gvt_begin();
     gvt_cnt = 0;
-  } else {
-    thisProxy[CkMyPe()].execute_opt();
   }
+  thisProxy[CkMyPe()].execute_opt();
 }
 
 /******************************************************************************/
@@ -265,16 +308,26 @@ void PE::update_min_cancel(Time t) {
 // gvt reduction.
 void PE::gvt_begin() {
   DEBUG4("******** GVT begins ********\n");
-  if(CkMyPe() == 0) {
+  detector_pointers[current_phase]->done();
+  detector_ready[current_phase] = false;
+  current_phase = next_phase;
+  next_phase = (current_phase+1)%2;
+  //if(CkMyPe() == 0) {
     /* TODO: Provide option for using completion detection */
-    CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
-  }
+    //CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
+  //}
 }
 
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
 void PE::gvt_contribute() {
   Time min_time = get_min_time();
   DEBUG4("******** GVT contribute %lf ********\n", min_time);
+  if (CkMyPe() == 0) {
+    detector_proxies[next_phase].start_detection(CkNumPes(),
+        CkCallback(CkIndex_PE::detector_started(), thisProxy),
+        CkCallback(),
+        CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
+  }
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 }
@@ -294,7 +347,7 @@ void PE::gvt_end(Time new_gvt) {
       thisProxy[CkMyPe()].execute_cons();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
       collect_fossils();
-      thisProxy[CkMyPe()].execute_opt();
+      //thisProxy[CkMyPe()].execute_opt();
     }
   }
 }

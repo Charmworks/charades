@@ -112,6 +112,7 @@ void LP::stop_scheduler() {
 // 2) Hash the event if optimistic.
 // 3) Pass control to the local receive method.
 void LP::recv_remote_event(RemoteEvent* event) {
+  pe->consume(event);
   Event *e = charm_allocate_event(0);
 
   // Fill in event
@@ -153,6 +154,7 @@ void LP::recv_local_event(Event* e) {
 // 1) Create a key event based on the remote event.
 // 2) Use the key to find the real event and cancel it.
 void LP::recv_anti_event(RemoteEvent* event) {
+  pe->consume(event);
   Event* key = charm_allocate_event(0);
   key->event_id = event->event_id;
   key->ts = event->ts;

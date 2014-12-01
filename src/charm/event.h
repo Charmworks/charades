@@ -8,6 +8,9 @@ struct RemoteEvent : public CMessage_RemoteEvent {
   public:
     char *userData;
 
+    // Used for the async completion detection algorithm
+    unsigned phase;
+
     // These three fields make up the unique key for identifying events
     EventID event_id;
     Time ts;
