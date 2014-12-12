@@ -1,18 +1,18 @@
-#include "ross.h"
+#include "ross_api.h"
 
 #define TW_MAX_NAME_LEN 31
 
 #define NUM_CELLS_X 1024     //256
 #define NUM_CELLS_Y 1024     //256
 
-#define NUM_VP_X 512 
+#define NUM_VP_X 512
 #define NUM_VP_Y 512
 
 #define MAX_NORMAL_CHANNELS 10
 #define MAX_RESERVE_CHANNELS 0
 
 /*
- * This is in Mins 
+ * This is in Mins
  */
 #define MOVE_CALL_MEAN 4500.0
 #define NEXT_CALL_MEAN 360.0
@@ -21,12 +21,12 @@
 #define BIG_N (double)16.0
 
 /*
- * When Normal_Channels == 0, then all have been used 
+ * When Normal_Channels == 0, then all have been used
  */
 #define NORM_CH_BUSY ( !( SV->Normal_Channels & 0xffffffff ) )
 
 /*
- * When Reserve_Channels == 0, then all have been used 
+ * When Reserve_Channels == 0, then all have been used
  */
 #define RESERVE_CH_BUSY ( !( SV->Reserve_Channels & 0xffffffff ) )
 
@@ -68,7 +68,7 @@ struct State
 
 struct RC
 {
-	int             wl1;	
+	int             wl1;
 };
 
 struct Msg_Data
