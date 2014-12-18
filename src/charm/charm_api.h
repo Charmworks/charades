@@ -7,7 +7,7 @@ void create_lps();
 void init_lps();
 void set_current_event(tw_lp*, tw_event*);
 tw_event* current_event(tw_lp*);
-tw_stime tw_now(tw_lp*);
+//tw_stime tw_now(tw_lp*);
 
 // Event API
 tw_event * charm_allocate_event(int needMsg = 1);

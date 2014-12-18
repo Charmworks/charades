@@ -20,6 +20,7 @@
 // TODO: Move these
 int tw_ismaster();
 int tw_nnodes();
+tw_stime tw_now(tw_lp*);
 
 #define tw_event_data(e) (e->userData)
 
