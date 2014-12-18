@@ -368,7 +368,6 @@ Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp
     {
       tw_error(TW_LOC, "APP_ERROR(2): CompletionCall: Bad ChannelType(%d) \n",
 	       M->ChannelType);
-      tw_exit(1);
     }
   if (SV->Normal_Channels > MAX_NORMAL_CHANNELS ||
       SV->Reserve_Channels > MAX_RESERVE_CHANNELS)
@@ -376,7 +375,6 @@ Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp
       tw_error(TW_LOC, "APP_ERROR(3): Normal_Channels(%d) > MAX %d OR Reserve_Channels(%d) > MAX %d \n",
 	       SV->Normal_Channels, MAX_NORMAL_CHANNELS, SV->Reserve_Channels,
 	       MAX_RESERVE_CHANNELS);
-      tw_exit(1);
     }
   TMsg.ChannelType = NONE;
 
@@ -385,7 +383,6 @@ Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp
     case COMPLETECALL:
       tw_error(TW_LOC, "APP_ERROR(NextCall): CompletionCallTS(%lf) Is Min \n",
 	       TMsg.CompletionCallTS);
-      tw_exit(1);
       break;
 
     case NEXTCALL:
@@ -459,7 +456,6 @@ Cell_MoveCallIn(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
 	    case COMPLETECALL:
 	      tw_error(TW_LOC, "APP_ERROR(NextCall): CompletionCallTS(%lf) Is Min \n",
 		       TMsg.CompletionCallTS);
-	      tw_exit(1);
 	      break;
 
 	    case NEXTCALL:
@@ -563,7 +559,6 @@ Cell_MoveCallIn(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
     } else
     {
       tw_error(TW_LOC, "APP_ERROR(11): MoveCallIn: Got MoveCallIn Event W/O Call In Progress!! \n");
-      tw_exit(1);
     }
 }
 
@@ -595,13 +590,11 @@ Cell_MoveCallOut(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
 	{
 	  tw_error(TW_LOC, "APP_ERROR(7): MoveCallOut: Bad ChannelType(%d) \n",
 		   M->ChannelType);
-	  tw_exit(1);
 	}
       TMsg.ChannelType = NONE;
     } else
     {
       tw_error(TW_LOC, "APP_ERROR(9): MoveCallOut: NOT IN CALL: SHOULD NOT BE HERE!! \n");
-      tw_exit(1);
     }
 
   ts = max(0.0, TMsg.MoveCallTS - tw_now(lp));
@@ -644,7 +637,6 @@ Cell_EventHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
     default:
       tw_error(TW_LOC, "APP_ERROR(8)(%d): InValid MethodName(%d)\n",
 	       lp->id, M->MethodName);
-      tw_exit(1);
     }
 
 #ifdef LPTRACEON
