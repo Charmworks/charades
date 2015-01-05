@@ -825,6 +825,11 @@ tw_lptype       mylps[] =
     {0},
   };
 
+// Every LP in the PCS model has the same type.
+tw_lptype* pcs_type_map(tw_lpid global_id) {
+  return &mylps[0];
+}
+
 void pcs_grid_mapping()
 {
   tw_lpid         x, y;
@@ -895,6 +900,7 @@ main(int argc, char **argv)
   PE_VALUE(g_tw_nlp) = nlp_per_pe;
   PE_VALUE(g_tw_nkp) = vp_per_proc;
 
+  PE_VALUE(g_type_map) = pcs_type_map;
   PE_VALUE(g_tw_mapping) = CUSTOM;
   PE_VALUE(g_tw_custom_initial_mapping) = &pcs_grid_mapping;
   PE_VALUE(g_tw_custom_lp_global_to_local_map) = &CellMapping_to_lp;
