@@ -65,40 +65,20 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
   return( dest_lpid );
 }
 
-tw_peid
-CellMapping_lp_to_pe(tw_lpid lpid)
+// tw_peid CellMapping_lp_to_pe(tw_lpid lpid)
+unsigned pcs_grid_map (tw_lpid gid)
 {
   long lp_x = lpid % NUM_CELLS_X;
   long lp_y = lpid / NUM_CELLS_X;
   long vp_num_x = lp_x/g_cells_per_vp_x;
   long vp_num_y = lp_y/g_cells_per_vp_y;
   long vp_num = vp_num_x + (vp_num_y*NUM_VP_X);
-  tw_peid peid = vp_num/g_vp_per_proc;
+  unsigned peid = vp_num/g_vp_per_proc;
   return peid;
 }
 
-tw_lp *CellMapping_to_lp(tw_lpid lpid)
-{
-  tw_lpid lp_x = lpid % NUM_CELLS_X; //lpid -> (lp_x,lp_y)
-  tw_lpid lp_y = lpid / NUM_CELLS_X;
-  tw_lpid vp_index_x = lp_x % g_cells_per_vp_x;
-  tw_lpid vp_index_y = lp_y % g_cells_per_vp_y;
-  tw_lpid vp_index = vp_index_x + (vp_index_y * (g_cells_per_vp_x));
-  tw_lpid vp_num_x = lp_x/g_cells_per_vp_x;
-  tw_lpid vp_num_y = lp_y/g_cells_per_vp_y;
-  tw_lpid vp_num = vp_num_x + (vp_num_y*NUM_VP_X);
-  vp_num = vp_num % g_vp_per_proc;
-  tw_lpid index = vp_index + vp_num*g_cells_per_vp;
-
-#ifdef ROSS_runtime_check
-  if( index >= PE_VALUE(g_tw_nlp) )
-    tw_error(TW_LOC, "index (%llu) beyond g_tw_nlp (%llu) range \n", index, PE_VALUE(g_tw_nlp));
-#endif /* ROSS_runtime_check */
-
-  return PE_VALUE(g_tw_lp)[index];
-}
-
-tw_lpid CellMapping_to_local_index(tw_lpid lpid)
+// tw_lpid CellMapping_to_local_index(tw_lpid lpid)
+tw_lpid pcs_local_map (tw_lpid gid)
 {
   tw_lpid lp_x = lpid % NUM_CELLS_X; //lpid -> (lp_x,lp_y)
   tw_lpid lp_y = lpid / NUM_CELLS_X;
