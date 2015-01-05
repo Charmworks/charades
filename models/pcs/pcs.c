@@ -1,5 +1,7 @@
 #include "pcs.h"
 
+#define max fmax
+
 double
 Pi_Distribution(double n, double N)
 {
