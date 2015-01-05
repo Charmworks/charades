@@ -2,9 +2,13 @@
 
 #define TW_MAX_NAME_LEN 31
 
+// PCS GRID MAPPING IS ALWAYS A SQUARE: dim(X) == dim(Y)
+
+// CELL ==> lp ==> lp_struct
 #define NUM_CELLS_X 1024     //256
 #define NUM_CELLS_Y 1024     //256
 
+// VP ==> KP ==> LPChare
 #define NUM_VP_X 512
 #define NUM_VP_Y 512
 

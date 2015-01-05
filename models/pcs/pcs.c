@@ -810,8 +810,14 @@ tw_lptype* pcs_type_map(tw_lpid global_id) {
   return &mylps[0];
 }
 
-void pcs_grid_mapping()
-{
+tw_lpid pcs_init_map(unsigned chare, tw_lpid local_id) {
+	// Things to know about the PCS grid mapping:
+	// 1. The grid is always square
+	// 2. The dimensions are always powers of two
+	// 3. What used to be KPs are now LPChares. The particular PE doesn't matter
+
+
+
   tw_lpid         x, y;
   tw_lpid         lpid, kpid;
   tw_lpid         num_cells_per_kp, vp_per_proc;
