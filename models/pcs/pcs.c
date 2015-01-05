@@ -808,45 +808,6 @@ CellStatistics_Print(struct CellStatistics *CS)
 	 CS->Blocking_Probability);
 }
 
-void
-FindMostSquare(int *xpe, int *ype)
-{
-  int             x, y, npe;
-
-  *xpe = PE_VALUE(g_tw_npe);
-  *ype = 1;
-
-  npe = (int)sqrt((double)PE_VALUE(g_tw_npe));
-
-  if (npe * npe == PE_VALUE(g_tw_npe))
-    {
-      *xpe = npe;
-      *ype = npe;
-    } else
-    {
-      x = npe;
-      y = npe + 1;
-
-      while (x * y != PE_VALUE(g_tw_npe))
-	{
-	  y++;
-	  if (y == PE_VALUE(g_tw_npe) + 1)
-	    {
-	      x--;
-	      y = npe + 1;
-	      if (x == 0)
-		break;
-	    }
-	}
-      *xpe = x;
-      *ype = y;
-    }
-#if 0
-  printf("The Most Square Processor Grid for %d PEs is %d x %d\n",
-	 g_tw_npe, *xpe, *ype);
-#endif
-}
-
 /******** Initialize_Appl *************************************************/
 
 #define	TW_CELL	1
