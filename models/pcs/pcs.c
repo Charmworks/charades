@@ -819,7 +819,7 @@ tw_lptype       mylps[] =
       (event_f) Cell_EventHandler,
       (revent_f) RC_Cell_EventHandler,
       (final_f) CellStatistics_CollectStats,
-      (map_f) CellMapping_lp_to_pe,
+      (chare_map_f) pcs_grid_map,
       sizeof(struct State)
     },
     {0},
@@ -901,9 +901,8 @@ main(int argc, char **argv)
   PE_VALUE(g_tw_nkp) = vp_per_proc;
 
   PE_VALUE(g_type_map) = pcs_type_map;
-  PE_VALUE(g_tw_mapping) = CUSTOM;
-  PE_VALUE(g_tw_custom_initial_mapping) = &pcs_grid_mapping;
-  PE_VALUE(g_tw_custom_lp_global_to_local_map) = &CellMapping_to_lp;
+  PE_VALUE(g_init_map) = pcs_init_map;
+  PE_VALUE(g_local_map) = pcs_local_map;
 
   /*
    * Some some of the settings.
