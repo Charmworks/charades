@@ -2,6 +2,8 @@
 
 #define max fmax
 
+long g_num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y)/(NUM_VP_X * NUM_VP_Y);
+
 double
 Pi_Distribution(double n, double N)
 {
@@ -65,39 +67,15 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
   return( dest_lpid );
 }
 
-// tw_peid CellMapping_lp_to_pe(tw_lpid lpid)
-unsigned pcs_grid_map (tw_lpid gid)
-{
-  long lp_x = lpid % NUM_CELLS_X;
-  long lp_y = lpid / NUM_CELLS_X;
-  long vp_num_x = lp_x/g_cells_per_vp_x;
-  long vp_num_y = lp_y/g_cells_per_vp_y;
-  long vp_num = vp_num_x + (vp_num_y*NUM_VP_X);
-  unsigned peid = vp_num/g_vp_per_proc;
-  return peid;
+// Return LPChare index based on GID
+unsigned pcs_grid_map (tw_lpid gid) {
+	return gid / g_num_cells_per_kp;
 }
 
-// tw_lpid CellMapping_to_local_index(tw_lpid lpid)
-tw_lpid pcs_local_map (tw_lpid gid)
-{
-  tw_lpid lp_x = lpid % NUM_CELLS_X; //lpid -> (lp_x,lp_y)
-  tw_lpid lp_y = lpid / NUM_CELLS_X;
-  tw_lpid vp_index_x = lp_x % g_cells_per_vp_x;
-  tw_lpid vp_index_y = lp_y % g_cells_per_vp_y;
-  tw_lpid vp_index = vp_index_x + (vp_index_y * (g_cells_per_vp_x));
-  tw_lpid vp_num_x = lp_x/g_cells_per_vp_x;
-  tw_lpid vp_num_y = lp_y/g_cells_per_vp_y;
-  tw_lpid vp_num = vp_num_x + (vp_num_y*NUM_VP_X);
-  vp_num = vp_num % g_vp_per_proc;
-  tw_lpid index = vp_index + vp_num*g_cells_per_vp;
-
-  if( index >= PE_VALUE(g_tw_nlp) )
-    tw_error(TW_LOC, "index (%llu) beyond g_tw_nlp (%llu) range \n", index, PE_VALUE(g_tw_nlp));
-
-  return( index );
+// Return local index based on GID
+tw_lpid pcs_local_map (tw_lpid gid) {
+	return gid % g_num_cells_per_kp;
 }
-
-
 
 Min_t
 Cell_MinTS(struct Msg_Data *M)
@@ -137,8 +115,8 @@ Cell_StartUp(struct State *SV, tw_lp * lp)
   SV->Handoff_Blocks = 0;
   SV->Busy_Lines = 0;
   SV->Handoff_Blocks = 0;
-  SV->CellLocationX = lp->id % NUM_CELLS_X;
-  SV->CellLocationY = lp->id / NUM_CELLS_X;
+  SV->CellLocationX = lp->gid % NUM_CELLS_X;
+  SV->CellLocationY = lp->gid / NUM_CELLS_X;
 
   if (SV->CellLocationX >= NUM_CELLS_X ||
       SV->CellLocationY >= NUM_CELLS_Y)
@@ -188,7 +166,7 @@ Cell_StartUp(struct State *SV, tw_lp * lp)
 
 	  ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
 	  CurEvent = tw_event_new(currentcell, ts, lp);
-	  TWMsg = tw_event_data(CurEvent);
+	  TWMsg = (Msg_Data *) tw_event_data(CurEvent);
 	  TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
 	  TWMsg->MoveCallTS = TMsg.MoveCallTS;
 	  TWMsg->NextCallTS = TMsg.NextCallTS;
@@ -582,7 +560,7 @@ Cell_MoveCallOut(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
   ts = max(0.0, TMsg.MoveCallTS - tw_now(lp));
   TMsg.MethodName = MOVECALLIN_METHOD;
   dest_index = tw_rand_integer(lp->rng, 0, 3);
-  newcell = Cell_ComputeMove( lp->gid, dest_index ); //Neighbors[lp->id][dest_index];
+  newcell = Cell_ComputeMove( lp->gid, dest_index ); //Neighbors[lp->gid][dest_index];
   CurEvent = tw_event_new((newcell), ts, lp);
   TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
   TWMsg->MethodName = TMsg.MethodName;
@@ -618,12 +596,12 @@ Cell_EventHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
       break;
     default:
       tw_error(TW_LOC, "APP_ERROR(8)(%d): InValid MethodName(%d)\n",
-	       lp->id, M->MethodName);
+	       lp->gid, M->MethodName);
     }
 
 #ifdef LPTRACEON
-  rng_get_state(lp->id, seeds);
-  fprintf(LPTrace[lp->id], "CE: Type %d: Time %f: %d %d %d %d \n", M->MethodName,
+  rng_get_state(lp->gid, seeds);
+  fprintf(LPTrace[lp->gid], "CE: Type %d: Time %f: %d %d %d %d \n", M->MethodName,
 	  tw_now(lp), seeds[0], seeds[1], seeds[2], seeds[3]);
 #endif
 }
@@ -745,8 +723,8 @@ RC_Cell_EventHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * l
     }
 
 #ifdef LPTRACEON
-  rng_get_state(lp->id, seeds);
-  fprintf(LPTrace[lp->id], "RC_CE: Type %d: %d %d %d %d \n", M->MethodName,
+  rng_get_state(lp->gid, seeds);
+  fprintf(LPTrace[lp->gid], "RC_CE: Type %d: %d %d %d %d \n", M->MethodName,
 	  seeds[0], seeds[1], seeds[2], seeds[3]);
 #endif
 }
@@ -815,44 +793,11 @@ tw_lpid pcs_init_map(unsigned chare, tw_lpid local_id) {
 	// 1. The grid is always square
 	// 2. The dimensions are always powers of two
 	// 3. What used to be KPs are now LPChares. The particular PE doesn't matter
+	// 4. THE UNDERLYING ACTUAL MAPPING DOES NOT MATTER
+	//    As long as all the routing-map functions are consistent for event sending,
+	//    the actual "movement" functions do their own thing
 
-
-
-  tw_lpid         x, y;
-  tw_lpid         lpid, kpid;
-  tw_lpid         num_cells_per_kp, vp_per_proc;
-  tw_lpid         local_lp_count;
-  tw_lpid         local_kp_count;
-
-  num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
-  vp_per_proc = (NUM_VP_X * NUM_VP_Y) / ((tw_nnodes() * g_tw_npe)) ;
-  PE_VALUE(g_tw_nlp) = nlp_per_pe;
-  PE_VALUE(g_tw_nkp) = vp_per_proc;
-
-  local_lp_count=0;
-  for (y = 0; y < NUM_CELLS_Y; y++)
-    {
-      for (x = 0; x < NUM_CELLS_X; x++)
-	{
-	  lpid = (x + (y * NUM_CELLS_X));
-	  if( PE_VALUE(g_tw_mynode) == CellMapping_lp_to_pe(lpid) )
-	    {
-
-	      kpid = local_lp_count/num_cells_per_kp;
-	      local_lp_count++; // MUST COME AFTER!! DO NOT PRE-INCREMENT ELSE KPID is WRONG!!
-
-	      if( kpid >= PE_VALUE(g_tw_nkp) )
-		tw_error(TW_LOC, "Attempting to mapping a KPid (%llu) for Global LPid %llu that is beyond g_tw_nkp (%llu)\n",
-			 kpid, lpid, PE_VALUE(g_tw_nkp) );
-
-	      tw_lp_onpe(CellMapping_to_local_index(lpid), PE_VALUE(g_tw_pe)[0], lpid);
-	      if( PE_VALUE(g_tw_kp)[kpid] == NULL )
-		tw_kp_onpe(kpid, PE_VALUE(g_tw_pe)[0]);
-	      tw_lp_onkp(PE_VALUE(g_tw_lp)[CellMapping_to_local_index(lpid)], PE_VALUE(g_tw_kp)[kpid]);
-	      tw_lp_settype( CellMapping_to_local_index(lpid), &mylps[0]);
-	    }
-	}
-    }
+	return (tw_lpid) (chare * g_num_cells_per_kp) + local_id;
 }
 
 int
@@ -867,24 +812,23 @@ main(int argc, char **argv)
 
   tw_init(&argc, &argv);
 
-  nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes() * PE_VALUE(g_tw_npe));
-  additional_memory_buffers = 2 * g_tw_mblock * g_tw_gvt_interval;
+  nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes() * g_tw_npe);
+  // additional_memory_buffers = 2 * PE_VALUE(g_tw_mblock) * PE_VALUE(g_tw_gvt_interval);
 
-  PE_VALUE(g_tw_events_per_pe) = (nlp_per_pe * (unsigned int)BIG_N) +
-    additional_memory_buffers;
+  // PE_VALUE(g_tw_events_per_pe) = (nlp_per_pe * (unsigned int)BIG_N) + additional_memory_buffers;
 
   if( tw_ismaster() )
     {
       printf("Running simulation with following configuration: \n" );
-      printf("    Buffers Allocated Per PE = %d\n", g_tw_events_per_pe);
+      // printf("    Buffers Allocated Per PE = %d\n", g_tw_events_per_pe);
       printf("\n\n");
     }
 
   num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
-  vp_per_proc = (NUM_VP_X * NUM_VP_Y) / ((tw_nnodes() * PE_VALUE(g_tw_npe))) ;
+  vp_per_proc = (NUM_VP_X * NUM_VP_Y) / ((tw_nnodes() * g_tw_npe)) ;
   g_vp_per_proc = vp_per_proc;
   PE_VALUE(g_tw_nlp) = nlp_per_pe;
-  PE_VALUE(g_tw_nkp) = vp_per_proc;
+  // PE_VALUE(g_tw_nkp) = vp_per_proc;
 
   PE_VALUE(g_type_map) = pcs_type_map;
   PE_VALUE(g_init_map) = pcs_init_map;
@@ -902,8 +846,8 @@ main(int argc, char **argv)
       printf("CALL TIME MEAN   = %f\n", CALL_TIME_MEAN);
       printf("NUM CELLS X      = %d\n", NUM_CELLS_X);
       printf("NUM CELLS Y      = %d\n", NUM_CELLS_Y);
-      printf("NUM KPs per PE   = %llu \n", g_tw_nkp);
-      printf("NUM LPs per PE   = %llu \n", g_tw_nlp);
+      // printf("NUM KPs per PE   = %llu \n", g_tw_nkp);
+      printf("NUM LPs per PE   = %llu \n", PE_VALUE(g_tw_nlp));
       printf("g_vp_per_proc    = %llu \n", g_vp_per_proc);
       printf("/**********************************************/\n");
       printf("\n\n");
@@ -924,6 +868,7 @@ main(int argc, char **argv)
   TWAppStats.Portables_Out = 0;
   TWAppStats.Blocking_Probability = 0.0;
 
+  printf("GO!\n");
   tw_run();
 
   if( tw_ismaster() )
