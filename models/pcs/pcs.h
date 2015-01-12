@@ -1,5 +1,8 @@
 #include "ross_api.h"
 
+// TURN OFF STATS FOR NOW
+//#define CELL_STATS
+
 #define TW_MAX_NAME_LEN 31
 
 // PCS GRID MAPPING IS ALWAYS A SQUARE: dim(X) == dim(Y)
@@ -85,6 +88,7 @@ struct Msg_Data
 	struct RC       RC;
 };
 
+#ifdef CELL_STATS
 struct CellStatistics
 {
 	int             Call_Attempts;
@@ -95,6 +99,7 @@ struct CellStatistics
 	int             Portables_Out;
 	double          Blocking_Probability;
 };
+#endif
 
 void            Cell_EventHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp);
 Min_t           Cell_MinTS(struct Msg_Data *M);
@@ -109,8 +114,9 @@ void            RC_Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_
 void            RC_Cell_MoveCallIn(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp);
 void            RC_Cell_MoveCallOut(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp);
 void            CellStatistics_CollectStats(struct State *, tw_lp *lp);
+#ifdef CELL_STATS
 void            CellStatistics_Compute();
 void            CellStatistics_Print();
-
-// struct CellStatistics TWAppStats;
+struct CellStatistics TWAppStats;
+#endif
 tw_lpid nlp_per_pe = 0;

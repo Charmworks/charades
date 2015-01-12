@@ -4,8 +4,6 @@
 
 long g_num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y)/(NUM_VP_X * NUM_VP_Y);
 
-struct CellStatistics TWAppStats;
-
 double
 Pi_Distribution(double n, double N)
 {
@@ -730,17 +728,21 @@ RC_Cell_EventHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * l
 #endif
 }
 
+
 void
 CellStatistics_CollectStats(struct State *SV, tw_lp * lp)
 {
+#ifdef CELL_STATS
   TWAppStats.Call_Attempts += SV->Call_Attempts;
   TWAppStats.Channel_Blocks += SV->Channel_Blocks;
   TWAppStats.Busy_Lines += SV->Busy_Lines;
   TWAppStats.Handoff_Blocks += SV->Handoff_Blocks;
   TWAppStats.Portables_In += SV->Portables_In;
   TWAppStats.Portables_Out += SV->Portables_Out;
+#endif
 }
 
+#ifdef CELL_STATS
 void
 CellStatistics_Compute(struct CellStatistics *CS)
 {
@@ -766,6 +768,7 @@ CellStatistics_Print(struct CellStatistics *CS)
   printf("Blocking Probability...............................%f\n",
 	 CS->Blocking_Probability);
 }
+#endif
 
 /******** Initialize_Appl *************************************************/
 
@@ -858,6 +861,7 @@ main(int argc, char **argv)
   /*
    * Initialize App Stats Structure
    */
+#ifdef CELL_STATS
   TWAppStats.Call_Attempts = 0;
   TWAppStats.Call_Attempts = 0;
   TWAppStats.Channel_Blocks = 0;
@@ -866,14 +870,17 @@ main(int argc, char **argv)
   TWAppStats.Portables_In = 0;
   TWAppStats.Portables_Out = 0;
   TWAppStats.Blocking_Probability = 0.0;
+#endif
 
   tw_run();
 
+#ifdef CELL_STATS
   if( tw_ismaster() )
     {
       CellStatistics_Compute(&TWAppStats);
       CellStatistics_Print(&TWAppStats);
     }
+#endif
 
   tw_end();
 
