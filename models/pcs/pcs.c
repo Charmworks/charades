@@ -4,6 +4,8 @@
 
 long g_num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y)/(NUM_VP_X * NUM_VP_Y);
 
+struct CellStatistics TWAppStats;
+
 double
 Pi_Distribution(double n, double N)
 {
@@ -22,7 +24,6 @@ GenInitPortables(tw_lp * lp)
   return ((int)BIG_N);
 }
 
-tw_lpid g_vp_per_proc =0; // set in main
 tw_lpid g_cells_per_vp_x = NUM_CELLS_X/NUM_VP_X;
 tw_lpid g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;
 tw_lpid g_cells_per_vp = (NUM_CELLS_X/NUM_VP_X)*(NUM_CELLS_Y/NUM_VP_Y);
@@ -803,7 +804,7 @@ tw_lpid pcs_init_map(unsigned chare, tw_lpid local_id) {
 int
 main(int argc, char **argv)
 {
-  tw_lpid         num_cells_per_kp, vp_per_proc;
+  tw_lpid         num_cells_per_kp;
   unsigned int    additional_memory_buffers;
 
   // printf("Enter TWnpe, TWnkp, additional_memory_buffers \n" );
@@ -812,9 +813,8 @@ main(int argc, char **argv)
 
   tw_init(&argc, &argv);
 
-  nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes() * g_tw_npe);
+  // nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes() * g_tw_npe);
   // additional_memory_buffers = 2 * PE_VALUE(g_tw_mblock) * PE_VALUE(g_tw_gvt_interval);
-
   // PE_VALUE(g_tw_events_per_pe) = (nlp_per_pe * (unsigned int)BIG_N) + additional_memory_buffers;
 
   if( tw_ismaster() )
@@ -824,11 +824,9 @@ main(int argc, char **argv)
       printf("\n\n");
     }
 
+  // CHARM: kp ==> LPChare, g_tw_nlp = g_lps_per_chare
   num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
-  vp_per_proc = (NUM_VP_X * NUM_VP_Y) / ((tw_nnodes() * g_tw_npe)) ;
-  g_vp_per_proc = vp_per_proc;
-  PE_VALUE(g_tw_nlp) = nlp_per_pe;
-  // PE_VALUE(g_tw_nkp) = vp_per_proc;
+  PE_VALUE(g_tw_nlp) = num_cells_per_kp;
 
   PE_VALUE(g_type_map) = pcs_type_map;
   PE_VALUE(g_init_map) = pcs_init_map;
@@ -846,15 +844,16 @@ main(int argc, char **argv)
       printf("CALL TIME MEAN   = %f\n", CALL_TIME_MEAN);
       printf("NUM CELLS X      = %d\n", NUM_CELLS_X);
       printf("NUM CELLS Y      = %d\n", NUM_CELLS_Y);
+      printf("NUM VP X         = %d\n", NUM_VP_X);
+      printf("NUM VP Y         = %d\n", NUM_VP_Y);
       // printf("NUM KPs per PE   = %llu \n", g_tw_nkp);
-      printf("NUM LPs per PE   = %llu \n", PE_VALUE(g_tw_nlp));
-      printf("g_vp_per_proc    = %llu \n", g_vp_per_proc);
+      printf("NUM LPs per Chare   = %d\n", PE_VALUE(g_tw_nlp));
       printf("/**********************************************/\n");
       printf("\n\n");
       fflush(stdout);
     }
 
-  tw_define_lps(nlp_per_pe, sizeof(struct Msg_Data), 0);
+  tw_define_lps(num_cells_per_kp, sizeof(struct Msg_Data), 0);
 
   /*
    * Initialize App Stats Structure
@@ -868,7 +867,6 @@ main(int argc, char **argv)
   TWAppStats.Portables_Out = 0;
   TWAppStats.Blocking_Probability = 0.0;
 
-  printf("GO!\n");
   tw_run();
 
   if( tw_ismaster() )

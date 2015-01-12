@@ -5,12 +5,12 @@
 // PCS GRID MAPPING IS ALWAYS A SQUARE: dim(X) == dim(Y)
 
 // CELL ==> lp ==> lp_struct
-#define NUM_CELLS_X 1024     //256
-#define NUM_CELLS_Y 1024     //256
+#define NUM_CELLS_X 256     //256
+#define NUM_CELLS_Y 256     //256
 
 // VP ==> KP ==> LPChare
-#define NUM_VP_X 512
-#define NUM_VP_Y 512
+#define NUM_VP_X 64
+#define NUM_VP_Y 64
 
 #define MAX_NORMAL_CHANNELS 10
 #define MAX_RESERVE_CHANNELS 0
@@ -112,5 +112,5 @@ void            CellStatistics_CollectStats(struct State *, tw_lp *lp);
 void            CellStatistics_Compute();
 void            CellStatistics_Print();
 
-struct CellStatistics TWAppStats;
+// struct CellStatistics TWAppStats;
 tw_lpid nlp_per_pe = 0;
