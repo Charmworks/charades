@@ -49,10 +49,13 @@ void charm_run() {
     DEBUG("[%d] Initializing schedulers \n", CkMyPe());
     PE_VALUE(total_time) = CkWallTimer();
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
+      CkPrintf("**** Starting Sequential Simulation ****\n");
       pes.execute_seq();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+      CkPrintf("**** Starting Parallel Conservative Simulation ****\n");
       pes.execute_cons();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+      CkPrintf("**** Starting Parallel Optimistic Simulation ****\n");
       pes.execute_opt();
     } else {
       tw_error(TW_LOC, "Incorrect scheduler values, Aborting\n");
@@ -177,6 +180,7 @@ Time PE::get_min_time() {
 
 // Receives the reduction of the final event count, prints stats, and exits.
 void PE::print_final_stats(double total_events) {
+  CkPrintf("**** Ending Simulation ****\n\n");
   CkPrintf("Total events executed: %.0lf\n", total_events);
   CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
   CkPrintf("Event rate: %f events/s\n", total_events/PE_VALUE(total_time));
