@@ -180,8 +180,6 @@ void PE::print_final_stats(double total_events) {
   CkPrintf("Total events executed: %.0lf\n", total_events);
   CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
   CkPrintf("Event rate: %f events/s\n", total_events/PE_VALUE(total_time));
-  contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
-    CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
 }
 
 
@@ -197,6 +195,9 @@ void PE::execute_seq() {
     }
   }
   print_final_stats(PE_STATS(s_net_events));
+  contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
+    CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
+
 }
 
 // Execute events within the current window based on lookahead.
@@ -291,6 +292,8 @@ void PE::gvt_end(Time new_gvt) {
     PE_VALUE(total_time) = CkWallTimer() - PE_VALUE(total_time);
     contribute(sizeof(double), &(globals->netEvents), CkReduction::sum_double,
         CkCallback(CkReductionTarget(PE,print_final_stats),thisProxy[0]));
+    contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
+        CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       thisProxy[CkMyPe()].execute_cons();
