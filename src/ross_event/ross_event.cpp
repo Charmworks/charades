@@ -98,10 +98,10 @@ void tw_event_send(tw_event * e) {
   dest_peid = src_lp->type->chare_map(e->dest_lp);
 
   // The charm backend will fill in the remote event and send it
-  charm_event_send(dest_peid, e);
+  int isRemote = charm_event_send(dest_peid, e); 
 
   // Unless we are doing optimistic simulation we can just free the event
-  if(PE_VALUE(g_tw_synchronization_protocol) != OPTIMISTIC) {
+  if(isRemote && PE_VALUE(g_tw_synchronization_protocol) != OPTIMISTIC) {
     charm_free_event(e);
   }
 }

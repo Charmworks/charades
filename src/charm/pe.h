@@ -21,13 +21,17 @@ class PE: public CBase_PE {
   private:
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
     PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
-    Time gvt;           /**< current gvt on this PE */
-    int gvt_cnt;        /**< count since last gvt */
-    tw_rng * rng;       /**< ROSS rng stream */
+
+    Time gvt;     /**< current gvt on this PE */
+    int gvt_cnt;  /**< count since last gvt */
+
+    tw_rng * rng; /**< ROSS rng stream */
+
+    Time min_cancel_time; /**< minumum event time in the cancel queue */
+    vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
   public:
     Globals* globals;       /**< global variables accessed with PE_VALUE */
     Statistics* statistics; /**< statistics variables accessed with PE_STATS */
-    vector<LP*> cancel_q;   /**< list of LPs with events for cancellation */
 
     PE(CProxy_Initialize);
 
@@ -50,8 +54,10 @@ class PE: public CBase_PE {
     bool schedule_next_lp(); /**< call execute_me on the next LP */
 
     /** \brief Methods only used in optimistic mode */
-    void collect_fossils();   /**< collect fossils */
-    void process_cancel_q();  /**< process the cancel_q */
+    void collect_fossils();       /**< collect fossils */
+    void process_cancel_q();      /**< process the cancel_q */
+    void add_to_cancel_q(LP*);    /**< add an LP to the cancel_q */
+    void update_min_cancel(Time); /**< update min_cancel_time */
 
     /** \brief Methods for GVT computation
         GVT is only used in conservative and optimistic
