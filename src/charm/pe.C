@@ -332,8 +332,8 @@ void PE::tw_stats(CkReductionMsg *m) {
   //   return;
 
 #ifndef ROSS_DO_NOT_PRINT
-  printf("\n\t: Running Time = %.4f seconds\n", s->s_max_run_time);
-  fprintf(PE_VALUE(g_tw_csv), "%.4f,", s->s_max_run_time);
+  printf("\n\t: Running Time = %.4f seconds\n", PE_VALUE(total_time));
+  fprintf(PE_VALUE(g_tw_csv), "%.4f,", PE_VALUE(total_time));
 
   printf("\nTW Library Statistics:\n");
   show_lld("Total Events Processed", s->s_nevent_processed);
