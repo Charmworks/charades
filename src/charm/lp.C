@@ -165,7 +165,7 @@ void LP::recv_anti_event(RemoteEvent* event) {
   tw_event_free(this, key);
   delete event;
 }
-  
+
 // Execute the next event in the pending queue (returns false if no events).
 // 1) Pop event
 // 2) Execute event
@@ -206,6 +206,7 @@ bool LP::execute_me() {
 void LP::rollback_me(tw_stime ts) {
   Event* e;
   PE_STATS(s_rb_total)++;
+  PE_STATS(s_rb_primary)++;
   while(processed_events.front() != NULL && processed_events.front()->ts > ts) {
     e = processed_events.front();
     processed_events.pop_front();

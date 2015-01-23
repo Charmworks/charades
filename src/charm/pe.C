@@ -373,8 +373,7 @@ void PE::tw_stats(CkReductionMsg *m) {
   show_lld("Net Events Processed", s->s_net_events);
   show_1f(
     "Event Rate (events/sec)",
-    ((double)s->s_net_events / s->s_max_run_time)
-  );
+    ((double)s->s_net_events / PE_VALUE(total_time)));
 
   printf("\nTW Memory Statistics:\n");
   show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered) * PE_VALUE(g_num_lp_chares));
@@ -463,7 +462,6 @@ CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
     Statistics *c = (Statistics *)msgs[i]->getData();
     s->s_max_run_time = fmax(s->s_max_run_time, c->s_max_run_time);
 
-    s->s_net_events += c->s_net_events;
     s->s_nevent_processed += c->s_nevent_processed;
     s->s_nevent_abort += c->s_nevent_abort;
     s->s_e_rbs += c->s_e_rbs;
@@ -477,8 +475,10 @@ CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
     s->s_nsend_remote_rb += c->s_nsend_remote_rb;
     s->s_nsend_loc_remote += c->s_nsend_loc_remote;
     s->s_nsend_net_remote += c->s_nsend_net_remote;
-    s->s_ngvts += c->s_ngvts;
     s->s_mem_buffers_used += c->s_mem_buffers_used;
+
+    // Everyone should participate in GVT
+    s->s_ngvts = c->s_ngvts;
 
     s->s_pe_event_ties += c->s_pe_event_ties;
     s->s_min_detected_offset = fmin(s->s_min_detected_offset, c->s_min_detected_offset);
@@ -494,6 +494,8 @@ CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
 
     s->s_avl = fmax(s->s_avl, c->s_avl);
   }
+
+  s->s_net_events = s->s_nevent_processed - s->s_e_rbs;
 
   return CkReductionMsg::buildNew(sizeof(Statistics), s);
 }
