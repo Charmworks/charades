@@ -335,6 +335,7 @@ void PE::tw_stats(CkReductionMsg *m) {
   printf("\n\t: Running Time = %.4f seconds\n", PE_VALUE(total_time));
   fprintf(PE_VALUE(g_tw_csv), "%.4f,", PE_VALUE(total_time));
 
+  // TODO: Add in correct collection of remote event stats
   printf("\nTW Library Statistics:\n");
   show_lld("Total Events Processed", s->s_nevent_processed);
   show_lld("Events Aborted (part of RBs)", s->s_nevent_abort);
@@ -375,11 +376,13 @@ void PE::tw_stats(CkReductionMsg *m) {
     "Event Rate (events/sec)",
     ((double)s->s_net_events / PE_VALUE(total_time)));
 
+  // TODO: Check that memory usage is correct
   printf("\nTW Memory Statistics:\n");
   show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered) * PE_VALUE(g_num_lp_chares));
   show_lld("Memory Allocated", m_alloc / 1024);
   show_lld("Memory Wasted", m_waste / 1024);
 
+  // TODO: What are these used for?
   if (tw_nnodes() > 1) {
     printf("\n");
     printf("TW Network Statistics:\n");
