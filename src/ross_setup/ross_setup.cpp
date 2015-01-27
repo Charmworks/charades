@@ -92,14 +92,15 @@ void tw_init(int* argc, char*** argv) {
   tw_opt_print();
   /** Set up all the buffers for events */
   if(tw_ismaster()) DEBUG("Printed opts\n");
-  tw_event_setup();
-  if(tw_ismaster()) DEBUG("Event set up done\n");
 }
 
 void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   PE_VALUE(g_tw_nlp) = nlp;
   PE_VALUE(g_tw_msg_sz) = msg_sz;
   PE_VALUE(g_tw_rng_seed) = seed;
+
+  tw_event_setup();
+  if(tw_ismaster()) DEBUG("Event set up done\n");
 
   // TODO: Not implemented yet.
   /* early_sanity_check(); */

@@ -55,7 +55,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 #define PE_VALUE(x) pe->globals->x
 
 #undef PE_STATS
-#define PE_STATS(x) pe->stats->x
+#define PE_STATS(x) pe->statistics->x
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
 LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
