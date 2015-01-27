@@ -80,7 +80,7 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
   for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].owner = this;
     lp_structs[i].gid = PE_VALUE(g_init_map)(thisIndex, i);
-    DEBUG("[%d] Created LP %d \n", CkMyPe(), lp_structs[i].gid);
+    DEBUG_LP("Created LP %d \n", lp_structs[i].gid);
     lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
     lp_structs[i].state = malloc(lp_structs[i].type->state_size);
 
@@ -98,7 +98,7 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
 // Call init on all LPs then stop the charm scheduler.
 void LP::init() {
   current_event = PE_VALUE(abort_event);
-  if(tw_ismaster()) DEBUG("[%d] Init lps \n", CkMyPe());
+  DEBUG_LP("Init lps \n");
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
   }
@@ -106,7 +106,7 @@ void LP::init() {
 }
 
 void LP::stop_scheduler() {
-  if(tw_ismaster()) DEBUG("[%d] Stop scheduler \n", CkMyPe());
+  DEBUG_LP("Stop scheduler \n");
   CkExit();
 }
 

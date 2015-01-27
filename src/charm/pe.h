@@ -9,6 +9,9 @@
 
 #include "pe_queue.h"
 
+//#define DEBUG_PE(format, ...) { CkPrintf("PE[%d] "format, CkMyPe(), ## __VA_ARGS__); }
+#define DEBUG_PE(format, ...) {}
+
 class LP;
 class LPToken;
 struct tw_rng;

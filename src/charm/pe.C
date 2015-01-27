@@ -46,7 +46,7 @@ void charm_exit() {
 // Starts the simulation by calling the scheduler on all pes
 void charm_run() {
   if (tw_ismaster()) {
-    DEBUG("[%d] Initializing schedulers \n", CkMyPe());
+    DEBUG("Initializing schedulers \n");
     PE_VALUE(total_time) = CkWallTimer();
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
       CkPrintf("**** Starting Sequential Simulation ****\n");
@@ -276,7 +276,7 @@ void PE::update_min_cancel(Time t) {
 // gvt reduction.
 void PE::gvt_begin() {
   PE_STATS(s_ngvts)++;
-  DEBUG4("******** GVT begins ********\n");
+  DEBUG_PE("******** GVT begins ********\n");
   if(CkMyPe() == 0) {
     /* TODO: Provide option for using completion detection */
     CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
@@ -286,7 +286,7 @@ void PE::gvt_begin() {
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
 void PE::gvt_contribute() {
   Time min_time = get_min_time();
-  DEBUG4("******** GVT contribute %lf ********\n", min_time);
+  DEBUG_PE("******** GVT contribute %lf ********\n", min_time);
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 }
@@ -294,7 +294,7 @@ void PE::gvt_contribute() {
 // Check to see if we are complete. If not, re-enter the appropriate
 // scheduler loop, and possibly do fossil collection.
 void PE::gvt_end(Time new_gvt) {
-  DEBUG4("******** GVT computed %lf ********\n", new_gvt);
+  DEBUG_PE("******** GVT computed %lf ********\n", new_gvt);
   PE_VALUE(lastGVT) = gvt;
   gvt = new_gvt;
   if(new_gvt >= PE_VALUE(g_tw_ts_end)) {

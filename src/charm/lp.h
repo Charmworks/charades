@@ -11,6 +11,9 @@
 
 #include <vector>
 
+//#define DEBUG_LP(format, ...) { CkPrintf("LP[%d] "format, thisIndex, ## __VA_ARGS__); }
+#define DEBUG_LP(forman, ...) {}
+
 class RemoteEvent;
 
 // Tokens owned by LP chares that are used by the PE queues that control
