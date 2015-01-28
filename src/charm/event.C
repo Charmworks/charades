@@ -6,6 +6,7 @@
 #include "lp_struct.h"
 #include "avl_tree.h"
 #include "event_buffer.h"
+#include "charm_functions.h"
 
 #include "ross_util.h"
 
