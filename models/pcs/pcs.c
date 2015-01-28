@@ -850,7 +850,7 @@ main(int argc, char **argv)
       printf("NUM VP X         = %d\n", NUM_VP_X);
       printf("NUM VP Y         = %d\n", NUM_VP_Y);
       // printf("NUM KPs per PE   = %llu \n", g_tw_nkp);
-      printf("NUM LPs per Chare   = %d\n", PE_VALUE(g_tw_nlp));
+      printf("NUM LPs per PE   = %d\n", PE_VALUE(g_tw_nlp));
       printf("/**********************************************/\n");
       printf("\n\n");
       fflush(stdout);
