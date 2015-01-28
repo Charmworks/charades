@@ -15,7 +15,6 @@ class Initialize : public CBase_Initialize {
     Initialize(CkMigrateMessage* m) { }
 
     void Exit() {
-      DEBUG("Exit called\n");
       CkExit();
     }
 };

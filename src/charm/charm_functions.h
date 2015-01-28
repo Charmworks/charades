@@ -12,6 +12,8 @@ int tw_mype();
 void tw_abort(const char*);
 
 #define DEBUG(format, ...) { }
-//#define DEBUG(format, ...) { CkPrintf("[%d] "format, CkMyPe(), ## __VA_ARGS__); }
+#define DEBUG_MASTER(format, ...) { }
+//#define DEBUG(format, ...) { CkPrintf(format, ## __VA_ARGS__); }
+//#define DEBUG_MASTER(format, ...) { if(tw_ismaster()) CkPrintf("MASTER: "format, ## __VA_ARGS__); }
 
 #endif

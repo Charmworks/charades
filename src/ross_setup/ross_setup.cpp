@@ -15,6 +15,8 @@ void tw_event_setup() {
   avl_list[AVL_NODE_COUNT - 1].next = NULL;
   PE_VALUE(avl_list_head) = &avl_list[0];
 
+  DEBUG_MASTER("Created AVL tree with %d nodes\n", AVL_NODE_COUNT);
+
   tw_out *output_head = (tw_out *)calloc(sizeof(struct tw_out), NUM_OUT_MESG);
   for (int i = 0; i < NUM_OUT_MESG - 1; i++) {
     output_head[i].next = &output_head[i + 1];
@@ -22,10 +24,15 @@ void tw_event_setup() {
   output_head[NUM_OUT_MESG - 1].next = NULL;
   PE_VALUE(output) = output_head;
 
+  DEBUG_MASTER("Created %d output messages\n", NUM_OUT_MESG);
+
   PE_VALUE(event_buffer) = new EventBuffer(PE_VALUE(g_tw_max_events_buffered),
                                            PE_VALUE(g_tw_msg_sz));
   PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_abort_event();
   PE_VALUE(abort_event)->state.owner = TW_event_inf;
+
+  DEBUG_MASTER("Created event buffer with %d events of size %d\n",
+      PE_VALUE(g_tw_max_events_buffered), PE_VALUE(g_tw_msg_sz));
 }
 
 char **CopyArgs(char **argv)
@@ -42,7 +49,6 @@ char **CopyArgs(char **argv)
 void tw_init(int* argc, char*** argv) {
   char **charmArg = CopyArgs(*argv);
   charm_init(*argc, charmArg);
-  if(tw_ismaster()) DEBUG("Finished charm_init\n");
 
   // TODO (eric): After the charm_lib_init() returns we need to copy user
   // options over to the PE global variables.
@@ -62,7 +68,6 @@ void tw_init(int* argc, char*** argv) {
   };
 
   tw_opt_add(kernel_options);
-  if(tw_ismaster()) DEBUG("Added kernel options\n");
 
   // Print out command line, version, and time.
   if (tw_ismaster()) {
@@ -82,16 +87,13 @@ void tw_init(int* argc, char*** argv) {
   }
 
   tw_opt_parse(argc, argv);
-  if(tw_ismaster()) DEBUG("Parsed opts\n");
 
   if (tw_ismaster() && NULL == (PE_VALUE(g_tw_csv) = fopen("ross.csv", "a"))) {
     tw_error(TW_LOC, "Unable to open: ross.csv\n");
   }
-  if(tw_ismaster()) DEBUG("Opened csv\n");
 
   tw_opt_print();
   /** Set up all the buffers for events */
-  if(tw_ismaster()) DEBUG("Printed opts\n");
 }
 
 void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
@@ -100,7 +102,6 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   PE_VALUE(g_tw_rng_seed) = seed;
 
   tw_event_setup();
-  if(tw_ismaster()) DEBUG("Event set up done\n");
 
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
@@ -108,7 +109,9 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // First we need to figure out the number of KPs (LP Chares)
   PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes()) / PE_VALUE(g_lps_per_chare);
 
-  if(tw_ismaster()) DEBUG("Calling create lps\n");
+  DEBUG_MASTER("Creating %d lps per PE (%d per chare), for a total of %d lps on %d chares\n",
+      nlp, PE_VALUE(g_lps_per_chare), nlp*tw_nnodes(), PE_VALUE(g_num_lp_chares));
+
   // Create the lp chare array and store it in the readonly
   create_lps();
 }
