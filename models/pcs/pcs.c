@@ -829,7 +829,8 @@ main(int argc, char **argv)
 
   // CHARM: kp ==> LPChare, g_tw_nlp = g_lps_per_chare
   num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
-  PE_VALUE(g_tw_nlp) = num_cells_per_kp;
+  PE_VALUE(g_num_lp_chares) = (NUM_VP_X * NUM_VP_Y);
+  PE_VALUE(g_lps_per_chare) = num_cells_per_kp;
 
   PE_VALUE(g_type_map) = pcs_type_map;
   PE_VALUE(g_init_map) = pcs_init_map;
@@ -851,6 +852,8 @@ main(int argc, char **argv)
       printf("NUM VP Y         = %d\n", NUM_VP_Y);
       // printf("NUM KPs per PE   = %llu \n", g_tw_nkp);
       printf("NUM LPs per PE   = %d\n", PE_VALUE(g_tw_nlp));
+      printf("NUM LP Chares    = %d\n", PE_VALUE(g_num_lp_chares));
+      printf("NUM lps per Chare= %d\n", PE_VALUE(g_lps_per_chare));
       printf("/**********************************************/\n");
       printf("\n\n");
       fflush(stdout);
