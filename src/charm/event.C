@@ -60,6 +60,7 @@ int charm_event_send(unsigned dest_peid, Event * e) {
   LP* send_pe = (LP*)(e->send_pe);
   LP* dest_pe;
 
+  DEBUG("Sending a charm message to LP Chare %d\n", dest_peid);
   // Attempt to get a direct pointer to the destination chare.
   if (dest_peid == send_pe->thisIndex) {
     dest_pe = send_pe;
