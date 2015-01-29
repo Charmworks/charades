@@ -77,6 +77,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
   // TODO: Make sure all are initialized and make sense
   globals = new Globals;
   globals->g_lps_per_chare = 4;
+  globals->g_num_lp_chares = 1;
   globals->g_tw_synchronization_protocol = CONSERVATIVE;
   globals->g_tw_ts_end = 1024;
   globals->g_tw_mblock = 16;

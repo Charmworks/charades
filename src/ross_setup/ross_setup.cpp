@@ -105,8 +105,10 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
 
-  // First we need to figure out the number of KPs (LP Chares)
-  PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes()) / PE_VALUE(g_lps_per_chare);
+  // If the user didn't set the number of lp chares, calculate it here
+  if (PE_VALUE(g_num_lp_chares) == 1) {
+    PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes()) / PE_VALUE(g_lps_per_chare);
+  }
 
   if(tw_ismaster()) DEBUG("Calling create lps\n");
   // Create the lp chare array and store it in the readonly
