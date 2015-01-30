@@ -25,6 +25,8 @@ class EventBuffer {
         max_events(max), msg_size(sz),
         stack_pointer(max), remote_stack_pointer(max*0.1) {
       abort_event = new Event;
+      abort_event->eventMsg = new (msg_size, 32) RemoteEvent;
+      abort_event->userData = abort_event->eventMsg->userData;
 
       buffer = (Event**)malloc(max*sizeof(Event*));
       remote_buffer = (RemoteEvent**)malloc(max*sizeof(RemoteEvent*));
