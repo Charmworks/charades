@@ -131,6 +131,7 @@ PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
   statistics->s_rollback = 0;
   statistics->s_cancel_q = 0;
   statistics->s_avl = 0;
+  statistics->g_tw_gvt_done = 0;
 
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
@@ -305,6 +306,10 @@ void PE::gvt_end(Time new_gvt) {
     contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
         CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
   } else {
+    PE_STATS(g_tw_gvt_done)++;
+    if (tw_ismaster()) {
+      CkPrintf("GVT #%d: simulation %d%% complete (GVT = %.4f).\n", PE_STATS(g_tw_gvt_done), (int) fmin(100, floor(100 *(gvt/PE_VALUE(g_tw_ts_end)))), gvt);
+    }
     if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       thisProxy[CkMyPe()].execute_cons();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
