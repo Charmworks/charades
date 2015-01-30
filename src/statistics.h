@@ -46,7 +46,6 @@ struct Statistics {
     tw_clock s_cancel_q;
 
     tw_clock s_avl;
-    int g_tw_gvt_done;
 };
 
 Statistics* get_statistics();
