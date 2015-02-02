@@ -334,7 +334,8 @@ void PE::tw_stats(CkReductionMsg *m) {
   // should never happen
   // if (!tw_ismaster())
   //   return;
-
+  s->s_net_events = s->s_nevent_processed - s->s_e_rbs;
+  
 #ifndef ROSS_DO_NOT_PRINT
   printf("\n\t: Running Time = %.4f seconds\n", PE_VALUE(total_time));
   fprintf(PE_VALUE(g_tw_csv), "%.4f,", PE_VALUE(total_time));
@@ -501,8 +502,6 @@ CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
 
     s->s_avl = fmax(s->s_avl, c->s_avl);
   }
-
-  s->s_net_events = s->s_nevent_processed - s->s_e_rbs;
 
   return CkReductionMsg::buildNew(sizeof(Statistics), s);
 }
