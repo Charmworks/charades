@@ -46,7 +46,7 @@ void charm_exit() {
 // Starts the simulation by calling the scheduler on all pes
 void charm_run() {
   if (tw_ismaster()) {
-    DEBUG("Initializing schedulers \n");
+    DEBUG_MASTER("Initializing schedulers \n");
     PE_VALUE(total_time) = CkWallTimer();
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
       CkPrintf("**** Starting Sequential Simulation ****\n");
