@@ -9,12 +9,6 @@
 
 #include <assert.h>
 
-// Inline helper functions not exposed to the user
-static inline void link_causality (tw_event *nev, tw_event *cev) {
-  nev->cause_next = cev->caused_by_me;
-  cev->caused_by_me = nev;
-}
-
 static inline void free_output_buffer(tw_out *buffer) {
   buffer->next = PE_VALUE(output);
   PE_VALUE(output) = buffer;

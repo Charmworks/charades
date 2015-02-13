@@ -12,9 +12,18 @@
 #include <vector>
 
 //#define DEBUG_LP(format, ...) { CkPrintf("LP[%d] "format, thisIndex, ## __VA_ARGS__); }
-#define DEBUG_LP(forman, ...) {}
+#define DEBUG_LP(format, ...) {}
 
 class RemoteEvent;
+
+// When the LP chare is unpacking lp_structs, it will handle setting of the
+// owner and type fields. The LPStruct pup just needs to handle the gid, state,
+// and rng stream.
+inline void operator|(PUP::er& p, LPStruct& lp) {
+  p | lp.gid;
+  p((char*)lp.state, lp.type->state_size);
+  // TODO: RNG pupping
+}
 
 // Tokens owned by LP chares that are used by the PE queues that control
 // scheduling and fossil collection. Each token has a direct pointer to its LP,
@@ -28,7 +37,8 @@ struct LPToken {
 
   public:
     LPToken(LP* lp) : lp(lp) {}
-    LPToken() { }
+    LPToken() {}
+
     friend class PEQueue;
     friend class PE;
 };
@@ -71,7 +81,9 @@ class LP : public CBase_LP {
     Event *current_event;
 
     LP();
-    LP(CkMigrateMessage*) {}
+    LP(CkMigrateMessage* m);
+
+    virtual void pup(PUP::er &p);
 
     // After initializing lps, we stop the charm scheduler and return control
     // to ROSS until we are ready to start the simulation.
@@ -102,6 +114,7 @@ class LP : public CBase_LP {
     // The PE will periodically call process_cancel_q() on LPs.
     void cancel_event(Event*);
     void delete_pending(Event*);
+    void add_to_cancel_q(Event*);
     void process_cancel_q();
 
     Time min_cancel_time() const {

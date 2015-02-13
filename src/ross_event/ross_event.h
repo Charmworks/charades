@@ -5,8 +5,7 @@
 
 #include "string.h"
 
-enum tw_event_owner
-{
+enum tw_event_owner {
   TW_event_inf = 0,      /**< End of line event */
   TW_event_null = 1,      /**< event in unused queue */
   TW_chare_q = 2,     /**<  In the chare's to be executed event queue */
@@ -22,8 +21,7 @@ enum tw_event_owner
  * Some applications find it handy to have this bitfield when doing
  * reverse computation.  So we follow GTW tradition and provide it.
  */
-struct tw_bf
-{
+struct tw_bf {
   unsigned int    c0:1;
   unsigned int    c1:1;
   unsigned int    c2:1;
@@ -58,10 +56,16 @@ struct tw_bf
   unsigned int    c31:1;
 };
 
-typedef struct tw_out {
+struct tw_event_state {
+  unsigned char owner;    /**< Which queue I am in; see tw_event_owner */
+  unsigned char cancel_q; /**< Actively on a dest_lp->pe's cancel_q */
+  unsigned char remote;   /**< Indicates union addr is in 'remote' storage */
+};
+
+struct tw_out {
     struct tw_out *next;
     char message[256 - 2*sizeof(void *)];
-} tw_out;
+};
 
 class RemoteEvent;
 class Event {
@@ -76,6 +80,24 @@ class Event {
     state.remote = 0;
     state.cancel_q = 0;
   }
+  // Basic event info
+  EventID event_id;
+  Time ts;
+  tw_bf cv;
+
+  // Fields for sender/receiver info. Can be cast as ids or ptrs.
+  tw_lpid dest_lp, src_lp;
+  tw_peid send_pe;
+
+  // The event state says which queues the event is in and whether it is remote
+  tw_event_state state;
+
+  // Fields storing msg data
+  RemoteEvent * eventMsg;
+  char *userData;
+
+  // Field storing output messages tied to this event
+  tw_out *out_msgs;
 
   // Fields used in data structures storing Events
   size_t heap_index;    // for avl trees
@@ -85,20 +107,12 @@ class Event {
   Event *cause_next;    // Next in parent's caused_by_me chain
   Event *cancel_next;   // next in cancel list
 
-  EventID event_id;
-  struct {
-    unsigned char owner; 		/**< which queue am I in; see tw_event_owner */
-    unsigned char cancel_q;  	        /**< @brief Actively on a dest_lp->pe's cancel_q */
-    unsigned char remote; 		/**< @brief Indicates union addr is in 'remote' storage */
-  } state;
-
-  tw_bf cv;
-  tw_lpid dest_lp, src_lp;
-  Time ts;
-  tw_peid send_pe;
-  RemoteEvent * eventMsg;
-  tw_out *out_msgs;
-  char *userData;
+  // Fields for rebuilding causality lists after migration
+  unsigned seq_num;     // Gives the order in which the event was pupped
+  unsigned* pending_indices;
+  unsigned pending_count;
+  unsigned* processed_indices;
+  unsigned processed_count;
 };
 
 // Publicly exposed functions
@@ -121,5 +135,13 @@ static inline void reset_bitfields(tw_event *revent) {
     memset(&revent->cv, 0, sizeof(revent->cv));
   }
 }
+
+// This function is also used during unpacking after migration, which is why
+// it is included in the header instead of the cpp file.
+static inline void link_causality (tw_event *nev, tw_event *cev) {
+  nev->cause_next = cev->caused_by_me;
+  cev->caused_by_me = nev;
+}
+
 
 #endif

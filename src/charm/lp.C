@@ -93,6 +93,72 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
   contribute(CkCallback(CkIndex_LP::stop_scheduler(), thisProxy(0)));
 }
 
+// The constructor called after migration is responsible for restoring the
+// PE/LP relationship so that the migrated LP will still be scheduled for
+// execution, fossil collection, etc.
+LP::LP(CkMigrateMessage* m) : next_token(this), oldest_token(this),
+                              cancel_q(NULL), min_cancel_q(DBL_MAX),
+                              in_pe_queue(false), all_events(0) {
+  pe = pes.ckLocalBranch();
+  // Register with the PE and let the pup method update the timestamps
+  pe->register_lp(&next_token, 0.0, &oldest_token, 0.0);
+}
+
+void LP::pup(PUP::er& p) {
+  CBase_LP::pup(p);
+  if (p.isPacking()) {
+    // TODO: Does unregister remove it from the cancel queue?
+    pe->unregister_lp(&next_token, &oldest_token);
+  }
+
+  // LP Struct Pupping
+  p | lp_structs;
+  if (p.isUnpacking()) {
+    for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
+      lp_structs[i].owner = this;
+      lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
+    }
+  }
+
+  // Event Queue Pupping
+  p | events;
+  p | processed_events;
+
+  /*Event** temp_pending = events.get_temp_event_buffer();
+  Event** temp_processed = processed_events.get_temp_event_buffer();
+
+  for (int i = 0; i < events.size(); i++) {
+    Event* e = temp_pending[i];
+    if (e->state.remote) {
+      avlInsert(&all_events, e);
+    }
+    if (e->state.cancel_q) {
+      add_to_cancel_q(e);
+    }
+  }
+  for (int i = 0; i < processed_events.size(); i++) {
+    Event* e = temp_processed[i];
+    if (e->state.remote) {
+      avlInsert(&all_events, e);
+    }
+    if (e->state.cancel_q) {
+      add_to_cancel_q(e);
+    }
+    // TODO: Build causality links
+  }
+
+  pe->update_next(&next_token, events.min());
+  pe->update_oldest(&oldest_token, processed_events.min());
+  current_time = processed_events.max();
+  current_event = processed_events.front();
+
+  events.delete_temp_event_buffer();
+  processed_events.delete_temp_event_buffer();*/
+
+  p | isOptimistic;
+  p | uniqID;
+}
+
 // Call init on all LPs then stop the charm scheduler.
 void LP::init() {
   current_event = PE_VALUE(abort_event);
@@ -280,20 +346,25 @@ void LP::cancel_event(Event* e) {
       return;
     case TW_rollback_q:
       // If the event has already been executed, add it to the cancel_q
-      e->cancel_next = cancel_q;
-      cancel_q = e;
-      if (!in_pe_queue) {
-        min_cancel_q = e->ts;
-        in_pe_queue = true;
-        pe->add_to_cancel_q(this);
-      } else if (e->ts < min_cancel_q) {
-        min_cancel_q = e->ts;
-        pe->update_min_cancel(min_cancel_q);
-      }
+      add_to_cancel_q(e);
       return;
     default:
       tw_error(TW_LOC, "Unknown owner in LP::cancel_event: %d", e->state.owner);
       return;
+  }
+}
+
+void LP::add_to_cancel_q(Event* e) {
+  e->state.cancel_q = 1;
+  e->cancel_next = cancel_q;
+  cancel_q = e;
+  if (!in_pe_queue) {
+    min_cancel_q = e->ts;
+    in_pe_queue = true;
+    pe->add_to_cancel_q(this);
+  } else if (e->ts < min_cancel_q) {
+    min_cancel_q = e->ts;
+    pe->update_min_cancel(min_cancel_q);
   }
 }
 

@@ -15,6 +15,11 @@ struct RemoteEvent : public CMessage_RemoteEvent {
 
     // The global id of the destination lp
     tw_lpid dest_lp;
+
+    virtual void pup(PUP::er& p);
 };
+
+class Event;
+void operator|(PUP::er& p, Event* e);
 
 #endif
