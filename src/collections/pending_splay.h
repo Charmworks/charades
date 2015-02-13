@@ -45,6 +45,8 @@
 #include "ross_event.h"
 #include "ross_util.h"
 
+#include "event.h"
+
 #include <float.h>
 
 class PendingSplay : public PendingQueue {
@@ -53,7 +55,9 @@ class PendingSplay : public PendingQueue {
     Event* least;
     unsigned nitems;
     unsigned max_size;
-    
+
+    Event** temp_event_buffer;
+
     void splay(Event* node) {
       register tw_event *n = node, *g, *p;
       register tw_event *x, *z;
@@ -155,6 +159,41 @@ class PendingSplay : public PendingQueue {
       nitems = max_size = 0;
     }
 
+    virtual void pup(PUP::er &p) {
+      p | nitems;
+      p | max_size;
+
+      int temp_items = nitems;
+      if (p.isUnpacking()) {
+        temp_event_buffer = new Event*[temp_items];
+        nitems = 0;
+      }
+
+
+      for (int i = 0; i < temp_items; i++) {
+        Event* e;
+        if (p.isPacking()) {
+          e = pop();
+          e->seq_num = i;
+        } else if (p.isUnpacking()) {
+          e = tw_event_new(0,0,0);
+        } 
+        p | e;
+        if (p.isUnpacking()) {
+          temp_event_buffer[e->seq_num] = e;
+          push(e);
+        }
+      }
+    } 
+
+    Event** get_temp_event_buffer() const {
+      return temp_event_buffer;
+    }
+
+    void delete_temp_event_buffer() {
+      delete[] temp_event_buffer;
+    }
+    
     void push(Event* e) {
 	    tw_event* n = root;
 

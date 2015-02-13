@@ -15,7 +15,6 @@ struct LPType {
 
 class LP;
 struct tw_rng_stream;
-// TODO: Need to flesh this out more
 // Right now, an LPStruct is an LPType, as well as its state.
 struct LPStruct {
   LP* owner;

@@ -85,6 +85,13 @@ class Event {
   Event *cause_next;    // Next in parent's caused_by_me chain
   Event *cancel_next;   // next in cancel list
 
+  // Fields for rebuilding causality lists after migration
+  unsigned seq_num;     // Gives the order in which the event was pupped
+  unsigned* pending_indices;
+  unsigned pending_count;
+  unsigned* processed_indices;
+  unsigned processed_count;
+
   EventID event_id;
   struct {
     unsigned char owner; 		/**< which queue am I in; see tw_event_owner */
@@ -121,5 +128,13 @@ static inline void reset_bitfields(tw_event *revent) {
     memset(&revent->cv, 0, sizeof(revent->cv));
   }
 }
+
+// This function is also used during unpacking after migration, which is why
+// it is included in the header instead of the cpp file.
+static inline void link_causality (tw_event *nev, tw_event *cev) {
+  nev->cause_next = cev->caused_by_me;
+  cev->caused_by_me = nev;
+}
+
 
 #endif
