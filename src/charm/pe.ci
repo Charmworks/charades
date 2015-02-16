@@ -8,7 +8,7 @@ module pe {
   group PE {
     entry PE(CProxy_Initialize); /**< constructor called from the mainchare */
     entry void initialize_rand(CProxy_Initialize);
-    entry [reductiontarget] void print_final_stats(double);
+    entry [reductiontarget] void tw_stats(CkReductionMsg *);
 
     // GVT methods
     entry void gvt_begin(); /**< begin gvt computation */
@@ -19,8 +19,6 @@ module pe {
     entry void execute_seq(); /**< execute until the end of simulation */
     entry void execute_cons(); /**< move to the end of this epoch */
     entry void execute_opt(); /**< move one step further optimistically */
-
-    entry [reductiontarget] void tw_stats(CkReductionMsg *);
   };
 
   initnode registerStatsReduction(void);

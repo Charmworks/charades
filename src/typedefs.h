@@ -66,6 +66,8 @@ typedef tw_lpid (*init_map_f) (unsigned, tw_lpid);
 typedef unsigned (*chare_map_f) (tw_lpid);
 // This map takes an LP global id, and returns the local id.
 typedef tw_lpid (*local_map_f) (tw_lpid);
+// This map takes an LP chare index and returns how many LPs are on that chare.
+typedef unsigned (*numlp_map_f) (unsigned);
 
 // This map takes a global lpid and returns the type of that lp.
 // Will be defined in the model.

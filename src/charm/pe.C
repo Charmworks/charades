@@ -47,7 +47,7 @@ void charm_exit() {
 void charm_run() {
   if (tw_ismaster()) {
     DEBUG_MASTER("Initializing schedulers \n");
-    PE_VALUE(total_time) = CkWallTimer();
+    PE_STATS(s_total_time) = CkWallTimer();
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
       CkPrintf("**** Starting Sequential Simulation ****\n");
       pes.execute_seq();
@@ -71,66 +71,13 @@ void charm_run() {
 #undef PE_STATS
 #define PE_STATS(x) statistics->x
 
-PE::PE(CProxy_Initialize srcProxy) : gvt_cnt(0), min_cancel_time(DBL_MAX)  {
-  // init globals
-  // TODO: Maybe make this a function
-  // TODO: Make sure all are initialized and make sense
+PE::PE(CProxy_Initialize srcProxy) :
+    gvt_cnt(0), gvt(0.0), min_cancel_time(DBL_MAX)  {
   globals = new Globals;
-  globals->g_lps_per_chare = 4;
-  globals->g_num_lp_chares = 1;
-  globals->g_tw_synchronization_protocol = CONSERVATIVE;
-  globals->g_tw_ts_end = 1024;
-  globals->g_tw_mblock = 16;
-  globals->g_tw_gvt_interval = 16;
-  globals->g_tw_nlp = globals->g_lps_per_chare;
-  globals->g_tw_rng_seed = NULL;
-  globals->g_tw_rng_max = 1;
-  globals->g_tw_nRNG_per_lp = 1;
-  globals->g_tw_rng_default = 1;
-  globals->g_tw_csv = NULL;
-  globals->g_tw_max_events_buffered = 1024;
-  globals->g_tw_min_detected_offset = DBL_MAX;
-  globals->g_tw_lookahead = .005;
-  globals->g_init_map = init_block_map;
-  globals->g_local_map = local_block_map;
-  globals->lastGVT = 0.0;
-  globals->netEvents = 0;
-  globals->total_time = 0.0;
-  gvt = 0.0;
+  initialize_globals(globals);
 
-  // init stats
-  // TODO: Maybe make this a function
-  // TODO: Make sure all are initialized and make sense
   statistics = new Statistics;
-  statistics->s_max_run_time = 0.0;
-  statistics->s_net_events = 0;
-  statistics->s_nevent_processed = 0;
-  statistics->s_nevent_abort = 0;
-  statistics->s_e_rbs = 0;
-  statistics->s_rb_total = 0;
-  statistics->s_rb_primary = 0;
-  statistics->s_rb_secondary = 0;
-  statistics->s_fc_attempts = 0;
-  statistics->s_pq_qsize = 0;
-  statistics->s_nsend_network = 0;
-  statistics->s_nread_network = 0;
-  statistics->s_nsend_remote_rb = 0;
-  statistics->s_nsend_loc_remote = 0;
-  statistics->s_nsend_net_remote = 0;
-  statistics->s_ngvts = 0;
-  statistics->s_mem_buffers_used = 0;
-  statistics->s_pe_event_ties = 0;
-  statistics->s_min_detected_offset = 0.0;
-  statistics->s_total = 0;
-  statistics->s_net_read = 0;
-  statistics->s_gvt = 0;
-  statistics->s_fossil_collect = 0;
-  statistics->s_event_abort = 0;
-  statistics->s_event_process = 0;
-  statistics->s_pq = 0;
-  statistics->s_rollback = 0;
-  statistics->s_cancel_q = 0;
-  statistics->s_avl = 0;
+  initialize_statistics(statistics);
 
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
@@ -165,15 +112,6 @@ Time PE::get_min_time() {
   }
 }
 
-// Receives the reduction of the final event count, prints stats, and exits.
-void PE::print_final_stats(double total_events) {
-  CkPrintf("**** Ending Simulation ****\n\n");
-  CkPrintf("Total events executed: %.0lf\n", total_events);
-  CkPrintf("Total time: %f s\n", PE_VALUE(total_time));
-  CkPrintf("Event rate: %f events/s\n", total_events/PE_VALUE(total_time));
-}
-
-
 /******************************************************************************/
 /* Schedulers                                                                 */
 /******************************************************************************/
@@ -185,7 +123,6 @@ void PE::execute_seq() {
       break;
     }
   }
-  print_final_stats(PE_STATS(s_net_events));
   contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
     CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
 
@@ -296,12 +233,10 @@ void PE::gvt_contribute() {
 // scheduler loop, and possibly do fossil collection.
 void PE::gvt_end(Time new_gvt) {
   DEBUG_PE("******** GVT computed %lf ********\n", new_gvt);
-  PE_VALUE(lastGVT) = gvt;
+  PE_VALUE(g_last_gvt) = gvt;
   gvt = new_gvt;
   if(new_gvt >= PE_VALUE(g_tw_ts_end)) {
-    PE_VALUE(total_time) = CkWallTimer() - PE_VALUE(total_time);
-    contribute(sizeof(double), &(globals->netEvents), CkReduction::sum_double,
-        CkCallback(CkReductionTarget(PE,print_final_stats),thisProxy[0]));
+    PE_STATS(s_total_time) = CkWallTimer() - PE_STATS(s_total_time);
     contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
         CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
   } else {
@@ -337,8 +272,8 @@ void PE::tw_stats(CkReductionMsg *m) {
   s->s_net_events = s->s_nevent_processed - s->s_e_rbs;
   
 #ifndef ROSS_DO_NOT_PRINT
-  printf("\n\t: Running Time = %.4f seconds\n", PE_VALUE(total_time));
-  fprintf(PE_VALUE(g_tw_csv), "%.4f,", PE_VALUE(total_time));
+  printf("\n\t: Running Time = %.4f seconds\n", PE_STATS(s_total_time));
+  fprintf(PE_VALUE(g_tw_csv), "%.4f,", PE_STATS(s_total_time));
 
   // TODO: Add in correct collection of remote event stats
   printf("\nTW Library Statistics:\n");
@@ -379,11 +314,11 @@ void PE::tw_stats(CkReductionMsg *m) {
   show_lld("Net Events Processed", s->s_net_events);
   show_1f(
     "Event Rate (events/sec)",
-    ((double)s->s_net_events / PE_VALUE(total_time)));
+    ((double)s->s_net_events / PE_STATS(s_total_time)));
 
   // TODO: Check that memory usage is correct
   printf("\nTW Memory Statistics:\n");
-  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered) * PE_VALUE(g_num_lp_chares));
+  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered));
   show_lld("Memory Allocated", m_alloc / 1024);
   show_lld("Memory Wasted", m_waste / 1024);
 

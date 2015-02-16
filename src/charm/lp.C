@@ -25,8 +25,7 @@ int isLpSet = 0;
 // TODO: Move this API to an appropriate place
 void create_lps() {
   if (tw_ismaster()) {
-    // TODO: Why do we use the isLPSet flag rather than just setting it here?
-    CProxy_LP::ckNew(PE_VALUE(g_num_lp_chares));
+    CProxy_LP::ckNew(PE_VALUE(g_num_chares));
   }
   StartCharmScheduler();
 }
@@ -76,12 +75,11 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
   isOptimistic = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
 
   // Create array of LPStructs based on globals
-  lp_structs.resize(PE_VALUE(g_lps_per_chare));
-  for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
+  lp_structs.resize(PE_VALUE(g_numlp_map)(thisIndex));
+  for (int i = 0; i < lp_structs.size(); i++) {
     lp_structs[i].owner = this;
-    lp_structs[i].gid = PE_VALUE(g_init_map)(thisIndex, i);
-    DEBUG_LP("Created LP %d \n", lp_structs[i].gid);
-    lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
+    lp_structs[i].gid   = PE_VALUE(g_init_map)(thisIndex, i);
+    lp_structs[i].type  = PE_VALUE(g_type_map)(lp_structs[i].gid);
     lp_structs[i].state = malloc(lp_structs[i].type->state_size);
 
     // Initialize the RNG streams for each LP
@@ -186,9 +184,6 @@ bool LP::execute_me() {
     }
     lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
 
-    // TODO: Use stats framework
-    (PE_VALUE(netEvents))++;
-
     // Enqueue or deallocate the event depending on sync mode
     if (isOptimistic) {
       if (processed_events.front() == NULL) {
@@ -222,7 +217,7 @@ void LP::rollback_me(tw_stime ts) {
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
-    current_time = PE_VALUE(lastGVT);
+    current_time = PE_VALUE(g_last_gvt);
   } else {
     current_event = processed_events.front();
     current_time = current_event->ts;
@@ -252,7 +247,7 @@ void LP::rollback_me(Event *event) {
   if(processed_events.front() == NULL) {
     pe->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
-    current_time = PE_VALUE(lastGVT);
+    current_time = PE_VALUE(g_last_gvt);
   } else {
     current_event = processed_events.front();
     current_time = current_event->ts;

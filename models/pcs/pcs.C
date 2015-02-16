@@ -829,7 +829,7 @@ main(int argc, char **argv)
 
   // CHARM: kp ==> LPChare, g_tw_nlp = g_lps_per_chare
   num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
-  PE_VALUE(g_num_lp_chares) = (NUM_VP_X * NUM_VP_Y);
+  PE_VALUE(g_num_chares) = (NUM_VP_X * NUM_VP_Y);
   PE_VALUE(g_lps_per_chare) = num_cells_per_kp;
 
   PE_VALUE(g_type_map) = pcs_type_map;

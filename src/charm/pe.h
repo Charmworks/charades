@@ -71,8 +71,6 @@ class PE: public CBase_PE {
     void gvt_end(Time); /**< gvt done, either restart the scheduler or end */
 
     /** \brief Print final stats at the end of a simulation */
-    void print_final_stats(double);
-
     void tw_stats(CkReductionMsg *m);
 
     /** \brief Get time stamp of the minium event */

@@ -95,7 +95,7 @@ void tw_event_send(tw_event * e) {
   }
 
   link_causality(e, current_event(src_lp));
-  dest_peid = src_lp->type->chare_map(e->dest_lp);
+  dest_peid = PE_VALUE(g_chare_map)(e->dest_lp);
 
   // The charm backend will fill in the remote event and send it
   int isRemote = charm_event_send(dest_peid, e); 
@@ -115,7 +115,6 @@ void tw_event_rollback(tw_event * event) {
 
   set_current_event(dest_lp, event);
   dest_lp->type->reverse(dest_lp->state, &event->cv, tw_event_data(event), dest_lp);
-  (PE_VALUE(netEvents))--;
 
   while (e) {
     tw_event *n = e->cause_next;

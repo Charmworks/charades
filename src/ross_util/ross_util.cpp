@@ -166,7 +166,7 @@ void tw_stats_old(Statistics *s) {
   );
 
   printf("\nTW Memory Statistics:\n");
-  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered) * PE_VALUE(g_num_lp_chares));
+  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered) * tw_nnodes());
   show_lld("Memory Allocated", m_alloc / 1024);
   show_lld("Memory Wasted", m_waste / 1024);
 

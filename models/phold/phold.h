@@ -23,17 +23,9 @@ struct phold_message
 	/*
 	 * PHOLD Globals
 	 */
-tw_stime lookahead = 1.0;
 static unsigned int stagger = 0;
-static unsigned int offset_lpid = 0;
-static tw_stime mult = 1.4;
 static tw_stime percent_remote = 0.1;
-static unsigned int ttl_lps = 0;
-static unsigned int nlp_per_pe = 8;
-static int g_phold_start_events = 1;
-static int optimistic_memory = 100;
-
-// rate for timestamp exponential distribution
+static int start_events = 1;
 static tw_stime mean = 1.0;
 
 static char run_id[1024] = "undefined";

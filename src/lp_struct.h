@@ -10,8 +10,6 @@ struct LPType {
   event_f execute;
   revent_f reverse;
   final_f finalize;
-  // TODO: Why is the map stored here?
-  chare_map_f chare_map;
   size_t state_size;
 };
 

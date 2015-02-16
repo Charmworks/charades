@@ -1,4 +1,6 @@
 #include "ross_setup.h"
+
+#include "ross_block.h"
 #include "ross_opts.h"
 #include "ross_util.h"
 
@@ -50,19 +52,18 @@ void tw_init(int* argc, char*** argv) {
   char **charmArg = CopyArgs(*argv);
   charm_init(*argc, charmArg);
 
-  // TODO (eric): After the charm_lib_init() returns we need to copy user
-  // options over to the PE global variables.
-
   /** Add all of the command line options before parsing them **/
   static const tw_optdef kernel_options[] = {
+    // TODO: Make sure all relevant constants can be set from the command line
     TWOPT_GROUP("ROSS Kernel"),
     TWOPT_UINT("synch", PE_VALUE(g_tw_synchronization_protocol), "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
-    TWOPT_STIME("end", PE_VALUE(g_tw_ts_end), "simulation end timestamp"),
-    TWOPT_UINT("batch", PE_VALUE(g_tw_mblock), "messages per scheduler block"),
-    TWOPT_UINT("extramem", PE_VALUE(g_tw_events_per_pe_extra), "Number of extra events allocated per PE."),
+    TWOPT_STIME("end", PE_VALUE(g_tw_ts_end), "Simulation end timestamp"),
+    TWOPT_STIME("lookahead", PE_VALUE(g_tw_lookahead), "Lookahead for events"),
+    TWOPT_UINT("batch", PE_VALUE(g_tw_mblock), "Messages per scheduler block"),
     TWOPT_UINT("gvt-interval", PE_VALUE(g_tw_gvt_interval), "GVT Interval"),
+    TWOPT_UINT("num-lps", PE_VALUE(g_total_lps), "Number of total LPs"),
+    TWOPT_UINT("num-chares", PE_VALUE(g_num_chares), "Number of chares"),
     TWOPT_UINT("lps-per-chare", PE_VALUE(g_lps_per_chare), "LPs per chare"),
-    TWOPT_UINT("num-chares", PE_VALUE(g_num_lp_chares), "Number of chares"),
     TWOPT_UINT("buffer-size", PE_VALUE(g_tw_max_events_buffered), "Number of events buffered"),
     TWOPT_END()
   };
@@ -96,8 +97,7 @@ void tw_init(int* argc, char*** argv) {
   /** Set up all the buffers for events */
 }
 
-void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
-  PE_VALUE(g_tw_nlp) = nlp;
+void tw_define_lps(size_t msg_sz, tw_seed* seed) {
   PE_VALUE(g_tw_msg_sz) = msg_sz;
   PE_VALUE(g_tw_rng_seed) = seed;
 
@@ -106,13 +106,73 @@ void tw_define_lps(tw_lpid nlp, size_t msg_sz, tw_seed* seed) {
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
 
-  // If the user didn't set the number of lp chares, calculate it here
-  if (PE_VALUE(g_num_lp_chares) == 1) {
-    PE_VALUE(g_num_lp_chares) = (nlp * tw_nnodes()) / PE_VALUE(g_lps_per_chare);
+  bool constant_per_chare = false;
+  // Check consistency and calculate values for number of lps and chares
+  if (PE_VALUE(g_numlp_map) == NULL) {
+    PE_VALUE(g_numlp_map) = constant_numlp_map;
+    constant_per_chare = true;
+
+    if (PE_VALUE(g_total_lps) == 1) {
+      PE_VALUE(g_total_lps) = PE_VALUE(g_num_chares) * PE_VALUE(g_lps_per_chare);
+    } else if (PE_VALUE(g_num_chares) == 1) {
+      PE_VALUE(g_num_chares) = PE_VALUE(g_total_lps) / PE_VALUE(g_lps_per_chare);
+    } else if (PE_VALUE(g_lps_per_chare) == 1) {
+      PE_VALUE(g_lps_per_chare) = PE_VALUE(g_total_lps) / PE_VALUE(g_num_chares);
+    }
+
+    // Check for consitency
+    if (PE_VALUE(g_total_lps) != PE_VALUE(g_num_chares) * PE_VALUE(g_lps_per_chare)) {
+      tw_error(TW_LOC, "Inconsistent values for g_total_lps, g_num_chares, and g_lps_per_chare\n");
+    }
+  } else {
+    if (PE_VALUE(g_total_lps) == 1) {
+      PE_VALUE(g_total_lps) = 0;
+      for (int i = 0; i < PE_VALUE(g_num_chares); i++) {
+        PE_VALUE(g_total_lps) += PE_VALUE(g_numlp_map)(i);
+      }
+    } else if (PE_VALUE(g_num_chares) == 1) {
+      PE_VALUE(g_num_chares) = 0;
+      unsigned sum = 0;
+      while (sum < PE_VALUE(g_total_lps)) {
+        sum += PE_VALUE(g_numlp_map)(PE_VALUE(g_num_chares)++);
+      }
+    }
+
+    // Check for consistency
+    unsigned sum = 0;
+    for (int i = 0; i < PE_VALUE(g_num_chares); i++) {
+      sum += PE_VALUE(g_numlp_map)(i);
+    }
+    if (sum != PE_VALUE(g_total_lps)) {
+      tw_error(TW_LOC, "Inconsistent values for g_total_lps and g_num_chares when using a non-constant numlps per chare\n");
+    }
+    if (tw_ismaster()) {
+      printf("Creating %d chares and a total of %d lps, with a variable number of lps per chare.\n",
+          PE_VALUE(g_num_chares),
+          PE_VALUE(g_total_lps));
+    }
   }
 
-  DEBUG_MASTER("Creating %d lps per PE (%d per chare), for a total of %d lps on %d chares\n",
-      nlp, PE_VALUE(g_lps_per_chare), nlp*tw_nnodes(), PE_VALUE(g_num_lp_chares));
+
+  // Print ROSS configuration information
+  if(tw_ismaster()) {
+    printf("========================================\n");
+    printf("ROSS Configuration.....................\n");
+    printf("   Synch Protocol.........%u\n", PE_VALUE(g_tw_synchronization_protocol));
+    printf("   End time...............%lf\n", PE_VALUE(g_tw_ts_end));
+    printf("   Lookahead..............%lf\n", PE_VALUE(g_tw_lookahead));
+    printf("   Batch Size.............%u\n", PE_VALUE(g_tw_mblock));
+    printf("   GVT Interval...........%u\n", PE_VALUE(g_tw_gvt_interval));
+    printf("   Total LPs..............%u\n", PE_VALUE(g_total_lps));
+    printf("   Chares.................%u\n", PE_VALUE(g_num_chares));
+    if (constant_per_chare) {
+      printf("   LPs per Chare..........%u\n", PE_VALUE(g_lps_per_chare));
+    } else {
+      printf("   LPs per Chare..........variable\n");
+    }
+    printf("   Buffer size............%u\n", PE_VALUE(g_tw_max_events_buffered));
+    printf("========================================\n\n");
+  }
 
   // Create the lp chare array and store it in the readonly
   create_lps();

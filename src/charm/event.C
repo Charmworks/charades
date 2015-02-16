@@ -112,7 +112,7 @@ void charm_event_cancel(Event * e) {
 
   // If already sent, have charm send an anti message, and free the local event
   if(e->state.owner == TW_sent) {
-    unsigned dest_peid = ((tw_lp*)e->src_lp)->type->chare_map(e->dest_lp);
+    unsigned dest_peid = PE_VALUE(g_chare_map)(e->dest_lp);
     charm_anti_send(dest_peid, e);
 
     LP *send_pe = (LP*)((tw_lp*)e->src_lp)->owner;
