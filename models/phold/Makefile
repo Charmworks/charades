@@ -6,8 +6,9 @@ LIBDIR  := ../../src/build/
 
 all: phold
 clean:
-	rm -f phold
+	rm -f phold charmrun
 	rm -f *.o *~ core*
+	rm -f output ross.csv
 
 
 phold: phold.C phold.h $(LIBDIR)/libross.a
