@@ -1,16 +1,17 @@
 #include "pe_queue.h"
 #include "lp.h"
 #include <stdlib.h>
+#include <malloc.h>
 
 PEQueue::PEQueue() {
   size = 0;
   // TODO: Set this sensibly. Maybe 2x number of LPs per PE or something.
   capacity = 32;
-  heap = new LPToken*[capacity];
+  heap = (LPToken**)memalign(64, sizeof(LPToken*)*capacity);
 }
 
 PEQueue::~PEQueue() {
-  delete[] heap;
+  free(heap);
 }
 
 // Returns a pointer to the top token on the queue.
@@ -31,11 +32,11 @@ LPToken* PEQueue::second() const {
 void PEQueue::insert(LPToken* t, Time ts) {
   // Resize the array if necessary
   if (size == capacity) {
-    LPToken** tmp = new LPToken*[capacity*2];
+    LPToken** tmp = (LPToken**)memalign(64, sizeof(LPToken*)*capacity*2);
     for (int i = 0; i < capacity; i++) {
       tmp[i] = heap[i];
     }
-    delete[] heap;
+    free(heap);
     heap = tmp;
     capacity = capacity*2;
   }

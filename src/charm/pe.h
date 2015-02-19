@@ -39,7 +39,7 @@ class PE: public CBase_PE {
     PE(CProxy_Initialize);
 
     ~PE() {
-      delete globals;
+      free(globals);
       delete statistics;
     }
 
