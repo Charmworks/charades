@@ -8,29 +8,6 @@
 // Included for va_start etc.
 #include <stdarg.h>
 
-/*inline void gvt_print(Time gvt) {
-  if(gvt_print_interval == 1.0) {
-    return;
-  }
-
-  if(percent_complete == 0.0) {
-    percent_complete = gvt_print_interval;
-    return;
-  }
-
-  printf("GVT #%d: simulation %d%% complete (", PE_VALUE(lastGVT), (int) fmin(100, floor(100 * (gvt/PE_VALUE(g_tw_ts_end)))));
-
-  if (gvt == DBL_MAX) {
-    printf("GVT = %s", "MAX");
-  } else {
-    printf("GVT = %.4f", gvt);
-  }
-
-  printf(").\n");
-
-  percent_complete += gvt_print_interval;
-}*/
-
 // From tw-stats.c
 void show_lld(const char *name, tw_stat v) {
   printf("\t%-50s %11lld\n", name, v);
@@ -52,90 +29,39 @@ void show_4f(const char *name, double v) {
   fprintf(PE_VALUE(g_tw_csv), "%.4lf,", v);
 }
 
-void tw_stats_old(Statistics *s) {
-  int  i;
-
+/**
+ * Prints out final stats for a simulation.
+ */
+void tw_stats(Statistics *s) {
   size_t m_alloc, m_waste;
 
-  // if (0 == g_tw_sim_started)
-  //   return;
-
-  // tw_calloc_stats(&m_alloc, &m_waste);
-
-  // We need to gather group statistics here
-
-//  me.s_max_run_time = max reduction on PE_VALUE(total_time)
-  /*
-  s.s_nevent_abort += pe->stats.s_nevent_abort;
-  s.s_pq_qsize += tw_pq_get_size(me->pq);
-
-  s.s_nsend_net_remote += pe->stats.s_nsend_net_remote;
-  s.s_nsend_loc_remote += pe->stats.s_nsend_loc_remote;
-
-  s.s_nsend_network += pe->stats.s_nsend_network;
-  s.s_nread_network += pe->stats.s_nread_network;
-  s.s_nsend_remote_rb += pe->stats.s_nsend_remote_rb;
-
-  s.s_total += pe->stats.s_total;
-  s.s_net_read += pe->stats.s_net_read;
-  s.s_gvt += pe->stats.s_gvt;
-  s.s_fossil_collect += pe->stats.s_fossil_collect;
-  s.s_event_abort += pe->stats.s_event_abort;
-  s.s_event_process += pe->stats.s_event_process;
-  s.s_pq += pe->stats.s_pq;
-  s.s_rollback += pe->stats.s_rollback;
-  s.s_cancel_q += pe->stats.s_cancel_q;
-  s.s_pe_event_ties += pe->stats.s_pe_event_ties;
-  s.s_min_detected_offset = PE_VALUE(g_tw_min_detected_offset);
-  s.s_avl += pe->stats.s_avl;
-
-  for(i = 0; i < PE_VALUE(g_tw_nkp); i++)
-  {
-    kp = tw_getkp(i);
-    s.s_nevent_processed += kp->s_nevent_processed;
-    s.s_e_rbs += kp->s_e_rbs;
-    s.s_rb_total += kp->s_rb_total;
-    s.s_rb_secondary += kp->s_rb_secondary;
-  }
-
-  for(i = 0; i < PE_VALUE(g_tw_nlp); i++)
-  {
-    lp = tw_getlp(i);
-    if (lp->type->final)
-    (*lp->type->final) (lp->cur_state, lp);
-  }
-
-
-  s.s_fc_attempts = PE_VALUE(g_tw_fossil_attempts);
-  s.s_net_events = s.s_nevent_processed - s.s_e_rbs;
-  s.s_rb_primary = s.s_rb_total - s.s_rb_secondary;
-
-  s = *(tw_net_statistics(me, &s));
-
-  // End group statistic
-
-*/
-  if (!tw_ismaster())
-    return;
-
-  // Local print from pe 0
-
+  // Calculate the net events based on total event executed and rolled back
+  s->s_net_events = s->s_nevent_processed - s->s_e_rbs;
+  
 #ifndef ROSS_DO_NOT_PRINT
-  printf("\n\t: Running Time = %.4f seconds\n", s->s_max_run_time);
-  fprintf(PE_VALUE(g_tw_csv), "%.4f,", s->s_max_run_time);
+  printf("\n\t: Max PE run time = %.4f seconds\n", PE_STATS(s_max_run_time));
+  printf("\n\t: Min PE run time = %.4f seconds\n", PE_STATS(s_min_run_time));
+  fprintf(PE_VALUE(g_tw_csv), "%.4f,", PE_STATS(s_max_run_time));
 
   printf("\nTW Library Statistics:\n");
   show_lld("Total Events Processed", s->s_nevent_processed);
   show_lld("Events Aborted (part of RBs)", s->s_nevent_abort);
   show_lld("Events Rolled Back", s->s_e_rbs);
   show_lld("Event Ties Detected in PE Queues", s->s_pe_event_ties);
-        if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE)
-            printf("\t%-50s %11.9lf\n",
-               "Minimum TS Offset Detected in Conservative Mode",
-               (double) s->s_min_detected_offset);
-  show_2f("Efficiency", 100.0 * (1.0 - ((double) s->s_e_rbs / (double) s->s_net_events)));
-  show_lld("Total Remote (shared mem) Events Processed", s->s_nsend_loc_remote);
 
+  if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+    printf("\t%-50s %11.9lf\n",
+        "Minimum TS Offset Detected in Conservative Mode",
+        (double) s->s_min_detected_offset);
+  }
+
+  show_2f("Efficiency", 100.0 * (1.0 - ((double) s->s_e_rbs / (double) s->s_net_events)));
+
+  // There are two categories of remote events: local are those that were events
+  // for different LPs on the same chare (therefore the event wasn't handled by
+  // the Charm++ RTS), and network are events sent to different chares through
+  // the Charm++ RTS.
+  show_lld("Total Remote (shared mem) Events Processed", s->s_nsend_loc_remote);
   show_2f(
     "Percent Remote Events",
     ( (double)s->s_nsend_loc_remote
@@ -150,26 +76,31 @@ void tw_stats_old(Statistics *s) {
     / (double)s->s_net_events)
     * 100.0
   );
-
   printf("\n");
+
+  // Rollback and GVT stats
   show_lld("Total Roll Backs ", s->s_rb_total);
   show_lld("Primary Roll Backs ", s->s_rb_primary);
   show_lld("Secondary Roll Backs ", s->s_rb_secondary);
   show_lld("Fossil Collect Attempts", s->s_fc_attempts);
+  show_lld("Successful Fossil Attempts", s->s_fossil_collect);
   show_lld("Total GVT Computations", s->s_ngvts);
-
   printf("\n");
+
+  // Summary of events processed and event rate
   show_lld("Net Events Processed", s->s_net_events);
   show_1f(
     "Event Rate (events/sec)",
-    ((double)s->s_net_events / s->s_max_run_time)
-  );
+    ((double)s->s_net_events / PE_STATS(s_max_run_time)));
 
-  printf("\nTW Memory Statistics:\n");
-  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered) * tw_nnodes());
+  // TODO: Everything below here is unused...either implement or remove
+  // TODO: Check that memory usage is correct
+  /*printf("\nTW Memory Statistics:\n");
+  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered));
   show_lld("Memory Allocated", m_alloc / 1024);
   show_lld("Memory Wasted", m_waste / 1024);
 
+  // TODO: What are these used for?
   if (tw_nnodes() > 1) {
     printf("\n");
     printf("TW Network Statistics:\n");
@@ -177,7 +108,6 @@ void tw_stats_old(Statistics *s) {
     show_lld("Remote recvs", s->s_nread_network);
   }
 
-/*
   printf("\nTW Data Structure sizes in bytes (sizeof):\n");
   show_lld("PE struct", sizeof(tw_pe));
   show_lld("KP struct", sizeof(tw_kp));
@@ -187,7 +117,6 @@ void tw_stats_old(Statistics *s) {
   show_lld("Total LP", sizeof(tw_lp) + lp->type->state_sz + sizeof(*lp->rng));
   show_lld("Event struct", sizeof(tw_event));
   show_lld("Event struct with Model", sizeof(tw_event) + PE_VALUE(g_tw_msg_sz));
-*/
 
 #ifdef ROSS_timing
   printf("\nTW Clock Cycle Statistics (MAX values in secs at %1.4lf GHz):\n", PE_VALUE(g_tw_clock_rate) / 1000000000.0);
@@ -204,9 +133,8 @@ void tw_stats_old(Statistics *s) {
   show_4f("Total Time (Note: Using Running Time above for Speedup)", (double) s->s_total / PE_VALUE(g_tw_clock_rate));
 #endif
 
-  //tw_gvt_stats(stdout);
+  //tw_gvt_stats(stdout);*/
 #endif
-
 }
 
 

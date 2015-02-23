@@ -43,7 +43,11 @@ class PE: public CBase_PE {
       delete statistics;
     }
 
+    /** \brief Initialize the RNG streams for this PE */
     void initialize_rand(CProxy_Initialize);
+
+    /** \brief Print final stats and end the simulation */
+    void end_simulation(CkReductionMsg *m);
 
     /** \brief Various schedulers
         sequential: single PE, run to end
@@ -69,9 +73,6 @@ class PE: public CBase_PE {
     void gvt_begin(); /**< begin gvt computation */
     void gvt_contribute(); /**< all sent messages received, contribute to GVT */
     void gvt_end(Time); /**< gvt done, either restart the scheduler or end */
-
-    /** \brief Print final stats at the end of a simulation */
-    void tw_stats(CkReductionMsg *m);
 
     /** \brief Get time stamp of the minium event */
     Time get_min_time();

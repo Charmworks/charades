@@ -12,6 +12,7 @@
 CProxy_PE pes;
 CkReduction::reducerType statsReductionType;
 
+// TODO: Find a better place for all of these non-member functions.
 Globals* get_globals() {
   static PE* local_pe = pes.ckLocalBranch();
   return local_pe->globals;
@@ -22,7 +23,63 @@ Statistics* get_statistics() {
   return local_pe->statistics;
 }
 
-// TODO(eric): These should probably be moved to charm_api.C
+void registerStatsReduction(void) {
+  statsReductionType = CkReduction::addReducer(statsReduction);
+}
+
+CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
+  Statistics *s = new Statistics;
+  initialize_statistics(s);
+
+  for (int i = 0; i < nMsg; i++) {
+    CkAssert(msgs[i]->getSize() == sizeof(Statistics));
+
+    Statistics *c = (Statistics *)msgs[i]->getData();
+    // Timing stats
+    s->s_max_run_time = fmax(s->s_max_run_time, c->s_max_run_time);
+    s->s_min_run_time = fmin(s->s_min_run_time, c->s_min_run_time);
+
+    // Event count stats
+    s->s_nevent_processed += c->s_nevent_processed;
+
+    // Rollback stats
+    s->s_e_rbs += c->s_e_rbs;
+    s->s_rb_total += c->s_rb_total;
+    s->s_rb_primary += c->s_rb_primary;
+    s->s_rb_secondary += c->s_rb_secondary;
+
+    // Send stats
+    s->s_nsend_remote_rb += c->s_nsend_remote_rb;
+    s->s_nsend_loc_remote += c->s_nsend_loc_remote;
+
+    // GVT stats
+    s->s_ngvts = c->s_ngvts;
+    s->s_fc_attempts += c->s_fc_attempts;
+    s->s_fossil_collect += c->s_fossil_collect;
+
+    // Currently unused stats // TODO: Document or remove
+    s->s_nevent_abort += c->s_nevent_abort;
+    s->s_pq_qsize += c->s_pq_qsize;
+    s->s_nsend_network += c->s_nsend_network;
+    s->s_nread_network += c->s_nread_network;
+    s->s_nsend_net_remote += c->s_nsend_net_remote;
+    s->s_mem_buffers_used += c->s_mem_buffers_used;
+    s->s_pe_event_ties += c->s_pe_event_ties;
+    s->s_min_detected_offset = fmin(s->s_min_detected_offset, c->s_min_detected_offset);
+    s->s_total = fmax(s->s_total, c->s_total);
+    s->s_net_read = fmax(s->s_net_read, c->s_net_read);
+    s->s_gvt = fmax(s->s_gvt, c->s_gvt);
+    s->s_fossil_collect = fmax(s->s_fossil_collect, c->s_fossil_collect);
+    s->s_event_abort = fmax(s->s_event_abort, c->s_event_abort);
+    s->s_event_process = fmax(s->s_event_process, c->s_event_process);
+    s->s_pq = fmax(s->s_pq, c->s_pq);
+    s->s_rollback = fmax(s->s_rollback, c->s_rollback);
+    s->s_avl = fmax(s->s_avl, c->s_avl);
+  }
+
+  return CkReductionMsg::buildNew(sizeof(Statistics), s);
+}
+
 int tw_ismaster() {
   return (CkMyPe() == 0);
 }
@@ -126,7 +183,7 @@ void PE::execute_seq() {
   PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
   PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
   contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
-    CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
+    CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
 
 }
 
@@ -246,7 +303,7 @@ void PE::gvt_end(Time new_gvt) {
     PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
     PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
     contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
-        CkCallback(CkReductionTarget(PE,tw_stats),thisProxy[0]));
+        CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       thisProxy[CkMyPe()].execute_cons();
@@ -257,171 +314,11 @@ void PE::gvt_end(Time new_gvt) {
   }
 }
 
-// Moved tw_stats to PE as a target of a reduction
-// Prints out final stats for the simulation
-void PE::tw_stats(CkReductionMsg* m) {
-  Statistics* s = (Statistics*)m->getData();
-  size_t m_alloc, m_waste;
-
-  // Calculate the net events based on total event executed and rolled back
-  s->s_net_events = s->s_nevent_processed - s->s_e_rbs;
-  
-#ifndef ROSS_DO_NOT_PRINT
-  printf("\n\t: Max PE run time = %.4f seconds\n", PE_STATS(s_max_run_time));
-  printf("\n\t: Min PE run time = %.4f seconds\n", PE_STATS(s_min_run_time));
-  fprintf(PE_VALUE(g_tw_csv), "%.4f,", PE_STATS(s_max_run_time));
-
-  printf("\nTW Library Statistics:\n");
-  show_lld("Total Events Processed", s->s_nevent_processed);
-  show_lld("Events Aborted (part of RBs)", s->s_nevent_abort);
-  show_lld("Events Rolled Back", s->s_e_rbs);
-  show_lld("Event Ties Detected in PE Queues", s->s_pe_event_ties);
-
-  if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-    printf("\t%-50s %11.9lf\n",
-        "Minimum TS Offset Detected in Conservative Mode",
-        (double) s->s_min_detected_offset);
-  }
-
-  show_2f("Efficiency", 100.0 * (1.0 - ((double) s->s_e_rbs / (double) s->s_net_events)));
-
-  // There are two categories of remote events: local are those that were events
-  // for different LPs on the same chare (therefore the event wasn't handled by
-  // the Charm++ RTS), and network are events sent to different chares through
-  // the Charm++ RTS.
-  show_lld("Total Remote (shared mem) Events Processed", s->s_nsend_loc_remote);
-  show_2f(
-    "Percent Remote Events",
-    ( (double)s->s_nsend_loc_remote
-    / (double)s->s_net_events)
-    * 100.0
-  );
-
-  show_lld("Total Remote (network) Events Processed", s->s_nsend_net_remote);
-  show_2f(
-    "Percent Remote Events",
-    ( (double)s->s_nsend_net_remote
-    / (double)s->s_net_events)
-    * 100.0
-  );
-  printf("\n");
-
-  // Rollback and GVT stats
-  show_lld("Total Roll Backs ", s->s_rb_total);
-  show_lld("Primary Roll Backs ", s->s_rb_primary);
-  show_lld("Secondary Roll Backs ", s->s_rb_secondary);
-  show_lld("Fossil Collect Attempts", s->s_fc_attempts);
-  show_lld("Successful Fossil Attempts", s->s_fossil_collect);
-  show_lld("Total GVT Computations", s->s_ngvts);
-  printf("\n");
-
-  // Summary of events processed and event rate
-  show_lld("Net Events Processed", s->s_net_events);
-  show_1f(
-    "Event Rate (events/sec)",
-    ((double)s->s_net_events / PE_STATS(s_max_run_time)));
-
-  // TODO: Everything below here is unused...either implement or remove
-  // TODO: Check that memory usage is correct
-  /*printf("\nTW Memory Statistics:\n");
-  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered));
-  show_lld("Memory Allocated", m_alloc / 1024);
-  show_lld("Memory Wasted", m_waste / 1024);
-
-  // TODO: What are these used for?
-  if (tw_nnodes() > 1) {
-    printf("\n");
-    printf("TW Network Statistics:\n");
-    show_lld("Remote sends", s->s_nsend_network);
-    show_lld("Remote recvs", s->s_nread_network);
-  }
-
-  printf("\nTW Data Structure sizes in bytes (sizeof):\n");
-  show_lld("PE struct", sizeof(tw_pe));
-  show_lld("KP struct", sizeof(tw_kp));
-  show_lld("LP struct", sizeof(tw_lp));
-  show_lld("LP Model struct", lp->type->state_sz);
-  show_lld("LP RNGs", sizeof(*lp->rng));
-  show_lld("Total LP", sizeof(tw_lp) + lp->type->state_sz + sizeof(*lp->rng));
-  show_lld("Event struct", sizeof(tw_event));
-  show_lld("Event struct with Model", sizeof(tw_event) + PE_VALUE(g_tw_msg_sz));
-
-#ifdef ROSS_timing
-  printf("\nTW Clock Cycle Statistics (MAX values in secs at %1.4lf GHz):\n", PE_VALUE(g_tw_clock_rate) / 1000000000.0);
-  show_4f("Priority Queue (enq/deq)", (double) s->s_pq / PE_VALUE(g_tw_clock_rate));
-    show_4f("AVL Tree (insert/delete)", (double) s->s_avl / PE_VALUE(g_tw_clock_rate));
-  show_4f("Event Processing", (double) s->s_event_process / PE_VALUE(g_tw_clock_rate));
-  show_4f("Event Cancel", (double) s->s_cancel_q / PE_VALUE(g_tw_clock_rate));
-  show_4f("Event Abort", (double) s->s_event_abort / PE_VALUE(g_tw_clock_rate));
-  printf("\n");
-  show_4f("GVT", (double) s->s_gvt / PE_VALUE(g_tw_clock_rate));
-  show_4f("Fossil Collect", (double) s->s_fossil_collect / PE_VALUE(g_tw_clock_rate));
-  show_4f("Primary Rollbacks", (double) s->s_rollback / PE_VALUE(g_tw_clock_rate));
-  show_4f("Network Read", (double) s->s_net_read / PE_VALUE(g_tw_clock_rate));
-  show_4f("Total Time (Note: Using Running Time above for Speedup)", (double) s->s_total / PE_VALUE(g_tw_clock_rate));
-#endif
-
-  //tw_gvt_stats(stdout);*/
-#endif
-
+// Receives a reduction of statistics for the simulation, prints them, and ends
+// the simulation by exiting Charm++.
+void PE::end_simulation(CkReductionMsg* m) {
+  tw_stats((Statistics*)m->getData());
   CkExit();
-}
-
-void registerStatsReduction(void) {
-  statsReductionType = CkReduction::addReducer(statsReduction);
-}
-
-CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
-  Statistics *s = new Statistics;
-  initialize_statistics(s);
-
-  for (int i = 0; i < nMsg; i++) {
-    CkAssert(msgs[i]->getSize() == sizeof(Statistics));
-
-    Statistics *c = (Statistics *)msgs[i]->getData();
-    // Timing stats
-    s->s_max_run_time = fmax(s->s_max_run_time, c->s_max_run_time);
-    s->s_min_run_time = fmin(s->s_min_run_time, c->s_min_run_time);
-
-    // Event count stats
-    s->s_nevent_processed += c->s_nevent_processed;
-
-    // Rollback stats
-    s->s_e_rbs += c->s_e_rbs;
-    s->s_rb_total += c->s_rb_total;
-    s->s_rb_primary += c->s_rb_primary;
-    s->s_rb_secondary += c->s_rb_secondary;
-
-    // Send stats
-    s->s_nsend_remote_rb += c->s_nsend_remote_rb;
-    s->s_nsend_loc_remote += c->s_nsend_loc_remote;
-
-    // GVT stats
-    s->s_ngvts = c->s_ngvts;
-    s->s_fc_attempts += c->s_fc_attempts;
-    s->s_fossil_collect += c->s_fossil_collect;
-
-    // Currently unused stats // TODO: Document or remove
-    s->s_nevent_abort += c->s_nevent_abort;
-    s->s_pq_qsize += c->s_pq_qsize;
-    s->s_nsend_network += c->s_nsend_network;
-    s->s_nread_network += c->s_nread_network;
-    s->s_nsend_net_remote += c->s_nsend_net_remote;
-    s->s_mem_buffers_used += c->s_mem_buffers_used;
-    s->s_pe_event_ties += c->s_pe_event_ties;
-    s->s_min_detected_offset = fmin(s->s_min_detected_offset, c->s_min_detected_offset);
-    s->s_total = fmax(s->s_total, c->s_total);
-    s->s_net_read = fmax(s->s_net_read, c->s_net_read);
-    s->s_gvt = fmax(s->s_gvt, c->s_gvt);
-    s->s_fossil_collect = fmax(s->s_fossil_collect, c->s_fossil_collect);
-    s->s_event_abort = fmax(s->s_event_abort, c->s_event_abort);
-    s->s_event_process = fmax(s->s_event_process, c->s_event_process);
-    s->s_pq = fmax(s->s_pq, c->s_pq);
-    s->s_rollback = fmax(s->s_rollback, c->s_rollback);
-    s->s_avl = fmax(s->s_avl, c->s_avl);
-  }
-
-  return CkReductionMsg::buildNew(sizeof(Statistics), s);
 }
 
 #include "pe.def.h"
