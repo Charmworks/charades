@@ -79,8 +79,25 @@ class Event {
     out_msgs = NULL;
     state.remote = 0;
     state.cancel_q = 0;
-    hasMsg = false;
   }
+  // Basic event info
+  EventID event_id;
+  Time ts;
+  tw_bf cv;
+
+  // Fields for sender/receiver info. Can be cast as ids or ptrs.
+  tw_lpid dest_lp, src_lp;
+  tw_peid send_pe;
+
+  // The event state says which queues the event is in and whether it is remote
+  tw_event_state state;
+
+  // Fields storing msg data
+  RemoteEvent * eventMsg;
+  char *userData;
+
+  // Field storing output messages tied to this event
+  tw_out *out_msgs;
 
   // Fields used in data structures storing Events
   size_t heap_index;    // for avl trees
@@ -96,18 +113,6 @@ class Event {
   unsigned pending_count;
   unsigned* processed_indices;
   unsigned processed_count;
-
-  EventID event_id;
-  tw_event_state state;
-
-  tw_bf cv;
-  tw_lpid dest_lp, src_lp;
-  Time ts;
-  tw_peid send_pe;
-  bool hasMsg;
-  RemoteEvent * eventMsg;
-  tw_out *out_msgs;
-  char *userData;
 };
 
 // Publicly exposed functions

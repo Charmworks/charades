@@ -33,15 +33,24 @@ void operator|(PUP::er& p, Event* e) {
   p((char*)&(e->state), sizeof(tw_event_state));
   p((char*)&(e->cv), sizeof(tw_bf));
 
-  // TODO: Things that can be pointers or ints need to be handled correctly
-  // TODO: These may all have to be converted to ints before pupping
+  // If we are packing we need to pack up the ids, not pointers.
+  // NOTE: When unpacking an LP, it must reset dest_lp, src_lp, and send_lp to
+  // pointers when necessary.
+  if (p.isPacking()) {
+    if (e->state.owner == TW_chare_q || e->state.owner == TW_rollback_q) {
+      e->dest_lp = ((tw_lp*)(e->dest_lp))->gid;
+    }
+    if (!e->state.remote || e->state.owner == TW_sent) {
+      e->src_lp = ((tw_lp*)(e->src_lp))->gid;
+      e->send_pe = ((LP*)(e->send_pe))->thisIndex;
+    }
+  }
   p | e->dest_lp;
   p | e->src_lp;
   p | e->send_pe;
 
   // Pupping the remote message data
-  p | e->hasMsg;
-  if (e->hasMsg) {
+  if (e->state.owner == TW_chare_q || e->state.owner == TW_rollback_q) {
     if (p.isUnpacking()) {
       e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
       e->userData = e->eventMsg->userData;
