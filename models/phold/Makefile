@@ -1,7 +1,6 @@
 include ../../src/config.mk
 
 CFLAGS  := -w -O3
-LIBDIR  := ../../build/
 
 all: phold
 clean:
@@ -10,5 +9,5 @@ clean:
 	rm -f output ross.csv
 
 
-phold: phold.C phold.h $(LIBDIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) phold.C -o phold $(LDFLAGS) -L$(LIBDIR) -lross
+phold: phold.C phold.h $(BUILD_DIR)/libross.a
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) phold.C -o phold $(LDFLAGS) -L$(BUILD_DIR) -lross

@@ -85,7 +85,6 @@ int charm_event_send(unsigned dest_peid, Event * e) {
   } else {
     PE_STATS(s_nsend_net_remote)++;
     // Fill the fields of the charm message to prepare it for sending.
-    *(int*)CkPriorityPtr(e->eventMsg) = -2;
     e->eventMsg->event_id = e->event_id = send_pe->uniqID++;
     e->eventMsg->ts = e->ts;
     e->eventMsg->dest_lp = e->dest_lp;
@@ -103,7 +102,6 @@ int charm_event_send(unsigned dest_peid, Event * e) {
 // will never have the owner set to TW_sent.
 void charm_anti_send(unsigned dest_peid, Event * e) {
   RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
-  *(int*)CkPriorityPtr(eventMsg) = -3;
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;
   eventMsg->dest_lp = e->dest_lp;

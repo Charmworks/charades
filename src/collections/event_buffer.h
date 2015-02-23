@@ -43,7 +43,7 @@ class EventBuffer {
         tempbuf += buf_size;
       }
       for (int i = 0; i < remote_stack_pointer; i++) {
-        remote_buffer[i] = new (msg_size, 32) RemoteEvent;
+        remote_buffer[i] = new (msg_size) RemoteEvent;
       }
     }
 
@@ -72,7 +72,7 @@ class EventBuffer {
       if (remote_stack_pointer > 0) {
         return remote_buffer[--remote_stack_pointer];
       } else {
-        return new (msg_size, 32) RemoteEvent;
+        return new (msg_size) RemoteEvent;
       }
     }
     void free_remote_event(RemoteEvent* e) {
