@@ -6,6 +6,7 @@
 #include "typedefs.h"
 #include "globals.h"
 #include "statistics.h"
+#include "lp.h" // Included for LPToken definition
 
 #include "pe_queue.h"
 
@@ -81,24 +82,32 @@ class PE: public CBase_PE {
     /** \brief Register the given LP to our queues */
     void register_lp(LPToken* next_token, Time next_ts,
                      LPToken* oldest_token, Time oldest_ts) {
-        next_lps.insert(next_token, next_ts);
-        oldest_lps.insert(oldest_token, oldest_ts);
+      next_lps.insert(next_token, next_ts);
+      oldest_lps.insert(oldest_token, oldest_ts);
     }
 
     /** \brief Unregister the given LP from our queues */
     void unregister_lp(LPToken* next_token, LPToken* oldest_token) {
-        next_lps.remove(next_token);
-        oldest_lps.remove(next_token);
+      next_lps.remove(next_token);
+      oldest_lps.remove(next_token);
+      vector<LP*>::iterator it = cancel_q.begin();
+      while (it != cancel_q.end()) {
+        if (*it == next_token->lp) {
+          cancel_q.erase(it);
+          break;
+        }
+        it++;
+      }
     }
 
     /** \brief Update the entry for a given LP in the next_lps */
     void update_next(LPToken* token, Time ts) {
-        next_lps.update(token, ts);
+      next_lps.update(token, ts);
     }
 
     /** \brief Update the entry for a given LP in the oldest_lps */
     void update_oldest(LPToken* token, Time ts) {
-        oldest_lps.update(token, ts);
+      oldest_lps.update(token, ts);
     }
 };
 
