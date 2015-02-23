@@ -799,7 +799,7 @@ main(int argc, char **argv)
 
   int nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes());
   int additional_memory_buffers = 2 * PE_VALUE(g_tw_mblock) * PE_VALUE(g_tw_gvt_interval);
-  PE_VALUE(g_tw_max_events_buffered) = (nlp_per_pe * BIG_N) + additional_memory_buffers;
+  PE_VALUE(g_tw_max_events_buffered) = (nlp_per_pe * BIG_N) + additional_memory_buffers + 5000;
 
   // Total LPs = (NUM_CELLS_X * NUM_CELLS_Y);
   ROSS_CONSTANT(g_num_chares) = (NUM_VP_X * NUM_VP_Y);
