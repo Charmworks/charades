@@ -44,8 +44,8 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
   recv_ts = tw_now(sender) + offset_ts;
 
   if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-    if(offset_ts < PE_VALUE(g_tw_min_detected_offset)) {
-      PE_VALUE(g_tw_min_detected_offset) = offset_ts;
+    if(offset_ts < PE_STATS(s_min_detected_offset)) {
+      PE_STATS(s_min_detected_offset) = offset_ts;
     }
   }
 

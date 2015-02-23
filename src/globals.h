@@ -35,7 +35,6 @@ struct Globals {
   EventBuffer*  event_buffer;
   size_t        g_tw_msg_sz;
   unsigned      g_tw_max_events_buffered;
-  tw_stime      g_tw_min_detected_offset;
   tw_event*     abort_event;
 
   // Mapping globals
@@ -72,7 +71,6 @@ inline void initialize_globals(Globals* globals) {
   globals->event_buffer             = NULL;
   globals->g_tw_msg_sz              = 0;
   globals->g_tw_max_events_buffered = 1024;
-  globals->g_tw_min_detected_offset = DBL_MAX;
   globals->abort_event              = NULL;
 
   globals->g_numlp_map  = NULL;
