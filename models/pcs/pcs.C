@@ -2,8 +2,6 @@
 
 #define max fmax
 
-long g_num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y)/(NUM_VP_X * NUM_VP_Y);
-
 double
 Pi_Distribution(double n, double N)
 {
@@ -22,10 +20,6 @@ GenInitPortables(tw_lp * lp)
   return ((int)BIG_N);
 }
 
-tw_lpid g_cells_per_vp_x = NUM_CELLS_X/NUM_VP_X;
-tw_lpid g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;
-tw_lpid g_cells_per_vp = (NUM_CELLS_X/NUM_VP_X)*(NUM_CELLS_Y/NUM_VP_Y);
-
 tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 {
   tw_lpid lpid_x, lpid_y;
@@ -36,7 +30,7 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
   lpid_x = lpid - (lpid_y * NUM_CELLS_X);
 
   switch( direction )
-    {
+  {
     case 0:
       n_x = ((lpid_x - 1) + NUM_CELLS_X) % NUM_CELLS_X;
       n_y = lpid_y;
@@ -59,7 +53,7 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 
     default:
       tw_error( TW_LOC, "Bad direction value \n");
-    }
+  }
 
   dest_lpid = (tw_lpid) (n_x + (n_y * NUM_CELLS_X));
   // printf("ComputeMove: Src LP %llu (%d, %d), Dir %u, Dest LP %llu (%d, %d)\n", lpid, lpid_x, lpid_y, direction, dest_lpid, n_x, n_y);
@@ -68,30 +62,29 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 
 // Return LPChare index based on GID
 unsigned pcs_grid_map (tw_lpid gid) {
-	return gid / g_num_cells_per_kp;
+  return gid / ROSS_CONSTANT(g_lps_per_chare);
 }
 
 // Return local index based on GID
 tw_lpid pcs_local_map (tw_lpid gid) {
-	return gid % g_num_cells_per_kp;
+  return gid % ROSS_CONSTANT(g_lps_per_chare);
 }
 
 Min_t
 Cell_MinTS(struct Msg_Data *M)
 {
   if (M->CompletionCallTS < M->NextCallTS)
-    {
-      if (M->CompletionCallTS < M->MoveCallTS)
-	return (COMPLETECALL);
-      else
-	return (MOVECALL);
-    } else
-    {
-      if (M->NextCallTS < M->MoveCallTS)
-	return (NEXTCALL);
-      else
-	return (MOVECALL);
-    }
+  {
+    if (M->CompletionCallTS < M->MoveCallTS)
+      return (COMPLETECALL);
+    else
+      return (MOVECALL);
+  } else {
+    if (M->NextCallTS < M->MoveCallTS)
+      return (NEXTCALL);
+    else
+      return (MOVECALL);
+  }
 }
 
 void
@@ -118,62 +111,60 @@ Cell_StartUp(struct State *SV, tw_lp * lp)
   SV->CellLocationY = lp->gid / NUM_CELLS_X;
 
   if (SV->CellLocationX >= NUM_CELLS_X ||
-      SV->CellLocationY >= NUM_CELLS_Y)
-    {
-      tw_error(TW_LOC, "Cell_StartUp: Bad CellLocations %d %d \n",
-	       SV->CellLocationX, SV->CellLocationY);
-    }
+      SV->CellLocationY >= NUM_CELLS_Y) {
+    tw_error(TW_LOC, "Cell_StartUp: Bad CellLocations %d %d \n",
+        SV->CellLocationX, SV->CellLocationY);
+  }
   SV->Portables_In = GenInitPortables(lp);
 
-  for (i = 0; i < SV->Portables_In; i++)
+  for (i = 0; i < SV->Portables_In; i++) {
+    TMsg.CompletionCallTS = HUGE_VAL;
+
+    TMsg.MoveCallTS = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
+    TMsg.NextCallTS = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
+
+    switch (Cell_MinTS(&TMsg))
     {
-      TMsg.CompletionCallTS = HUGE_VAL;
+      case COMPLETECALL:
+        tw_error(TW_LOC, "APP_ERROR(StartUp): CompletionCallTS(%lf) Is Min \n",
+            TMsg.CompletionCallTS);
+        break;
 
-      TMsg.MoveCallTS = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
-      TMsg.NextCallTS = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
+      case NEXTCALL:
+        ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
+        CurEvent = tw_event_new(lp->gid, ts, lp);
+        TWMsg = (struct Msg_Data *) tw_event_data(CurEvent);
+        TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+        TWMsg->MoveCallTS = TMsg.MoveCallTS;
+        TWMsg->NextCallTS = TMsg.NextCallTS;
+        TWMsg->MethodName = NEXTCALL_METHOD;
+        tw_event_send(CurEvent);
+        break;
 
-      switch (Cell_MinTS(&TMsg))
-	{
-	case COMPLETECALL:
-	  tw_error(TW_LOC, "APP_ERROR(StartUp): CompletionCallTS(%lf) Is Min \n",
-		   TMsg.CompletionCallTS);
-	  break;
+      case MOVECALL:
+        newcell = lp->gid;
+        while (TMsg.MoveCallTS < TMsg.NextCallTS)
+        {
+          double          result;
 
-	case NEXTCALL:
-	  ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
-	  CurEvent = tw_event_new(lp->gid, ts, lp);
-	  TWMsg = (struct Msg_Data *) tw_event_data(CurEvent);
-	  TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-	  TWMsg->MoveCallTS = TMsg.MoveCallTS;
-	  TWMsg->NextCallTS = TMsg.NextCallTS;
-	  TWMsg->MethodName = NEXTCALL_METHOD;
-	  tw_event_send(CurEvent);
-	  break;
+          currentcell = newcell;
+          dest_index = tw_rand_integer(lp->rng, 0, 3);
+          newcell = Cell_ComputeMove( currentcell, dest_index ); // Neighbors[currentcell][dest_index];
+          result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
+          TMsg.MoveCallTS += result;
+        }
 
-	case MOVECALL:
-	  newcell = lp->gid;
-	  while (TMsg.MoveCallTS < TMsg.NextCallTS)
-	    {
-	      double          result;
-
-	      currentcell = newcell;
-	      dest_index = tw_rand_integer(lp->rng, 0, 3);
-	      newcell = Cell_ComputeMove( currentcell, dest_index ); // Neighbors[currentcell][dest_index];
-	      result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
-	      TMsg.MoveCallTS += result;
-	    }
-
-	  ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
-	  CurEvent = tw_event_new(currentcell, ts, lp);
-	  TWMsg = (Msg_Data *) tw_event_data(CurEvent);
-	  TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-	  TWMsg->MoveCallTS = TMsg.MoveCallTS;
-	  TWMsg->NextCallTS = TMsg.NextCallTS;
-	  TWMsg->MethodName = NEXTCALL_METHOD;
-	  tw_event_send(CurEvent);
-	  break;
-	}
+        ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
+        CurEvent = tw_event_new(currentcell, ts, lp);
+        TWMsg = (Msg_Data *) tw_event_data(CurEvent);
+        TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+        TWMsg->MoveCallTS = TMsg.MoveCallTS;
+        TWMsg->NextCallTS = TMsg.NextCallTS;
+        TWMsg->MethodName = NEXTCALL_METHOD;
+        tw_event_send(CurEvent);
+        break;
     }
+  }
 }
 
 void
@@ -196,110 +187,109 @@ Cell_NextCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
   SV->Call_Attempts++;
 
   if ((CV->c1 = NORM_CH_BUSY))
+  {
+    SV->Channel_Blocks++;
+    result = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
+    TMsg.NextCallTS += result;
+
+    switch (Cell_MinTS(&TMsg))
     {
-      SV->Channel_Blocks++;
-      result = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
-      TMsg.NextCallTS += result;
+      case COMPLETECALL:
+        tw_error(TW_LOC, "APP_ERROR(NextCall): CompletionCallTS(%lf) Is Min \n",
+            TMsg.CompletionCallTS);
+        break;
 
-      switch (Cell_MinTS(&TMsg))
-	{
-	case COMPLETECALL:
-	  tw_error(TW_LOC, "APP_ERROR(NextCall): CompletionCallTS(%lf) Is Min \n",
-		   TMsg.CompletionCallTS);
-	  break;
+      case NEXTCALL:
+        ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
+        CurEvent = tw_event_new(lp->gid, ts, lp);
+        TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
+        TWMsg->MethodName = TMsg.MethodName;
+        TWMsg->ChannelType = TMsg.ChannelType;
+        TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+        TWMsg->NextCallTS = TMsg.NextCallTS;
+        TWMsg->MoveCallTS = TMsg.MoveCallTS;
+        TWMsg->MethodName = NEXTCALL_METHOD;
+        tw_event_send(CurEvent);
+        break;
 
-	case NEXTCALL:
-	  ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
-	  CurEvent = tw_event_new(lp->gid, ts, lp);
-	  TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
-	  TWMsg->MethodName = TMsg.MethodName;
-	  TWMsg->ChannelType = TMsg.ChannelType;
-	  TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-	  TWMsg->NextCallTS = TMsg.NextCallTS;
-	  TWMsg->MoveCallTS = TMsg.MoveCallTS;
-	  TWMsg->MethodName = NEXTCALL_METHOD;
-	  tw_event_send(CurEvent);
-	  break;
+      case MOVECALL:
+        newcell = lp->gid;
+        while (TMsg.MoveCallTS < TMsg.NextCallTS)
+        {
+          M->RC.wl1++;
+          currentcell = newcell;
+          dest_index = tw_rand_integer(lp->rng, 0, 3);
+          newcell = Cell_ComputeMove( currentcell, dest_index ); //Neighbors[currentcell][dest_index];
+          result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
+          TMsg.MoveCallTS += result;
+        }
 
-	case MOVECALL:
-	  newcell = lp->gid;
-	  while (TMsg.MoveCallTS < TMsg.NextCallTS)
-	    {
-	      M->RC.wl1++;
-	      currentcell = newcell;
-	      dest_index = tw_rand_integer(lp->rng, 0, 3);
-	      newcell = Cell_ComputeMove( currentcell, dest_index ); //Neighbors[currentcell][dest_index];
-	      result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
-	      TMsg.MoveCallTS += result;
-	    }
-
-	  ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
-	  CurEvent = tw_event_new((currentcell), ts, lp);
-	  TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
-	  TWMsg->MethodName = TMsg.MethodName;
-	  TWMsg->ChannelType = TMsg.ChannelType;
-	  TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-	  TWMsg->NextCallTS = TMsg.NextCallTS;
-	  TWMsg->MoveCallTS = TMsg.MoveCallTS;
-	  TWMsg->MethodName = NEXTCALL_METHOD;
-	  tw_event_send(CurEvent);
-	  break;
-	}
-    } else
-    {
-      SV->Normal_Channels--;
-      TMsg.ChannelType = NORMAL_CH;
-
-      result = tw_rand_exponential(lp->rng, CALL_TIME_MEAN);
-      TMsg.CompletionCallTS = result + TMsg.NextCallTS;
-      result = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
-      TMsg.NextCallTS += result;
-      done = 0;
-      while (1)
-	{
-	  switch (Cell_MinTS(&TMsg))
-	    {
-	    case COMPLETECALL:
-	      ts = max(0.0, TMsg.CompletionCallTS - tw_now(lp));
-	      CurEvent = tw_event_new(lp->gid, ts, lp);
-	      TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
-	      TWMsg->MethodName = TMsg.MethodName;
-	      TWMsg->ChannelType = TMsg.ChannelType;
-	      TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-	      TWMsg->NextCallTS = TMsg.NextCallTS;
-	      TWMsg->MoveCallTS = TMsg.MoveCallTS;
-	      TWMsg->MethodName = COMPLETIONCALL_METHOD;
-	      tw_event_send(CurEvent);
-	      done = 1;
-	      break;
-
-	    case NEXTCALL:
-	      M->RC.wl1++;
-
-	      SV->Busy_Lines++;
-	      SV->Call_Attempts++;
-	      result = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
-	      TMsg.NextCallTS += result;
-	      break;
-
-	    case MOVECALL:
-	      ts = max(0.0, TMsg.MoveCallTS - tw_now(lp));
-	      CurEvent = tw_event_new(lp->gid, ts, lp);
-	      TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
-	      TWMsg->MethodName = TMsg.MethodName;
-	      TWMsg->ChannelType = TMsg.ChannelType;
-	      TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-	      TWMsg->NextCallTS = TMsg.NextCallTS;
-	      TWMsg->MoveCallTS = TMsg.MoveCallTS;
-	      TWMsg->MethodName = MOVECALLOUT_METHOD;
-	      tw_event_send(CurEvent);
-	      done = 1;
-	      break;
-	    }
-	  if (done)
-	    break;
-	}
+        ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
+        CurEvent = tw_event_new((currentcell), ts, lp);
+        TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
+        TWMsg->MethodName = TMsg.MethodName;
+        TWMsg->ChannelType = TMsg.ChannelType;
+        TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+        TWMsg->NextCallTS = TMsg.NextCallTS;
+        TWMsg->MoveCallTS = TMsg.MoveCallTS;
+        TWMsg->MethodName = NEXTCALL_METHOD;
+        tw_event_send(CurEvent);
+        break;
     }
+  } else {
+    SV->Normal_Channels--;
+    TMsg.ChannelType = NORMAL_CH;
+
+    result = tw_rand_exponential(lp->rng, CALL_TIME_MEAN);
+    TMsg.CompletionCallTS = result + TMsg.NextCallTS;
+    result = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
+    TMsg.NextCallTS += result;
+    done = 0;
+    while (1)
+    {
+      switch (Cell_MinTS(&TMsg))
+      {
+        case COMPLETECALL:
+          ts = max(0.0, TMsg.CompletionCallTS - tw_now(lp));
+          CurEvent = tw_event_new(lp->gid, ts, lp);
+          TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
+          TWMsg->MethodName = TMsg.MethodName;
+          TWMsg->ChannelType = TMsg.ChannelType;
+          TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+          TWMsg->NextCallTS = TMsg.NextCallTS;
+          TWMsg->MoveCallTS = TMsg.MoveCallTS;
+          TWMsg->MethodName = COMPLETIONCALL_METHOD;
+          tw_event_send(CurEvent);
+          done = 1;
+          break;
+
+        case NEXTCALL:
+          M->RC.wl1++;
+
+          SV->Busy_Lines++;
+          SV->Call_Attempts++;
+          result = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
+          TMsg.NextCallTS += result;
+          break;
+
+        case MOVECALL:
+          ts = max(0.0, TMsg.MoveCallTS - tw_now(lp));
+          CurEvent = tw_event_new(lp->gid, ts, lp);
+          TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
+          TWMsg->MethodName = TMsg.MethodName;
+          TWMsg->ChannelType = TMsg.ChannelType;
+          TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+          TWMsg->NextCallTS = TMsg.NextCallTS;
+          TWMsg->MoveCallTS = TMsg.MoveCallTS;
+          TWMsg->MethodName = MOVECALLOUT_METHOD;
+          tw_event_send(CurEvent);
+          done = 1;
+          break;
+      }
+      if (done)
+        break;
+    }
+  }
 }
 
 void
@@ -323,25 +313,24 @@ Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp
     SV->Normal_Channels++;
   else if ((CV->c2 = RESERVE == M->ChannelType))
     SV->Reserve_Channels++;
-  else
-    {
-      tw_error(TW_LOC, "APP_ERROR(2): CompletionCall: Bad ChannelType(%d) \n",
-	       M->ChannelType);
-    }
+  else {
+    tw_error(TW_LOC, "APP_ERROR(2): CompletionCall: Bad ChannelType(%d) \n",
+        M->ChannelType);
+  }
   if (SV->Normal_Channels > MAX_NORMAL_CHANNELS ||
       SV->Reserve_Channels > MAX_RESERVE_CHANNELS)
-    {
-      tw_error(TW_LOC, "APP_ERROR(3): Normal_Channels(%d) > MAX %d OR Reserve_Channels(%d) > MAX %d \n",
-	       SV->Normal_Channels, MAX_NORMAL_CHANNELS, SV->Reserve_Channels,
-	       MAX_RESERVE_CHANNELS);
-    }
+  {
+    tw_error(TW_LOC, "APP_ERROR(3): Normal_Channels(%d) > MAX %d OR Reserve_Channels(%d) > MAX %d \n",
+        SV->Normal_Channels, MAX_NORMAL_CHANNELS, SV->Reserve_Channels,
+        MAX_RESERVE_CHANNELS);
+  }
   TMsg.ChannelType = NONE;
 
   switch (Cell_MinTS(&TMsg))
-    {
+  {
     case COMPLETECALL:
       tw_error(TW_LOC, "APP_ERROR(NextCall): CompletionCallTS(%lf) Is Min \n",
-	       TMsg.CompletionCallTS);
+          TMsg.CompletionCallTS);
       break;
 
     case NEXTCALL:
@@ -362,15 +351,15 @@ Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp
     case MOVECALL:
       newcell = lp->gid;
       while (TMsg.MoveCallTS < TMsg.NextCallTS)
-	{
-	  M->RC.wl1++;
-	  currentcell = newcell;
-	  dest_index = tw_rand_integer(lp->rng, 0, 3);
-	  newcell = Cell_ComputeMove( currentcell, dest_index ); //Neighbors[currentcell][dest_index];
+      {
+        M->RC.wl1++;
+        currentcell = newcell;
+        dest_index = tw_rand_integer(lp->rng, 0, 3);
+        newcell = Cell_ComputeMove( currentcell, dest_index ); //Neighbors[currentcell][dest_index];
 
-	  result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
-	  TMsg.MoveCallTS += result;
-	}
+        result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
+        TMsg.MoveCallTS += result;
+      }
       ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
       CurEvent = tw_event_new((currentcell), ts, lp);
       TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
@@ -382,7 +371,7 @@ Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp
       TWMsg->MethodName = NEXTCALL_METHOD;
       tw_event_send(CurEvent);
       break;
-    }
+  }
 }
 
 void
@@ -404,121 +393,119 @@ Cell_MoveCallIn(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
   result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
   TMsg.MoveCallTS = M->MoveCallTS + result;
   if ((CV->c1 = (TMsg.CompletionCallTS != HUGE_VAL)))
+  {
+    if ((CV->c2 = (NORM_CH_BUSY && RESERVE_CH_BUSY)))
     {
-      if ((CV->c2 = (NORM_CH_BUSY && RESERVE_CH_BUSY)))
-	{
-	  SV->Handoff_Blocks++;
-	  TMsg.CompletionCallTS = HUGE_VAL;
+      SV->Handoff_Blocks++;
+      TMsg.CompletionCallTS = HUGE_VAL;
 
-	  switch (Cell_MinTS(&TMsg))
-	    {
-	    case COMPLETECALL:
-	      tw_error(TW_LOC, "APP_ERROR(NextCall): CompletionCallTS(%lf) Is Min \n",
-		       TMsg.CompletionCallTS);
-	      break;
+      switch (Cell_MinTS(&TMsg))
+      {
+        case COMPLETECALL:
+          tw_error(TW_LOC, "APP_ERROR(NextCall): CompletionCallTS(%lf) Is Min \n",
+              TMsg.CompletionCallTS);
+          break;
 
-	    case NEXTCALL:
-	      ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
-	      CurEvent = tw_event_new(lp->gid, ts, lp);
-	      TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
+        case NEXTCALL:
+          ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
+          CurEvent = tw_event_new(lp->gid, ts, lp);
+          TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
 
-	      TWMsg->MethodName = TMsg.MethodName;
-	      TWMsg->ChannelType = TMsg.ChannelType;
-	      TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-	      TWMsg->NextCallTS = TMsg.NextCallTS;
-	      TWMsg->MoveCallTS = TMsg.MoveCallTS;
+          TWMsg->MethodName = TMsg.MethodName;
+          TWMsg->ChannelType = TMsg.ChannelType;
+          TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+          TWMsg->NextCallTS = TMsg.NextCallTS;
+          TWMsg->MoveCallTS = TMsg.MoveCallTS;
 
-	      TWMsg->MethodName = NEXTCALL_METHOD;
-	      tw_event_send(CurEvent);
-	      break;
+          TWMsg->MethodName = NEXTCALL_METHOD;
+          tw_event_send(CurEvent);
+          break;
 
-	    case MOVECALL:
-	      newcell = lp->gid;
-	      while (TMsg.MoveCallTS < TMsg.NextCallTS)
-		{
-		  M->RC.wl1++;
-		  currentcell = newcell;
-		  dest_index = tw_rand_integer(lp->rng, 0, 3);
-		  newcell = Cell_ComputeMove( currentcell, dest_index ); // Neighbors[currentcell][dest_index];
-		  result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
-		  TMsg.MoveCallTS += result;
-		}
-	      ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
-	      CurEvent = tw_event_new((currentcell), ts, lp);
-	      TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
-	      TWMsg->MethodName = TMsg.MethodName;
-	      TWMsg->ChannelType = TMsg.ChannelType;
-	      TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-	      TWMsg->NextCallTS = TMsg.NextCallTS;
-	      TWMsg->MoveCallTS = TMsg.MoveCallTS;
-	      TWMsg->MethodName = NEXTCALL_METHOD;
-	      tw_event_send(CurEvent);
-	      break;
-	    }
-	} else
-	{
-	  if ((CV->c3 = !NORM_CH_BUSY))
-	    {
-	      SV->Normal_Channels--;
-	      TMsg.ChannelType = NORMAL_CH;
-	    } else
-	    {
-	      SV->Reserve_Channels--;
-	      TMsg.ChannelType = RESERVE;
-	    }
-	  done = 0;
-	  while (1)
-	    {
-	      switch (Cell_MinTS(&TMsg))
-		{
-		case COMPLETECALL:
-		  ts = max(0.0, TMsg.CompletionCallTS - tw_now(lp));
-		  CurEvent = tw_event_new(lp->gid, ts, lp);
-		  TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
+        case MOVECALL:
+          newcell = lp->gid;
+          while (TMsg.MoveCallTS < TMsg.NextCallTS)
+          {
+            M->RC.wl1++;
+            currentcell = newcell;
+            dest_index = tw_rand_integer(lp->rng, 0, 3);
+            newcell = Cell_ComputeMove( currentcell, dest_index ); // Neighbors[currentcell][dest_index];
+            result = tw_rand_exponential(lp->rng, MOVE_CALL_MEAN);
+            TMsg.MoveCallTS += result;
+          }
+          ts = max(0.0, TMsg.NextCallTS - tw_now(lp));
+          CurEvent = tw_event_new((currentcell), ts, lp);
+          TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
+          TWMsg->MethodName = TMsg.MethodName;
+          TWMsg->ChannelType = TMsg.ChannelType;
+          TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+          TWMsg->NextCallTS = TMsg.NextCallTS;
+          TWMsg->MoveCallTS = TMsg.MoveCallTS;
+          TWMsg->MethodName = NEXTCALL_METHOD;
+          tw_event_send(CurEvent);
+          break;
+      }
+    } else {
+      if ((CV->c3 = !NORM_CH_BUSY))
+      {
+        SV->Normal_Channels--;
+        TMsg.ChannelType = NORMAL_CH;
+      } else
+      {
+        SV->Reserve_Channels--;
+        TMsg.ChannelType = RESERVE;
+      }
+      done = 0;
+      while (1)
+      {
+        switch (Cell_MinTS(&TMsg))
+        {
+          case COMPLETECALL:
+            ts = max(0.0, TMsg.CompletionCallTS - tw_now(lp));
+            CurEvent = tw_event_new(lp->gid, ts, lp);
+            TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
 
-		  TWMsg->MethodName = TMsg.MethodName;
-		  TWMsg->ChannelType = TMsg.ChannelType;
-		  TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-		  TWMsg->NextCallTS = TMsg.NextCallTS;
-		  TWMsg->MoveCallTS = TMsg.MoveCallTS;
+            TWMsg->MethodName = TMsg.MethodName;
+            TWMsg->ChannelType = TMsg.ChannelType;
+            TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+            TWMsg->NextCallTS = TMsg.NextCallTS;
+            TWMsg->MoveCallTS = TMsg.MoveCallTS;
 
-		  TWMsg->MethodName = COMPLETIONCALL_METHOD;
-		  tw_event_send(CurEvent);
-		  done = 1;
-		  break;
+            TWMsg->MethodName = COMPLETIONCALL_METHOD;
+            tw_event_send(CurEvent);
+            done = 1;
+            break;
 
-		case NEXTCALL:
-		  M->RC.wl1++;
-		  SV->Busy_Lines++;
-		  SV->Call_Attempts++;
-		  result = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
-		  TMsg.NextCallTS += result;
-		  break;
+          case NEXTCALL:
+            M->RC.wl1++;
+            SV->Busy_Lines++;
+            SV->Call_Attempts++;
+            result = tw_rand_exponential(lp->rng, NEXT_CALL_MEAN);
+            TMsg.NextCallTS += result;
+            break;
 
-		case MOVECALL:
-		  ts = max(0.0, TMsg.MoveCallTS - tw_now(lp));
-		  CurEvent = tw_event_new(lp->gid, ts, lp);
-		  TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
+          case MOVECALL:
+            ts = max(0.0, TMsg.MoveCallTS - tw_now(lp));
+            CurEvent = tw_event_new(lp->gid, ts, lp);
+            TWMsg = (struct Msg_Data *)tw_event_data(CurEvent);
 
-		  TWMsg->MethodName = TMsg.MethodName;
-		  TWMsg->ChannelType = TMsg.ChannelType;
-		  TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
-		  TWMsg->NextCallTS = TMsg.NextCallTS;
-		  TWMsg->MoveCallTS = TMsg.MoveCallTS;
+            TWMsg->MethodName = TMsg.MethodName;
+            TWMsg->ChannelType = TMsg.ChannelType;
+            TWMsg->CompletionCallTS = TMsg.CompletionCallTS;
+            TWMsg->NextCallTS = TMsg.NextCallTS;
+            TWMsg->MoveCallTS = TMsg.MoveCallTS;
 
-		  TWMsg->MethodName = MOVECALLOUT_METHOD;
-		  tw_event_send(CurEvent);
-		  done = 1;
-		  break;
-		}
-	      if (done)
-		break;
-	    }
-	}
-    } else
-    {
-      tw_error(TW_LOC, "APP_ERROR(11): MoveCallIn: Got MoveCallIn Event W/O Call In Progress!! \n");
+            TWMsg->MethodName = MOVECALLOUT_METHOD;
+            tw_event_send(CurEvent);
+            done = 1;
+            break;
+        }
+        if (done)
+          break;
+      }
     }
+  } else {
+    tw_error(TW_LOC, "APP_ERROR(11): MoveCallIn: Got MoveCallIn Event W/O Call In Progress!! \n");
+  }
 }
 
 void
@@ -540,21 +527,19 @@ Cell_MoveCallOut(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
   TMsg.MoveCallTS = M->MoveCallTS;
 
   if ((CV->c1 = TMsg.CompletionCallTS != HUGE_VAL))
-    {
-      if ((CV->c2 = NORMAL_CH == M->ChannelType))
-	SV->Normal_Channels++;
-      else if (RESERVE == M->ChannelType)
-	SV->Reserve_Channels++;
-      else
-	{
-	  tw_error(TW_LOC, "APP_ERROR(7): MoveCallOut: Bad ChannelType(%d) \n",
-		   M->ChannelType);
-	}
-      TMsg.ChannelType = NONE;
-    } else
-    {
-      tw_error(TW_LOC, "APP_ERROR(9): MoveCallOut: NOT IN CALL: SHOULD NOT BE HERE!! \n");
+  {
+    if ((CV->c2 = NORMAL_CH == M->ChannelType))
+      SV->Normal_Channels++;
+    else if (RESERVE == M->ChannelType)
+      SV->Reserve_Channels++;
+    else {
+      tw_error(TW_LOC, "APP_ERROR(7): MoveCallOut: Bad ChannelType(%d) \n",
+          M->ChannelType);
     }
+    TMsg.ChannelType = NONE;
+  } else {
+    tw_error(TW_LOC, "APP_ERROR(9): MoveCallOut: NOT IN CALL: SHOULD NOT BE HERE!! \n");
+  }
 
   ts = max(0.0, TMsg.MoveCallTS - tw_now(lp));
   TMsg.MethodName = MOVECALLIN_METHOD;
@@ -580,7 +565,7 @@ Cell_EventHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
   M->RC.wl1 = 0;
 
   switch (M->MethodName)
-    {
+  {
     case NEXTCALL_METHOD:
       Cell_NextCall(SV, CV, M, lp);
       break;
@@ -595,8 +580,8 @@ Cell_EventHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
       break;
     default:
       tw_error(TW_LOC, "APP_ERROR(8)(%d): InValid MethodName(%d)\n",
-	       lp->gid, M->MethodName);
-    }
+          lp->gid, M->MethodName);
+  }
 
 #ifdef LPTRACEON
   rng_get_state(lp->gid, seeds);
@@ -612,26 +597,25 @@ RC_Cell_NextCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
 
   SV->Call_Attempts--;
   if (CV->c1)
+  {
+    SV->Channel_Blocks--;
+    tw_rand_reverse_unif(lp->rng);
+    for (i = 0; i < M->RC.wl1; i++)
     {
-      SV->Channel_Blocks--;
-      tw_rand_reverse_unif(lp->rng);
-      for (i = 0; i < M->RC.wl1; i++)
-	{
-	  tw_rand_reverse_unif(lp->rng);
-	  tw_rand_reverse_unif(lp->rng);
-	}
-    } else
-    {
-      SV->Normal_Channels++;
       tw_rand_reverse_unif(lp->rng);
       tw_rand_reverse_unif(lp->rng);
-      for (i = 0; i < M->RC.wl1; i++)
-	{
-	  SV->Busy_Lines--;
-	  SV->Call_Attempts--;
-	  tw_rand_reverse_unif(lp->rng);
-	}
     }
+  } else {
+    SV->Normal_Channels++;
+    tw_rand_reverse_unif(lp->rng);
+    tw_rand_reverse_unif(lp->rng);
+    for (i = 0; i < M->RC.wl1; i++)
+    {
+      SV->Busy_Lines--;
+      SV->Call_Attempts--;
+      tw_rand_reverse_unif(lp->rng);
+    }
+  }
 }
 
 void
@@ -645,10 +629,10 @@ RC_Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp *
     SV->Reserve_Channels--;
 
   for (i = 0; i < M->RC.wl1; i++)
-    {
-      tw_rand_reverse_unif(lp->rng);
-      tw_rand_reverse_unif(lp->rng);
-    }
+  {
+    tw_rand_reverse_unif(lp->rng);
+    tw_rand_reverse_unif(lp->rng);
+  }
 }
 
 void
@@ -658,42 +642,41 @@ RC_Cell_MoveCallIn(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
 
   tw_rand_reverse_unif(lp->rng);
   if (CV->c1)
+  {
+    if (CV->c2)
     {
-      if (CV->c2)
-	{
-	  SV->Handoff_Blocks--;
+      SV->Handoff_Blocks--;
 
-	  for (i = 0; i < M->RC.wl1; i++)
-	    {
-	      tw_rand_reverse_unif(lp->rng);
-	      tw_rand_reverse_unif(lp->rng);
-	    }
-	} else
-	{
-	  if (CV->c3)
-	    SV->Normal_Channels++;
-	  else
-	    SV->Reserve_Channels++;
-	  for (i = 0; i < M->RC.wl1; i++)
-	    {
-	      SV->Busy_Lines--;
-	      SV->Call_Attempts--;
-	      tw_rand_reverse_unif(lp->rng);
-	    }
-	}
+      for (i = 0; i < M->RC.wl1; i++)
+      {
+        tw_rand_reverse_unif(lp->rng);
+        tw_rand_reverse_unif(lp->rng);
+      }
+    } else {
+      if (CV->c3)
+        SV->Normal_Channels++;
+      else
+        SV->Reserve_Channels++;
+      for (i = 0; i < M->RC.wl1; i++)
+      {
+        SV->Busy_Lines--;
+        SV->Call_Attempts--;
+        tw_rand_reverse_unif(lp->rng);
+      }
     }
+  }
 }
 
 void
 RC_Cell_MoveCallOut(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp)
 {
   if (CV->c1)
-    {
-      if (CV->c2)
-	SV->Normal_Channels--;
-      else
-	SV->Reserve_Channels--;
-    }
+  {
+    if (CV->c2)
+      SV->Normal_Channels--;
+    else
+      SV->Reserve_Channels--;
+  }
   tw_rand_reverse_unif(lp->rng);
 }
 
@@ -775,17 +758,16 @@ CellStatistics_Print(struct CellStatistics *CS)
 #define	TW_CELL	1
 
 tw_lptype       mylps[] =
+{
   {
-    {
-      (init_f) Cell_StartUp,
-      (event_f) Cell_EventHandler,
-      (revent_f) RC_Cell_EventHandler,
-      (final_f) CellStatistics_CollectStats,
-      (chare_map_f) pcs_grid_map,
-      sizeof(struct State)
-    },
-    {0},
-  };
+    (init_f) Cell_StartUp,
+    (event_f) Cell_EventHandler,
+    (revent_f) RC_Cell_EventHandler,
+    (final_f) CellStatistics_CollectStats,
+    sizeof(struct State)
+  },
+  {0},
+};
 
 // Every LP in the PCS model has the same type.
 tw_lptype* pcs_type_map(tw_lpid global_id) {
@@ -801,40 +783,32 @@ tw_lpid pcs_init_map(unsigned chare, tw_lpid local_id) {
 	//    As long as all the routing-map functions are consistent for event sending,
 	//    the actual "movement" functions do their own thing
 
-	return (tw_lpid) (chare * g_num_cells_per_kp) + local_id;
+	return (tw_lpid) (chare * ROSS_CONSTANT(g_lps_per_chare) + local_id);
 }
 
 int
 main(int argc, char **argv)
 {
-  tw_lpid         num_cells_per_kp;
-  unsigned int    additional_memory_buffers;
-
-  // printf("Enter TWnpe, TWnkp, additional_memory_buffers \n" );
-  // scanf("%d %d %d",
-  //	&TWnpe, &TWnkp, &additional_memory_buffers );
-
   tw_init(&argc, &argv);
 
-  // nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes() * g_tw_npe);
-  // additional_memory_buffers = 2 * PE_VALUE(g_tw_mblock) * PE_VALUE(g_tw_gvt_interval);
-  // PE_VALUE(g_tw_events_per_pe) = (nlp_per_pe * (unsigned int)BIG_N) + additional_memory_buffers;
-
   if( tw_ismaster() )
-    {
-      printf("Running simulation with following configuration: \n" );
-      // printf("    Buffers Allocated Per PE = %d\n", g_tw_events_per_pe);
-      printf("\n\n");
-    }
+  {
+    printf("Running simulation with following configuration: \n" );
+    printf("\n\n");
+  }
 
-  // CHARM: kp ==> LPChare, g_tw_nlp = g_lps_per_chare
-  num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
-  PE_VALUE(g_num_chares) = (NUM_VP_X * NUM_VP_Y);
-  PE_VALUE(g_lps_per_chare) = num_cells_per_kp;
+  int nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes());
+  int additional_memory_buffers = 2 * PE_VALUE(g_tw_mblock) * PE_VALUE(g_tw_gvt_interval);
+  PE_VALUE(g_tw_max_events_buffered) = (nlp_per_pe * BIG_N) + additional_memory_buffers;
 
-  PE_VALUE(g_type_map) = pcs_type_map;
-  PE_VALUE(g_init_map) = pcs_init_map;
-  PE_VALUE(g_local_map) = pcs_local_map;
+  // Total LPs = (NUM_CELLS_X * NUM_CELLS_Y);
+  ROSS_CONSTANT(g_num_chares) = (NUM_VP_X * NUM_VP_Y);
+  ROSS_CONSTANT(g_lps_per_chare) = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
+
+  ROSS_CONSTANT(g_type_map) = pcs_type_map;
+  ROSS_CONSTANT(g_init_map) = pcs_init_map;
+  ROSS_CONSTANT(g_local_map) = pcs_local_map;
+  ROSS_CONSTANT(g_chare_map) = pcs_grid_map;
 
   /*
    * Some some of the settings.
@@ -850,16 +824,14 @@ main(int argc, char **argv)
       printf("NUM CELLS Y      = %d\n", NUM_CELLS_Y);
       printf("NUM VP X         = %d\n", NUM_VP_X);
       printf("NUM VP Y         = %d\n", NUM_VP_Y);
-      // printf("NUM KPs per PE   = %llu \n", g_tw_nkp);
-      printf("NUM LPs per PE   = %d\n", PE_VALUE(g_tw_nlp));
-      printf("NUM LP Chares    = %d\n", PE_VALUE(g_num_lp_chares));
-      printf("NUM lps per Chare= %d\n", PE_VALUE(g_lps_per_chare));
+      printf("NUM LP Chares    = %d\n", ROSS_CONSTANT(g_num_chares));
+      printf("NUM lps per Chare= %d\n", ROSS_CONSTANT(g_lps_per_chare));
       printf("/**********************************************/\n");
       printf("\n\n");
       fflush(stdout);
     }
 
-  tw_define_lps(num_cells_per_kp, sizeof(struct Msg_Data), 0);
+  tw_define_lps(sizeof(struct Msg_Data), 0);
 
   /*
    * Initialize App Stats Structure
@@ -878,11 +850,10 @@ main(int argc, char **argv)
   tw_run();
 
 #ifdef CELL_STATS
-  if( tw_ismaster() )
-    {
-      CellStatistics_Compute(&TWAppStats);
-      CellStatistics_Print(&TWAppStats);
-    }
+  if( tw_ismaster() ) {
+    CellStatistics_Compute(&TWAppStats);
+    CellStatistics_Print(&TWAppStats);
+  }
 #endif
 
   tw_end();

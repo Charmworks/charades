@@ -1,17 +1,18 @@
 include ../../src/config.mk
 
-CFLAGS  := -g -Wall
-#CHARMC = ~/charm/bin/charmc
-LIBDIR  := ../../src/build/
-#ROSS=-I/dcsdata/home/mikida2/ross/src/
+CFLAGS  := -O2 -g
+LIBDIR  := ../../build/
 
-all: pcs.o pcs
+all: pcs
+
+pcs.o: pcs.C $(LIBDIR)/libross.a
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) pcs.C -c -o pcs.o 
+
+pcs: pcs.o $(LIBDIR)/libross.a
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) pcs.o -o $@ $(LDFLAGS) -L$(LIBDIR) -lross
+
 clean:
 	rm -f pcs
 	rm -f *.o *~ core*
 
-pcs.o: pcs.C $(LIBDIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) pcs.C -o pcs.o $(LDFLAGS) -L$(LIBDIR) -lross
 
-pcs: pcs.C $(LIBDIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) pcs.C -o pcs $(LDFLAGS) -L$(LIBDIR) -lross

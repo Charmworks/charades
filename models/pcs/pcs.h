@@ -59,45 +59,45 @@ typedef int     MethodName_t;
 
 struct State
 {
-	double          Const_State_1;
-	int             Const_State_2;
-	int             Normal_Channels;
-	int             Reserve_Channels;
-	int             Portables_In;
-	int             Portables_Out;
-	int             Call_Attempts;
-	int             Channel_Blocks;
-	int             Busy_Lines;
-	int             Handoff_Blocks;
-	int             CellLocationX;
-	int             CellLocationY;
+  double          Const_State_1;
+  int             Const_State_2;
+  int             Normal_Channels;
+  int             Reserve_Channels;
+  int             Portables_In;
+  int             Portables_Out;
+  int             Call_Attempts;
+  int             Channel_Blocks;
+  int             Busy_Lines;
+  int             Handoff_Blocks;
+  int             CellLocationX;
+  int             CellLocationY;
 };
 
 struct RC
 {
-	int             wl1;
+  int             wl1;
 };
 
 struct Msg_Data
 {
-	MethodName_t    MethodName;
-	double          CompletionCallTS;
-	double          NextCallTS;
-	double          MoveCallTS;
-	Channel_t       ChannelType;
-	struct RC       RC;
+  MethodName_t    MethodName;
+  double          CompletionCallTS;
+  double          NextCallTS;
+  double          MoveCallTS;
+  Channel_t       ChannelType;
+  struct RC       RC;
 };
 
 #ifdef CELL_STATS
 struct CellStatistics
 {
-	int             Call_Attempts;
-	int             Channel_Blocks;
-	int             Busy_Lines;
-	int             Handoff_Blocks;
-	int             Portables_In;
-	int             Portables_Out;
-	double          Blocking_Probability;
+  int             Call_Attempts;
+  int             Channel_Blocks;
+  int             Busy_Lines;
+  int             Handoff_Blocks;
+  int             Portables_In;
+  int             Portables_Out;
+  double          Blocking_Probability;
 };
 #endif
 
@@ -119,4 +119,3 @@ void            CellStatistics_Compute();
 void            CellStatistics_Print();
 struct CellStatistics TWAppStats;
 #endif
-tw_lpid nlp_per_pe = 0;

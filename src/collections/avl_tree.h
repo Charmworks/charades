@@ -8,8 +8,10 @@
 struct avlNode {
   struct avlNode *child[2];    /* left and right */
   Event *key;
-  int height;
   struct avlNode *next;        /* for ROSS weird linked-list memory */
+  int height;
+  /* Enabling the padding should be tested */
+  //int padding[7];
 };
 
 /* empty avl tree is just a null pointer */

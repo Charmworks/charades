@@ -12,6 +12,7 @@
 #include "pending_queue.h"
 #include "typedefs.h"
 #include "ross_event.h"
+#include <malloc.h>
 
 #include <float.h>
 
@@ -72,14 +73,14 @@ class PendingHeap : public PendingQueue {
       int init_size = 50000;
       nelems = 0;
       curr_max = (2*init_size);
-      elems = (ELEMENT_TYPE*)malloc(sizeof(ELEMENT_TYPE) * curr_max);
+      elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
       memset(elems, 0, sizeof(ELEMENT_TYPE) * curr_max);
     }
 
     PendingHeap(int init_size) {
       nelems = 0;
       curr_max = (2*init_size);
-      elems = (ELEMENT_TYPE*)malloc(sizeof(ELEMENT_TYPE) * curr_max);
+      elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
       memset(elems, 0, sizeof(ELEMENT_TYPE) * curr_max);
     }
 
@@ -96,8 +97,11 @@ class PendingHeap : public PendingQueue {
         size_t i = 50000;
         size_t u = curr_max;
         curr_max += i;
-        elems = (ELEMENT_TYPE*)realloc(elems, sizeof(ELEMENT_TYPE) * curr_max);
+        ELEMENT_TYPE *old = elems;
+        elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
+        memcpy(elems, old, sizeof(ELEMENT_TYPE) * u);
         memset(&elems[u], 0, sizeof(ELEMENT_TYPE) * i);
+        free(old);
       }
 
       e->heap_index = nelems;
