@@ -114,6 +114,7 @@ class LP : public CBase_LP {
     // The PE will periodically call process_cancel_q() on LPs.
     void cancel_event(Event*);
     void delete_pending(Event*);
+    void add_to_cancel_q(Event*);
     void process_cancel_q();
 
     Time min_cancel_time() const {

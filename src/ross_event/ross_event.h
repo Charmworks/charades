@@ -5,8 +5,7 @@
 
 #include "string.h"
 
-enum tw_event_owner
-{
+enum tw_event_owner {
   TW_event_inf = 0,      /**< End of line event */
   TW_event_null = 1,      /**< event in unused queue */
   TW_chare_q = 2,     /**<  In the chare's to be executed event queue */
@@ -22,8 +21,7 @@ enum tw_event_owner
  * Some applications find it handy to have this bitfield when doing
  * reverse computation.  So we follow GTW tradition and provide it.
  */
-struct tw_bf
-{
+struct tw_bf {
   unsigned int    c0:1;
   unsigned int    c1:1;
   unsigned int    c2:1;
@@ -58,10 +56,16 @@ struct tw_bf
   unsigned int    c31:1;
 };
 
-typedef struct tw_out {
+struct tw_event_state {
+  unsigned char owner;    /**< Which queue I am in; see tw_event_owner */
+  unsigned char cancel_q; /**< Actively on a dest_lp->pe's cancel_q */
+  unsigned char remote;   /**< Indicates union addr is in 'remote' storage */
+};
+
+struct tw_out {
     struct tw_out *next;
     char message[256 - 2*sizeof(void *)];
-} tw_out;
+};
 
 class RemoteEvent;
 class Event {
@@ -75,6 +79,7 @@ class Event {
     out_msgs = NULL;
     state.remote = 0;
     state.cancel_q = 0;
+    hasMsg = false;
   }
 
   // Fields used in data structures storing Events
@@ -93,16 +98,13 @@ class Event {
   unsigned processed_count;
 
   EventID event_id;
-  struct {
-    unsigned char owner; 		/**< which queue am I in; see tw_event_owner */
-    unsigned char cancel_q;  	        /**< @brief Actively on a dest_lp->pe's cancel_q */
-    unsigned char remote; 		/**< @brief Indicates union addr is in 'remote' storage */
-  } state;
+  tw_event_state state;
 
   tw_bf cv;
   tw_lpid dest_lp, src_lp;
   Time ts;
   tw_peid send_pe;
+  bool hasMsg;
   RemoteEvent * eventMsg;
   tw_out *out_msgs;
   char *userData;

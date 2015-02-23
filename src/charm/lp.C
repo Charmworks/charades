@@ -124,7 +124,7 @@ void LP::pup(PUP::er& p) {
   p | events;
   p | processed_events;
 
-  Event** temp_pending = events.get_temp_event_buffer();
+  /*Event** temp_pending = events.get_temp_event_buffer();
   Event** temp_processed = processed_events.get_temp_event_buffer();
 
   for (int i = 0; i < events.size(); i++) {
@@ -153,7 +153,7 @@ void LP::pup(PUP::er& p) {
   current_event = processed_events.front();
 
   events.delete_temp_event_buffer();
-  processed_events.delete_temp_event_buffer();
+  processed_events.delete_temp_event_buffer();*/
 
   p | isOptimistic;
   p | uniqID;

@@ -16,6 +16,90 @@
 extern CProxy_LP lps;
 extern CProxy_PE pes;
 
+void RemoteEvent::pup(PUP::er& p) {
+  p | event_id;
+  p | ts;
+  p | send_pe;
+  p | dest_lp;
+  p((char*)userData, PE_VALUE(g_tw_msg_sz));
+}
+
+void operator|(PUP::er& p, Event* e) {
+  // Basic pupping
+  p | e->seq_num;  
+  p | e->ts;
+
+  // Pup the flat structs in Event as just plain bytes
+  p((char*)&(e->state), sizeof(tw_event_state));
+  p((char*)&(e->cv), sizeof(tw_bf));
+
+  // TODO: Things that can be pointers or ints need to be handled correctly
+  // TODO: These may all have to be converted to ints before pupping
+  p | e->dest_lp;
+  p | e->src_lp;
+  p | e->send_pe;
+
+  // Pupping the remote message data
+  p | e->hasMsg;
+  if (e->hasMsg) {
+    if (p.isUnpacking()) {
+      e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
+      e->userData = e->eventMsg->userData;
+    }
+    p | *(e->eventMsg);
+  }
+
+  // TODO: Figure out how to pup out_msgs
+  //p | out_msgs;
+
+  // Pupping causality links
+  Event* tmp;
+  // If we are packing, we need to find out how many causal events there are.
+  if (p.isPacking()) {
+    e->pending_count = 0;
+    e->processed_count = 0;
+    tmp = e->caused_by_me;
+    while (tmp) {
+      if (tmp->state.owner = TW_chare_q) {
+        e->pending_count++;
+      } else if (tmp->state.owner = TW_rollback_q) {
+        e->processed_count++;
+      } else {
+        // TODO: What to do with sent events?
+      }
+      tmp = tmp->cause_next;
+    }
+  }
+
+  p | e->pending_count;
+  p | e->processed_count;
+  e->pending_indices = new unsigned[e->pending_count];
+  e->processed_indices = new unsigned[e->processed_count];
+
+  // If we are packing, fill the temporary arrays before pupping them.
+  if (p.isPacking()) {
+    // NOTE: This only works because causal events will either be in the
+    // pending queue, or in the processed queue, but pupped before this one.
+    // This also implies that the pending queue must be pupped before the
+    // processed queue. If an event gets pupped before an event it caused,
+    // this whole process will fall apart.
+    unsigned pending_idx = 0;
+    unsigned processed_idx = 0;
+    tmp = e->caused_by_me;
+    while (tmp) {
+      if (tmp->state.owner = TW_chare_q) {
+        e->pending_indices[pending_idx++] = tmp->seq_num;
+      } else if (tmp->state.owner = TW_rollback_q) {
+        e->processed_indices[processed_idx++] = tmp->seq_num;
+      }
+      tmp = tmp->cause_next;
+    }
+  }
+  PUParray(p, e->pending_indices, e->pending_count);
+  PUParray(p, e->processed_indices, e->processed_count);
+  // TODO: What to do with sent events
+}
+
 Event* charm_allocate_event(int needMsg = 1) {
   Event* e;
   e = PE_VALUE(event_buffer)->get_event();
