@@ -83,6 +83,9 @@ class LP : public CBase_LP {
     LP();
     LP(CkMigrateMessage* m);
 
+    // Methods used for migration
+    void reconstruct_causality(Event*, Event**, Event**);
+    void reconstruct_event(Event*, Event**, Event**);
     virtual void pup(PUP::er &p);
 
     // After initializing lps, we stop the charm scheduler and return control

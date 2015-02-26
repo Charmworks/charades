@@ -67,21 +67,25 @@ void operator|(PUP::er& p, Event* e) {
   if (p.isPacking()) {
     e->pending_count = 0;
     e->processed_count = 0;
+    e->sent_count = 0;
     tmp = e->caused_by_me;
     while (tmp) {
       if (tmp->state.owner = TW_chare_q) {
         e->pending_count++;
       } else if (tmp->state.owner = TW_rollback_q) {
         e->processed_count++;
+      } else if (tmp->state.owner = TW_sent) {
+        e->sent_count++;
       } else {
-        // TODO: What to do with sent events?
-      }
+        tw_error(TW_LOC, "Cannot pup causal event with owner: %d\n", tmp->state.owner);
+      } 
       tmp = tmp->cause_next;
     }
   }
 
   p | e->pending_count;
   p | e->processed_count;
+  p | e->sent_count;
   e->pending_indices = new unsigned[e->pending_count];
   e->processed_indices = new unsigned[e->processed_count];
 
@@ -100,6 +104,10 @@ void operator|(PUP::er& p, Event* e) {
         e->pending_indices[pending_idx++] = tmp->seq_num;
       } else if (tmp->state.owner = TW_rollback_q) {
         e->processed_indices[processed_idx++] = tmp->seq_num;
+      } else {
+        // TODO: What to do with sent events???
+        // TODO: Maybe just remove above events as we pup, and just left with
+        // chain of sent, which we can pup and unpup based on count.
       }
       tmp = tmp->cause_next;
     }
