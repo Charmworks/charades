@@ -5,6 +5,7 @@
 
 #include "typedefs.h"
 #include "lp_struct.h"
+#include "ross_clcg4.h"
 
 #include "pending_splay.h"
 #include "processed_queue.h"
@@ -16,13 +17,25 @@
 
 class RemoteEvent;
 
+// Pup function for tw_rng_stream in the LPStruct.
+inline void operator|(PUP::er& p, tw_rng_stream* s) {
+  PUParray(p, s->Ig, 4);
+  PUParray(p, s->Lg, 4);
+  PUParray(p, s->Cg, 4);
+#ifdef RAND_NORMAL
+  p | s->tw_normal_u1;
+  p | s->tw_normal_u2;
+  p | s->tw_normal_flipflop;
+#endif
+}
+
 // When the LP chare is unpacking lp_structs, it will handle setting of the
 // owner and type fields. The LPStruct pup just needs to handle the gid, state,
 // and rng stream.
 inline void operator|(PUP::er& p, LPStruct& lp) {
   p | lp.gid;
   p((char*)lp.state, lp.type->state_size);
-  // TODO: RNG pupping
+  p | lp.rng;
 }
 
 // Tokens owned by LP chares that are used by the PE queues that control
@@ -83,6 +96,9 @@ class LP : public CBase_LP {
     LP();
     LP(CkMigrateMessage* m);
 
+    // Methods used for migration
+    void reconstruct_causality(Event*, Event**, Event**);
+    void reconstruct_event(Event*, Event**, Event**);
     virtual void pup(PUP::er &p);
 
     // After initializing lps, we stop the charm scheduler and return control

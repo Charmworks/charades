@@ -100,21 +100,70 @@ LP::LP(CkMigrateMessage* m) : next_token(this), oldest_token(this),
                               cancel_q(NULL), min_cancel_q(DBL_MAX),
                               in_pe_queue(false), all_events(0) {
   pe = pes.ckLocalBranch();
-  // Register with the PE and let the pup method update the timestamps
-  pe->register_lp(&next_token, 0.0, &oldest_token, 0.0);
+}
+
+// Relink causality for event pointers to the pending and processed queues.
+void LP::reconstruct_causality(Event* e, Event** pending, Event** processed) {
+  for (int i = 0; i < e->processed_count; i++) {
+    Event* tmp = processed[e->processed_indices[i]];
+    tmp->cause_next = e->caused_by_me;
+    e->caused_by_me = tmp;
+  }
+  for (int i = 0; i < e->pending_count; i++) {
+    Event* tmp = pending[e->pending_indices[i]];
+    tmp->cause_next = e->caused_by_me;
+    e->caused_by_me = tmp;
+  }
+}
+
+// Reset pointer fields in events, and re-add events into the avl tree/cancel_q
+// if necessary.
+void LP::reconstruct_event(Event* e, Event** pending, Event** processed) {
+  // Based on the owner, reset id fields to pointers if the event is local.
+  // Also make sure to rebuild causality if in the rollback queue.
+  if (e->state.owner == TW_chare_q) {
+    e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
+  } else if (e->state.owner == TW_rollback_q) {
+    e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
+    reconstruct_causality(e, pending, processed);
+  } else if (e->state.owner == TW_sent) {
+    e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
+    e->send_pe = (tw_peid)this;
+  }
+
+  // If remote, insert into avl tree, otherwise we have to rebuild the pointers
+  // to the local src_lp and send_pe from their ids.
+  if (e->state.remote) {
+    avlInsert(&all_events, e);
+  } else {
+    e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
+    e->send_pe = (tw_peid)this;
+  }
+
+  // Add the event to the cancel_q if necessary.
+  if (e->state.cancel_q) {
+    add_to_cancel_q(e);
+  }
 }
 
 void LP::pup(PUP::er& p) {
   CBase_LP::pup(p);
+  // LPs must be unregistered from their current PE before they migrate, and
+  // re-register with the new PE when they are being unpacked.
   if (p.isPacking()) {
-    // TODO: Does unregister remove it from the cancel queue?
     pe->unregister_lp(&next_token, &oldest_token);
+  } else if (p.isUnpacking()) {
+    pe->register_lp(&next_token, 0.0, &oldest_token, 0.0);
   }
 
-  // LP Struct Pupping
+  // Pup the basic fields
+  p | isOptimistic;
+  p | uniqID;
+
+  // LP Struct Pupping (reassigns owner and type upon unpacking)
   p | lp_structs;
   if (p.isUnpacking()) {
-    for (int i = 0; i < PE_VALUE(g_lps_per_chare); i++) {
+    for (int i = 0; i < lp_structs.size(); i++) {
       lp_structs[i].owner = this;
       lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
     }
@@ -124,39 +173,33 @@ void LP::pup(PUP::er& p) {
   p | events;
   p | processed_events;
 
-  /*Event** temp_pending = events.get_temp_event_buffer();
-  Event** temp_processed = processed_events.get_temp_event_buffer();
+  // Reconstruction of events/trees based on the pupped events
+  if (p.isUnpacking()) {
+    Event** temp_pending = events.get_temp_event_buffer();
+    Event** temp_processed = processed_events.get_temp_event_buffer();
 
-  for (int i = 0; i < events.size(); i++) {
-    Event* e = temp_pending[i];
-    if (e->state.remote) {
-      avlInsert(&all_events, e);
+    // Reconstruct pending events
+    for (int i = 0; i < events.size(); i++) {
+      Event* e = temp_pending[i];
+      reconstruct_event(e, temp_pending, temp_processed);
     }
-    if (e->state.cancel_q) {
-      add_to_cancel_q(e);
+
+    // Reconstruct processed events
+    for (int i = 0; i < processed_events.size(); i++) {
+      Event* e = temp_processed[i];
+      reconstruct_event(e, temp_pending, temp_processed);
     }
+
+    // Delete the temporary buffers.
+    events.delete_temp_event_buffer();
+    processed_events.delete_temp_event_buffer();
+
+    // Update the current state of this LP both locally, and on the PE.
+    pe->update_next(&next_token, events.min());
+    pe->update_oldest(&oldest_token, processed_events.min());
+    current_time = processed_events.max();
+    current_event = processed_events.front();
   }
-  for (int i = 0; i < processed_events.size(); i++) {
-    Event* e = temp_processed[i];
-    if (e->state.remote) {
-      avlInsert(&all_events, e);
-    }
-    if (e->state.cancel_q) {
-      add_to_cancel_q(e);
-    }
-    // TODO: Build causality links
-  }
-
-  pe->update_next(&next_token, events.min());
-  pe->update_oldest(&oldest_token, processed_events.min());
-  current_time = processed_events.max();
-  current_event = processed_events.front();
-
-  events.delete_temp_event_buffer();
-  processed_events.delete_temp_event_buffer();*/
-
-  p | isOptimistic;
-  p | uniqID;
 }
 
 // Call init on all LPs then stop the charm scheduler.

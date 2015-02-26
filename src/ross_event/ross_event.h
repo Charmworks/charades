@@ -113,6 +113,7 @@ class Event {
   unsigned pending_count;
   unsigned* processed_indices;
   unsigned processed_count;
+  unsigned sent_count;
 };
 
 // Publicly exposed functions
