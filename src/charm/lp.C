@@ -102,9 +102,22 @@ LP::LP(CkMigrateMessage* m) : next_token(this), oldest_token(this),
   pe = pes.ckLocalBranch();
 }
 
+// Relink causality for event pointers to the pending and processed queues.
 void LP::reconstruct_causality(Event* e, Event** pending, Event** processed) {
+  for (int i = 0; i < e->processed_count; i++) {
+    Event* tmp = processed[e->processed_indices[i]];
+    tmp->cause_next = e->caused_by_me;
+    e->caused_by_me = tmp;
+  }
+  for (int i = 0; i < e->pending_count; i++) {
+    Event* tmp = pending[e->pending_indices[i]];
+    tmp->cause_next = e->caused_by_me;
+    e->caused_by_me = tmp;
+  }
 }
 
+// Reset pointer fields in events, and re-add events into the avl tree/cancel_q
+// if necessary.
 void LP::reconstruct_event(Event* e, Event** pending, Event** processed) {
   // Based on the owner, reset id fields to pointers if the event is local.
   // Also make sure to rebuild causality if in the rollback queue.

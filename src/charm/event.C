@@ -52,7 +52,7 @@ void operator|(PUP::er& p, Event* e) {
   // Pupping the remote message data
   if (e->state.owner == TW_chare_q || e->state.owner == TW_rollback_q) {
     if (p.isUnpacking()) {
-      e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
+      // When unpacking the queues, events are allocated with RemoteEvents.
       e->userData = e->eventMsg->userData;
     }
     p | *(e->eventMsg);
@@ -61,6 +61,8 @@ void operator|(PUP::er& p, Event* e) {
   // TODO: Figure out how to pup out_msgs
   //p | out_msgs;
 
+  // TODO: If it's a sent message we can probably skip all of this, and maybe
+  // even skipping the event msg part as well.
   // Pupping causality links
   Event* tmp;
   // If we are packing, we need to find out how many causal events there are.
@@ -99,22 +101,45 @@ void operator|(PUP::er& p, Event* e) {
     unsigned pending_idx = 0;
     unsigned processed_idx = 0;
     tmp = e->caused_by_me;
+    Event* prev = NULL;
     while (tmp) {
+      bool unlink = false;
       if (tmp->state.owner = TW_chare_q) {
         e->pending_indices[pending_idx++] = tmp->seq_num;
+        unlink = true;
       } else if (tmp->state.owner = TW_rollback_q) {
         e->processed_indices[processed_idx++] = tmp->seq_num;
+        unlink = true;
+      }
+      if (unlink) {
+        if (prev == NULL) {
+          e->caused_by_me = tmp->cause_next;
+        } else {
+          prev->cause_next = tmp->cause_next;
+        }
       } else {
-        // TODO: What to do with sent events???
-        // TODO: Maybe just remove above events as we pup, and just left with
-        // chain of sent, which we can pup and unpup based on count.
+        prev = tmp;
       }
       tmp = tmp->cause_next;
     }
   }
   PUParray(p, e->pending_indices, e->pending_count);
   PUParray(p, e->processed_indices, e->processed_count);
-  // TODO: What to do with sent events
+  // Now that we've removed all of the event pointers in the pending/processed
+  // we can individually pup all of the other events.
+  for (int i = 0; i < e->sent_count; i++) {
+    if (p.isPacking()) {
+      tmp = e->caused_by_me;
+      e->caused_by_me = tmp->cause_next;
+    } else if (p.isUnpacking()) {
+      tmp = tw_event_new(0,0,0);
+    }
+    p | tmp;
+    if (p.isUnpacking()) {
+      tmp->cause_next = e->caused_by_me;
+      e->caused_by_me = tmp;
+    }
+  }
 }
 
 Event* charm_allocate_event(int needMsg = 1) {

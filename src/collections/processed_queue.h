@@ -23,6 +23,12 @@ class ProcessedQueue {
       length = 0;
     }
 
+    // When packing: pop each event off the queue, record seq_num, and pup.
+    // When unpacking: Allocate a new event (with RemoteEvent), pup, push
+    // the event onto the queue, and add it to the correct place in the temp
+    // buffer (making sure they are coming off in the same order).
+    // NOTE: Causality is linked during the LP pup method because the LP has
+    // information about all events/queues.
     for (int i = 0; i < temp_items; i++) {
       Event* e;
       if (p.isPacking()) {
@@ -35,10 +41,6 @@ class ProcessedQueue {
       if (p.isUnpacking()) {
         temp_event_buffer[e->seq_num] = e;
         push_back(e);
-        // TODO: Link causality here
-        for (int i = 0; i < e->processed_count; i++) {
-          link_causality(temp_event_buffer[e->processed_indices[i]], e);
-        } 
       }
     }
   }

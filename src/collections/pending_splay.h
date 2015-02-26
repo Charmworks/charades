@@ -169,7 +169,10 @@ class PendingSplay : public PendingQueue {
         nitems = 0;
       }
 
-
+      // When packing: pop each event off the tree, record seq_num, and pup.
+      // When unpacking: Allocate a new event (with RemoteEvent), pup, push
+      // the event onto the tree, and add it to the correct place in the temp
+      // buffer (making sure they are coming off in the same order).
       for (int i = 0; i < temp_items; i++) {
         Event* e;
         if (p.isPacking()) {
@@ -180,6 +183,9 @@ class PendingSplay : public PendingQueue {
         } 
         p | e;
         if (p.isUnpacking()) {
+          if (i != e->seq_num) {
+            tw_error(TW_LOC, "seq_num mismatch while unpacking splay.\n");
+          }
           temp_event_buffer[e->seq_num] = e;
           push(e);
         }
