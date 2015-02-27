@@ -26,12 +26,13 @@ void RemoteEvent::pup(PUP::er& p) {
 
 void operator|(PUP::er& p, Event* e) {
   // Basic pupping
-  p | e->seq_num;  
+  p | e->event_id;
   p | e->ts;
+  p | e->seq_num;  
 
   // Pup the flat structs in Event as just plain bytes
-  p((char*)&(e->state), sizeof(tw_event_state));
   p((char*)&(e->cv), sizeof(tw_bf));
+  p((char*)&(e->state), sizeof(tw_event_state));
 
   // If we are packing we need to pack up the ids, not pointers.
   // NOTE: When unpacking an LP, it must reset dest_lp, src_lp, and send_lp to
@@ -49,7 +50,7 @@ void operator|(PUP::er& p, Event* e) {
   p | e->src_lp;
   p | e->send_pe;
 
-  // Pupping the remote message data
+  //Pupping the remote message data
   if (e->state.owner == TW_chare_q || e->state.owner == TW_rollback_q) {
     if (p.isUnpacking()) {
       // When unpacking the queues, events are allocated with RemoteEvents.
@@ -66,7 +67,7 @@ void operator|(PUP::er& p, Event* e) {
   // Pupping causality links
   Event* tmp;
   // If we are packing, we need to find out how many causal events there are.
-  if (p.isPacking()) {
+  if (p.isSizing()) {
     e->pending_count = 0;
     e->processed_count = 0;
     e->sent_count = 0;
@@ -88,8 +89,10 @@ void operator|(PUP::er& p, Event* e) {
   p | e->pending_count;
   p | e->processed_count;
   p | e->sent_count;
-  e->pending_indices = new unsigned[e->pending_count];
-  e->processed_indices = new unsigned[e->processed_count];
+  if (!p.isSizing()) {
+    e->pending_indices = new unsigned[e->pending_count];
+    e->processed_indices = new unsigned[e->processed_count];
+  }
 
   // If we are packing, fill the temporary arrays before pupping them.
   if (p.isPacking()) {
@@ -127,6 +130,8 @@ void operator|(PUP::er& p, Event* e) {
   PUParray(p, e->processed_indices, e->processed_count);
   // Now that we've removed all of the event pointers in the pending/processed
   // we can individually pup all of the other events.
+  // TODO: How are the unlinked things being deallocated!?
+  tmp = e->caused_by_me;
   for (int i = 0; i < e->sent_count; i++) {
     if (p.isPacking()) {
       tmp = e->caused_by_me;

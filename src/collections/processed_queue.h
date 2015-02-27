@@ -29,8 +29,8 @@ class ProcessedQueue {
     // buffer (making sure they are coming off in the same order).
     // NOTE: Causality is linked during the LP pup method because the LP has
     // information about all events/queues.
+    Event* e = head;
     for (int i = 0; i < temp_items; i++) {
-      Event* e;
       if (p.isPacking()) {
         e = pop_front();
         e->seq_num = i;
@@ -38,7 +38,9 @@ class ProcessedQueue {
         e = tw_event_new(0,0,0);
       }
       p | e;
-      if (p.isUnpacking()) {
+      if (p.isSizing()) {
+        e = e->next;
+      } else if (p.isUnpacking()) {
         temp_event_buffer[e->seq_num] = e;
         push_back(e);
       }
@@ -53,7 +55,7 @@ class ProcessedQueue {
     delete[] temp_event_buffer;
   }
     
-  size_t size() {
+  size_t size() const {
     return length;
   }
 
@@ -70,7 +72,7 @@ class ProcessedQueue {
     length++;
   }
 
-  Event * front() {
+  Event * front() const {
     return head;
   }
 
@@ -118,6 +120,7 @@ class ProcessedQueue {
     } else {
       head = NULL;
     }
+    length--;
     return e;
   }
 
