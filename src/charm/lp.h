@@ -12,8 +12,8 @@
 
 #include <vector>
 
-//#define DEBUG_LP(format, ...) { CkPrintf("LP[%d] "format, thisIndex, ## __VA_ARGS__); }
-#define DEBUG_LP(format, ...) {}
+#define DEBUG_LP(format, ...) { CkPrintf("LP[%d] "format, thisIndex, ## __VA_ARGS__); }
+//#define DEBUG_LP(format, ...) {}
 
 class RemoteEvent;
 
@@ -100,6 +100,8 @@ class LP : public CBase_LP {
     void reconstruct_causality(Event*, Event**, Event**);
     void reconstruct_event(Event*, Event**, Event**);
     virtual void pup(PUP::er &p);
+    void load_balance();
+    virtual void ResumeFromSync();
 
     // After initializing lps, we stop the charm scheduler and return control
     // to ROSS until we are ready to start the simulation.

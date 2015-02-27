@@ -47,6 +47,9 @@ class PE: public CBase_PE {
     /** \brief Initialize the RNG streams for this PE */
     void initialize_rand(CProxy_Initialize);
 
+    /** \brief Called as a reduction by LPs when load balancing is complete */
+    void resume_scheduler();
+
     /** \brief Print final stats and end the simulation */
     void end_simulation(CkReductionMsg *m);
 

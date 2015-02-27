@@ -64,6 +64,7 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
     lps = thisProxy;
     isLpSet = 1;
   }
+  usesAtSync = true;
 
   // Cache the pointer to the local PE chare
   pe = pes.ckLocalBranch();
@@ -202,10 +203,18 @@ void LP::pup(PUP::er& p) {
   }
 }
 
+void LP::load_balance() {
+  AtSync();
+}
+
+void LP::ResumeFromSync() {
+  // TODO: This doens't have to be a broadcast
+  contribute(CkCallback(CkReductionTarget(PE, resume_scheduler), pes));
+}
+
 // Call init on all LPs then stop the charm scheduler.
 void LP::init() {
   current_event = PE_VALUE(abort_event);
-  DEBUG_LP("Init lps \n");
   for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
     lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
   }
@@ -213,7 +222,6 @@ void LP::init() {
 }
 
 void LP::stop_scheduler() {
-  DEBUG_LP("Stop scheduler \n");
   CkExit();
 }
 
@@ -315,8 +323,7 @@ void LP::rollback_me(tw_stime ts) {
   PE_STATS(s_rb_total)++;
   PE_STATS(s_rb_primary)++;
   while(processed_events.front() != NULL && processed_events.front()->ts > ts) {
-    e = processed_events.front();
-    processed_events.pop_front();
+    e = processed_events.pop_front();
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
@@ -337,14 +344,12 @@ void LP::rollback_me(tw_stime ts) {
 void LP::rollback_me(Event *event) {
   PE_STATS(s_rb_total)++;
   PE_STATS(s_rb_secondary)++;
-  Event* e = processed_events.front();
-  processed_events.pop_front();
+  Event* e = processed_events.pop_front();
   while (e != event) {
     tw_event_rollback(e);
     events.push(e);
     e->state.owner = TW_chare_q;
-    e = processed_events.front();
-    processed_events.pop_front();
+    e = processed_events.pop_front();
   }
   // We've found the event in question so roll it back.
   // The caller will correctly handle what else to do with the event.
@@ -367,9 +372,9 @@ void LP::rollback_me(Event *event) {
 // 1) If the next event is older than the current gvt pop it and delete it.
 // 2) Update the PE with our oldest unprocessed event time.
 void LP::fossil_me(tw_stime gvt) {
+  Event* e;
   while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
-    Event* e = processed_events.back();
-    processed_events.pop_back();
+    e = processed_events.pop_back();
     tw_event_free(this,e);
   }
   if(processed_events.back() != NULL) {

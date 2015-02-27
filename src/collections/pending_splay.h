@@ -163,6 +163,7 @@ class PendingSplay : public PendingQueue {
       p | nitems;
       p | max_size;
 
+
       int temp_items = nitems;
       if (p.isUnpacking()) {
         temp_event_buffer = new Event*[temp_items];
@@ -175,7 +176,10 @@ class PendingSplay : public PendingQueue {
       // buffer (making sure they are coming off in the same order).
       for (int i = 0; i < temp_items; i++) {
         Event* e;
-        if (p.isPacking()) {
+        // TODO: This sizing clause is only temporary, need better soln.
+        if (p.isSizing()) {
+          e = top();
+        } else if (p.isPacking()) {
           e = pop();
           e->seq_num = i;
         } else if (p.isUnpacking()) {
@@ -325,6 +329,10 @@ class PendingSplay : public PendingQueue {
 	    LEFT(r) = NULL;
 	    RIGHT(r) = NULL;
 	    UP(r) = NULL;
+    }
+
+    tw_event* top() const {
+      return least;
     }
 
     tw_stime min() const {

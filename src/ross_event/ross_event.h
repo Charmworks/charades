@@ -85,12 +85,12 @@ class Event {
   Time ts;
   tw_bf cv;
 
+  // The event state says which queues the event is in and whether it is remote
+  tw_event_state state;
+
   // Fields for sender/receiver info. Can be cast as ids or ptrs.
   tw_lpid dest_lp, src_lp;
   tw_peid send_pe;
-
-  // The event state says which queues the event is in and whether it is remote
-  tw_event_state state;
 
   // Fields storing msg data
   RemoteEvent * eventMsg;

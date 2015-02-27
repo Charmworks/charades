@@ -10,6 +10,7 @@
 #include <float.h> // Included for DBL_MAX
 
 CProxy_PE pes;
+extern CProxy_LP lps;
 CkReduction::reducerType statsReductionType;
 
 // TODO: Find a better place for all of these non-member functions.
@@ -333,11 +334,19 @@ void PE::gvt_end(Time new_gvt) {
     contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
         CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
-    if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-      thisProxy[CkMyPe()].execute_cons();
-    } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
       collect_fossils();
     }
+    // TODO: This doesn't need to be a broadcast
+    lps.load_balance();
+  }
+}
+
+void PE::resume_scheduler() {
+  if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+    thisProxy[CkMyPe()].execute_cons();
+  } else if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    thisProxy[CkMyPe()].execute_opt();
   }
 }
 
