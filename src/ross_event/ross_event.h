@@ -6,12 +6,10 @@
 #include "string.h"
 
 enum tw_event_owner {
-  TW_event_inf = 0,      /**< End of line event */
-  TW_event_null = 1,      /**< event in unused queue */
-  TW_chare_q = 2,     /**<  In the chare's to be executed event queue */
-  TW_rollback_q = 3,     /**< In the chare's rollback queue */
-  TW_sent = 4, /**< Event sent to someone else */
-  TW_pe_pq = 5
+  TW_event_null = 0,  /**< Event in unknown location */
+  TW_chare_q = 1,     /**< In the chare's pending queue */
+  TW_rollback_q = 2,  /**< In the chare's rollback queue */
+  TW_sent = 3,        /**< Event sent to someone else */
 };
 
 /**
@@ -60,6 +58,7 @@ struct tw_event_state {
   unsigned char owner;    /**< Which queue I am in; see tw_event_owner */
   unsigned char cancel_q; /**< Actively on a dest_lp->pe's cancel_q */
   unsigned char remote;   /**< Indicates union addr is in 'remote' storage */
+  unsigned char avl_tree; /**< Indicates that the event is in the AVL tree */
 };
 
 struct tw_out {

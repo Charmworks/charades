@@ -6,7 +6,7 @@ all: $(BUILD_DIR)/libross.a
 
 $(BUILD_DIR)/libross.a: $(MODULES)
 	for dir in $(MODULES); do make -C $${dir}; done
-	$(CHARMC) -o $@ $(BUILD_DIR)/*.o
+	$(CHARMC) -module RotateLB -o $@ $(BUILD_DIR)/*.o
 	
 $(MODULES):
 	make -C $@

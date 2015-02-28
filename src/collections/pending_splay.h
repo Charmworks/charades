@@ -25,6 +25,8 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "charm_api.h"
+
 // Macros for tree manipulation
 #define UP(t)   ((t)->up)
 #define UPUP(t)   ((t)->up->up)
@@ -163,33 +165,24 @@ class PendingSplay : public PendingQueue {
       p | nitems;
       p | max_size;
 
-
       int temp_items = nitems;
       if (p.isUnpacking()) {
         temp_event_buffer = new Event*[temp_items];
         nitems = 0;
       }
 
-      // When packing: pop each event off the tree, record seq_num, and pup.
-      // When unpacking: Allocate a new event (with RemoteEvent), pup, push
-      // the event onto the tree, and add it to the correct place in the temp
-      // buffer (making sure they are coming off in the same order).
+      // TODO: Should be able to iterate without popping, this will help with
+      // sizing and would behave exactly like the processed queue.
+      Event* e = top();
       for (int i = 0; i < temp_items; i++) {
-        Event* e;
-        // TODO: This sizing clause is only temporary, need better soln.
-        if (p.isSizing()) {
-          e = top();
-        } else if (p.isPacking()) {
+        if (p.isPacking()) {
           e = pop();
           e->seq_num = i;
         } else if (p.isUnpacking()) {
-          e = tw_event_new(0,0,0);
+          e = charm_allocate_event();
         } 
-        p | e;
+        pup_pending_event(p, e);
         if (p.isUnpacking()) {
-          if (i != e->seq_num) {
-            tw_error(TW_LOC, "seq_num mismatch while unpacking splay.\n");
-          }
           temp_event_buffer[e->seq_num] = e;
           push(e);
         }
@@ -207,11 +200,12 @@ class PendingSplay : public PendingQueue {
     void push(Event* e) {
 	    tw_event* n = root;
 
+      e->state.owner = TW_chare_q;
 	    nitems++;
-	    if (nitems > max_size)
-		    max_size = nitems;
 
-	    e->state.owner = TW_pe_pq;
+	    if (nitems > max_size) {
+		    max_size = nitems;
+      }
 
 	    RIGHT(e) = LEFT(e) = NULL;
 	    if (n) {
@@ -277,8 +271,8 @@ class PendingSplay : public PendingQueue {
 	    LEFT(r) = NULL;
 	    RIGHT(r) = NULL;
 	    UP(r) = NULL;
-	    r->state.owner = 0;
 
+      r->state.owner = 0;
 	    return r;
     }
 
@@ -286,19 +280,22 @@ class PendingSplay : public PendingQueue {
 	    tw_event       *n, *p;
 	    tw_event       *tmp;
 
+      if (r->state.owner != TW_chare_q) {
+        tw_error(TW_LOC,
+          "Attempt to delete event with owner: %d\n", r->state.owner);
+      }
 	    r->state.owner = 0;
+
+	    if (nitems == 0) {
+		    tw_error(TW_LOC,
+				    "Attempt to delete from empty queue\n");
+	    }
+	    nitems--;
 
 	    if (r == least) {
 		    pop();
 		    return;
 	    }
-
-	    if (nitems == 0) {
-		    tw_error(TW_LOC,
-				    "tw_pq_delete_any: attempt to delete from empty queue \n");
-	    }
-
-	    nitems--;
 
 	    if ((n = LEFT(r))) {
 		    if ((tmp = RIGHT(r))) {

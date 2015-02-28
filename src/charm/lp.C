@@ -50,6 +50,32 @@ void set_current_event(tw_lp* lp, Event* event) {
   lp->owner->current_time = event->ts;
 }
 
+// Pup function for tw_rng_stream in the LPStruct.
+inline void operator|(PUP::er& p, tw_rng_stream* s) {
+  PUParray(p, s->Ig, 4);
+  PUParray(p, s->Lg, 4);
+  PUParray(p, s->Cg, 4);
+#ifdef RAND_NORMAL
+  p | s->tw_normal_u1;
+  p | s->tw_normal_u2;
+  p | s->tw_normal_flipflop;
+#endif
+}
+
+// When the LP chare is unpacking lp_structs, it will handle setting of the
+// owner and type fields. The LPStruct pup just needs to handle the gid, state,
+// and rng stream.
+inline void operator|(PUP::er& p, LPStruct& lp) {
+  p | lp.gid;
+  if (p.isUnpacking()) {
+    lp.type = PE_VALUE(g_type_map)(lp.gid);
+    lp.state = malloc(lp.type->state_size);
+    lp.rng = (tw_rng_stream*)malloc(sizeof(tw_rng_stream));
+  }
+  p((char*)lp.state, lp.type->state_size);
+  p | lp.rng;
+}
+
 #undef PE_VALUE
 #define PE_VALUE(x) pe->globals->x
 
@@ -120,25 +146,24 @@ void LP::reconstruct_causality(Event* e, Event** pending, Event** processed) {
 // Reset pointer fields in events, and re-add events into the avl tree/cancel_q
 // if necessary.
 void LP::reconstruct_event(Event* e, Event** pending, Event** processed) {
-  // Based on the owner, reset id fields to pointers if the event is local.
+  // Based on the owner, reset dest_lp fields to pointers.
   // Also make sure to rebuild causality if in the rollback queue.
   if (e->state.owner == TW_chare_q) {
     e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
   } else if (e->state.owner == TW_rollback_q) {
     e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
     reconstruct_causality(e, pending, processed);
-  } else if (e->state.owner == TW_sent) {
+  }
+
+  // Also make sure to reset the src_lp and send_pe pointers when required.
+  if (e->state.owner == TW_sent || !e->state.remote) {
     e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
     e->send_pe = (tw_peid)this;
   }
 
-  // If remote, insert into avl tree, otherwise we have to rebuild the pointers
-  // to the local src_lp and send_pe from their ids.
-  if (e->state.remote) {
+  // Add the event to the avl_tree if necessary
+  if (e->state.avl_tree) {
     avlInsert(&all_events, e);
-  } else {
-    e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
-    e->send_pe = (tw_peid)this;
   }
 
   // Add the event to the cancel_q if necessary.
@@ -166,7 +191,6 @@ void LP::pup(PUP::er& p) {
   if (p.isUnpacking()) {
     for (int i = 0; i < lp_structs.size(); i++) {
       lp_structs[i].owner = this;
-      lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
     }
   }
 
@@ -231,6 +255,7 @@ void LP::stop_scheduler() {
 // 3) Pass control to the local receive method.
 void LP::recv_remote_event(RemoteEvent* event) {
   Event *e = charm_allocate_event(0);
+  e->state.remote = 1;
 
   // Fill in event
   e->eventMsg = event;
@@ -242,7 +267,6 @@ void LP::recv_remote_event(RemoteEvent* event) {
 
   // Hash event
   if (isOptimistic) {
-    e->state.remote = 1;
     avlInsert(&all_events, e);
   }
 
@@ -264,7 +288,6 @@ void LP::recv_local_event(Event* e) {
   }
 
   events.push(e);
-  e->state.owner = TW_chare_q;
 }
 
 // Entry method for receiving anti events.
@@ -277,7 +300,6 @@ void LP::recv_anti_event(RemoteEvent* event) {
   key->send_pe = event->send_pe;
 
   Event* real_event = avlDelete(&all_events, key);
-  real_event->state.remote = 0;
   charm_event_cancel(real_event);
 
   tw_event_free(this, key);
@@ -307,7 +329,6 @@ bool LP::execute_me() {
         pe->update_oldest(&oldest_token, e->ts);
       }
       processed_events.push_front(e);
-      e->state.owner = TW_rollback_q;
     } else {
       tw_event_free(this, e);
     }
@@ -322,11 +343,10 @@ void LP::rollback_me(tw_stime ts) {
   Event* e;
   PE_STATS(s_rb_total)++;
   PE_STATS(s_rb_primary)++;
-  while(processed_events.front() != NULL && processed_events.front()->ts > ts) {
+  while(processed_events.size() && processed_events.front()->ts > ts) {
     e = processed_events.pop_front();
     tw_event_rollback(e);
     events.push(e);
-    e->state.owner = TW_chare_q;
   }
 
   pe->update_next(&next_token, events.min());
@@ -348,7 +368,6 @@ void LP::rollback_me(Event *event) {
   while (e != event) {
     tw_event_rollback(e);
     events.push(e);
-    e->state.owner = TW_chare_q;
     e = processed_events.pop_front();
   }
   // We've found the event in question so roll it back.

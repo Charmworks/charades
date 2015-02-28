@@ -23,26 +23,18 @@ class ProcessedQueue {
       length = 0;
     }
 
-    // When packing: pop each event off the queue, record seq_num, and pup.
-    // When unpacking: Allocate a new event (with RemoteEvent), pup, push
-    // the event onto the queue, and add it to the correct place in the temp
-    // buffer (making sure they are coming off in the same order).
-    // NOTE: Causality is linked during the LP pup method because the LP has
-    // information about all events/queues.
     Event* e = head;
     for (int i = 0; i < temp_items; i++) {
-      if (p.isPacking()) {
-        e = pop_front();
-        e->seq_num = i;
-      } else if (p.isUnpacking()) {
+      if (p.isUnpacking()) {
         e = tw_event_new(0,0,0);
       }
-      p | e;
-      if (p.isSizing()) {
-        e = e->next;
-      } else if (p.isUnpacking()) {
+      pup_processed_event(p, e);
+      if (p.isUnpacking()) {
         temp_event_buffer[e->seq_num] = e;
         push_back(e);
+      } else {
+        e->seq_num = i;
+        e = e->next;
       }
     }
   }
@@ -60,6 +52,9 @@ class ProcessedQueue {
   }
 
   void push_front(Event *e) {
+    e->state.owner = TW_rollback_q;
+    length++;
+
     e->next = head;
     e->prev = NULL;
     if(head != NULL) {
@@ -69,7 +64,6 @@ class ProcessedQueue {
     if(tail == NULL) {
       tail = e;
     }
-    length++;
   }
 
   Event * front() const {
@@ -81,6 +75,11 @@ class ProcessedQueue {
   }
 
   Event * pop_front() {
+    if (length <= 0) {
+      tw_error(TW_LOC, "Popping an empty queue from the front\n");
+    }
+    length--;
+
     Event *e = head;
     head = e->next;
     if(head == NULL) {
@@ -88,11 +87,14 @@ class ProcessedQueue {
     } else {
       head->prev = NULL;
     }
-    length--;
+    e->state.owner = 0;
     return e;
   }
 
   void push_back(Event *e) {
+    e->state.owner = TW_rollback_q;
+    length++;
+
     e->prev = tail;
     if(tail != NULL) {
       tail->next = e;
@@ -113,6 +115,11 @@ class ProcessedQueue {
   }
 
   Event * pop_back() {
+    if (length <= 0) {
+      tw_error(TW_LOC, "Popping an empty queue from the back\n");
+    }
+    length--;
+
     Event * e = tail;
     tail = e->prev;
     if(tail != NULL) {
@@ -120,12 +127,23 @@ class ProcessedQueue {
     } else {
       head = NULL;
     }
-    length--;
+    e->state.owner = 0;
     return e;
   }
 
-  void erase(Event *e)
-  {
+  void erase(Event *e) {
+    if (e->state.owner != TW_rollback_q) {
+      tw_error(TW_LOC,
+          "Attempt to erase event with owner %d\n", e->state.owner);
+    }
+    e->state.owner = 0;
+
+    if (length <= 0) {
+      tw_error(TW_LOC,
+          "Attempt to erase an event from an empty queue\n");
+    }
+    length--;
+
     if(e->prev != NULL) {
       e->prev->next = e->next;
     } else {

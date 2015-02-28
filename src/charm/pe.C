@@ -338,7 +338,9 @@ void PE::gvt_end(Time new_gvt) {
       collect_fossils();
     }
     // TODO: This doesn't need to be a broadcast
-    lps.load_balance();
+    if (tw_ismaster()) {
+      lps.load_balance();
+    }
   }
 }
 
