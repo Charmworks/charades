@@ -1,6 +1,7 @@
 #include "event.h"
 #include "lp.h"
 
+#include "globals.h"
 #include "typedefs.h"
 #include "lp_struct.h"
 
@@ -52,7 +53,7 @@ void pup_pending_event(PUP::er& p, Event* e) {
   basic_event_pup(p, e);
 
   p | *(e->eventMsg);
-  if (e->isUnpacking()) {
+  if (p.isUnpacking()) {
     e->userData = e->eventMsg->userData;
   }
 }
@@ -77,7 +78,7 @@ void pup_processed_event(PUP::er& p, Event* e) {
   basic_event_pup(p, e);
 
   p | *(e->eventMsg);
-  if (e->isUnpacking()) {
+  if (p.isUnpacking()) {
     e->userData = e->eventMsg->userData;
   }
 
