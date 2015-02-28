@@ -170,26 +170,18 @@ class PendingSplay : public PendingQueue {
         nitems = 0;
       }
 
-      // When packing: pop each event off the tree, record seq_num, and pup.
-      // When unpacking: Allocate a new event (with RemoteEvent), pup, push
-      // the event onto the tree, and add it to the correct place in the temp
-      // buffer (making sure they are coming off in the same order).
+      // TODO: Should be able to iterate without popping, this will help with
+      // sizing and would behave exactly like the processed queue.
+      Event* e = top();
       for (int i = 0; i < temp_items; i++) {
-        Event* e;
-        // TODO: This sizing clause is only temporary, need better soln.
-        if (p.isSizing()) {
-          e = top();
-        } else if (p.isPacking()) {
+        if (p.isPacking()) {
           e = pop();
           e->seq_num = i;
         } else if (p.isUnpacking()) {
           e = tw_event_new(0,0,0);
         } 
-        p | e;
+        pup_pending_event(p, e);
         if (p.isUnpacking()) {
-          if (i != e->seq_num) {
-            tw_error(TW_LOC, "seq_num mismatch while unpacking splay.\n");
-          }
           temp_event_buffer[e->seq_num] = e;
           push(e);
         }

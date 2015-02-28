@@ -20,6 +20,8 @@ struct RemoteEvent : public CMessage_RemoteEvent {
 };
 
 class Event;
-void operator|(PUP::er& p, Event* e);
+void pup_pending_event(PUP::er& p, Event* e);
+void pup_processed_event(PUP::er& p, Event* e);
+void pup_sent_event(PUP::er& p, Event* e);
 
 #endif

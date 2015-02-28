@@ -1,6 +1,6 @@
 include ../config.mk
 
-all: $(BUILD_DIR)/pe.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o
+all: $(BUILD_DIR)/pe.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o $(BUILD_DIR)/event_pup.o
 
 ci_files: ross.ci pe.ci lp.ci event.ci
 	$(CHARMC) ross.ci pe.ci lp.ci event.ci
@@ -17,6 +17,9 @@ $(BUILD_DIR)/lp.o: ci_files lp.h lp.C
 
 $(BUILD_DIR)/event.o: ci_files event.h event.C
 	$(CHARMC) $(OPTS) -c event.C -o $@
+
+$(BUILD_DIR)/event_pup.o: ci_files event.h event_pup.C
+	$(CHARMC) $(OPTS) -c event_pup.C -o $@
 
 clean:
 	rm -rf *.decl.h *.def.h ci_files
