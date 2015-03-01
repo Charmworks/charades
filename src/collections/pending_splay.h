@@ -25,6 +25,8 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "charm_api.h"
+
 // Macros for tree manipulation
 #define UP(t)   ((t)->up)
 #define UPUP(t)   ((t)->up->up)
@@ -163,7 +165,6 @@ class PendingSplay : public PendingQueue {
       p | nitems;
       p | max_size;
 
-
       int temp_items = nitems;
       if (p.isUnpacking()) {
         temp_event_buffer = new Event*[temp_items];
@@ -178,7 +179,7 @@ class PendingSplay : public PendingQueue {
           e = pop();
           e->seq_num = i;
         } else if (p.isUnpacking()) {
-          e = tw_event_new(0,0,0);
+          e = charm_allocate_event();
         } 
         pup_pending_event(p, e);
         if (p.isUnpacking()) {
@@ -202,8 +203,6 @@ class PendingSplay : public PendingQueue {
 	    nitems++;
 	    if (nitems > max_size)
 		    max_size = nitems;
-
-	    e->state.owner = TW_pe_pq;
 
 	    RIGHT(e) = LEFT(e) = NULL;
 	    if (n) {
@@ -269,7 +268,8 @@ class PendingSplay : public PendingQueue {
 	    LEFT(r) = NULL;
 	    RIGHT(r) = NULL;
 	    UP(r) = NULL;
-	    r->state.owner = 0;
+      // TODO: Make sure this is OK
+      //r->state.owner = 0;
 
 	    return r;
     }
@@ -278,7 +278,7 @@ class PendingSplay : public PendingQueue {
 	    tw_event       *n, *p;
 	    tw_event       *tmp;
 
-	    r->state.owner = 0;
+	    //r->state.owner = 0;
 
 	    if (r == least) {
 		    pop();

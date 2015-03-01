@@ -18,6 +18,12 @@ void RemoteEvent::pup(PUP::er& p) {
   p((char*)userData, PE_VALUE(g_tw_msg_sz));
 }
 
+void operator|(PUP::er& p, tw_event_state& s) {
+  p | s.owner;
+  p | s.remote;
+  p | s.cancel_q;
+}
+
 // TODO: Sent events may not need bitfields or seq_nums.
 // TODO: Output messages
 inline void basic_event_pup(PUP::er& p, Event* e) {
@@ -25,12 +31,13 @@ inline void basic_event_pup(PUP::er& p, Event* e) {
   p | e->ts;
   p | e->seq_num;
 
-  p((char*)&(e->cv), sizeof(tw_bf));
-  p((char*)&(e->state), sizeof(tw_event_state));
+  p | e->state;
 
   p | e->dest_lp;
   p | e->src_lp;
   p | e->send_pe;
+
+  p((char*)&(e->cv), sizeof(tw_bf));
 }
 
 // PENDING EVENTS:
@@ -38,9 +45,9 @@ inline void basic_event_pup(PUP::er& p, Event* e) {
 // Definitely have a RemoteEvent
 // No causality information
 void pup_pending_event(PUP::er& p, Event* e) {
-  if (e->state.owner != TW_chare_q) {
-    tw_error(TW_LOC, "Bad pup call, TW_chare_q != %d!\n", e->state.owner);
-  }
+  //if (e->state.owner != TW_chare_q) {
+  //  tw_error(TW_LOC, "Bad pup call, TW_chare_q != %d!\n", e->state.owner);
+  //}
 
   if (p.isPacking()) {
     e->dest_lp = ((tw_lp*)(e->dest_lp))->gid;
@@ -63,9 +70,9 @@ void pup_pending_event(PUP::er& p, Event* e) {
 // Definitely have a RemoteEvent
 // Must PUP causality information
 void pup_processed_event(PUP::er& p, Event* e) {
-  if (e->state.owner != TW_rollback_q) {
-    tw_error(TW_LOC, "Bad pup call, TW_rollback_q != %d!\n", e->state.owner);
-  }
+  //if (e->state.owner != TW_rollback_q) {
+  //  tw_error(TW_LOC, "Bad pup call, TW_rollback_q != %d!\n", e->state.owner);
+  //}
 
   if (p.isPacking()) {
     e->dest_lp = ((tw_lp*)(e->dest_lp))->gid;
@@ -171,9 +178,9 @@ void pup_processed_event(PUP::er& p, Event* e) {
 // No RemoteEvent
 // No causality information
 void pup_sent_event(PUP::er& p, Event* e) {
-  if (e->state.owner != TW_sent) {
-    tw_error(TW_LOC, "Bad pup call, TW_sent != %d!\n", e->state.owner);
-  }
+  //if (e->state.owner != TW_sent) {
+  //  tw_error(TW_LOC, "Bad pup call, TW_sent != %d!\n", e->state.owner);
+  //}
 
   if (p.isPacking()) {
     e->src_lp = ((tw_lp*)(e->src_lp))->gid;

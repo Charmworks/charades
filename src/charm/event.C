@@ -16,9 +16,12 @@
 extern CProxy_LP lps;
 extern CProxy_PE pes;
 
-Event* charm_allocate_event(int needMsg = 1) {
+Event* charm_allocate_event(int needMsg) {
   Event* e;
   e = PE_VALUE(event_buffer)->get_event();
+  if (e == PE_VALUE(abort_event)) {
+    tw_error(TW_LOC, "We are all out of events to allocate!\n");
+  }
   if (needMsg) {
     e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
     e->userData = e->eventMsg->userData;

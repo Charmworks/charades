@@ -73,6 +73,9 @@ class ProcessedQueue {
   }
 
   Event * pop_front() {
+    if (length <= 0) {
+      tw_error(TW_LOC, "Popping an empty queue from the front\n");
+    }
     Event *e = head;
     head = e->next;
     if(head == NULL) {
@@ -94,6 +97,7 @@ class ProcessedQueue {
     if(head == NULL) {
       head = e;
     }
+    length++;
   }
 
   Event * back() const {
@@ -105,6 +109,9 @@ class ProcessedQueue {
   }
 
   Event * pop_back() {
+    if (length <= 0) {
+      tw_error(TW_LOC, "Popping an empty queue from the back\n");
+    }
     Event * e = tail;
     tail = e->prev;
     if(tail != NULL) {
@@ -128,6 +135,7 @@ class ProcessedQueue {
     } else {
       tail = e->prev;
     }
+    length--;
   }
 };
 #endif

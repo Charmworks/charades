@@ -17,27 +17,6 @@
 
 class RemoteEvent;
 
-// Pup function for tw_rng_stream in the LPStruct.
-inline void operator|(PUP::er& p, tw_rng_stream* s) {
-  PUParray(p, s->Ig, 4);
-  PUParray(p, s->Lg, 4);
-  PUParray(p, s->Cg, 4);
-#ifdef RAND_NORMAL
-  p | s->tw_normal_u1;
-  p | s->tw_normal_u2;
-  p | s->tw_normal_flipflop;
-#endif
-}
-
-// When the LP chare is unpacking lp_structs, it will handle setting of the
-// owner and type fields. The LPStruct pup just needs to handle the gid, state,
-// and rng stream.
-inline void operator|(PUP::er& p, LPStruct& lp) {
-  p | lp.gid;
-  p((char*)lp.state, lp.type->state_size);
-  p | lp.rng;
-}
-
 // Tokens owned by LP chares that are used by the PE queues that control
 // scheduling and fossil collection. Each token has a direct pointer to its LP,
 // the timestamp associated with the token, and the index of its location in the

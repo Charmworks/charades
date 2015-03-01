@@ -50,6 +50,32 @@ void set_current_event(tw_lp* lp, Event* event) {
   lp->owner->current_time = event->ts;
 }
 
+// Pup function for tw_rng_stream in the LPStruct.
+inline void operator|(PUP::er& p, tw_rng_stream* s) {
+  PUParray(p, s->Ig, 4);
+  PUParray(p, s->Lg, 4);
+  PUParray(p, s->Cg, 4);
+#ifdef RAND_NORMAL
+  p | s->tw_normal_u1;
+  p | s->tw_normal_u2;
+  p | s->tw_normal_flipflop;
+#endif
+}
+
+// When the LP chare is unpacking lp_structs, it will handle setting of the
+// owner and type fields. The LPStruct pup just needs to handle the gid, state,
+// and rng stream.
+inline void operator|(PUP::er& p, LPStruct& lp) {
+  p | lp.gid;
+  if (p.isUnpacking()) {
+    lp.type = PE_VALUE(g_type_map)(lp.gid);
+    lp.state = malloc(lp.type->state_size);
+    lp.rng = (tw_rng_stream*)malloc(sizeof(tw_rng_stream));
+  }
+  p((char*)lp.state, lp.type->state_size);
+  p | lp.rng;
+}
+
 #undef PE_VALUE
 #define PE_VALUE(x) pe->globals->x
 
@@ -166,7 +192,6 @@ void LP::pup(PUP::er& p) {
   if (p.isUnpacking()) {
     for (int i = 0; i < lp_structs.size(); i++) {
       lp_structs[i].owner = this;
-      lp_structs[i].type = PE_VALUE(g_type_map)(lp_structs[i].gid);
     }
   }
 
@@ -241,8 +266,8 @@ void LP::recv_remote_event(RemoteEvent* event) {
   e->userData = event->userData;
 
   // Hash event
+  e->state.remote = 1;
   if (isOptimistic) {
-    e->state.remote = 1;
     avlInsert(&all_events, e);
   }
 
@@ -322,7 +347,7 @@ void LP::rollback_me(tw_stime ts) {
   Event* e;
   PE_STATS(s_rb_total)++;
   PE_STATS(s_rb_primary)++;
-  while(processed_events.front() != NULL && processed_events.front()->ts > ts) {
+  while(processed_events.size() && processed_events.front()->ts > ts) {
     e = processed_events.pop_front();
     tw_event_rollback(e);
     events.push(e);
