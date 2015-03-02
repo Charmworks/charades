@@ -52,6 +52,9 @@ class ProcessedQueue {
   }
 
   void push_front(Event *e) {
+    e->state.owner = TW_rollback_q;
+    length++;
+
     e->next = head;
     e->prev = NULL;
     if(head != NULL) {
@@ -61,7 +64,6 @@ class ProcessedQueue {
     if(tail == NULL) {
       tail = e;
     }
-    length++;
   }
 
   Event * front() const {
@@ -76,6 +78,8 @@ class ProcessedQueue {
     if (length <= 0) {
       tw_error(TW_LOC, "Popping an empty queue from the front\n");
     }
+    length--;
+
     Event *e = head;
     head = e->next;
     if(head == NULL) {
@@ -83,11 +87,14 @@ class ProcessedQueue {
     } else {
       head->prev = NULL;
     }
-    length--;
+    e->state.owner = 0;
     return e;
   }
 
   void push_back(Event *e) {
+    e->state.owner = TW_rollback_q;
+    length++;
+
     e->prev = tail;
     if(tail != NULL) {
       tail->next = e;
@@ -97,7 +104,6 @@ class ProcessedQueue {
     if(head == NULL) {
       head = e;
     }
-    length++;
   }
 
   Event * back() const {
@@ -112,6 +118,8 @@ class ProcessedQueue {
     if (length <= 0) {
       tw_error(TW_LOC, "Popping an empty queue from the back\n");
     }
+    length--;
+
     Event * e = tail;
     tail = e->prev;
     if(tail != NULL) {
@@ -119,12 +127,23 @@ class ProcessedQueue {
     } else {
       head = NULL;
     }
-    length--;
+    e->state.owner = 0;
     return e;
   }
 
-  void erase(Event *e)
-  {
+  void erase(Event *e) {
+    if (e->state.owner != TW_rollback_q) {
+      tw_error(TW_LOC,
+          "Attempt to erase event with owner %d\n", e->state.owner);
+    }
+    e->state.owner = 0;
+
+    if (length <= 0) {
+      tw_error(TW_LOC,
+          "Attempt to erase an event from an empty queue\n");
+    }
+    length--;
+
     if(e->prev != NULL) {
       e->prev->next = e->next;
     } else {
@@ -135,7 +154,6 @@ class ProcessedQueue {
     } else {
       tail = e->prev;
     }
-    length--;
   }
 };
 #endif

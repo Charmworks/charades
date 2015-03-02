@@ -289,7 +289,6 @@ void LP::recv_local_event(Event* e) {
   }
 
   events.push(e);
-  e->state.owner = TW_chare_q;
 }
 
 // Entry method for receiving anti events.
@@ -332,7 +331,6 @@ bool LP::execute_me() {
         pe->update_oldest(&oldest_token, e->ts);
       }
       processed_events.push_front(e);
-      e->state.owner = TW_rollback_q;
     } else {
       tw_event_free(this, e);
     }
@@ -351,7 +349,6 @@ void LP::rollback_me(tw_stime ts) {
     e = processed_events.pop_front();
     tw_event_rollback(e);
     events.push(e);
-    e->state.owner = TW_chare_q;
   }
 
   pe->update_next(&next_token, events.min());
@@ -373,7 +370,6 @@ void LP::rollback_me(Event *event) {
   while (e != event) {
     tw_event_rollback(e);
     events.push(e);
-    e->state.owner = TW_chare_q;
     e = processed_events.pop_front();
   }
   // We've found the event in question so roll it back.

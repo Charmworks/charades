@@ -200,9 +200,12 @@ class PendingSplay : public PendingQueue {
     void push(Event* e) {
 	    tw_event* n = root;
 
+      e->state.owner = TW_chare_q;
 	    nitems++;
-	    if (nitems > max_size)
+
+	    if (nitems > max_size) {
 		    max_size = nitems;
+      }
 
 	    RIGHT(e) = LEFT(e) = NULL;
 	    if (n) {
@@ -268,9 +271,8 @@ class PendingSplay : public PendingQueue {
 	    LEFT(r) = NULL;
 	    RIGHT(r) = NULL;
 	    UP(r) = NULL;
-      // TODO: Make sure this is OK
-      //r->state.owner = 0;
 
+      r->state.owner = 0;
 	    return r;
     }
 
@@ -278,19 +280,22 @@ class PendingSplay : public PendingQueue {
 	    tw_event       *n, *p;
 	    tw_event       *tmp;
 
-	    //r->state.owner = 0;
+      if (r->state.owner != TW_chare_q) {
+        tw_error(TW_LOC,
+          "Attempt to delete event with owner: %d\n", r->state.owner);
+      }
+	    r->state.owner = 0;
+
+	    if (nitems == 0) {
+		    tw_error(TW_LOC,
+				    "Attempt to delete from empty queue\n");
+	    }
+	    nitems--;
 
 	    if (r == least) {
 		    pop();
 		    return;
 	    }
-
-	    if (nitems == 0) {
-		    tw_error(TW_LOC,
-				    "tw_pq_delete_any: attempt to delete from empty queue \n");
-	    }
-
-	    nitems--;
 
 	    if ((n = LEFT(r))) {
 		    if ((tmp = RIGHT(r))) {
