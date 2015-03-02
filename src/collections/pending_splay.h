@@ -198,134 +198,134 @@ class PendingSplay : public PendingQueue {
     }
     
     void push(Event* e) {
-	    tw_event* n = root;
+      tw_event* n = root;
 
       e->state.owner = TW_chare_q;
-	    nitems++;
+      nitems++;
 
-	    if (nitems > max_size) {
-		    max_size = nitems;
+      if (nitems > max_size) {
+        max_size = nitems;
       }
 
-	    RIGHT(e) = LEFT(e) = NULL;
-	    if (n) {
-		    for (;;) {
-			    if (KEY(n) <= KEY(e)) {
-				    if (RIGHT(n)) {
-					    n = RIGHT(n);
-				    } else {
-					    RIGHT(n) = e;
-					    UP(e) = n;
-					    break;
-				    }
-			    } else {
-				    if (LEFT(n)) {
-					    n = LEFT(n);
-				    } else {
-					    if (least == n) {
-						    least = e;
+      RIGHT(e) = LEFT(e) = NULL;
+      if (n) {
+        for (;;) {
+          if (KEY(n) <= KEY(e)) {
+            if (RIGHT(n)) {
+              n = RIGHT(n);
+            } else {
+              RIGHT(n) = e;
+              UP(e) = n;
+              break;
+            }
+          } else {
+            if (LEFT(n)) {
+              n = LEFT(n);
+            } else {
+              if (least == n) {
+                least = e;
               }
-					    LEFT(n) = e;
-					    UP(e) = n;
-					    break;
-				    }
-			    }
-		    }
-		    splay(e);
-		    root = e;
-	    } else {
-		    root = least = e;
-		    UP(e) = NULL;
-	    }
+              LEFT(n) = e;
+              UP(e) = n;
+              break;
+            }
+          }
+        }
+        splay(e);
+        root = e;
+      } else {
+        root = least = e;
+        UP(e) = NULL;
+      }
     }
 
     Event* pop() {
-	    tw_event       *r = least;
-	    tw_event       *tmp, *p;
+      tw_event       *r = least;
+      tw_event       *tmp, *p;
 
-	    if (nitems == 0)
-		    return (tw_event *) NULL;
+      if (nitems == 0)
+        return (tw_event *) NULL;
 
-	    nitems--;
+      nitems--;
 
-	    if ((p = UP(least))) {
-		    if ((tmp = RIGHT(least))) {
-			    LEFT(p) = tmp;
-			    UP(tmp) = p;
-			    for (; LEFT(tmp); tmp = LEFT(tmp));
-			    least = tmp;
-		    } else {
-			    least = UP(least);
-			    LEFT(least) = NULL;
-		    }
-	    } else {
-		    if ((root = RIGHT(least))) {
-			    UP(root) = NULL;
-			    for (tmp = root; LEFT(tmp); tmp = LEFT(tmp));
-			    least = tmp;
-		    } else {
-			    least = NULL;
+      if ((p = UP(least))) {
+        if ((tmp = RIGHT(least))) {
+          LEFT(p) = tmp;
+          UP(tmp) = p;
+          for (; LEFT(tmp); tmp = LEFT(tmp));
+          least = tmp;
+        } else {
+          least = UP(least);
+          LEFT(least) = NULL;
         }
-	    }
+      } else {
+        if ((root = RIGHT(least))) {
+          UP(root) = NULL;
+          for (tmp = root; LEFT(tmp); tmp = LEFT(tmp));
+          least = tmp;
+        } else {
+          least = NULL;
+        }
+      }
 
-	    LEFT(r) = NULL;
-	    RIGHT(r) = NULL;
-	    UP(r) = NULL;
+      LEFT(r) = NULL;
+      RIGHT(r) = NULL;
+      UP(r) = NULL;
 
       r->state.owner = 0;
-	    return r;
+      return r;
     }
 
     void erase(Event* r) {
-	    tw_event       *n, *p;
-	    tw_event       *tmp;
+      tw_event       *n, *p;
+      tw_event       *tmp;
 
       if (r->state.owner != TW_chare_q) {
         tw_error(TW_LOC,
           "Attempt to delete event with owner: %d\n", r->state.owner);
       }
-	    r->state.owner = 0;
+      r->state.owner = 0;
 
-	    if (nitems == 0) {
-		    tw_error(TW_LOC,
-				    "Attempt to delete from empty queue\n");
-	    }
-	    nitems--;
-
-	    if (r == least) {
-		    pop();
-		    return;
-	    }
-
-	    if ((n = LEFT(r))) {
-		    if ((tmp = RIGHT(r))) {
-			    UP(n) = NULL;
-			    for (; RIGHT(n); n = RIGHT(n));
-			    splay(n);
-			    RIGHT(n) = tmp;
-			    UP(tmp) = n;
-		    }
-		    UP(n) = UP(r);
-	    } else if ((n = RIGHT(r))) {
-		    UP(n) = UP(r);
-	    }
-
-	    if ((p = UP(r))) {
-		    if (r == LEFT(p)) {
-			    LEFT(p) = n;
-		    } else {
-			    RIGHT(p) = n;
-        }
-		    if (n) {
-			    splay(p);
-			    root = p;
-		    }
-	    } else {
-		    root = n;
+      if (nitems == 0) {
+        tw_error(TW_LOC,
+            "Attempt to delete from empty queue\n");
       }
-	    LEFT(r) = NULL;
-	    RIGHT(r) = NULL;
-	    UP(r) = NULL;
+      nitems--;
+
+      if (r == least) {
+        pop();
+        return;
+      }
+
+      if ((n = LEFT(r))) {
+        if ((tmp = RIGHT(r))) {
+          UP(n) = NULL;
+          for (; RIGHT(n); n = RIGHT(n));
+          splay(n);
+          RIGHT(n) = tmp;
+          UP(tmp) = n;
+        }
+        UP(n) = UP(r);
+      } else if ((n = RIGHT(r))) {
+        UP(n) = UP(r);
+      }
+
+      if ((p = UP(r))) {
+        if (r == LEFT(p)) {
+          LEFT(p) = n;
+        } else {
+          RIGHT(p) = n;
+        }
+        if (n) {
+          splay(p);
+          root = p;
+        }
+      } else {
+        root = n;
+      }
+      LEFT(r) = NULL;
+      RIGHT(r) = NULL;
+      UP(r) = NULL;
     }
 
     tw_event* top() const {
