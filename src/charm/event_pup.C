@@ -22,6 +22,7 @@ void operator|(PUP::er& p, tw_event_state& s) {
   p | s.owner;
   p | s.remote;
   p | s.cancel_q;
+  p | s.avl_tree;
 }
 
 // TODO: Sent events may not need bitfields or seq_nums.
