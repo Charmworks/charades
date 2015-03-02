@@ -49,15 +49,30 @@ void pup_pending_event(PUP::er& p, Event* e) {
   //  tw_error(TW_LOC, "Bad pup call, TW_chare_q != %d!\n", e->state.owner);
   //}
 
+  // Temporarily turn pointers into IDs for packing
+  tw_lpid dest_lp, src_lp;
+  tw_peid send_pe;
   if (p.isPacking()) {
+    dest_lp = e->dest_lp;
     e->dest_lp = ((tw_lp*)(e->dest_lp))->gid;
     if (!e->state.remote) {
+      src_lp = e->src_lp;
+      send_pe = e->send_pe;
       e->src_lp = ((tw_lp*)(e->src_lp))->gid;
       e->send_pe = ((LP*)(e->send_pe))->thisIndex;
     }
   }
 
   basic_event_pup(p, e);
+
+  // After packing, return the ids back to pointers
+  if (p.isPacking()) {
+    e->dest_lp = dest_lp;
+    if (!e->state.remote) {
+      e->src_lp = src_lp;
+      e->send_pe = send_pe;
+    }
+  }
 
   p | *(e->eventMsg);
   if (p.isUnpacking()) {
@@ -74,15 +89,30 @@ void pup_processed_event(PUP::er& p, Event* e) {
   //  tw_error(TW_LOC, "Bad pup call, TW_rollback_q != %d!\n", e->state.owner);
   //}
 
+  // Temporarily turn pointers into IDs for packing
+  tw_lpid dest_lp, src_lp;
+  tw_peid send_pe;
   if (p.isPacking()) {
+    dest_lp = e->dest_lp;
     e->dest_lp = ((tw_lp*)(e->dest_lp))->gid;
     if (!e->state.remote) {
+      src_lp = e->src_lp;
+      send_pe = e->send_pe;
       e->src_lp = ((tw_lp*)(e->src_lp))->gid;
       e->send_pe = ((LP*)(e->send_pe))->thisIndex;
     }
   }
 
   basic_event_pup(p, e);
+
+  // After packing, return the ids back to pointers
+  if (p.isPacking()) {
+    e->dest_lp = dest_lp;
+    if (!e->state.remote) {
+      e->src_lp = src_lp;
+      e->send_pe = send_pe;
+    }
+  }
 
   p | *(e->eventMsg);
   if (p.isUnpacking()) {
@@ -115,6 +145,8 @@ void pup_processed_event(PUP::er& p, Event* e) {
   p | e->sent_count;
 
   // When packing and unpacking we need to create the temporary arrays.
+  // These are freed after packing is complete, and after causality is
+  // reconstructed during unpacking.
   if (!p.isSizing()) {
     e->pending_indices = new unsigned[e->pending_count];
     e->processed_indices = new unsigned[e->processed_count];
@@ -156,6 +188,11 @@ void pup_processed_event(PUP::er& p, Event* e) {
   }
   PUParray(p, e->pending_indices, e->pending_count);
   PUParray(p, e->processed_indices, e->processed_count);
+
+  if (p.isPacking()) {
+    delete[] e->pending_indices;
+    delete[] e->processed_indices;
+  }
   
   // Finally, pup the sent events in the causality list
   Event* tmp = e->caused_by_me;
@@ -182,10 +219,19 @@ void pup_sent_event(PUP::er& p, Event* e) {
   //  tw_error(TW_LOC, "Bad pup call, TW_sent != %d!\n", e->state.owner);
   //}
 
+  tw_lpid src_lp;
+  tw_peid send_pe;
   if (p.isPacking()) {
+    src_lp = e->src_lp;
+    send_pe = e->send_pe;
     e->src_lp = ((tw_lp*)(e->src_lp))->gid;
     e->send_pe = ((LP*)(e->send_pe))->thisIndex;
   }
 
   basic_event_pup(p, e);
+
+  if (p.isPacking()) {
+    e->src_lp = src_lp;
+    e->send_pe = send_pe;
+  }
 }

@@ -60,7 +60,7 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
   return e;
 }
 
-void tw_event_free(tw_pe *pe, tw_event *e) {
+void tw_event_free(tw_event *e) {
   tw_free_output_messages(e, 0);
   charm_free_event(e);
 }

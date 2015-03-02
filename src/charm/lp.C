@@ -136,11 +136,13 @@ void LP::reconstruct_causality(Event* e, Event** pending, Event** processed) {
     tmp->cause_next = e->caused_by_me;
     e->caused_by_me = tmp;
   }
+  delete[] e->processed_indices;
   for (int i = 0; i < e->pending_count; i++) {
     Event* tmp = pending[e->pending_indices[i]];
     tmp->cause_next = e->caused_by_me;
     e->caused_by_me = tmp;
   }
+  delete[] e->pending_indices;
 }
 
 // Reset pointer fields in events, and re-add events into the avl tree/cancel_q
@@ -302,7 +304,7 @@ void LP::recv_anti_event(RemoteEvent* event) {
   Event* real_event = avlDelete(&all_events, key);
   charm_event_cancel(real_event);
 
-  tw_event_free(this, key);
+  tw_event_free(key);
   delete event;
 }
 
@@ -330,7 +332,7 @@ bool LP::execute_me() {
       }
       processed_events.push_front(e);
     } else {
-      tw_event_free(this, e);
+      tw_event_free(e);
     }
     pe->update_next(&next_token, events.min());
     return true;
@@ -394,7 +396,7 @@ void LP::fossil_me(tw_stime gvt) {
   Event* e;
   while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
     e = processed_events.pop_back();
-    tw_event_free(this,e);
+    tw_event_free(e);
   }
   if(processed_events.back() != NULL) {
     pe->update_oldest(&oldest_token, processed_events.back()->ts);
@@ -409,7 +411,7 @@ void LP::cancel_event(Event* e) {
     case TW_chare_q:
       // If the event hasn't been executed, just free it
       delete_pending(e);
-      tw_event_free(this, e);
+      tw_event_free(e);
       return;
     case TW_rollback_q:
       // If the event has already been executed, add it to the cancel_q
@@ -459,12 +461,12 @@ void LP::process_cancel_q() {
       switch (curr->state.owner) {
         case TW_chare_q:
           delete_pending(curr);
-          tw_event_free(this, curr);
+          tw_event_free(curr);
           break;
 
         case TW_rollback_q:
           rollback_me(curr);
-          tw_event_free(this, curr);
+          tw_event_free(curr);
           break;
 
         default:
