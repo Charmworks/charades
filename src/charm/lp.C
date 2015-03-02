@@ -146,25 +146,24 @@ void LP::reconstruct_causality(Event* e, Event** pending, Event** processed) {
 // Reset pointer fields in events, and re-add events into the avl tree/cancel_q
 // if necessary.
 void LP::reconstruct_event(Event* e, Event** pending, Event** processed) {
-  // Based on the owner, reset id fields to pointers if the event is local.
+  // Based on the owner, reset dest_lp fields to pointers.
   // Also make sure to rebuild causality if in the rollback queue.
   if (e->state.owner == TW_chare_q) {
     e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
   } else if (e->state.owner == TW_rollback_q) {
     e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
     reconstruct_causality(e, pending, processed);
-  } else if (e->state.owner == TW_sent) {
+  }
+
+  // Also make sure to reset the src_lp and send_pe pointers when required.
+  if (e->state.owner == TW_sent || !e->state.remote) {
     e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
     e->send_pe = (tw_peid)this;
   }
 
-  // If remote, insert into avl tree, otherwise we have to rebuild the pointers
-  // to the local src_lp and send_pe from their ids.
-  if (e->state.remote) {
+  // Add the event to the avl_tree if necessary
+  if (e->state.avl_tree) {
     avlInsert(&all_events, e);
-  } else {
-    e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
-    e->send_pe = (tw_peid)this;
   }
 
   // Add the event to the cancel_q if necessary.
@@ -256,6 +255,7 @@ void LP::stop_scheduler() {
 // 3) Pass control to the local receive method.
 void LP::recv_remote_event(RemoteEvent* event) {
   Event *e = charm_allocate_event(0);
+  e->state.remote = 1;
 
   // Fill in event
   e->eventMsg = event;
@@ -266,7 +266,6 @@ void LP::recv_remote_event(RemoteEvent* event) {
   e->userData = event->userData;
 
   // Hash event
-  e->state.remote = 1;
   if (isOptimistic) {
     avlInsert(&all_events, e);
   }
@@ -301,7 +300,6 @@ void LP::recv_anti_event(RemoteEvent* event) {
   key->send_pe = event->send_pe;
 
   Event* real_event = avlDelete(&all_events, key);
-  real_event->state.remote = 0;
   charm_event_cancel(real_event);
 
   tw_event_free(this, key);

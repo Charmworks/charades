@@ -151,6 +151,7 @@ static void avlRebalance(AvlTree *t)
  * in a AvlTree * */
 void avlInsert(AvlTree *t, Event *key)
 {
+  key->state.avl_tree = 1;
   /* insertion procedure */
   if (*t == AVL_EMPTY) {
     /* new t */
@@ -225,6 +226,7 @@ Event * avlDeleteMin(AvlTree *t)
   }
 
   avlRebalance(t);
+  event_with_lowest_ts->state.avl_tree = 0;
   return event_with_lowest_ts;
 }
 
@@ -270,7 +272,7 @@ Event * avlDelete(AvlTree *t, Event *key)
   }
 
   avlRebalance(t);
-
+  target->state.avl_tree = 0;
   return target;
 }
 

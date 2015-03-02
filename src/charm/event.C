@@ -33,7 +33,7 @@ void charm_free_event(Event* e) {
   // If we are optimistic, the event may need to be removed from the avl tree,
   // as well as freeing any events caused by it.
   if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-    if(e->state.remote == 1) {
+    if(e->state.avl_tree == 1) {
       avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
     }
 
@@ -49,6 +49,7 @@ void charm_free_event(Event* e) {
     }
   }
 
+  e->state.avl_tree = 0;
   e->state.remote = 0;
   e->state.cancel_q = 0;
   e->state.owner = TW_event_null;

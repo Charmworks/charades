@@ -58,6 +58,7 @@ struct tw_event_state {
   unsigned char owner;    /**< Which queue I am in; see tw_event_owner */
   unsigned char cancel_q; /**< Actively on a dest_lp->pe's cancel_q */
   unsigned char remote;   /**< Indicates union addr is in 'remote' storage */
+  unsigned char avl_tree; /**< Indicates that the event is in the AVL tree */
 };
 
 struct tw_out {
