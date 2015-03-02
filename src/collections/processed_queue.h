@@ -13,6 +13,12 @@ class ProcessedQueue {
 
   public:
   ProcessedQueue() : length(0), head(NULL), tail(NULL) { }
+  ~ProcessedQueue() {
+    while (length) {
+      Event* e = pop_front();
+      tw_event_free(e);
+    }
+  }
 
   virtual void pup(PUP::er &p) {
     p | length;

@@ -78,7 +78,9 @@ class Event {
     out_msgs = NULL;
     state.remote = 0;
     state.cancel_q = 0;
+    state.avl_tree = 0;
   }
+
   // Basic event info
   EventID event_id;
   Time ts;
@@ -108,16 +110,16 @@ class Event {
 
   // Fields for rebuilding causality lists after migration
   unsigned seq_num;     // Gives the order in which the event was pupped
-  unsigned* pending_indices;
   unsigned pending_count;
-  unsigned* processed_indices;
   unsigned processed_count;
   unsigned sent_count;
+  unsigned* pending_indices;
+  unsigned* processed_indices;
 };
 
 // Publicly exposed functions
 tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
-void tw_event_free(tw_pe *pe, tw_event *e);
+void tw_event_free(tw_event *e);
 void tw_event_send(tw_event * event);
 void tw_event_rollback(tw_event * event);
 

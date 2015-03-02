@@ -155,10 +155,32 @@ class PendingSplay : public PendingQueue {
       }
     }
 
+    // NOTE: This does an in-order travesal which will result in a linear tree
+    // on the other side. Should use a better traversal order.
+    void flatten_tree(Event* e, int& idx) {
+      if (LEFT(e)) {
+        flatten_tree(LEFT(e), idx);
+      }
+      if (e) {
+        e->seq_num = idx;
+        temp_event_buffer[idx++] = e;
+      }
+      if (RIGHT(e)) {
+        flatten_tree(RIGHT(e), idx);
+      }
+    }
+
   public:
     PendingSplay() {
       root = least = NULL;
       nitems = max_size = 0;
+    }
+
+    ~PendingSplay() {
+      while (nitems) {
+        Event* e = pop();
+        tw_event_free(e);
+      }
     }
 
     virtual void pup(PUP::er &p) {
@@ -166,26 +188,35 @@ class PendingSplay : public PendingQueue {
       p | max_size;
 
       int temp_items = nitems;
+      // If sizing, the temp_event_buffer is freed after packing.
+      if (p.isSizing()) {
+        int idx = 0;
+        temp_event_buffer = new Event*[temp_items];
+        flatten_tree(root, idx);
+      }
+      // If unpacking, the temp_event_buffer is freed by the LP after
+      // reconstructing all of the causality chains.
       if (p.isUnpacking()) {
         temp_event_buffer = new Event*[temp_items];
         nitems = 0;
       }
 
-      // TODO: Should be able to iterate without popping, this will help with
-      // sizing and would behave exactly like the processed queue.
-      Event* e = top();
+      Event* e;
       for (int i = 0; i < temp_items; i++) {
-        if (p.isPacking()) {
-          e = pop();
-          e->seq_num = i;
-        } else if (p.isUnpacking()) {
+        if (p.isUnpacking()) {
           e = charm_allocate_event();
-        } 
+        } else {
+          e = temp_event_buffer[i];
+        }
         pup_pending_event(p, e);
         if (p.isUnpacking()) {
           temp_event_buffer[e->seq_num] = e;
           push(e);
         }
+      }
+
+      if (p.isPacking()) {
+        delete[] temp_event_buffer;
       }
     } 
 

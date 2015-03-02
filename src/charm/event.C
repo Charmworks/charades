@@ -52,7 +52,7 @@ void charm_free_event(Event* e) {
   e->state.avl_tree = 0;
   e->state.remote = 0;
   e->state.cancel_q = 0;
-  e->state.owner = TW_event_null;
+  e->state.owner = 0;
   e->caused_by_me = NULL;
   e->cause_next = NULL;
   e->cancel_next = NULL;
@@ -127,8 +127,7 @@ void charm_event_cancel(Event * e) {
     unsigned dest_peid = PE_VALUE(g_chare_map)(e->dest_lp);
     charm_anti_send(dest_peid, e);
 
-    LP *send_pe = (LP*)((tw_lp*)e->src_lp)->owner;
-    tw_event_free(send_pe, e);
+    tw_event_free(e);
     return;
   }
 
