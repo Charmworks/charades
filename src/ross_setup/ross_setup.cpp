@@ -8,10 +8,10 @@
 #include "charm_api.h"
 #include "globals.h"
 #include "avl_tree.h"
-#include <malloc.h>
 
 void tw_event_setup() {
-  AvlTree avl_list = (AvlTree)memalign(64, sizeof(struct avlNode) * AVL_NODE_COUNT);
+  AvlTree avl_list;
+  int err = ((void **)&avl_list, 64, sizeof(struct avlNode) * AVL_NODE_COUNT);
   memset(avl_list, 0, sizeof(struct avlNode) * AVL_NODE_COUNT);
   for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
     avl_list[i].next = &avl_list[i + 1];

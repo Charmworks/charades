@@ -130,7 +130,7 @@ void charm_run() {
 
 PE::PE(CProxy_Initialize srcProxy) :
     gvt_cnt(0), gvt(0.0), min_cancel_time(DBL_MAX)  {
-  globals = (Globals*)memalign(64, sizeof(Globals));
+    int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
   initialize_globals(globals);
 
   statistics = new Statistics;
