@@ -19,6 +19,8 @@ struct Globals {
   unsigned g_tw_gvt_interval; // number of intervals per gvt
   tw_stime g_tw_lookahead;    // event lookahead for conservative
   tw_stime g_last_gvt;        // used for rollback purposes
+  double  gvt_print_interval; // determines frequency of progress print outs
+  double  percent_complete;   // current progress through simulation
 
   // RNG Globals
   tw_seed*  g_tw_rng_seed;
@@ -58,6 +60,8 @@ inline void initialize_globals(Globals* globals) {
   globals->g_tw_gvt_interval  = 16;
   globals->g_tw_lookahead     = .005;
   globals->g_last_gvt         = 0.0;
+  globals->gvt_print_interval = 1.0;
+  globals->percent_complete   = 0.0;
 
   globals->g_tw_rng_seed    = NULL;
   globals->g_tw_rng_max     = 1;

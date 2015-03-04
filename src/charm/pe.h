@@ -73,6 +73,7 @@ class PE: public CBase_PE {
     void gvt_begin(); /**< begin gvt computation */
     void gvt_contribute(); /**< all sent messages received, contribute to GVT */
     void gvt_end(Time); /**< gvt done, either restart the scheduler or end */
+    void gvt_print(Time);
 
     /** \brief Get time stamp of the minium event */
     Time get_min_time();
