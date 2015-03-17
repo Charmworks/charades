@@ -1,0 +1,9 @@
+# Small test with 16 lps, 4 per chare.
+#./charmrun +p1 ./phold --num-lps=16 --lps-per-chare=4 --synch=1
+./charmrun +p1 ./phold --num-lps=16 --lps-per-chare=4 --synch=2
+./charmrun +p2 ./phold --num-lps=16 --lps-per-chare=4 --synch=2
+./charmrun +p4 ./phold --num-lps=16 --lps-per-chare=4 --synch=2
+./charmrun +p1 ./phold --num-lps=16 --lps-per-chare=4 --synch=3
+./charmrun +p2 ./phold --num-lps=16 --lps-per-chare=4 --synch=3
+./charmrun +p4 ./phold --num-lps=16 --lps-per-chare=4 --synch=3
+Net Events Processed 16361
