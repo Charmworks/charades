@@ -279,6 +279,7 @@ void PE::gvt_begin() {
   DEBUG_PE("GVT #%d: begins\n", PE_STATS(s_ngvts));
   if(CkMyPe() == 0) {
     /* TODO: Provide option for using completion detection */
+    // TODO: Can QD be started sooner? Will that improve speed?
     CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
   }
 }
@@ -306,6 +307,12 @@ void PE::gvt_contribute() {
   DEBUG_PE("GVT #%d: contributed %lf\n", PE_STATS(s_ngvts), min_time);
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
+
+  // If we are doing optimistic simulation, we don't need to wait for the result
+  // of the reduction to continue execution.
+  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    thisProxy[CkMyPe()].execute_opt();
+  }
 }
 
 // Check to see if we are complete. If not, re-enter the appropriate
@@ -330,7 +337,6 @@ void PE::gvt_end(Time new_gvt) {
       thisProxy[CkMyPe()].execute_cons();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
       collect_fossils();
-      thisProxy[CkMyPe()].execute_opt();
     }
   }
 }
