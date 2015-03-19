@@ -191,8 +191,11 @@ class PendingSplay : public PendingQueue {
       // If sizing, the temp_event_buffer is freed after packing.
       if (p.isSizing()) {
         int idx = 0;
-        temp_event_buffer = new Event*[temp_items];
-        flatten_tree(root, idx);
+        if (temp_items) {
+          CkPrintf("Flattening a tree with %d items\n", temp_items);
+          temp_event_buffer = new Event*[temp_items];
+          flatten_tree(root, idx);
+        }
       }
       // If unpacking, the temp_event_buffer is freed by the LP after
       // reconstructing all of the causality chains.
