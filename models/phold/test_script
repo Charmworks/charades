@@ -1,6 +1,15 @@
 #!/bin/bash
 
-for file in tests/*
+rm tests/output
+
+files=tests/*
+
+if [ -n "$1" ]
+then
+  files=$1
+fi
+
+for file in $files
 do
   echo "Running tests in $file"
   echo ""
@@ -39,7 +48,7 @@ do
     if [ "$expected" != "$actual" ]
     then
       echo "Test Failed"
-      rm tests/output
+      echo "See tests/output for the program output..."
       exit 1
     fi
   done < "$file"
