@@ -1,7 +1,15 @@
 #!/bin/bash
 
 rm tests/output
-for file in tests/*
+
+files=tests/*
+
+if [ -n "$1" ]
+then
+  files=$1
+fi
+
+for file in $files
 do
   echo "Running tests in $file"
   echo ""
