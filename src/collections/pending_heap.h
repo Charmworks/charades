@@ -12,6 +12,7 @@
 #include "pending_queue.h"
 #include "typedefs.h"
 #include "ross_event.h"
+#include "event.h"
 #include <malloc.h>
 
 #include <float.h>
@@ -82,6 +83,27 @@ class PendingHeap : public PendingQueue {
       curr_max = (2*init_size);
       elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
       memset(elems, 0, sizeof(ELEMENT_TYPE) * curr_max);
+    }
+
+    virtual void pup(PUP::er& p) {
+      p | nelems;
+      p | curr_max;
+      if (p.isUnpacking()) {
+        elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
+      }
+      for (int i = 0; i < nelems; i++) {
+        if (p.isSizing()) {
+          elems[i]->seq_num = i;
+        }
+        pup_pending_event(p, elems[i]);
+      }
+    }
+
+    Event** get_temp_event_buffer() {
+      return elems;
+    }
+
+    void delete_temp_event_buffer() {
     }
 
     tw_stime min() const {

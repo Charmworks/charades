@@ -7,7 +7,7 @@
 #include "lp_struct.h"
 #include "ross_clcg4.h"
 
-#include "pending_splay.h"
+#include "pending_heap.h"
 #include "processed_queue.h"
 
 #include <vector>
@@ -47,7 +47,7 @@ class LP : public CBase_LP {
     LPList lp_structs;
 
     // Queues for storing events
-    PendingSplay events;
+    PendingHeap events;
     ProcessedQueue processed_events;
 
     // Cancel queue management

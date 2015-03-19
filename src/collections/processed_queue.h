@@ -3,6 +3,7 @@
 #include "typedefs.h"
 #include "ross_event.h"
 #include "event.h"
+#include "ross_util.h"
 
 class ProcessedQueue {
   size_t length;
