@@ -17,6 +17,9 @@
 
 class RemoteEvent;
 
+void operator|(PUP::er&, tw_rng_stream*);
+void operator|(PUP::er&, LPStruct&);
+
 // Tokens owned by LP chares that are used by the PE queues that control
 // scheduling and fossil collection. Each token has a direct pointer to its LP,
 // the timestamp associated with the token, and the index of its location in the
@@ -77,7 +80,8 @@ class LP : public CBase_LP {
 
     // Methods used for migration
     void reconstruct_causality(Event*, Event**, Event**);
-    void reconstruct_event(Event*, Event**, Event**);
+    void reconstruct_pending_event(Event*);
+    void reconstruct_processed_event(Event*, Event**, Event**);
     virtual void pup(PUP::er &p);
     void load_balance();
     virtual void ResumeFromSync();
