@@ -13,13 +13,19 @@
 #include "typedefs.h"
 #include "ross_event.h"
 #include "event.h"
+#include "charm_api.h"
+#include "ross_util.h"
 #include <malloc.h>
 
 #include <float.h>
 
 typedef Event *ELEMENT_TYPE;
 typedef double KEY_TYPE;
-#define KEY(e) (e->ts)
+
+#define KEY(i) (elems[i]->ts)
+#define LEFT(i)   (2*i+1)
+#define RIGHT(i)  (2*i+2)
+#define PARENT(i) (((i-1)/2))
 
 #define SWAP(x,y,t) { \
     t = elems[x]; \
@@ -31,42 +37,40 @@ typedef double KEY_TYPE;
 
 class PendingHeap : public PendingQueue {
   private:
-    size_t nelems;
-    size_t curr_max;
-    ELEMENT_TYPE *elems; /* Array [0..curr_max] of ELEMENT_TYPE */
+    size_t  nelems;
+    size_t  curr_max;
+    Event** elems;
 
-    void sift_down( int i ) {
-      size_t n = nelems, k = i, j, c1, c2;
-      ELEMENT_TYPE temp;
+    void sift_down(int i) {
+      if (nelems <= 1) return;
 
-      if( n <= 1 ) return;
+      size_t parent, left, right, temp_idx = i;
+      Event* temp;
 
       /* Stops when neither child is "strictly less than" parent */
       do {
-        j = k;
-        c1 = c2 = 2*k+1;
-        c2++;
-        if( c1 < n && KEY(elems[c1]) < KEY(elems[k]) ) k = c1;
-        if( c2 < n && KEY(elems[c2]) < KEY(elems[k]) ) k = c2;
-        SWAP( j, k, temp );
-      } while( j != k );
+        parent = temp_idx;
+        left = LEFT(parent);
+        right = RIGHT(parent);
+        if (left  < nelems && KEY(left)  < KEY(temp_idx)) temp_idx = left;
+        if (right < nelems && KEY(right) < KEY(temp_idx)) temp_idx = right;
+        if (parent != temp_idx) SWAP(parent, temp_idx, temp);
+      } while (parent != temp_idx);
     }
 
     void percolate_up( int i ) {
-      int n = nelems, k = i, j, p;
-      ELEMENT_TYPE temp;
+      if (nelems <= 1) return;
 
-      if( n <= 1 ) return;
+      int child, parent, temp_idx = i;
+      Event* temp;
 
       /* Stops when parent is "less than or equal to" child */
       do {
-        j = k;
-        if( (p = (k+1)/2) ) {
-          --p;
-          if( KEY(elems[k]) < KEY(elems[p]) ) k = p;
-        }
-        SWAP( j, k, temp );
-      } while( j != k );
+        child = temp_idx;
+        parent = PARENT(child);
+        if (parent >= 0 && KEY(parent) > KEY(temp_idx)) temp_idx = parent;
+        if (child != temp_idx) SWAP(child, temp_idx, temp);
+      } while (child != temp_idx);
     }
 
   public:
@@ -74,26 +78,36 @@ class PendingHeap : public PendingQueue {
       int init_size = 50000;
       nelems = 0;
       curr_max = (2*init_size);
-      elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
-      memset(elems, 0, sizeof(ELEMENT_TYPE) * curr_max);
+      elems = (Event**)malloc(sizeof(Event**) * curr_max);
+      memset(elems, 0, sizeof(Event**) * curr_max);
     }
 
     PendingHeap(int init_size) {
       nelems = 0;
       curr_max = (2*init_size);
-      elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
-      memset(elems, 0, sizeof(ELEMENT_TYPE) * curr_max);
+      elems = (Event**)malloc(sizeof(Event**) * curr_max);
+      memset(elems, 0, sizeof(Event**) * curr_max);
+    }
+
+    ~PendingHeap() {
+      for (int i = 0; i < nelems; i++) {
+        tw_event_free(elems[i]);
+      }
+      delete[] elems;
     }
 
     virtual void pup(PUP::er& p) {
       p | nelems;
       p | curr_max;
       if (p.isUnpacking()) {
-        elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
+        elems = (Event**)malloc(sizeof(Event**) * curr_max);
+        memset(elems, 0, sizeof(Event**) * curr_max);
       }
       for (int i = 0; i < nelems; i++) {
         if (p.isSizing()) {
           elems[i]->seq_num = i;
+        } else if (p.isUnpacking()) {
+          elems[i] = charm_allocate_event();
         }
         pup_pending_event(p, elems[i]);
       }
@@ -114,49 +128,56 @@ class PendingHeap : public PendingQueue {
       return nelems;
     }
 
-    void push( ELEMENT_TYPE e ) {
-      if( nelems >= curr_max ) {
-        size_t i = 50000;
-        size_t u = curr_max;
-        curr_max += i;
-        ELEMENT_TYPE *old = elems;
-        elems = (ELEMENT_TYPE*)memalign(64, sizeof(ELEMENT_TYPE) * curr_max);
-        memcpy(elems, old, sizeof(ELEMENT_TYPE) * u);
-        memset(&elems[u], 0, sizeof(ELEMENT_TYPE) * i);
+    void push(Event* e) {
+      if (nelems >= curr_max) {
+        size_t old_max = curr_max;
+        curr_max += 50000;
+        Event** old = elems;
+        elems = (Event**)malloc(sizeof(Event**) * curr_max);
+        memcpy(elems, old, sizeof(Event**) * old_max);
+        memset(&elems[old_max], 0, sizeof(Event**) * 50000);
         free(old);
       }
 
+      e->state.owner = TW_chare_q;
       e->heap_index = nelems;
+
       elems[nelems++] = e;
-      percolate_up( nelems-1 );
+      percolate_up(nelems-1);
     }
 
-    ELEMENT_TYPE pop() {
-      if( nelems <= 0 ) {
+    Event* pop() {
+      if (nelems <= 0) {
         return NULL;
       } else {
-        ELEMENT_TYPE e = elems[0];
-        elems[0] = elems[--nelems];
+        Event* e = elems[0];
+        e->state.owner = 0;
+
+        nelems--;
+        elems[0] = elems[nelems];
         elems[0]->heap_index = 0;
-        sift_down( 0 );
+        elems[nelems] = NULL;
+        sift_down(0);
+
         return e;
       }
     }
 
-    void erase(tw_event * victim) {
+    void erase(Event* victim) {
       int i = victim->heap_index;
 
-      if( !(0 <= i && i < nelems) || (elems[i]->heap_index != i) ) {
-        fprintf( stderr, "Fatal: Bad node in FEL!\n" ); exit(2);
+      if(i < 0 || i >= nelems || elems[i]->heap_index != i) {
+        tw_error(TW_LOC, "ERROR: Can't erase event from pending heap\n");
       } else {
         nelems--;
 
-        if( elems > 0 ) {
-          ELEMENT_TYPE successor = elems[nelems];
-          elems[i] = successor;
-          successor->heap_index = i;
-          if( KEY(successor) <= KEY(victim) ) percolate_up( i );
-          else sift_down( i );
+        if (elems > 0) {
+          elems[i] = elems[nelems];
+          elems[i]->heap_index = i;
+          elems[nelems] = NULL;
+
+          if (elems[i]->ts <= victim->ts) percolate_up(i);
+          else sift_down(i);
         }
       }
     }
