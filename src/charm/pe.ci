@@ -1,5 +1,5 @@
 module pe {
-  extern module ross;
+  extern module ross_core;
 
   include "typedefs.h";
 

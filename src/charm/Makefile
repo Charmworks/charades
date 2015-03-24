@@ -1,13 +1,13 @@
 include ../config.mk
 
-all: $(BUILD_DIR)/pe.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o
+all: $(BUILD_DIR)/pe.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross_core.o
 
-ci_files: ross.ci pe.ci lp.ci event.ci
-	$(CHARMC) ross.ci pe.ci lp.ci event.ci
+ci_files: ross_core.ci pe.ci lp.ci event.ci
+	$(CHARMC) ross_core.ci pe.ci lp.ci event.ci
 	touch ci_files
 
-$(BUILD_DIR)/ross.o: ci_files ross.h ross.C
-	$(CHARMC) $(OPTS) -c ross.C -o $@
+$(BUILD_DIR)/ross_core.o: ci_files ross_core.h ross_core.C
+	$(CHARMC) $(OPTS) -c ross_core.C -o $@
 
 $(BUILD_DIR)/pe.o: ci_files pe.h pe.C
 	$(CHARMC) $(OPTS) -c pe.C -o $@

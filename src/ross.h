@@ -1,5 +1,5 @@
-#ifndef _ROSS_API_H
-#define _ROSS_API_H
+#ifndef _ROSS_H
+#define _ROSS_H
 
 #include "globals.h"
 

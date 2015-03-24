@@ -1,10 +1,10 @@
-#ifndef _ROSS_H
-#define _ROSS_H
+#ifndef _ROSS_CORE_H
+#define _ROSS_CORE_H
 // Main header to be included by those using the library
 
 #include "lp.h"
 #include "event.h"
-#include "ross.decl.h"
+#include "ross_core.decl.h"
 #include "mpi-interoperate.h"
 #include "charm_functions.h"
 

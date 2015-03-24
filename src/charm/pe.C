@@ -4,7 +4,7 @@
 #include "charm_functions.h"
 
 #include "ross_util.h"
-#include "ross_api.h"
+#include "ross.h"
 
 #include "mpi-interoperate.h"
 #include <float.h> // Included for DBL_MAX

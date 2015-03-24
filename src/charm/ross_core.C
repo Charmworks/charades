@@ -1,4 +1,4 @@
-#include "ross.h"
+#include "ross_core.h"
 #include "pe.h"
 
 extern CProxy_PE pes;
@@ -14,4 +14,4 @@ Initialize::Initialize(CkArgMsg *m) {
   delete m;
 }
 
-#include "ross.def.h"
+#include "ross_core.def.h"

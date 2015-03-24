@@ -3,7 +3,7 @@
 #include "event.h"
 
 #include "globals.h"
-#include "ross_api.h"   // TODO: Why do we need this
+#include "ross.h"   // TODO: Why do we need this
 #include "charm_api.h"  // TODO: Why do we need this
 
 #include "ross_util.h"
