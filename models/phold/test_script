@@ -28,8 +28,8 @@ do
     fi
 
     # Run the command, putting its output into 'output'
-    echo -e "\tRunning command: $command"
-    $($command > tests/output </dev/null)
+    echo -e "\tRunning command: $command $TEST_OPTS"
+    $($command $TEST_OPTS > tests/output </dev/null)
 
     # Grep for the number of events processed
     expected=$(grep "Net Events Processed" $file)

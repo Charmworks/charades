@@ -17,6 +17,7 @@ struct Globals {
   tw_stime g_tw_ts_end;       // end time of simulation
   unsigned g_tw_mblock;       // number of events per gvt interval
   unsigned g_tw_gvt_interval; // number of intervals per gvt
+  unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
   tw_stime g_tw_lookahead;    // event lookahead for conservative
   tw_stime g_last_gvt;        // used for rollback purposes
   double  gvt_print_interval; // determines frequency of progress print outs
@@ -57,6 +58,7 @@ inline void initialize_globals(Globals* globals) {
   globals->g_tw_synchronization_protocol = CONSERVATIVE;
   globals->g_tw_ts_end        = 1024;
   globals->g_tw_mblock        = 16;
+  globals->g_tw_gvt_interval  = 16;
   globals->g_tw_gvt_interval  = 16;
   globals->g_tw_lookahead     = .005;
   globals->g_last_gvt         = 0.0;

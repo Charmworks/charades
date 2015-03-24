@@ -338,8 +338,13 @@ void PE::gvt_end(Time new_gvt) {
       collect_fossils();
     }
     // TODO: This doesn't need to be a broadcast
-    if (tw_ismaster()) {
-      lps.load_balance();
+    if (PE_VALUE(g_tw_ldb_interval) &&
+        PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) == 0) {
+      if (tw_ismaster()) {
+        lps.load_balance();
+      }
+    } else {
+      resume_scheduler();
     }
   }
 }
