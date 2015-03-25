@@ -31,6 +31,7 @@ inline void basic_event_pup(PUP::er& p, Event* e) {
   p | e->event_id;
   p | e->ts;
   p | e->seq_num;
+  p | e->heap_index;
 
   p | e->state;
 
@@ -46,10 +47,6 @@ inline void basic_event_pup(PUP::er& p, Event* e) {
 // Definitely have a RemoteEvent
 // No causality information
 void pup_pending_event(PUP::er& p, Event* e) {
-  //if (e->state.owner != TW_chare_q) {
-  //  tw_error(TW_LOC, "Bad pup call, TW_chare_q != %d!\n", e->state.owner);
-  //}
-
   // Temporarily turn pointers into IDs for packing
   tw_lpid dest_lp, src_lp;
   tw_peid send_pe;
@@ -86,10 +83,6 @@ void pup_pending_event(PUP::er& p, Event* e) {
 // Definitely have a RemoteEvent
 // Must PUP causality information
 void pup_processed_event(PUP::er& p, Event* e) {
-  //if (e->state.owner != TW_rollback_q) {
-  //  tw_error(TW_LOC, "Bad pup call, TW_rollback_q != %d!\n", e->state.owner);
-  //}
-
   // Temporarily turn pointers into IDs for packing
   tw_lpid dest_lp, src_lp;
   tw_peid send_pe;
@@ -199,7 +192,7 @@ void pup_processed_event(PUP::er& p, Event* e) {
   Event* tmp = e->caused_by_me;
   for (int i = 0; i < e->sent_count; i++) {
     if (p.isUnpacking()) {
-      tmp = tw_event_new(0,0,0);
+      tmp = charm_allocate_event(0);
     }
     pup_sent_event(p, tmp);
     if (p.isUnpacking()) {
@@ -212,27 +205,19 @@ void pup_processed_event(PUP::er& p, Event* e) {
 }
 
 // SENT EVENTS:
-// src_lp and send_pe definitely pointers, dest_lp definitely not
+// src_lp definitely pointers, dest_lp, send_pe definitely not
 // No RemoteEvent
 // No causality information
 void pup_sent_event(PUP::er& p, Event* e) {
-  //if (e->state.owner != TW_sent) {
-  //  tw_error(TW_LOC, "Bad pup call, TW_sent != %d!\n", e->state.owner);
-  //}
-
   tw_lpid src_lp;
-  tw_peid send_pe;
   if (p.isPacking()) {
     src_lp = e->src_lp;
-    send_pe = e->send_pe;
     e->src_lp = ((tw_lp*)(e->src_lp))->gid;
-    e->send_pe = ((LP*)(e->send_pe))->thisIndex;
   }
 
   basic_event_pup(p, e);
 
   if (p.isPacking()) {
     e->src_lp = src_lp;
-    e->send_pe = send_pe;
   }
 }

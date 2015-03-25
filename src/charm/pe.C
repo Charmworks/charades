@@ -311,9 +311,9 @@ void PE::gvt_contribute() {
 
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution.
-  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-    thisProxy[CkMyPe()].execute_opt();
-  }
+  //if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+  //  thisProxy[CkMyPe()].execute_opt();
+  //}
 }
 
 // Check to see if we are complete. If not, re-enter the appropriate
