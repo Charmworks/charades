@@ -252,6 +252,7 @@ Event * avlDelete(AvlTree *t, Event *key)
         if ((*t)->child[1] != AVL_EMPTY) {
           /* give root min value in right subtree */
           (*t)->key = avlDeleteMin(&(*t)->child[1]);
+          (*t)->key->state.avl_tree = 1;
         } else {
           /* splice out root */
           oldroot = (*t);
