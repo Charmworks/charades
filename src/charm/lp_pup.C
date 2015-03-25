@@ -62,14 +62,35 @@ void LP::pup(PUP::er& p) {
   }
 
   // Event Queue Pupping
+  Event** pending;
+  Event** processed;
+
   p | events;
   if (p.isUnpacking()) {
-    Event** temp_pending = events.get_temp_event_buffer();
+    pending = events.get_temp_event_buffer();
     for (int i = 0; i < events.size(); i++) {
-      reconstruct_pending_event(temp_pending[i]);
+      reconstruct_pending_event(pending[i]);
     }
-    events.delete_temp_event_buffer();
     pe->update_next(&next_token, events.min());
+  }
+
+  if (isOptimistic) {
+    p | processed_events;
+    if (p.isUnpacking()) {
+      processed = processed_events.get_temp_event_buffer();
+      for (int i = 0; i < processed_events.size(); i++) {
+        reconstruct_processed_event(processed[i], pending, processed);
+      }
+      pe->update_oldest(&oldest_token, processed_events.min());
+      current_event = processed_events.front();
+    }
+  }
+
+  if (p.isUnpacking()) {
+    events.delete_temp_event_buffer();
+    if (isOptimistic) {
+      processed_events.delete_temp_event_buffer();
+    }
   }
 }
 
@@ -94,9 +115,31 @@ void LP::reconstruct_pending_event(Event* e) {
   }
 }
 
+// Reset pointer fields in events, and re-add events into the avl tree/cancel_q
+// if necessary.
+void LP::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
+  // Reconstruct pointers
+  e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
+  if (!e->state.remote) {
+    e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
+    e->send_pe = (tw_peid)this;
+  }
+  reconstruct_causality(e, pending, processed);
+
+  // Add the event to the avl_tree if necessary
+  if (e->state.avl_tree) {
+    avlInsert(&all_events, e);
+  }
+
+  // Add the event to the cancel_q if necessary.
+  if (e->state.cancel_q) {
+    add_to_cancel_q(e);
+  }
+}
+
 // Relink causality for event pointers to the pending and processed queues.
 void LP::reconstruct_causality(Event* e, Event** pending, Event** processed) {
-/*  for (int i = 0; i < e->processed_count; i++) {
+  for (int i = 0; i < e->processed_count; i++) {
     Event* tmp = processed[e->processed_indices[i]];
     tmp->cause_next = e->caused_by_me;
     e->caused_by_me = tmp;
@@ -107,58 +150,5 @@ void LP::reconstruct_causality(Event* e, Event** pending, Event** processed) {
     tmp->cause_next = e->caused_by_me;
     e->caused_by_me = tmp;
   }
-  delete[] e->pending_indices;*/
-}
-
-// WHEN DOING OPTIMISTIC:
-// WE ALSO NEED TO ADDRESS THE CANCEL_Q, AVL_TREE, and CURRENT_EVENT
-  /*if (isOptimistic) {
-    p | processed_events;
-    if (p.isUnpacking()) {
-      // Reconstruct processed events
-      Event** temp_processed = processed_events.get_temp_event_buffer();
-      for (int i = 0; i < processed_events.size(); i++) {
-        Event* e = temp_processed[i];
-        reconstruct_event(e, temp_pending, temp_processed);
-      }
-
-      // Delete the temporary buffers.
-      processed_events.delete_temp_event_buffer();
-
-      // Update the current state of this LP both locally, and on the PE.
-      if (isOptimistic) {
-        pe->update_oldest(&oldest_token, processed_events.min());
-        current_time = processed_events.max();
-        current_event = processed_events.front();
-      }
-    }
-  }*/
-
-// Reset pointer fields in events, and re-add events into the avl tree/cancel_q
-// if necessary.
-void LP::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
-  /*// Based on the owner, reset dest_lp fields to pointers.
-  // Also make sure to rebuild causality if in the rollback queue.
-  if (e->state.owner == TW_chare_q) {
-    e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
-  } else if (e->state.owner == TW_rollback_q) {
-    e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
-    reconstruct_causality(e, pending, processed);
-  }
-
-  // Also make sure to reset the src_lp and send_pe pointers when required.
-  if (e->state.owner == TW_sent || !e->state.remote) {
-    e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
-    e->send_pe = (tw_peid)this;
-  }
-
-  // Add the event to the avl_tree if necessary
-  if (e->state.avl_tree) {
-    avlInsert(&all_events, e);
-  }
-
-  // Add the event to the cancel_q if necessary.
-  if (e->state.cancel_q) {
-    add_to_cancel_q(e);
-  }*/
+  delete[] e->pending_indices;
 }

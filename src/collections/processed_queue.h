@@ -33,7 +33,7 @@ class ProcessedQueue {
     Event* e = head;
     for (int i = 0; i < temp_items; i++) {
       if (p.isUnpacking()) {
-        e = tw_event_new(0,0,0);
+        e = charm_allocate_event();
       }
       pup_processed_event(p, e);
       if (p.isUnpacking()) {

@@ -192,7 +192,7 @@ bool LP::execute_me() {
 
     // Enqueue or deallocate the event depending on sync mode
     if (isOptimistic) {
-      if (processed_events.front() == NULL) {
+      if (processed_events.size() == 0) {
         pe->update_oldest(&oldest_token, e->ts);
       }
       processed_events.push_front(e);
@@ -263,7 +263,7 @@ void LP::fossil_me(tw_stime gvt) {
     e = processed_events.pop_back();
     tw_event_free(e);
   }
-  if(processed_events.back() != NULL) {
+  if(processed_events.size()) {
     pe->update_oldest(&oldest_token, processed_events.back()->ts);
   } else {
     pe->update_oldest(&oldest_token, DBL_MAX);
