@@ -100,6 +100,7 @@ class PendingHeap : public PendingQueue {
       p | nelems;
       p | curr_max;
       if (p.isUnpacking()) {
+        CkPrintf("Unpacking %d events\n", nelems);
         elems = (Event**)malloc(sizeof(Event**) * curr_max);
         memset(elems, 0, sizeof(Event**) * curr_max);
       }
@@ -110,6 +111,9 @@ class PendingHeap : public PendingQueue {
           elems[i] = charm_allocate_event();
         }
         pup_pending_event(p, elems[i]);
+        if (p.isUnpacking()) {
+          CkPrintf("Unpacked an event with index %d\n", elems[i]->heap_index);
+        }
       }
     }
 
@@ -164,6 +168,9 @@ class PendingHeap : public PendingQueue {
     }
 
     void erase(Event* victim) {
+      if (nelems == 0) {
+        tw_error(TW_LOC, "Can't erase an event from an empty heap\n");
+      }
       int i = victim->heap_index;
 
       if(i < 0 || i >= nelems || elems[i]->heap_index != i) {
@@ -171,13 +178,19 @@ class PendingHeap : public PendingQueue {
       } else {
         nelems--;
 
-        if (elems > 0) {
+        if (i == nelems) {
+          elems[nelems] = NULL;
+          return;
+        } else if (elems > 0) {
           elems[i] = elems[nelems];
           elems[i]->heap_index = i;
           elems[nelems] = NULL;
 
-          if (elems[i]->ts <= victim->ts) percolate_up(i);
-          else sift_down(i);
+          if (elems[i]->ts <= victim->ts) {
+            percolate_up(i);
+          } else {
+            sift_down(i);
+          }
         }
       }
     }
