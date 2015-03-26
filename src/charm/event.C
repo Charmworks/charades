@@ -49,13 +49,6 @@ void charm_free_event(Event* e) {
     }
   }
 
-  e->state.avl_tree = 0;
-  e->state.remote = 0;
-  e->state.cancel_q = 0;
-  e->state.owner = 0;
-  e->caused_by_me = NULL;
-  e->cause_next = NULL;
-  e->cancel_next = NULL;
   PE_VALUE(event_buffer)->free_event(e);
 }
 

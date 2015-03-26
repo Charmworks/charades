@@ -64,8 +64,8 @@ class EventBuffer {
       assert(stack_pointer < max_events);
       if (e->eventMsg) {
         free_remote_event(e->eventMsg);
-        e->eventMsg = NULL;
       }
+      e->clear();
       buffer[stack_pointer++] = e;
     }
 
@@ -79,6 +79,7 @@ class EventBuffer {
     }
     void free_remote_event(RemoteEvent* e) {
       if (remote_stack_pointer < max_events) {
+        e->clear();
         remote_buffer[remote_stack_pointer++] = e;
       } else {
         delete e;
