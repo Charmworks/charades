@@ -43,6 +43,8 @@ Event * avlDeleteMin(AvlTree *t);
 
 Event * avlDelete(AvlTree *t, Event *key);
 
+Event * avlInsertOrDelete(AvlTree *t, Event *key);
+
 AvlTree avl_alloc(void);
 
 void avl_free(AvlTree t);
