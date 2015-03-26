@@ -2,6 +2,7 @@
 #define EVENT_BUFFER_H
 
 #include "ross_event.h"
+#include "ross_util.h"
 #include "event.h"
 
 #include <stdio.h> // Included for size_t
@@ -31,18 +32,20 @@ class EventBuffer {
       int err = posix_memalign((void **)&buffer, 64, max*sizeof(Event*));
       err = posix_memalign((void **)&remote_buffer, 64, max*sizeof(RemoteEvent*));
 
-      //buffer = new Event*[max];
-      Event* temp_buf = new Event[max];
+      // Calculate the buffer size per event to be a multiple of 8 bytes, large
+      // enough to hold an event.
+      char *temp_buf;
+      int buf_size = 8 * (((sizeof(Event) - 1) / 8) + 1);
+      err = posix_memalign((void **)&temp_buf, 64, stack_pointer*buf_size);
 
-      //int buf_size = 16*8;
-      //char *tempbuf;
-      //err = posix_memalign((void **)&tempbuf, 64, stack_pointer*buf_size);
-      //if(sizeof(Event) > buf_size) {
-      //  printf("Buffers messed up, fix me!!\n");
-      //}
+      if (buf_size < sizeof(Event)) {
+        tw_error(TW_LOC, "ERROR: Per-event buffer size %d, event size %d\n",
+            buf_size, sizeof(Event));
+      }
 
       for (int i = 0; i < max; i++) {
-        buffer[i] = &temp_buf[i];
+        buffer[i] = (Event*)temp_buf;
+        temp_buf += buf_size;
       }
       for (int i = 0; i < remote_stack_pointer; i++) {
         remote_buffer[i] = new (msg_size) RemoteEvent;

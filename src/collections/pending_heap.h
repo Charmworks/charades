@@ -78,14 +78,14 @@ class PendingHeap : public PendingQueue {
       int init_size = 50000;
       nelems = 0;
       curr_max = (2*init_size);
-      elems = (Event**)malloc(sizeof(Event**) * curr_max);
+      int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
       memset(elems, 0, sizeof(Event**) * curr_max);
     }
 
     PendingHeap(int init_size) {
       nelems = 0;
       curr_max = (2*init_size);
-      elems = (Event**)malloc(sizeof(Event**) * curr_max);
+      int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
       memset(elems, 0, sizeof(Event**) * curr_max);
     }
 
@@ -100,7 +100,7 @@ class PendingHeap : public PendingQueue {
       p | nelems;
       p | curr_max;
       if (p.isUnpacking()) {
-        elems = (Event**)malloc(sizeof(Event**) * curr_max);
+        int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
         memset(elems, 0, sizeof(Event**) * curr_max);
       }
       for (int i = 0; i < nelems; i++) {
@@ -133,7 +133,7 @@ class PendingHeap : public PendingQueue {
         size_t old_max = curr_max;
         curr_max += 50000;
         Event** old = elems;
-        elems = (Event**)malloc(sizeof(Event**) * curr_max);
+        int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
         memcpy(elems, old, sizeof(Event**) * old_max);
         memset(&elems[old_max], 0, sizeof(Event**) * 50000);
         free(old);
