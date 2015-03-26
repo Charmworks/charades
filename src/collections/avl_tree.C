@@ -277,6 +277,20 @@ Event * avlDelete(AvlTree *t, Event *key)
   return target;
 }
 
+/* Attempt to insert an event, but if we find it already exists in the tree,
+ * don't insert. Instead remove the existing event and return it. Returns NULL
+ * if the insertion was successful.
+ */
+Event * avlInsertOrDelete(AvlTree *t, Event *key)
+{
+  if (avlSearch(*t, key)) {
+    return avlDelete(t, key);
+  } else {
+    avlInsert(t, key);
+    return NULL;
+  }
+}
+
 AvlTree avl_alloc(void)
 {
   AvlTree head = PE_VALUE(avl_list_head);

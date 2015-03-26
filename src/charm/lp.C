@@ -134,7 +134,12 @@ void LP::recv_remote_event(RemoteEvent* event) {
 
   // Hash event
   if (isOptimistic) {
-    avlInsert(&all_events, e);
+    Event* anti_event = avlInsertOrDelete(&all_events, e);
+    if (anti_event != NULL) {
+      tw_event_free(anti_event);
+      tw_event_free(e);
+      return;
+    }
   }
 
   recv_local_event(e);
@@ -166,10 +171,13 @@ void LP::recv_anti_event(RemoteEvent* event) {
   key->ts = event->ts;
   key->send_pe = event->send_pe;
 
-  Event* real_event = avlDelete(&all_events, key);
-  charm_event_cancel(real_event);
+  Event* real_event = avlInsertOrDelete(&all_events, key);
 
-  tw_event_free(key);
+  if (real_event != NULL) {
+    charm_event_cancel(real_event);
+    tw_event_free(key);
+  }
+
   delete event;
 }
 
