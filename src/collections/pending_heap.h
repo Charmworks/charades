@@ -100,7 +100,6 @@ class PendingHeap : public PendingQueue {
       p | nelems;
       p | curr_max;
       if (p.isUnpacking()) {
-        CkPrintf("Unpacking %d events\n", nelems);
         elems = (Event**)malloc(sizeof(Event**) * curr_max);
         memset(elems, 0, sizeof(Event**) * curr_max);
       }
@@ -111,9 +110,6 @@ class PendingHeap : public PendingQueue {
           elems[i] = charm_allocate_event();
         }
         pup_pending_event(p, elems[i]);
-        if (p.isUnpacking()) {
-          CkPrintf("Unpacked an event with index %d\n", elems[i]->heap_index);
-        }
       }
     }
 
