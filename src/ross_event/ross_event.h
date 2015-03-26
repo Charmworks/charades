@@ -66,19 +66,36 @@ struct tw_out {
     char message[256 - 2*sizeof(void *)];
 };
 
+static inline void reset_bitfields(tw_event *revent);
+
 class RemoteEvent;
 class Event {
   public:
   Event() {
-    userData = NULL;
+    clear();
+  }
+  void clear() {
+    reset_bitfields(this);
+
+    event_id = 0;
+    ts = 0.0;
+
+    state.owner = state.remote = state.cancel_q = state.avl_tree;
+
+    dest_lp = src_lp = 0;
+    send_pe = 0;
+
     eventMsg = NULL;
-    caused_by_me = NULL;
-    cause_next = NULL;
-    cancel_next = NULL;
+    userData = NULL;
+
     out_msgs = NULL;
-    state.remote = 0;
-    state.cancel_q = 0;
-    state.avl_tree = 0;
+
+    heap_index = 0;
+    up = next = prev = NULL;
+    caused_by_me = cause_next = cancel_next = NULL;
+
+    seq_num = pending_count = processed_count = sent_count = 0;
+    pending_indices = processed_indices = NULL;
   }
 
   // Basic event info

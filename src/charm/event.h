@@ -6,6 +6,16 @@
 
 struct RemoteEvent : public CMessage_RemoteEvent {
   public:
+    RemoteEvent() {
+      clear();
+    }
+    void clear() {
+      event_id = 0;
+      ts = 0.0;
+      send_pe = 0;
+      dest_lp = 0;
+    }
+
     char *userData;
 
     // These three fields make up the unique key for identifying events
