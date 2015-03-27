@@ -31,8 +31,8 @@ typedef double KEY_TYPE;
     t = elems[x]; \
     elems[x] = elems[y]; \
     elems[y] = t; \
-    elems[x]->heap_index = x; \
-    elems[y]->heap_index = y; \
+    elems[x]->index = x; \
+    elems[y]->index = y; \
     }
 
 class PendingHeap : public PendingQueue {
@@ -104,9 +104,7 @@ class PendingHeap : public PendingQueue {
         memset(elems, 0, sizeof(Event**) * curr_max);
       }
       for (int i = 0; i < nelems; i++) {
-        if (p.isSizing()) {
-          elems[i]->seq_num = i;
-        } else if (p.isUnpacking()) {
+        if (p.isUnpacking()) {
           elems[i] = charm_allocate_event();
         }
         pup_pending_event(p, elems[i]);
@@ -140,7 +138,7 @@ class PendingHeap : public PendingQueue {
       }
 
       e->state.owner = TW_chare_q;
-      e->heap_index = nelems;
+      e->index = nelems;
 
       elems[nelems++] = e;
       percolate_up(nelems-1);
@@ -155,7 +153,7 @@ class PendingHeap : public PendingQueue {
 
         nelems--;
         elems[0] = elems[nelems];
-        elems[0]->heap_index = 0;
+        elems[0]->index = 0;
         elems[nelems] = NULL;
         sift_down(0);
 
@@ -167,9 +165,9 @@ class PendingHeap : public PendingQueue {
       if (nelems == 0) {
         tw_error(TW_LOC, "Can't erase an event from an empty heap\n");
       }
-      int i = victim->heap_index;
+      int i = victim->index;
 
-      if(i < 0 || i >= nelems || elems[i]->heap_index != i) {
+      if(i < 0 || i >= nelems || elems[i]->index != i) {
         tw_error(TW_LOC, "ERROR: Can't erase event from pending heap\n");
       } else {
         nelems--;
@@ -179,7 +177,7 @@ class PendingHeap : public PendingQueue {
           return;
         } else if (elems > 0) {
           elems[i] = elems[nelems];
-          elems[i]->heap_index = i;
+          elems[i]->index = i;
           elems[nelems] = NULL;
 
           if (elems[i]->ts <= victim->ts) {

@@ -37,10 +37,10 @@ class ProcessedQueue {
       }
       pup_processed_event(p, e);
       if (p.isUnpacking()) {
-        temp_event_buffer[e->seq_num] = e;
+        temp_event_buffer[e->index] = e;
         push_back(e);
       } else {
-        e->seq_num = i;
+        e->index = i;
         e = e->next;
       }
     }

@@ -30,8 +30,7 @@ void operator|(PUP::er& p, tw_event_state& s) {
 inline void basic_event_pup(PUP::er& p, Event* e) {
   p | e->event_id;
   p | e->ts;
-  p | e->seq_num;
-  p | e->heap_index;
+  p | e->index;
 
   p | e->state;
 
@@ -156,13 +155,13 @@ void pup_processed_event(PUP::er& p, Event* e) {
     while (tmp) {
       bool unlink = false;
       if (tmp->state.owner == TW_chare_q) {
-        e->pending_indices[pending_idx++] = tmp->seq_num;
+        e->pending_indices[pending_idx++] = tmp->index;
         unlink = true;
         if (pending_idx > e->pending_count) {
           tw_error(TW_LOC, "Mismatched number of pending events!\n");
         }
       } else if (tmp->state.owner == TW_rollback_q) {
-        e->processed_indices[processed_idx++] = tmp->seq_num;
+        e->processed_indices[processed_idx++] = tmp->index;
         unlink = true;
         if (processed_idx > e->processed_count) {
           tw_error(TW_LOC, "Mismatched number of processed event!\n");

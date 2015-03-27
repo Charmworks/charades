@@ -90,11 +90,12 @@ class Event {
 
     out_msgs = NULL;
 
-    heap_index = 0;
     up = next = prev = NULL;
     caused_by_me = cause_next = cancel_next = NULL;
 
-    seq_num = pending_count = processed_count = sent_count = 0;
+    index = 0;
+
+    pending_count = processed_count = sent_count = 0;
     pending_indices = processed_indices = NULL;
   }
 
@@ -117,19 +118,21 @@ class Event {
   // Field storing output messages tied to this event
   tw_out *out_msgs;
 
-  // Fields used in data structures storing Events
-  size_t heap_index;    // for avl trees
-  Event* up;            // for splay trees
-  Event *next, *prev;   // for splay trees and processed queue
-  Event *caused_by_me;  // Start of event list caused by this event
-  Event *cause_next;    // Next in parent's caused_by_me chain
-  Event *cancel_next;   // next in cancel list
+  // Pointers used in data structures storing Events
+  Event* up;            // Parent in splay trees
+  Event* prev;          // Prev in processed queue, or left child in splay tree
+  Event* next;          // Next in processed queue, or right child in splay tree
+  Event* caused_by_me;  // Start of event list caused by this event
+  Event* cause_next;    // Next in parent's caused_by_me chain
+  Event* cancel_next;   // next in cancel list
+
+  // Index of the event in the pending heap. Also the order of event pupping.
+  size_t    index;
 
   // Fields for rebuilding causality lists after migration
-  unsigned seq_num;     // Gives the order in which the event was pupped
-  unsigned pending_count;
-  unsigned processed_count;
-  unsigned sent_count;
+  unsigned  pending_count;
+  unsigned  processed_count;
+  unsigned  sent_count;
   unsigned* pending_indices;
   unsigned* processed_indices;
 };
