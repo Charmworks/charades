@@ -58,13 +58,11 @@ int charm_event_send(unsigned dest_peid, Event * e) {
   LP* send_pe = (LP*)(e->send_pe);
   LP* dest_pe;
 
-  // When e is passed in, src_lp is a pointer to an lp and dest_lp is a gid.
-  tw_lpid src_lp = ((LPStruct*)e->src_lp)->gid;
-  tw_lpid dest_lp = e->dest_lp;
+  // When e is passed in, src_lp and send_pe are pointers, dest_lp is a gid.
+  e->src_lp = ((LPStruct*)e->src_lp)->gid;
+  e->send_pe = send_pe->thisIndex;
 
-  // Attempt to get a direct pointer to the destination chare.
-  // NOTE: For now we don't short circuit messages to other chares on the same
-  // core to make migration easier.
+  // Check to see if this is a local send or not.
   if (dest_peid == send_pe->thisIndex) {
     dest_pe = send_pe;
   } else {
@@ -74,7 +72,7 @@ int charm_event_send(unsigned dest_peid, Event * e) {
   // If we got a pointer, do a local send. Otherwise, send remotely.
   if (dest_pe != NULL) {
     // Check if an LP is sending to an LP other than itself (for stats).
-    if (dest_lp != src_lp) {
+    if (e->dest_lp != e->src_lp) {
       PE_STATS(s_nsend_loc_remote)++;
     }
     dest_pe->recv_local_event(e);
@@ -85,7 +83,7 @@ int charm_event_send(unsigned dest_peid, Event * e) {
     e->eventMsg->event_id = e->event_id = send_pe->uniqID++;
     e->eventMsg->ts = e->ts;
     e->eventMsg->dest_lp = e->dest_lp;
-    e->eventMsg->send_pe = e->send_pe = send_pe->thisIndex;
+    e->eventMsg->send_pe = e->send_pe;
 
     lps(dest_peid).recv_remote_event(e->eventMsg);
     e->state.owner = TW_sent;
