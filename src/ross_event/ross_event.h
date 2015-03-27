@@ -99,17 +99,18 @@ class Event {
     pending_indices = processed_indices = NULL;
   }
 
-  // Basic event info
-  EventID event_id;
+  // Basic event info, used as a key for unique event identification
+  EventID event_id; // Unique increasing id per LP chare.
+  tw_peid send_pe;  // Cast as a pointer to LP chare before sent.
   Time ts;
-  tw_bf cv;
 
-  // The event state says which queues the event is in and whether it is remote
-  tw_event_state state;
+  // Fields used to enable time warp mechanism to do rollbacks
+  tw_bf cv;             // Bitfield keeps track of execution path
+  tw_event_state state; // State keeps track of who owns the event
 
-  // Fields for sender/receiver info. Can be cast as ids or ptrs.
-  tw_lpid dest_lp, src_lp;
-  tw_peid send_pe;
+  // Source and dest LP may either be pointers or gids
+  tw_lpid dest_lp;  // GID on sender side, pointer at destination
+  tw_lpid src_lp;   // Pointer on sender side, not needed at destination
 
   // Fields storing msg data
   RemoteEvent * eventMsg;

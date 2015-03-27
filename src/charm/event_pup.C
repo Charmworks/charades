@@ -17,102 +17,88 @@ void RemoteEvent::pup(PUP::er& p) {
   p | dest_lp;
   p((char*)userData, PE_VALUE(g_tw_msg_sz));
 }
+PUPbytes(tw_event_state);
+PUPbytes(tw_bf);
 
-void operator|(PUP::er& p, tw_event_state& s) {
-  p | s.owner;
-  p | s.remote;
-  p | s.cancel_q;
-  p | s.avl_tree;
-}
-
-// TODO: Sent events may not need bitfields or seq_nums.
-// TODO: Output messages
+// Pup the basic parts needed by every event, which are just the fields used
+// as the event key (event_id, ts, send_pe)
 inline void basic_event_pup(PUP::er& p, Event* e) {
+  p | e->send_pe;
   p | e->event_id;
   p | e->ts;
-  p | e->index;
-
-  p | e->state;
-
-  p | e->dest_lp;
-  p | e->src_lp;
-  p | e->send_pe;
-
-  p((char*)&(e->cv), sizeof(tw_bf));
 }
 
 // PENDING EVENTS:
-// dest_lp is definitely a pointer, src_lp and send_pe may be pointers
-// Definitely have a RemoteEvent
-// No causality information
+// Doesn't need bitfield, does need state.
+// Doesn't need src_lp, dest_lp is a pointer.
+// Guaranteed to have a RemoteEvent.
+// Pointers handled by LP, PendingQueue.
+// Need the index for PendingHeap, and also for processed events causality.
+// No other causality info is needed.
 void pup_pending_event(PUP::er& p, Event* e) {
-  // Temporarily turn pointers into IDs for packing
-  tw_lpid dest_lp, src_lp;
-  tw_peid send_pe;
+  basic_event_pup(p, e);
+  p | e->state;
+  tw_lpid dest_lp;
   if (p.isPacking()) {
     dest_lp = e->dest_lp;
-    e->dest_lp = ((tw_lp*)(e->dest_lp))->gid;
-    if (!e->state.remote) {
-      src_lp = e->src_lp;
-      send_pe = e->send_pe;
-      e->src_lp = ((tw_lp*)(e->src_lp))->gid;
-      e->send_pe = ((LP*)(e->send_pe))->thisIndex;
-    }
+    e->dest_lp = ((tw_lp*)e->dest_lp)->gid;
   }
-
-  basic_event_pup(p, e);
-
-  // After packing, return the ids back to pointers
+  p | e->dest_lp;
   if (p.isPacking()) {
     e->dest_lp = dest_lp;
-    if (!e->state.remote) {
-      e->src_lp = src_lp;
-      e->send_pe = send_pe;
-    }
   }
-
   p | *(e->eventMsg);
   if (p.isUnpacking()) {
     e->userData = e->eventMsg->userData;
   }
+  p | e->index;
 }
 
 // PROCESSED EVENTS:
-// dest_lp is definitely a pointer, src_lp and send_pe may be pointers
-// Definitely have a RemoteEvent
-// Must PUP causality information
+// Does need bitfield, does need state.
+// Doesn't need src_lp, dest_lp is a pointer.
+// Guaranteed to have a RemoteEvent.
+// Pointers handled by LP and ProcessedQueue.
+// Need the index for ProcessedQueue, and also for processed events causality.
+// Causality pupper needs to be called to pack causality info.
 void pup_processed_event(PUP::er& p, Event* e) {
-  // Temporarily turn pointers into IDs for packing
-  tw_lpid dest_lp, src_lp;
-  tw_peid send_pe;
+  basic_event_pup(p, e);
+  p | e->state;
+  p | e->cv;
+  tw_lpid dest_lp;
   if (p.isPacking()) {
     dest_lp = e->dest_lp;
-    e->dest_lp = ((tw_lp*)(e->dest_lp))->gid;
-    if (!e->state.remote) {
-      src_lp = e->src_lp;
-      send_pe = e->send_pe;
-      e->src_lp = ((tw_lp*)(e->src_lp))->gid;
-      e->send_pe = ((LP*)(e->send_pe))->thisIndex;
-    }
+    e->dest_lp = ((tw_lp*)e->dest_lp)->gid;
   }
-
-  basic_event_pup(p, e);
-
-  // After packing, return the ids back to pointers
+  p | e->dest_lp;
   if (p.isPacking()) {
     e->dest_lp = dest_lp;
-    if (!e->state.remote) {
-      e->src_lp = src_lp;
-      e->send_pe = send_pe;
-    }
   }
-
   p | *(e->eventMsg);
   if (p.isUnpacking()) {
     e->userData = e->eventMsg->userData;
   }
+  p | e->index;
+  pup_causality(p, e);
+}
 
-  // PUPPING THE CAUSALITY LIST
+// SENT EVENTS:
+// Only needs basic info and to reset state.owner.
+void pup_sent_event(PUP::er& p, Event* e) {
+  basic_event_pup(p, e);
+
+  if (p.isUnpacking()) {
+    e->state.owner = TW_sent;
+  }
+}
+
+// CAUSALITY LIST:
+// Basically, we pack up two extra arrays that hold causality info.
+// The first array holds the index field of pending events, the second holds the
+// index field of processed events. The LP will rebuild the causality lists once
+// all events have been unpacked by using these temporary arrays. Sent events
+// are just pupped normally.
+void pup_causality(PUP::er& p, Event* e) {
   // First determine how much space we'll need for causality info
   if (p.isSizing()) {
     // TODO: Why not keep track of these in link_causality
@@ -133,6 +119,8 @@ void pup_processed_event(PUP::er& p, Event* e) {
       tmp = tmp->cause_next;
     }
   }
+
+  // Pup the counts of events
   p | e->pending_count;
   p | e->processed_count;
   p | e->sent_count;
@@ -179,9 +167,10 @@ void pup_processed_event(PUP::er& p, Event* e) {
       tmp = tmp->cause_next;
     }
   }
+
+  // PUP the arrays and delete if we are done with them.
   PUParray(p, e->pending_indices, e->pending_count);
   PUParray(p, e->processed_indices, e->processed_count);
-
   if (p.isPacking()) {
     delete[] e->pending_indices;
     delete[] e->processed_indices;
@@ -200,23 +189,5 @@ void pup_processed_event(PUP::er& p, Event* e) {
     } else {
       tmp = tmp->cause_next;
     }
-  }
-}
-
-// SENT EVENTS:
-// src_lp definitely pointers, dest_lp, send_pe definitely not
-// No RemoteEvent
-// No causality information
-void pup_sent_event(PUP::er& p, Event* e) {
-  tw_lpid src_lp;
-  if (p.isPacking()) {
-    src_lp = e->src_lp;
-    e->src_lp = ((tw_lp*)(e->src_lp))->gid;
-  }
-
-  basic_event_pup(p, e);
-
-  if (p.isPacking()) {
-    e->src_lp = src_lp;
   }
 }
