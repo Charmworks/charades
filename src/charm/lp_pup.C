@@ -99,10 +99,6 @@ void LP::pup(PUP::er& p) {
 void LP::reconstruct_pending_event(Event* e) {
   // Reconstruct pointers
   e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
-  if (!e->state.remote) {
-    e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
-    e->send_pe = (tw_peid)this;
-  }
 
   // Add the event to the avl_tree if necessary
   if (e->state.avl_tree) {
@@ -120,10 +116,6 @@ void LP::reconstruct_pending_event(Event* e) {
 void LP::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
   // Reconstruct pointers
   e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
-  if (!e->state.remote) {
-    e->src_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->src_lp)]);
-    e->send_pe = (tw_peid)this;
-  }
   reconstruct_causality(e, pending, processed);
 
   // Add the event to the avl_tree if necessary
