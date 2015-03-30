@@ -285,23 +285,6 @@ void PE::gvt_begin() {
   }
 }
 
-void PE::gvt_print(Time gvt) {
-  if (PE_VALUE(gvt_print_interval) == 1.0) {
-    return;
-  }
-  if (PE_VALUE(percent_complete) == 0.0) {
-    PE_VALUE(percent_complete) = PE_VALUE(gvt_print_interval);
-    return;
-  }
-  CkPrintf("GVT #%d: simulation %d%% complete ", PE_STATS(s_ngvts), (int) fmin(100, floor(100 * (gvt/PE_VALUE(g_tw_ts_end)))));
-  if (gvt == DBL_MAX) {
-    CkPrintf("(GVT = MAX).\n");
-  } else {
-    CkPrintf("(GVT = %.4f).\n", gvt);
-  }
-  PE_VALUE(percent_complete) += PE_VALUE(gvt_print_interval);
-}
-
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
 void PE::gvt_contribute() {
   Time min_time = get_min_time();
@@ -310,10 +293,14 @@ void PE::gvt_contribute() {
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
   // If we are doing optimistic simulation, we don't need to wait for the result
-  // of the reduction to continue execution.
-  //if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-  //  thisProxy[CkMyPe()].execute_opt();
-  //}
+  // of the reduction to continue execution (unless we plan on doing load
+  // balancing in this iteration).
+  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    if (!PE_VALUE(g_tw_ldb_interval) ||
+        PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) != 0) {
+      resume_scheduler();
+    }
+  }
 }
 
 // Check to see if we are complete. If not, re-enter the appropriate
@@ -343,10 +330,27 @@ void PE::gvt_end(Time new_gvt) {
       if (tw_ismaster()) {
         lps.load_balance();
       }
-    } else {
+    } else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       resume_scheduler();
     }
   }
+}
+
+void PE::gvt_print(Time gvt) {
+  if (PE_VALUE(gvt_print_interval) == 1.0) {
+    return;
+  }
+  if (PE_VALUE(percent_complete) == 0.0) {
+    PE_VALUE(percent_complete) = PE_VALUE(gvt_print_interval);
+    return;
+  }
+  CkPrintf("GVT #%d: simulation %d%% complete ", PE_STATS(s_ngvts), (int) fmin(100, floor(100 * (gvt/PE_VALUE(g_tw_ts_end)))));
+  if (gvt == DBL_MAX) {
+    CkPrintf("(GVT = MAX).\n");
+  } else {
+    CkPrintf("(GVT = %.4f).\n", gvt);
+  }
+  PE_VALUE(percent_complete) += PE_VALUE(gvt_print_interval);
 }
 
 void PE::resume_scheduler() {

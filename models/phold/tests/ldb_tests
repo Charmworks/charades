@@ -1,6 +1,0 @@
-# Small test with 16 lps, 4 per chare and load balancing enabled.
-./charmrun +p2 ./phold --end=64 --num-lps=64 --lps-per-chare=4 --synch=2 +balancer RotateLB
-./charmrun +p4 ./phold --end=64 --num-lps=64 --lps-per-chare=4 --synch=2 +balancer RotateLB
-./charmrun +p2 ./phold --end=64 --num-lps=64 --lps-per-chare=4 --synch=3 +balancer RotateLB
-./charmrun +p4 ./phold --end=64 --num-lps=64 --lps-per-chare=4 --synch=3 +balancer RotateLB
-Net Events Processed 4090
