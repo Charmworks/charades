@@ -31,15 +31,18 @@ do
     echo -e "\tRunning command: $command $TEST_OPTS"
     $($command $TEST_OPTS > tests/output </dev/null)
 
-    # Grep for the number of events processed
+    # Grep for the various outputs
     expected=$(grep "Net Events Processed" $file)
     actual=$(grep "Net Events Processed" tests/output)
+    gvts=$(grep "Total GVT Computations" tests/output)
 
     # Trim all leading whitespace and squash intermediate whitespace
     expected=$(echo $expected | sed -e 's/^[[:space:]]*//' | tr -s [:space:])
     actual=$(echo $actual | sed -e 's/^[[:space:]]*//' | tr -s [:space:])
+    gvts=$(echo $gvts | sed -e 's/^[[:space:]]*//' | tr -s [:space:])
 
-    # Print out the net events expected and observed
+    # Print out the net events expected and observed, as well as number of gvts
+    echo -e "\t$gvts"
     echo -e "\tExpected: $expected"
     echo -e "\tActual: $actual"
     echo ""

@@ -279,16 +279,38 @@ Event * avlDelete(AvlTree *t, Event *key)
 
 /* Attempt to insert an event, but if we find it already exists in the tree,
  * don't insert. Instead remove the existing event and return it. Returns NULL
- * if the insertion was successful.
+ * if the insertion was successful. Makes calls to avlInsert and avlDelete.
  */
 Event * avlInsertOrDelete(AvlTree *t, Event *key)
 {
-  if (avlSearch(*t, key)) {
-    return avlDelete(t, key);
-  } else {
+  // If we've hit the empty node, then key is not in the tree, so insert.
+  if (*t == AVL_EMPTY) {
     avlInsert(t, key);
     return NULL;
   }
+
+  Event* target;
+  if (key->ts == (*t)->key->ts) {
+    if (key->event_id == (*t)->key->event_id) {
+      if (key->send_pe == (*t)->key->send_pe) {
+        // We've hit the exact event, so insertion fails and delete it.
+        return avlDelete(t, key);
+      } else {
+        // send_pe is different
+        target = avlInsertOrDelete(&(*t)->child[key->send_pe > (*t)->key->send_pe], key);
+      }
+    } else {
+      // Event ID is different
+      target = avlInsertOrDelete(&(*t)->child[key->event_id > (*t)->key->event_id], key);
+    }
+  } else {
+    // Timestamp is different
+    target = avlInsertOrDelete(&(*t)->child[key->ts > (*t)->key->ts], key);
+  }
+
+  // We still need to recursively rebalance as we go back up the tree.
+  avlRebalance(t);
+  return target;
 }
 
 AvlTree avl_alloc(void)
