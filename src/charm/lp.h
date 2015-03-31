@@ -17,9 +17,6 @@
 
 #include <vector>
 
-#define DEBUG_LP(format, ...) { CkPrintf("LP[%d] "format, thisIndex, ## __VA_ARGS__); }
-//#define DEBUG_LP(format, ...) {}
-
 class RemoteEvent;
 
 void operator|(PUP::er&, tw_rng_stream*);
