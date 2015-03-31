@@ -292,6 +292,7 @@ void PE::gvt_contribute() {
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
+#ifdef ASYNC_REDUCTION
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution (unless we plan on doing load
   // balancing in this iteration).
@@ -301,6 +302,7 @@ void PE::gvt_contribute() {
       resume_scheduler();
     }
   }
+#endif
 }
 
 // Check to see if we are complete. If not, re-enter the appropriate
@@ -330,7 +332,12 @@ void PE::gvt_end(Time new_gvt) {
       if (tw_ismaster()) {
         lps.load_balance();
       }
-    } else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+    }
+#ifdef ASYNC_REDUCTION
+    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+#else
+    else {
+#endif
       resume_scheduler();
     }
   }
