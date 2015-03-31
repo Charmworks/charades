@@ -59,7 +59,7 @@ inline void initialize_globals(Globals* globals) {
   globals->g_tw_ts_end        = 1024;
   globals->g_tw_mblock        = 16;
   globals->g_tw_gvt_interval  = 16;
-  globals->g_tw_ldb_interval  = 16;
+  globals->g_tw_ldb_interval  = 0;
   globals->g_tw_lookahead     = .005;
   globals->g_last_gvt         = 0.0;
   globals->gvt_print_interval = 1.0;

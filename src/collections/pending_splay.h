@@ -162,7 +162,7 @@ class PendingSplay : public PendingQueue {
         flatten_tree(LEFT(e), idx);
       }
       if (e) {
-        e->seq_num = idx;
+        e->index = idx;
         temp_event_buffer[idx++] = e;
       }
       if (RIGHT(e)) {
@@ -192,7 +192,6 @@ class PendingSplay : public PendingQueue {
       if (p.isSizing()) {
         int idx = 0;
         if (temp_items) {
-          CkPrintf("Flattening a tree with %d items\n", temp_items);
           temp_event_buffer = new Event*[temp_items];
           flatten_tree(root, idx);
         }
@@ -213,7 +212,7 @@ class PendingSplay : public PendingQueue {
         }
         pup_pending_event(p, e);
         if (p.isUnpacking()) {
-          temp_event_buffer[e->seq_num] = e;
+          temp_event_buffer[e->index] = e;
           push(e);
         }
       }
@@ -269,7 +268,7 @@ class PendingSplay : public PendingQueue {
         root = e;
       } else {
         root = least = e;
-        UP(e) = NULL;
+        UP(e) = LEFT(e) = RIGHT(e) = NULL;
       }
     }
 
@@ -279,6 +278,7 @@ class PendingSplay : public PendingQueue {
 
       if (nitems == 0)
         return (tw_event *) NULL;
+
 
       nitems--;
 
@@ -318,19 +318,18 @@ class PendingSplay : public PendingQueue {
         tw_error(TW_LOC,
           "Attempt to delete event with owner: %d\n", r->state.owner);
       }
-      r->state.owner = 0;
-
       if (nitems == 0) {
         tw_error(TW_LOC,
             "Attempt to delete from empty queue\n");
       }
-      nitems--;
 
       if (r == least) {
         pop();
         return;
       }
 
+      r->state.owner = 0;
+      nitems--;
       if ((n = LEFT(r))) {
         if ((tmp = RIGHT(r))) {
           UP(n) = NULL;
