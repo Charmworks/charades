@@ -4,6 +4,7 @@
 #include "ross_event.h"
 #include "event.h"
 #include "ross_util.h"
+#include "charm_api.h"
 
 class ProcessedQueue {
   size_t length;
