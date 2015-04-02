@@ -1,7 +1,7 @@
 include ../../src/config.mk
 
 CFLAGS  := -O2 -g
-LIBDIR  := ../../build/
+LIBDIR  := ../../src/build/
 
 all: pcs
 
