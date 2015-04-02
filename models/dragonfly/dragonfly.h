@@ -1,7 +1,7 @@
 #ifndef INC_dragonfly_h
 #define INC_dragonfly_h
 
-#include <ross.h>
+#include <ross_api.h>
 
 // dragonfly basic configuration parameters
 #define GLOBAL_CHANNELS 4
