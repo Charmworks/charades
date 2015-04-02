@@ -162,7 +162,7 @@ mpi_init( process_state * s,
 
     e = tw_event_new(lp->gid, ts, lp);
 
-    m = tw_event_data(e);
+    m = (terminal_message *) tw_event_data(e);
     m->type = MPI_SEND;
     tw_event_send(e);
 
@@ -312,7 +312,7 @@ two groups which is why this traffic is called worst-case traffic */
     e = tw_event_new( lp->gid - total_mpi_procs, s->available_time - tw_now(lp), lp );
 
 //issue a packet_ generate event for each network packet
-    m = tw_event_data( e );
+    m = (terminal_message *) tw_event_data( e );
     m->dest_terminal_id = dst_lp;
     m->type = T_GENERATE;
     s->message_counter++;
@@ -328,7 +328,7 @@ if(m->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
   }
   ts = MEAN_INTERVAL + tw_rand_exponential( lp->rng, MEAN_INTERVAL/100 );
   e = tw_event_new( lp->gid, ts, lp );
-  m = tw_event_data( e );
+  m = (terminal_message *) tw_event_data( e );
   m->type = MPI_SEND;
   tw_event_send( e );
 }
@@ -407,7 +407,7 @@ void router_credit_send(router_state * s, tw_bf * bf, terminal_message * msg, tw
 	
     s->next_credit_available_time[output_port]+=ts;
     buf_e = tw_event_new(dest, s->next_credit_available_time[output_port] - tw_now(lp) , lp);
-    buf_msg = tw_event_data(buf_e);
+    buf_msg = (terminal_message *) tw_event_data(buf_e);
     buf_msg->vc_index = msg->saved_vc;
     buf_msg->type=BUFFER;
     buf_msg->last_hop = msg->last_hop;
@@ -441,7 +441,7 @@ void packet_generate(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_
          }
 
        e = tw_event_new(lp->gid, i + ts, lp);
-       m = tw_event_data(e);
+       m = (terminal_message *) tw_event_data(e);
        m->travel_start_time = msg->travel_start_time;
        m->my_N_hop = 0;
        m->dest_terminal_id=msg->dest_terminal_id;
@@ -512,7 +512,7 @@ if( msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
     printf("\n (%lf) [Terminal %d] {Node %d} Packet %lld chunk %d being sent to source router %d Output VC : %d after %lf dest terminal id: %d \n", tw_now(lp), (int)lp->gid - total_routers, (int)tw_mype(), msg->packet_ID, msg->chunk_id, (int)s->router_id, (int)msg->saved_vc, s->terminal_available_time - tw_now(lp), msg->dest_terminal_id);
   }
 #endif
-   m = tw_event_data(e);
+   m = (terminal_message *) tw_event_data(e);
    m->type = R_ARRIVE;
 
 	  // Carry on the message info
@@ -568,7 +568,7 @@ if( msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
     bf->c1=1;
     ts = 0.1 + tw_rand_exponential(lp->rng, MEAN_PROCESS/200);
     e = tw_event_new(lp->gid, ts, lp);
-    m = tw_event_data( e );
+    m = (terminal_message *) tw_event_data( e );
     m->travel_start_time = msg->travel_start_time;
     m->type = FINISH;
     m->packet_ID = msg->packet_ID;
@@ -584,7 +584,7 @@ if( msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
   s->next_credit_available_time += ts;
 
   buf_e = tw_event_new(s->router_id, s->next_credit_available_time - tw_now(lp), lp);
-  buf_msg = tw_event_data(buf_e);
+  buf_msg = (terminal_message *) tw_event_data(buf_e);
   buf_msg->vc_index = msg->saved_vc;
   buf_msg->type=BUFFER;
   buf_msg->packet_ID=msg->packet_ID;
@@ -669,7 +669,7 @@ schedule_terminal_waiting_msg( terminal_state * s,
     tw_stime ts;
     ts = 0.1 + tw_rand_exponential(lp->rng, MEAN_INTERVAL/1000);
     e_h = tw_event_new( lp->gid, ts, lp );
-    m = tw_event_data(e_h);
+    m = (terminal_message *) tw_event_data(e_h);
     memcpy(m, s->waiting_list[0].packet, sizeof(terminal_message));
   
     memcpy(msg, s->waiting_list[0].packet, sizeof(terminal_message));
@@ -798,7 +798,7 @@ router_reschedule_event(router_state * s,
 
   e = tw_event_new(lp->gid, ts, lp);
 
-  m = tw_event_data(e);
+  m = (terminal_message *) tw_event_data(e);
   m->travel_start_time = msg->travel_start_time;
   m->dest_terminal_id = msg->dest_terminal_id;
   m->packet_ID = msg->packet_ID;
@@ -987,7 +987,7 @@ if( msg->packet_ID == TRACK && next_stop != msg->dest_terminal_id && msg->chunk_
   s->next_output_available_time[output_port] += ts;
   e = tw_event_new(next_stop, s->next_output_available_time[output_port] - tw_now(lp), lp);
 
-  m = tw_event_data(e);
+  m = (terminal_message *) tw_event_data(e);
 
   if(global)
     m->last_hop=GLOBAL;
@@ -1053,7 +1053,7 @@ router_packet_receive( router_state * s,
 
     e = tw_event_new(lp->gid, ts, lp);
  
-    m = tw_event_data(e);
+    m = (terminal_message *) tw_event_data(e);
     m->saved_vc = msg->saved_vc;
     m->intm_lp_id = msg->intm_lp_id;
 
@@ -1215,7 +1215,7 @@ schedule_router_waiting_msg( router_state * s,
        bf->c3 = 1;
        ts = tw_rand_exponential(lp->rng, MEAN_INTERVAL/1000);	
        e_h = tw_event_new( lp->gid, ts, lp );
-       m = tw_event_data( e_h );
+       m = (terminal_message *) tw_event_data( e_h );
        memcpy(m, s->waiting_list[j].packet, sizeof(terminal_message));
 
        //        For reverse computation, also copy data to the msg
