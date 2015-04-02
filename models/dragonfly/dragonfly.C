@@ -340,7 +340,7 @@ mpi_msg_recv( process_state * s,
 	     tw_lp * lp )
 {
 
-  int index = floor(N_COLLECT_POINTS*(tw_now(lp)/g_tw_ts_end));
+  int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
 }
 
 void 
@@ -488,7 +488,7 @@ void packet_send(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_lp *
    if(msg->chunk_id == num_chunks - 1) 
     {
        bf->c3 = 1;
-       int index = floor(N_COLLECT_POINTS*(tw_now(lp)/g_tw_ts_end));
+       int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
        s->packet_counter++;
        N_generated_storage[index]++;
        //if(s->packet_counter >= max_packets)
@@ -599,7 +599,7 @@ void packet_finish(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_lp
   N_finished++;
   bf->c3 = 0;
 
-  int index = floor(N_COLLECT_POINTS*(tw_now(lp)/g_tw_ts_end));
+  int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
   N_finished_storage[index]++;
   total_time += (tw_now(lp) - msg->travel_start_time);
   total_hops += msg->my_N_hop;
@@ -1274,7 +1274,7 @@ void router_event(router_state * s, tw_bf * bf, terminal_message * msg, tw_lp * 
 //Reverse computation handler for a terminal event
 void terminal_rc_event_handler(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_lp * lp)
 {
-   int index = floor(N_COLLECT_POINTS*(tw_now(lp)/g_tw_ts_end));
+   int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
 
    switch(msg->type)
    {
@@ -1290,7 +1290,7 @@ void terminal_rc_event_handler(terminal_state * s, tw_bf * bf, terminal_message 
 	         {
 		   if(bf->c3) 
 		    {
-			int index = floor(N_COLLECT_POINTS*(tw_now(lp)/g_tw_ts_end));
+			int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
 			N_generated_storage[index]--;	
 		        s->packet_counter--;
 		    }
@@ -1356,7 +1356,7 @@ void terminal_rc_event_handler(terminal_state * s, tw_bf * bf, terminal_message 
 	  case FINISH:
 		{
 		    N_finished--;
-		    int index = floor(N_COLLECT_POINTS*(tw_now(lp)/g_tw_ts_end));
+		    int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
 		    N_finished_storage[index]--;
 		    total_time -= (tw_now(lp) - msg->travel_start_time);
 		    total_hops -= msg->my_N_hop;
@@ -1673,7 +1673,7 @@ int main(int argc, char **argv)
 	  printf("\n Arrival rate %f tw_mype() %d total %d nlp_terminal_per_pe is %d, nlp_router_per_pe is %d \n ", MEAN_INTERVAL, (int)tw_mype(), range_start, nlp_terminal_per_pe, nlp_router_per_pe);
 	}
 #endif
-    packet_offset = (g_tw_ts_end/MEAN_INTERVAL) * num_packets;
+    packet_offset = (ROSS_CONSTANT(g_tw_ts_end)/MEAN_INTERVAL) * num_packets;
     tw_run();
 
     if(tw_ismaster())
@@ -1741,7 +1741,7 @@ int main(int argc, char **argv)
            }
 
 	tw_stime bandwidth;
-	tw_stime interval = (g_tw_ts_end / N_COLLECT_POINTS);
+	tw_stime interval = (ROSS_CONSTANT(g_tw_ts_end) / N_COLLECT_POINTS);
 	interval = interval / (1000.0 * 1000.0 * 1000.0); //convert seconds to ns
 	for( i=1; i<N_COLLECT_POINTS; i++ )
 	   {
