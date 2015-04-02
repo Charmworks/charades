@@ -320,7 +320,7 @@ two groups which is why this traffic is called worst-case traffic */
     m->packet_ID = packet_offset * ( lp->gid - total_routers - total_terminals ) + s->message_counter;
     m->travel_start_time = tw_now(lp);
 
-#if DEBUG
+#if DFDEBUG
 if(m->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
    printf("\n MPI message generated ID %lld destination %d ", m->packet_ID, m->dest_terminal_id);
 #endif
@@ -506,7 +506,7 @@ void packet_send(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_lp *
    //fprintf(dragonfly_event_log, " router id %d ", s->router_id);
    e = tw_event_new(s->router_id, s->terminal_available_time - tw_now(lp), lp);
 
-#if DEBUG
+#if DFDEBUG
 if( msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
   {
     printf("\n (%lf) [Terminal %d] {Node %d} Packet %lld chunk %d being sent to source router %d Output VC : %d after %lf dest terminal id: %d \n", tw_now(lp), (int)lp->gid - total_routers, (int)tw_mype(), msg->packet_ID, msg->chunk_id, (int)s->router_id, (int)msg->saved_vc, s->terminal_available_time - tw_now(lp), msg->dest_terminal_id);
@@ -541,7 +541,7 @@ if( msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
 /* flits arrive on the router, when last flit of the packet arrives, packet completion is marked */
 void packet_arrive(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_lp * lp)
 {
-#if DEBUG
+#if DFDEBUG
 if( msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
     {
 	printf( "(%lf) [Terminal %d] packet %lld has arrived  \n",
@@ -971,7 +971,7 @@ router_packet_send( router_state * s,
        return;
     }
 
-#if DEBUG
+#if DFDEBUG
 if( msg->packet_ID == TRACK && next_stop != msg->dest_terminal_id && msg->chunk_id == num_chunks-1)
   {
    printf("\n (%lf) [Router %d] Packet %lld being sent to intermediate group router %d Final destination router %d Output Channel Index %d Saved vc %d msg_intm_id %d \n", 
@@ -1069,7 +1069,7 @@ router_packet_receive( router_state * s,
     m->type = R_SEND;
     m->wait_type = -1;
 
-#if DEBUG
+#if DFDEBUG
 if(msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
 	printf("\n Router %d packet received %lld source terminal id %d dest terminal ID %d ", (int)lp->gid, m->packet_ID, m->src_terminal_id/4, m->dest_terminal_id/4);
 #endif
@@ -1569,7 +1569,7 @@ void dragonfly_mapping(void)
      tw_lp_onkp(g_tw_lp[i], g_tw_kp[kpid]);
      tw_lp_settype(i, &dragonfly_lps[1]);
 
-#ifdef DEBUG
+#ifdef DFDEBUG
     //printf("\n [Node %d] Local Router ID %d Global Router ID %d ", tw_mype(), i, tw_mype() * nlp_router_per_pe + i + get_router_rem());
 #endif
    } 
@@ -1584,7 +1584,7 @@ void dragonfly_mapping(void)
       tw_lp_onkp(g_tw_lp[nlp_router_per_pe + i], g_tw_kp[kpid]);
       tw_lp_settype(nlp_router_per_pe + i, &dragonfly_lps[0]);
 
-#ifdef DEBUG
+#ifdef DFDEBUG
 //    printf("\n [Node %d] Local Terminal ID %d Global Terminal ID %d ", tw_mype(), nlp_router_per_pe + i, total_routers + tw_mype() * nlp_terminal_per_pe + i + get_terminal_rem());
 #endif
     }
@@ -1599,7 +1599,7 @@ void dragonfly_mapping(void)
       tw_lp_onkp(g_tw_lp[nlp_router_per_pe + nlp_terminal_per_pe + i], g_tw_kp[kpid]);
       tw_lp_settype(nlp_router_per_pe + nlp_terminal_per_pe + i, &dragonfly_lps[2]);
 
-#ifdef DEBUG
+#ifdef DFDEBUG
 //    printf("\n [Node %d] Local Terminal ID %d Global Terminal ID %d ", tw_mype(), nlp_router_per_pe + i, total_routers + tw_mype() * nlp_terminal_per_pe + i + get_terminal_rem());
 #endif
     }
@@ -1659,7 +1659,7 @@ int main(int argc, char **argv)
      tw_define_lps(range_start, sizeof(terminal_message), 0);
 
    
-#if DEBUG
+#if DFDEBUG
      //sprintf( log, "dragonfly-log.%d", tw_mype() );
      //dragonfly_event_log=fopen(log, "w+");
 
@@ -1668,7 +1668,7 @@ int main(int argc, char **argv)
 #endif
 
 
-#if DEBUG
+#if DFDEBUG
      if(tw_ismaster())
 	{
           printf("\n total_routers %d total_terminals %d g_tw_nlp is %d g_tw_npe %d tw_mype(): %d \n ", total_routers, total_terminals, (int)g_tw_nlp, (int)g_tw_npe, (int)tw_mype());
