@@ -55,7 +55,6 @@ extern FILE *dragonfly_event_log;
 // arrival rate
 static double MEAN_INTERVAL=200.0;
 
-typedef enum event_t event_t;
 typedef struct terminal_state terminal_state;
 typedef struct terminal_message terminal_message;
 typedef struct buf_space_message buf_space_message;
@@ -104,6 +103,7 @@ enum event_t
   MPI_SEND,
   MPI_RECV
 };
+typedef enum event_t event_t;
 
 enum vc_status
 {
