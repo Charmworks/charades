@@ -1610,6 +1610,10 @@ int dragonfly_type_map (tw_lpid gid) {
   }
 }
 
+int dragonfly_numlp_map (int chareid) {
+  return nlp_router_per_pe + nlp_terminal_per_pe + nlp_mpi_procs_per_pe;
+}
+
 int main(int argc, char **argv)
 {
      char log[32];
@@ -1660,7 +1664,7 @@ int main(int argc, char **argv)
      ROSS_CONSTANT(g_init_map) = NULL;
      ROSS_CONSTANT(g_local_map) = NULL;
      ROSS_CONSTANT(g_chare_map) = &mapping;
-     ROSS_CONSTANT(g_numlp_map) = NULL;
+     ROSS_CONSTANT(g_numlp_map) = &dragonfly_numlp_map;
 
      PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * (nlp_terminal_per_pe + nlp_router_per_pe) + opt_mem;
 
