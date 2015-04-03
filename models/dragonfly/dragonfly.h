@@ -1,6 +1,7 @@
 #ifndef INC_dragonfly_h
 #define INC_dragonfly_h
 
+#include <mpi.h>
 #include <ross_api.h>
 
 // dragonfly basic configuration parameters
