@@ -1494,7 +1494,6 @@ tw_lptype dragonfly_lps[] =
     (event_f) terminal_event,
     (revent_f) terminal_rc_event_handler,
     (final_f) final,
-    // (map_f) mapping,
     sizeof(terminal_state)
     },
    {
@@ -1502,7 +1501,6 @@ tw_lptype dragonfly_lps[] =
      (event_f) router_event,
      (revent_f) router_rc_event_handler,
      (final_f) final,
-     // (map_f) mapping,
      sizeof(router_state),
    },
    {
@@ -1510,7 +1508,6 @@ tw_lptype dragonfly_lps[] =
      (event_f) mpi_event,
      (revent_f) mpi_rc_event_handler,
      (final_f) final,
-     // (map_f) mapping,
      sizeof(process_state),
    },
    {0},
@@ -1650,9 +1647,12 @@ int main(int argc, char **argv)
 
      range_start=nlp_router_per_pe + nlp_terminal_per_pe + nlp_mpi_procs_per_pe;
 
-     // g_tw_mapping=CUSTOM;
-     // g_tw_custom_initial_mapping=&dragonfly_mapping;
-     // g_tw_custom_lp_global_to_local_map=&dragonfly_mapping_to_lp;
+     ROSS_CONSTANT(g_type_map) = NULL;
+     ROSS_CONSTANT(g_init_map) = NULL;
+     ROSS_CONSTANT(g_local_map) = NULL;
+     ROSS_CONSTANT(g_chare_map) = &mapping;
+     ROSS_CONSTANT(g_numlp_map) = NULL;
+
      PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * (nlp_terminal_per_pe + nlp_router_per_pe) + opt_mem;
 
      tw_define_lps(sizeof(terminal_message), 0);
