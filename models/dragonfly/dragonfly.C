@@ -704,7 +704,7 @@ terminal_init( terminal_state * s,
       s->vc_occupancy[i]=0;
       s->output_vc_state[i]=VC_IDLE;
     }
-   s->waiting_list = tw_calloc(TW_LOC, "waiting list", sizeof(struct waiting_packet), TERMINAL_WAITING_PACK_COUNT);
+   s->waiting_list = (struct waiting_packet *) calloc(sizeof(struct waiting_packet), TERMINAL_WAITING_PACK_COUNT);
 
    int j;
    for (j = 0; j < TERMINAL_WAITING_PACK_COUNT - 1; j++) {
@@ -1124,7 +1124,7 @@ void router_setup(router_state * r, tw_lp * lp)
 	//fprintf(dragonfly_event_log, "\n Router %d connected to Router %d Group %d to Group %d ", local_router_id, r->global_channel[i], r->group_id, (r->global_channel[i]/NUM_ROUTER));
    #endif
     }
-  r->waiting_list = tw_calloc(TW_LOC, "waiting list", sizeof(struct waiting_packet), ROUTER_WAITING_PACK_COUNT);
+  r->waiting_list = (struct waiting_packet *) calloc(sizeof(struct waiting_packet), ROUTER_WAITING_PACK_COUNT);
 
   for (j = 0; j < ROUTER_WAITING_PACK_COUNT - 1; j++) {
      r->waiting_list[j].next = &r->waiting_list[j + 1];
@@ -1653,7 +1653,7 @@ int main(int argc, char **argv)
      // g_tw_mapping=CUSTOM;
      // g_tw_custom_initial_mapping=&dragonfly_mapping;
      // g_tw_custom_lp_global_to_local_map=&dragonfly_mapping_to_lp;
-     g_tw_events_per_pe = mem_factor * 1024 * (nlp_terminal_per_pe/g_tw_npe + nlp_router_per_pe/g_tw_npe) + opt_mem;
+     PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * (nlp_terminal_per_pe/g_tw_npe + nlp_router_per_pe/g_tw_npe) + opt_mem;
 
      tw_define_lps(sizeof(terminal_message), 0);
 
