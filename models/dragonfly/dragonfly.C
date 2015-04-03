@@ -1610,8 +1610,6 @@ int main(int argc, char **argv)
      tw_opt_add(app_opt);
      tw_init(&argc, &argv);
 
-     int g_tw_npe = 1;
-
      // UNIFORM_RANDOM
      // WORST_CASE
      // TRANSPOSE (send packets to the transpose of a 2D matrix)
@@ -1626,10 +1624,10 @@ int main(int argc, char **argv)
      total_mpi_procs = NUM_ROUTER*NUM_TERMINALS*num_groups;
 
 //    Assume a one-to-one mapping of MPI processes to terminals/nodes
-     nlp_terminal_per_pe = total_terminals/tw_nnodes()/g_tw_npe;
-     nlp_mpi_procs_per_pe = total_mpi_procs/tw_nnodes()/g_tw_npe;
+     nlp_terminal_per_pe = total_terminals/tw_nnodes();
+     nlp_mpi_procs_per_pe = total_mpi_procs/tw_nnodes();
 
-     terminal_rem = total_terminals % (tw_nnodes()/g_tw_npe);
+     terminal_rem = total_terminals % (tw_nnodes());
 
 #ifdef LOG_DRAGONFLY
      sprintf( log, "dragonfly-log.%d", tw_mype() );
@@ -1643,9 +1641,9 @@ int main(int argc, char **argv)
        nlp_mpi_procs_per_pe++;
      }
 
-     nlp_router_per_pe = total_routers/tw_nnodes()/g_tw_npe;
+     nlp_router_per_pe = total_routers/tw_nnodes();
 
-     router_rem = total_routers % (tw_nnodes()/g_tw_npe);
+     router_rem = total_routers % (tw_nnodes());
 
       if(tw_mype() < router_rem)
         nlp_router_per_pe++;
@@ -1655,7 +1653,7 @@ int main(int argc, char **argv)
      // g_tw_mapping=CUSTOM;
      // g_tw_custom_initial_mapping=&dragonfly_mapping;
      // g_tw_custom_lp_global_to_local_map=&dragonfly_mapping_to_lp;
-     PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * (nlp_terminal_per_pe/g_tw_npe + nlp_router_per_pe/g_tw_npe) + opt_mem;
+     PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * (nlp_terminal_per_pe + nlp_router_per_pe) + opt_mem;
 
      tw_define_lps(sizeof(terminal_message), 0);
 
@@ -1683,7 +1681,7 @@ int main(int argc, char **argv)
     if(tw_ismaster())
     {
       printf("\nDragonfly Network Model Statistics \n");
-      printf("\t%-50s %11lld\n", "Number of nodes", nlp_terminal_per_pe * g_tw_npe * tw_nnodes());
+      printf("\t%-50s %11lld\n", "Number of nodes", nlp_terminal_per_pe * tw_nnodes());
 //      printf("\n Slowest packet %lld ", max_packet);
       if(ROUTING == ADAPTIVE)
 	      printf("\n ADAPTIVE ROUTING STATS: %d packets routed minimally %d packets routed non-minimally ", minimal_count, nonmin_count);
