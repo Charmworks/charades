@@ -4,6 +4,29 @@
 // Router LP ID
 // Terminal LP ID
 
+////////////////////////////////////////////////// LP_CHARE MAPPINGS //////////////////////////////////////////////////
+
+int nlp_router_per_chare (unsigned chare_index) {
+  int nlp = total_routers / ROSS_CONSTANT(g_num_chares);
+  if(chare_index < router_rem)
+    nlp++;
+  return nlp;
+}
+
+int nlp_terminal_per_chare (unsigned chare_index) {
+  int nlp = total_terminals / ROSS_CONSTANT(g_num_chares);
+  if (chare_index < terminal_rem)
+    nlp++;
+  return nlp;
+}
+
+int nlp_mpi_procs_per_chare (unsigned chare_index) {
+  int nlp = total_mpi_procs / ROSS_CONSTANT(g_num_chares);
+  if (chare_index < terminal_rem)
+    nlp;
+  return nlp;
+}
+
 ////////////////////////////////////////////////// Router-Group-Terminal mapping functions ///////////////////////////////////////
 
 FILE * dragonfly_event_log=NULL;
@@ -1610,8 +1633,8 @@ tw_lptype* dragonfly_type_map (tw_lpid gid) {
   }
 }
 
-int dragonfly_numlp_map (int chareid) {
-  return nlp_router_per_pe + nlp_terminal_per_pe + nlp_mpi_procs_per_pe;
+int dragonfly_numlp_map (unsigned chareid) {
+  return nlp_router_per_chare(chareid) + nlp_terminal_per_chare(chareid) + nlp_mpi_procs_per_chare(chareid);
 }
 
 int main(int argc, char **argv)
