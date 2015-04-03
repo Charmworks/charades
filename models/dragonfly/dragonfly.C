@@ -10,7 +10,7 @@ FILE * dragonfly_event_log=NULL;
 int
 get_terminal_rem()
 {
-   if(terminal_rem > 0 && terminal_rem <= tw_mype())
+   if(terminal_rem > 0 && terminal_rem <= g_tw_mynode)
     return terminal_rem;
 
    return 0;
@@ -19,7 +19,7 @@ get_terminal_rem()
 int
 get_router_rem()
 {
-  if(router_rem > 0 && router_rem <= tw_mype())
+  if(router_rem > 0 && router_rem <= g_tw_mynode)
    return router_rem;
 
   return 0;
@@ -28,7 +28,7 @@ get_router_rem()
 int
 get_inv_router_rem()
 {
-   if(router_rem > 0 && router_rem >= tw_mype())
+   if(router_rem > 0 && router_rem >= g_tw_mynode)
 	return router_rem;
 
   return 0;
@@ -60,7 +60,7 @@ mapping( tw_lpid gid)
    int offset;
    int rem = 0;
    int nlp_per_pe;
-   int N_nodes = tw_nnodes();
+   int N_nodes = ROSS_CONSTANT(g_num_chares);
 
    if(gid < total_routers)
     {
@@ -103,7 +103,7 @@ mapping( tw_lpid gid)
 
    if(rem > 0)
     {
-     if(tw_mype() >= rem)
+     if(g_tw_mynode >= rem)
         {
 	  if(gid < offset)
 	    rank = gid / (nlp_per_pe + 1);
@@ -509,7 +509,7 @@ void packet_send(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_lp *
 #if DFDEBUG
 if( msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
   {
-    printf("\n (%lf) [Terminal %d] {Node %d} Packet %lld chunk %d being sent to source router %d Output VC : %d after %lf dest terminal id: %d \n", tw_now(lp), (int)lp->gid - total_routers, (int)tw_mype(), msg->packet_ID, msg->chunk_id, (int)s->router_id, (int)msg->saved_vc, s->terminal_available_time - tw_now(lp), msg->dest_terminal_id);
+    printf("\n (%lf) [Terminal %d] {Node %d} Packet %lld chunk %d being sent to source router %d Output VC : %d after %lf dest terminal id: %d \n", tw_now(lp), (int)lp->gid - total_routers, (int)g_tw_mynode, msg->packet_ID, msg->chunk_id, (int)s->router_id, (int)msg->saved_vc, s->terminal_available_time - tw_now(lp), msg->dest_terminal_id);
   }
 #endif
    m = (terminal_message *) tw_event_data(e);
@@ -1527,18 +1527,18 @@ const tw_optdef app_opt [] =
    TWOPT_END()
 };
 
-/*
+
 tw_lp * dragonfly_mapping_to_lp(tw_lpid lpid)
 {
   int index;
 
   if(lpid < total_routers)
-      index = lpid - tw_mype() * nlp_router_per_pe - get_router_rem();
+      index = lpid - g_tw_mynode * nlp_router_per_pe - get_router_rem();
   else
      if(lpid >= total_routers && lpid < total_routers+total_terminals)
-        index = nlp_router_per_pe + (lpid - tw_mype() * nlp_terminal_per_pe - get_terminal_rem() - total_routers);
+        index = nlp_router_per_pe + (lpid - g_tw_mynode * nlp_terminal_per_pe - get_terminal_rem() - total_routers);
    else
-	 index = nlp_router_per_pe + nlp_terminal_per_pe + (lpid - tw_mype() * nlp_mpi_procs_per_pe - get_terminal_rem() - total_routers - total_terminals);
+	 index = nlp_router_per_pe + nlp_terminal_per_pe + (lpid - g_tw_mynode * nlp_mpi_procs_per_pe - get_terminal_rem() - total_routers - total_terminals);
 
   return g_tw_lp[index];
 }
@@ -1553,22 +1553,22 @@ void dragonfly_mapping(void)
     tw_kp_onpe(kpid, g_tw_pe[0]);
 
   int i;
-  //printf("\n Node %d router start %d Terminal start %d MPI procs start %d ", tw_mype(),
-//									    tw_mype() * nlp_router_per_pe + get_router_rem(),
-//									    total_routers + tw_mype() * nlp_terminal_per_pe + get_terminal_rem(),
-//									    total_routers + total_terminals + tw_mype() * nlp_mpi_procs_per_pe);
+  //printf("\n Node %d router start %d Terminal start %d MPI procs start %d ", g_tw_mynode,
+//									    g_tw_mynode * nlp_router_per_pe + get_router_rem(),
+//									    total_routers + g_tw_mynode * nlp_terminal_per_pe + get_terminal_rem(),
+//									    total_routers + total_terminals + g_tw_mynode * nlp_mpi_procs_per_pe);
   for(i = 0; i < nlp_router_per_pe; i++)
    {
      kpid = i % g_tw_nkp;
 
      pe = tw_getpe(kpid % g_tw_npe);
 
-     tw_lp_onpe(i, pe, tw_mype() * nlp_router_per_pe + i + get_router_rem());
+     tw_lp_onpe(i, pe, g_tw_mynode * nlp_router_per_pe + i + get_router_rem());
      tw_lp_onkp(g_tw_lp[i], g_tw_kp[kpid]);
      tw_lp_settype(i, &dragonfly_lps[1]);
 
 #ifdef DFDEBUG
-    //printf("\n [Node %d] Local Router ID %d Global Router ID %d ", tw_mype(), i, tw_mype() * nlp_router_per_pe + i + get_router_rem());
+    //printf("\n [Node %d] Local Router ID %d Global Router ID %d ", g_tw_mynode, i, g_tw_mynode * nlp_router_per_pe + i + get_router_rem());
 #endif
    }
 //apping for terminal LP
@@ -1578,12 +1578,12 @@ void dragonfly_mapping(void)
 
       pe = tw_getpe(kpid % g_tw_npe);
 
-      tw_lp_onpe(nlp_router_per_pe + i, pe, total_routers + tw_mype() * nlp_terminal_per_pe + i + get_terminal_rem());
+      tw_lp_onpe(nlp_router_per_pe + i, pe, total_routers + g_tw_mynode * nlp_terminal_per_pe + i + get_terminal_rem());
       tw_lp_onkp(g_tw_lp[nlp_router_per_pe + i], g_tw_kp[kpid]);
       tw_lp_settype(nlp_router_per_pe + i, &dragonfly_lps[0]);
 
 #ifdef DFDEBUG
-//    printf("\n [Node %d] Local Terminal ID %d Global Terminal ID %d ", tw_mype(), nlp_router_per_pe + i, total_routers + tw_mype() * nlp_terminal_per_pe + i + get_terminal_rem());
+//    printf("\n [Node %d] Local Terminal ID %d Global Terminal ID %d ", g_tw_mynode, nlp_router_per_pe + i, total_routers + g_tw_mynode * nlp_terminal_per_pe + i + get_terminal_rem());
 #endif
     }
 // mapping for MPI process LP
@@ -1593,16 +1593,16 @@ void dragonfly_mapping(void)
 
       pe = tw_getpe(kpid % g_tw_npe);
 
-      tw_lp_onpe(nlp_router_per_pe + nlp_terminal_per_pe + i, pe, total_routers + total_terminals + tw_mype() * nlp_mpi_procs_per_pe + i + get_terminal_rem());
+      tw_lp_onpe(nlp_router_per_pe + nlp_terminal_per_pe + i, pe, total_routers + total_terminals + g_tw_mynode * nlp_mpi_procs_per_pe + i + get_terminal_rem());
       tw_lp_onkp(g_tw_lp[nlp_router_per_pe + nlp_terminal_per_pe + i], g_tw_kp[kpid]);
       tw_lp_settype(nlp_router_per_pe + nlp_terminal_per_pe + i, &dragonfly_lps[2]);
 
 #ifdef DFDEBUG
-//    printf("\n [Node %d] Local Terminal ID %d Global Terminal ID %d ", tw_mype(), nlp_router_per_pe + i, total_routers + tw_mype() * nlp_terminal_per_pe + i + get_terminal_rem());
+//    printf("\n [Node %d] Local Terminal ID %d Global Terminal ID %d ", g_tw_mynode, nlp_router_per_pe + i, total_routers + g_tw_mynode * nlp_terminal_per_pe + i + get_terminal_rem());
 #endif
     }
 }
-*/
+
 
 int main(int argc, char **argv)
 {
@@ -1624,28 +1624,28 @@ int main(int argc, char **argv)
      total_mpi_procs = NUM_ROUTER*NUM_TERMINALS*num_groups;
 
 //    Assume a one-to-one mapping of MPI processes to terminals/nodes
-     nlp_terminal_per_pe = total_terminals/tw_nnodes();
-     nlp_mpi_procs_per_pe = total_mpi_procs/tw_nnodes();
+     nlp_terminal_per_pe = total_terminals/ROSS_CONSTANT(g_num_chares);
+     nlp_mpi_procs_per_pe = total_mpi_procs/ROSS_CONSTANT(g_num_chares);
 
-     terminal_rem = total_terminals % (tw_nnodes());
+     terminal_rem = total_terminals % (ROSS_CONSTANT(g_num_chares));
 
 #ifdef LOG_DRAGONFLY
-     sprintf( log, "dragonfly-log.%d", tw_mype() );
+     sprintf( log, "dragonfly-log.%d", g_tw_mynode );
      dragonfly_event_log = fopen( log, "w+");
      if( dragonfly_event_log == NULL )
         tw_error( TW_LOC, "Failed to Open DRAGONFLY Event Log file \n");
 #endif
-     if(tw_mype() < terminal_rem)
+     if(g_tw_mynode < terminal_rem)
      {
        nlp_terminal_per_pe++;
        nlp_mpi_procs_per_pe++;
      }
 
-     nlp_router_per_pe = total_routers/tw_nnodes();
+     nlp_router_per_pe = total_routers/ROSS_CONSTANT(g_num_chares);
 
-     router_rem = total_routers % (tw_nnodes());
+     router_rem = total_routers % (ROSS_CONSTANT(g_num_chares));
 
-      if(tw_mype() < router_rem)
+      if(g_tw_mynode < router_rem)
         nlp_router_per_pe++;
 
      range_start=nlp_router_per_pe + nlp_terminal_per_pe + nlp_mpi_procs_per_pe;
@@ -1659,7 +1659,7 @@ int main(int argc, char **argv)
 
 
 #if DFDEBUG
-     //sprintf( log, "dragonfly-log.%d", tw_mype() );
+     //sprintf( log, "dragonfly-log.%d", g_tw_mynode );
      //dragonfly_event_log=fopen(log, "w+");
 
      //if(dragonfly_event_log == NULL)
@@ -1670,9 +1670,9 @@ int main(int argc, char **argv)
 #if DFDEBUG
      if(tw_ismaster())
 	{
-          printf("\n total_routers %d total_terminals %d g_lps_per_chare is %d g_num_chares %d tw_mype(): %d \n ", total_routers, total_terminals, (int)ROSS_CONSTANT(g_lps_per_chare), (int)ROSS_CONSTANT(g_num_chares), (int)tw_mype());
+          printf("\n total_routers %d total_terminals %d g_lps_per_chare is %d g_num_chares %d g_tw_mynode: %d \n ", total_routers, total_terminals, (int)ROSS_CONSTANT(g_lps_per_chare), (int)ROSS_CONSTANT(g_num_chares), (int)g_tw_mynode);
 
-	  printf("\n Arrival rate %f tw_mype() %d total %d nlp_terminal_per_pe is %d, nlp_router_per_pe is %d \n ", MEAN_INTERVAL, (int)tw_mype(), range_start, nlp_terminal_per_pe, nlp_router_per_pe);
+	  printf("\n Arrival rate %f g_tw_mynode %d total %d nlp_terminal_per_pe is %d, nlp_router_per_pe is %d \n ", MEAN_INTERVAL, (int)g_tw_mynode, range_start, nlp_terminal_per_pe, nlp_router_per_pe);
 	}
 #endif
     packet_offset = (ROSS_CONSTANT(g_tw_ts_end)/MEAN_INTERVAL) * num_packets;
@@ -1681,7 +1681,7 @@ int main(int argc, char **argv)
     if(tw_ismaster())
     {
       printf("\nDragonfly Network Model Statistics \n");
-      printf("\t%-50s %11lld\n", "Number of nodes", nlp_terminal_per_pe * tw_nnodes());
+      printf("\t%-50s %11lld\n", "Number of nodes", nlp_terminal_per_pe * ROSS_CONSTANT(g_num_chares));
 //      printf("\n Slowest packet %lld ", max_packet);
       if(ROUTING == ADAPTIVE)
 	      printf("\n ADAPTIVE ROUTING STATS: %d packets routed minimally %d packets routed non-minimally ", minimal_count, nonmin_count);
