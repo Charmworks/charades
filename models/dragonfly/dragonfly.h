@@ -241,7 +241,6 @@ tw_stime         average_travel_time = 0;
 tw_stime         total_time = 0;
 tw_stime         max_latency = 0;
 
-int range_start;
 int num_vc;
 int terminal_rem=0, router_rem=0;
 int num_terminal=0, num_router=0;

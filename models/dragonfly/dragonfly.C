@@ -1658,8 +1658,6 @@ int main(int argc, char **argv)
       if(g_tw_mynode < router_rem)
         nlp_router_per_pe++;
 
-     range_start=nlp_router_per_pe + nlp_terminal_per_pe + nlp_mpi_procs_per_pe;
-
      ROSS_CONSTANT(g_type_map) = dragonfly_type_map;
      ROSS_CONSTANT(g_init_map) = NULL;
      ROSS_CONSTANT(g_local_map) = dragonfly_mapping_to_lp;
@@ -1685,7 +1683,7 @@ int main(int argc, char **argv)
 	{
           printf("\n total_routers %d total_terminals %d g_lps_per_chare is %d g_num_chares %d g_tw_mynode: %d \n ", total_routers, total_terminals, (int)ROSS_CONSTANT(g_lps_per_chare), (int)ROSS_CONSTANT(g_num_chares), (int)g_tw_mynode);
 
-	  printf("\n Arrival rate %f g_tw_mynode %d total %d nlp_terminal_per_pe is %d, nlp_router_per_pe is %d \n ", MEAN_INTERVAL, (int)g_tw_mynode, range_start, nlp_terminal_per_pe, nlp_router_per_pe);
+	  printf("\n Arrival rate %f g_tw_mynode %d nlp_terminal_per_pe is %d, nlp_router_per_pe is %d \n ", MEAN_INTERVAL, (int)g_tw_mynode, nlp_terminal_per_pe, nlp_router_per_pe);
 	}
 #endif
     packet_offset = (ROSS_CONSTANT(g_tw_ts_end)/MEAN_INTERVAL) * num_packets;
