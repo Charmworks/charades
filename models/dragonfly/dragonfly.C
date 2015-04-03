@@ -1525,7 +1525,7 @@ const tw_optdef app_opt [] =
 };
 
 
-tw_lp * dragonfly_mapping_to_lp(tw_lpid lpid)
+int dragonfly_mapping_to_lp(tw_lpid lpid)
 {
   int index;
 
@@ -1537,7 +1537,7 @@ tw_lp * dragonfly_mapping_to_lp(tw_lpid lpid)
    else
 	 index = nlp_router_per_pe + nlp_terminal_per_pe + (lpid - g_tw_mynode * nlp_mpi_procs_per_pe - get_terminal_rem() - total_routers - total_terminals);
 
-  return g_tw_lp[index];
+  return index;
 }
 
 void dragonfly_mapping(void)
@@ -1662,7 +1662,7 @@ int main(int argc, char **argv)
 
      ROSS_CONSTANT(g_type_map) = &dragonfly_type_map;
      ROSS_CONSTANT(g_init_map) = NULL;
-     ROSS_CONSTANT(g_local_map) = NULL;
+     ROSS_CONSTANT(g_local_map) = &dragonfly_mapping_to_lp;
      ROSS_CONSTANT(g_chare_map) = &mapping;
      ROSS_CONSTANT(g_numlp_map) = &dragonfly_numlp_map;
 
