@@ -220,9 +220,6 @@ struct waiting_packet
    int chan;
 };
 
-static int       nlp_terminal_per_pe;
-static int       nlp_router_per_pe;
-static int 	 nlp_mpi_procs_per_pe;
 static int opt_mem = 10000;
 static int mem_factor = 32;
 static int max_packets = 0;
