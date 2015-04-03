@@ -1,6 +1,7 @@
 #ifndef INC_dragonfly_h
 #define INC_dragonfly_h
 
+#include <mpi.h>
 #include <ross_api.h>
 
 // dragonfly basic configuration parameters
@@ -17,7 +18,7 @@
 //#define LOCAL_DELAY 1.0
 //#define GLOBAL_DELAY 10.0
 
-#define GLOBAL_BANDWIDTH 4.7 
+#define GLOBAL_BANDWIDTH 4.7
 #define LOCAL_BANDWIDTH 5.25
 #define NODE_BANDWIDTH 5.25
 #define CREDIT_SIZE 8
@@ -73,12 +74,12 @@ struct terminal_state
    int output_vc_state[NUM_VC];
    tw_stime terminal_available_time;
    tw_stime next_credit_available_time;
-   
+
    //first element of linked list
    struct waiting_packet * waiting_list;
 
   // pointer to the linked list
-   struct waiting_packet * head;   
+   struct waiting_packet * head;
    int wait_count;
    int packet_counter;
 // Terminal generate, sends and arrival T_SEND, T_ARRIVAL, T_GENERATE
@@ -142,10 +143,10 @@ struct terminal_message
   tw_stime travel_start_time;
   unsigned long long packet_ID;
   event_t  type;
-  
+
   unsigned int dest_terminal_id;
   unsigned int src_terminal_id;
-  
+
   short my_N_hop;
 
   // Intermediate LP ID from which this message is coming
@@ -159,7 +160,7 @@ struct terminal_message
    short vc_index;
    int input_chan;
    int output_chan;
-   
+
    tw_stime saved_available_time;
    tw_stime saved_credit_time;
 
@@ -174,8 +175,8 @@ struct router_state
 {
    unsigned int router_id;
    unsigned int group_id;
-  
-   int global_channel[GLOBAL_CHANNELS]; 
+
+   int global_channel[GLOBAL_CHANNELS];
 
    // 0--NUM_ROUTER-1 local router indices (router-router intragroup channels)
    // NUM_ROUTER -- NUM_ROUTER+GLOBAL_CHANNELS-1 global channel indices (router-router inter-group channels)
@@ -187,7 +188,7 @@ struct router_state
    tw_stime next_credit_available_time[RADIX];
 //   tw_stime next_credit_available_time[RADIX];
 
-//   unsigned int credit_occupancy[RADIX];   
+//   unsigned int credit_occupancy[RADIX];
    int vc_occupancy[RADIX];
 
 //   unsigned int input_vc_state[RADIX];
@@ -205,8 +206,8 @@ struct process_state
 {
    int message_counter;
    tw_stime available_time;
-  
-   unsigned int router_id; 
+
+   unsigned int router_id;
    unsigned int group_id;
 //   For matrix transpose traffic
    int row, col;
