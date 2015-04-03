@@ -1655,7 +1655,7 @@ int main(int argc, char **argv)
      // g_tw_custom_lp_global_to_local_map=&dragonfly_mapping_to_lp;
      g_tw_events_per_pe = mem_factor * 1024 * (nlp_terminal_per_pe/g_tw_npe + nlp_router_per_pe/g_tw_npe) + opt_mem;
 
-     tw_define_lps(range_start, sizeof(terminal_message), 0);
+     tw_define_lps(sizeof(terminal_message), 0);
 
 
 #if DFDEBUG
