@@ -1670,7 +1670,7 @@ int main(int argc, char **argv)
 #if DFDEBUG
      if(tw_ismaster())
 	{
-          printf("\n total_routers %d total_terminals %d g_tw_nlp is %d g_tw_npe %d tw_mype(): %d \n ", total_routers, total_terminals, (int)g_tw_nlp, (int)g_tw_npe, (int)tw_mype());
+          printf("\n total_routers %d total_terminals %d g_lps_per_chare is %d g_tw_npe %d tw_mype(): %d \n ", total_routers, total_terminals, (int)ROSS_CONSTANT(g_lps_per_chare), (int)g_tw_npe, (int)tw_mype());
 
 	  printf("\n Arrival rate %f tw_mype() %d total %d nlp_terminal_per_pe is %d, nlp_router_per_pe is %d \n ", MEAN_INTERVAL, (int)tw_mype(), range_start, nlp_terminal_per_pe, nlp_router_per_pe);
 	}
