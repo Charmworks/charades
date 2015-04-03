@@ -1600,13 +1600,13 @@ void dragonfly_mapping(void)
     }
 }
 
-int dragonfly_type_map (tw_lpid gid) {
+tw_lptype* dragonfly_type_map (tw_lpid gid) {
   if (gid < total_routers) {
-    return 1;
+    return &dragonfly_lps[1];
   } else if (gid < total_routers + total_terminals) {
-    return 0;
+    return &dragonfly_lps[0];
   } else {
-    return 2;
+    return &dragonfly_lps[2];
   }
 }
 
@@ -1660,11 +1660,11 @@ int main(int argc, char **argv)
 
      range_start=nlp_router_per_pe + nlp_terminal_per_pe + nlp_mpi_procs_per_pe;
 
-     ROSS_CONSTANT(g_type_map) = &dragonfly_type_map;
+     ROSS_CONSTANT(g_type_map) = dragonfly_type_map;
      ROSS_CONSTANT(g_init_map) = NULL;
-     ROSS_CONSTANT(g_local_map) = &dragonfly_mapping_to_lp;
-     ROSS_CONSTANT(g_chare_map) = &mapping;
-     ROSS_CONSTANT(g_numlp_map) = &dragonfly_numlp_map;
+     ROSS_CONSTANT(g_local_map) = dragonfly_mapping_to_lp;
+     ROSS_CONSTANT(g_chare_map) = mapping;
+     ROSS_CONSTANT(g_numlp_map) = dragonfly_numlp_map;
 
      PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * (nlp_terminal_per_pe + nlp_router_per_pe) + opt_mem;
 
