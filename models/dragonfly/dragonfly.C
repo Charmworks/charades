@@ -1494,7 +1494,7 @@ tw_lptype dragonfly_lps[] =
     (event_f) terminal_event,
     (revent_f) terminal_rc_event_handler,
     (final_f) final,
-    (map_f) mapping,
+    // (map_f) mapping,
     sizeof(terminal_state)
     },
    {
@@ -1502,7 +1502,7 @@ tw_lptype dragonfly_lps[] =
      (event_f) router_event,
      (revent_f) router_rc_event_handler,
      (final_f) final,
-     (map_f) mapping,
+     // (map_f) mapping,
      sizeof(router_state),
    },
    {
@@ -1510,7 +1510,7 @@ tw_lptype dragonfly_lps[] =
      (event_f) mpi_event,
      (revent_f) mpi_rc_event_handler,
      (final_f) final,
-     (map_f) mapping,
+     // (map_f) mapping,
      sizeof(process_state),
    },
    {0},
@@ -1527,6 +1527,7 @@ const tw_optdef app_opt [] =
    TWOPT_END()
 };
 
+/*
 tw_lp * dragonfly_mapping_to_lp(tw_lpid lpid)
 {
   int index;
@@ -1601,6 +1602,7 @@ void dragonfly_mapping(void)
 #endif
     }
 }
+*/
 
 int main(int argc, char **argv)
 {
@@ -1648,9 +1650,9 @@ int main(int argc, char **argv)
 
      range_start=nlp_router_per_pe + nlp_terminal_per_pe + nlp_mpi_procs_per_pe;
 
-     g_tw_mapping=CUSTOM;
-     g_tw_custom_initial_mapping=&dragonfly_mapping;
-     g_tw_custom_lp_global_to_local_map=&dragonfly_mapping_to_lp;
+     // g_tw_mapping=CUSTOM;
+     // g_tw_custom_initial_mapping=&dragonfly_mapping;
+     // g_tw_custom_lp_global_to_local_map=&dragonfly_mapping_to_lp;
      g_tw_events_per_pe = mem_factor * 1024 * (nlp_terminal_per_pe/g_tw_npe + nlp_router_per_pe/g_tw_npe) + opt_mem;
 
      tw_define_lps(range_start, sizeof(terminal_message), 0);
