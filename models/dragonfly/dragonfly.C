@@ -78,79 +78,40 @@ getRouterID(tw_lpid terminal_id)
 
 unsigned mapping( tw_lpid gid) {
   int rank;
-  int offset;
   int rem = 0;
   int nlp_per_pe;
   int N_nodes = ROSS_CONSTANT(g_num_chares);
-  int nlp;
+  int cmp;
 
   if(gid < total_routers)
   {
-    nlp = total_routers / N_nodes;
-    if (g_tw_mynode < router_rem)
-      nlp++;
-
-    rank = gid / nlp;
+    nlp_per_pe = total_routers/N_nodes;
     rem = router_rem;
-
-    if(nlp == (total_routers/N_nodes))
-      offset = (nlp + 1) * router_rem;
-    else
-      offset = nlp * router_rem;
-
-    nlp_per_pe = nlp;
   }
   else if( gid >= total_routers && gid < total_routers + total_terminals)
   {
-    nlp = total_terminals / N_nodes;
-    if (g_tw_mynode < terminal_rem)
-      nlp++;
-
-    rank = getTerminalID(gid)/nlp;
+    nlp_per_pe = total_terminals/N_nodes;
     rem = terminal_rem;
-
-    if(nlp == (total_terminals/N_nodes))
-      offset = total_routers + (nlp + 1) * terminal_rem;
-    else
-      offset = total_routers + nlp * terminal_rem;
-
-    nlp_per_pe = nlp;
+    gid -= total_routers;
   }
   else if( gid >= (total_routers + total_terminals) && gid < (total_routers + total_terminals + total_mpi_procs))
   {
-    nlp = total_mpi_procs / N_nodes;
-    if (g_tw_mynode < terminal_rem)
-      nlp++;
-
-    rank = getProcID(gid)/nlp;
-    rem = terminal_rem; //same as MPI process rem as there is one to one mapping between MPI process and terminal
-
-    if(nlp == (total_mpi_procs/N_nodes))
-      offset = total_routers + total_terminals + (nlp + 1) * terminal_rem;
-    else
-      offset = total_routers + total_terminals + nlp * terminal_rem;
-
-    nlp_per_pe = nlp;
+    nlp_per_pe = total_mpi_procs/N_nodes;
+    rem = terminal_rem;
+    gid -= (total_routers+total_terminals);
   }
   else
     printf("\n Invalid LP ID %d given for mapping ", (int)gid);
 
-  if(rem > 0)
-  {
-    if(g_tw_mynode >= rem)
-    {
-      if(gid < offset)
-        rank = gid / (nlp_per_pe + 1);
-      else
-        rank = rem + ((gid - offset)/nlp_per_pe);
-    }
-    else
-    {
-      if(gid >= offset)
-        rank = rem + ((gid - offset)/(nlp_per_pe - 1));
-    }
+  cmp = 0;
+  for (rank = 0; rank < N_nodes; rank++) {
+    cmp += nlp_per_pe;
+    if (rank < rem)
+      cmp++;
+
+    if (gid < cmp)
+      return rank;
   }
-  return rank;
 }
 //////////////////////////////////////// Get router in the group which has a global channel to group id gid /////////////////////////////////
 tw_lpid
