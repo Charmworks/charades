@@ -234,8 +234,8 @@ int num_packets;
 int num_chunks;
 int packet_offset;
 
-tw_stime         average_travel_time = 0;
-tw_stime         total_time = 0;
+// tw_stime         average_travel_time = 0;
+// tw_stime         total_time = 0;
 tw_stime         max_latency = 0;
 
 int num_vc;
@@ -245,10 +245,10 @@ unsigned long num_groups = NUM_ROUTER*GLOBAL_CHANNELS+1;
 int total_routers, total_terminals, total_mpi_procs;
 unsigned long long max_packet;
 
-static unsigned long long       total_hops = 0;
-static unsigned long long       N_finished = 0;
-static unsigned long long       N_finished_storage[N_COLLECT_POINTS];
-static unsigned long long       N_generated_storage[N_COLLECT_POINTS];
+// static unsigned long long       total_hops = 0;
+// static unsigned long long       N_finished = 0;
+// static unsigned long long       N_finished_storage[N_COLLECT_POINTS];
+// static unsigned long long       N_generated_storage[N_COLLECT_POINTS];
 
 tw_lpid dragonfly_mapping(unsigned chare_index, tw_lpid local_id);
 tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid);
