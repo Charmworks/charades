@@ -1557,13 +1557,18 @@ tw_lpid dragonfly_mapping (unsigned chare_index, tw_lpid local_id) {
     gid = chare_index * nlp_router_per_chare(chare_index) + local_id + get_router_rem(chare_index);
   } else if (local_id < nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index)) {
     // terminal type
+    local_id -= nlp_router_per_chare(chare_index);
     gid = total_routers + chare_index * nlp_terminal_per_chare(chare_index) + local_id + get_terminal_rem(chare_index);
   } else if (local_id < nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index) + nlp_mpi_procs_per_chare(chare_index)) {
     // mpi_proc type
+    local_id -= (nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index));
     gid = total_routers + total_terminals + chare_index * nlp_mpi_procs_per_chare(chare_index) + local_id + get_terminal_rem(chare_index);
   } else {
     tw_error(TW_LOC, "Mapping setup ERROR: unrecognized local id");
   }
+
+  if (gid >= total_routers + total_terminals + total_mpi_procs)
+    tw_error(TW_LOC, "Mapping setup ERROR: chare %d local %d maps to gid %d", chare_index, local_id, gid);
 
   return gid;
 }
