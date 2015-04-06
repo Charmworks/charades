@@ -1587,6 +1587,7 @@ tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid)
   return index;
 }
 
+/*
 void dragonfly_mapping(void)
 {
   tw_lpid kpid;
@@ -1646,6 +1647,12 @@ void dragonfly_mapping(void)
 #endif
     }
 }
+*/
+
+tw_lpid dragonfly_mapping (unsigned chare_index, tw_lpid local_id) {
+  tw_lpid gid = 0;
+  return gid;
+}
 
 tw_lptype* dragonfly_type_map (tw_lpid gid) {
   if (gid < total_routers) {
@@ -1692,7 +1699,7 @@ int main(int argc, char **argv)
      router_rem = total_routers % (ROSS_CONSTANT(g_num_chares));
 
      ROSS_CONSTANT(g_type_map) = dragonfly_type_map;
-     ROSS_CONSTANT(g_init_map) = NULL;
+     ROSS_CONSTANT(g_init_map) = dragonfly_mapping;
      ROSS_CONSTANT(g_local_map) = dragonfly_mapping_to_lp;
      ROSS_CONSTANT(g_chare_map) = mapping;
      ROSS_CONSTANT(g_numlp_map) = dragonfly_numlp_map;

@@ -250,6 +250,6 @@ static unsigned long long       N_finished = 0;
 static unsigned long long       N_finished_storage[N_COLLECT_POINTS];
 static unsigned long long       N_generated_storage[N_COLLECT_POINTS];
 
-void dragonfly_mapping(void);
+tw_lpid dragonfly_mapping(unsigned chare_index, tw_lpid local_id);
 tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid);
 #endif
