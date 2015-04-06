@@ -15,7 +15,6 @@
 #include "event.h"
 #include "charm_api.h"
 #include "ross_util.h"
-#include <malloc.h>
 
 #include <float.h>
 
