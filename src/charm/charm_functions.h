@@ -29,4 +29,10 @@ void tw_abort(const char*);
 #define DEBUG_LP(format, ...) {}
 #endif
 
+#ifdef DEBUG_PE_ON
+#define DEBUG_PE(format, ...) { CkPrintf("PE[%d] "format, CkMyPe(), ## __VA_ARGS__); }
+#else
+#define DEBUG_PE(format, ...) {}
+#endif
+
 #endif

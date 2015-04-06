@@ -88,6 +88,18 @@ class EventBuffer {
         delete e;
       }
     }
+
+    unsigned current_size() const {
+      return stack_pointer;
+    }
+
+    unsigned max_size() const {
+      return max_events;
+    }
+
+    double percent_used() const {
+      return ((double)stack_pointer / max_events);
+    }
 };
 
 #endif

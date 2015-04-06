@@ -36,46 +36,7 @@ CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
     CkAssert(msgs[i]->getSize() == sizeof(Statistics));
 
     Statistics *c = (Statistics *)msgs[i]->getData();
-    // Timing stats
-    s->s_max_run_time = fmax(s->s_max_run_time, c->s_max_run_time);
-    s->s_min_run_time = fmin(s->s_min_run_time, c->s_min_run_time);
-
-    // Event count stats
-    s->s_nevent_processed += c->s_nevent_processed;
-
-    // Rollback stats
-    s->s_e_rbs += c->s_e_rbs;
-    s->s_rb_total += c->s_rb_total;
-    s->s_rb_primary += c->s_rb_primary;
-    s->s_rb_secondary += c->s_rb_secondary;
-
-    // Send stats
-    s->s_nsend_remote_rb += c->s_nsend_remote_rb;
-    s->s_nsend_loc_remote += c->s_nsend_loc_remote;
-
-    // GVT stats
-    s->s_ngvts = c->s_ngvts;
-    s->s_fc_attempts += c->s_fc_attempts;
-    s->s_fossil_collect += c->s_fossil_collect;
-
-    // Currently unused stats // TODO: Document or remove
-    s->s_nevent_abort += c->s_nevent_abort;
-    s->s_pq_qsize += c->s_pq_qsize;
-    s->s_nsend_network += c->s_nsend_network;
-    s->s_nread_network += c->s_nread_network;
-    s->s_nsend_net_remote += c->s_nsend_net_remote;
-    s->s_mem_buffers_used += c->s_mem_buffers_used;
-    s->s_pe_event_ties += c->s_pe_event_ties;
-    s->s_min_detected_offset = fmin(s->s_min_detected_offset, c->s_min_detected_offset);
-    s->s_total = fmax(s->s_total, c->s_total);
-    s->s_net_read = fmax(s->s_net_read, c->s_net_read);
-    s->s_gvt = fmax(s->s_gvt, c->s_gvt);
-    s->s_fossil_collect = fmax(s->s_fossil_collect, c->s_fossil_collect);
-    s->s_event_abort = fmax(s->s_event_abort, c->s_event_abort);
-    s->s_event_process = fmax(s->s_event_process, c->s_event_process);
-    s->s_pq = fmax(s->s_pq, c->s_pq);
-    s->s_rollback = fmax(s->s_rollback, c->s_rollback);
-    s->s_avl = fmax(s->s_avl, c->s_avl);
+    add_statistics(s, c);
   }
 
   return CkReductionMsg::buildNew(sizeof(Statistics), s);
@@ -211,14 +172,24 @@ void PE::execute_opt() {
   if (waiting_on_qd) {
     return;
   }
+  unsigned events_executed = 0;
   for (int i = 0; i < PE_VALUE(g_tw_mblock); i++) {
-    if(!schedule_next_lp()) {
+    if (PE_VALUE(event_buffer)->percent_used() <= 0.01) {
+      DEBUG_PE("Percent of the buffer left: %f\n", PE_VALUE(event_buffer)->percent_used());
+      DEBUG_PE("Events left: %d\n", PE_VALUE(event_buffer)->current_size());
+    }
+    if (PE_VALUE(event_buffer)->percent_used() <= 0.01 || !schedule_next_lp()) {
       break;
     }
+    events_executed++;
   }
   process_cancel_q();
 
-  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
+  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || events_executed == 0) {
+    if (events_executed == 0) {
+      DEBUG_PE("Executed 0 events in this interval: Forcing GVT\n");
+      forced_gvt = true;
+    }
 #ifdef ASYNC_BROADCAST
     thisProxy.gvt_begin();
 #else
@@ -286,9 +257,11 @@ void PE::gvt_begin() {
   waiting_on_qd = true;
   gvt_cnt = 0;
   PE_STATS(s_ngvts)++;
+  if (forced_gvt) {
+    PE_STATS(s_forced_gvts)++;
+  }
   DEBUG_PE("GVT #%d: begins\n", PE_STATS(s_ngvts));
   if(CkMyPe() == 0) {
-    /* TODO: Provide option for using completion detection */
     // TODO: Can QD be started sooner? Will that improve speed?
     CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
   }
@@ -306,7 +279,7 @@ void PE::gvt_contribute() {
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution (unless we plan on doing load
   // balancing in this iteration).
-  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC && !forced_gvt) {
     if (!PE_VALUE(g_tw_ldb_interval) ||
         PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) != 0) {
       resume_scheduler();
@@ -318,6 +291,11 @@ void PE::gvt_contribute() {
 // Check to see if we are complete. If not, re-enter the appropriate
 // scheduler loop, and possibly do fossil collection.
 void PE::gvt_end(Time new_gvt) {
+  if (gvt == new_gvt) {
+    if (PE_VALUE(event_buffer)->percent_used() <= 0.01) {
+      tw_error(TW_LOC, "[%d]: Can't make progress...out of events to allocate\n");
+    }
+  }
   PE_VALUE(g_last_gvt) = gvt;
   gvt = new_gvt;
   if (tw_ismaster() && gvt / PE_VALUE(g_tw_ts_end) > PE_VALUE(percent_complete)) gvt_print(gvt);
@@ -344,10 +322,11 @@ void PE::gvt_end(Time new_gvt) {
       }
     }
 #ifdef ASYNC_REDUCTION
-    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE || forced_gvt) {
 #else
     else {
 #endif
+      forced_gvt = false;
       resume_scheduler();
     }
   }

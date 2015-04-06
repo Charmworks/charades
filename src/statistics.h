@@ -3,7 +3,8 @@
 
 #include "typedefs.h"
 
-#include <float.h> // Included for DBL_MAX
+#include <float.h>  // Included for DBL_MAX
+#include <math.h>   // Included for fmax/fmin
 
 // A struct for holding PE level statistics
 // An instance of this will be on each PE chare
@@ -30,6 +31,7 @@ struct Statistics {
 
     // GVT stats
     tw_stat s_ngvts; // Number of times we do a GVT calculation
+    tw_stat s_forced_gvts; // Number of times we force a GVT calculation
     tw_stat s_fc_attempts; // Number of times we attempt to collect fossils
     tw_stat s_fossil_collect; // Number of times that there are actually 1 or more fossils to collect
 
@@ -70,6 +72,7 @@ inline void initialize_statistics(Statistics* statistics) {
   statistics->s_nsend_net_remote = 0;
 
   statistics->s_ngvts = 0;
+  statistics->s_forced_gvts = 0;
   statistics->s_fc_attempts = 0;
   statistics->s_fossil_collect = 0;
 
@@ -89,6 +92,52 @@ inline void initialize_statistics(Statistics* statistics) {
   statistics->s_cancel_q = 0;
   statistics->s_avl = 0;
   statistics->s_nevent_abort = 0;
+}
+
+// Function for combining stats during a reduction. The first parameter should
+// be augmented with the results of the second.
+inline void add_statistics(Statistics* s1, Statistics* s2) {
+  // Timing stats
+  s1->s_max_run_time = fmax(s2->s_max_run_time, s2->s_max_run_time);
+  s1->s_min_run_time = fmin(s2->s_min_run_time, s2->s_min_run_time);
+
+  // Event count stats
+  s1->s_nevent_processed += s2->s_nevent_processed;
+
+  // Rollback stats
+  s1->s_e_rbs += s2->s_e_rbs;
+  s1->s_rb_total += s2->s_rb_total;
+  s1->s_rb_primary += s2->s_rb_primary;
+  s1->s_rb_secondary += s2->s_rb_secondary;
+
+  // Send stats
+  s1->s_nsend_remote_rb += s2->s_nsend_remote_rb;
+  s1->s_nsend_loc_remote += s2->s_nsend_loc_remote;
+
+  // GVT stats
+  s1->s_ngvts = s2->s_ngvts;
+  s1->s_forced_gvts += s2->s_forced_gvts;
+  s1->s_fc_attempts += s2->s_fc_attempts;
+  s1->s_fossil_collect += s2->s_fossil_collect;
+
+  // Currently unused stats // TODO: Document or remove
+  s1->s_nevent_abort += s2->s_nevent_abort;
+  s1->s_pq_qsize += s2->s_pq_qsize;
+  s1->s_nsend_network += s2->s_nsend_network;
+  s1->s_nread_network += s2->s_nread_network;
+  s1->s_nsend_net_remote += s2->s_nsend_net_remote;
+  s1->s_mem_buffers_used += s2->s_mem_buffers_used;
+  s1->s_pe_event_ties += s2->s_pe_event_ties;
+  s1->s_min_detected_offset = fmin(s1->s_min_detected_offset, s2->s_min_detected_offset);
+  s1->s_total = fmax(s1->s_total, s2->s_total);
+  s1->s_net_read = fmax(s1->s_net_read, s2->s_net_read);
+  s1->s_gvt = fmax(s1->s_gvt, s2->s_gvt);
+  s1->s_fossil_collect = fmax(s1->s_fossil_collect, s2->s_fossil_collect);
+  s1->s_event_abort = fmax(s1->s_event_abort, s2->s_event_abort);
+  s1->s_event_process = fmax(s1->s_event_process, s2->s_event_process);
+  s1->s_pq = fmax(s1->s_pq, s2->s_pq);
+  s1->s_rollback = fmax(s1->s_rollback, s2->s_rollback);
+  s1->s_avl = fmax(s1->s_avl, s2->s_avl);
 }
 
 // Defined in pe.C

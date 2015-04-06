@@ -10,9 +10,6 @@
 
 #include "pe_queue.h"
 
-//#define DEBUG_PE(format, ...) { CkPrintf("PE[%d] "format, CkMyPe(), ## __VA_ARGS__); }
-#define DEBUG_PE(format, ...) {}
-
 class LP;
 class LPToken;
 struct tw_rng;
@@ -29,6 +26,7 @@ class PE: public CBase_PE {
     Time gvt;     /**< current gvt on this PE */
     int gvt_cnt;  /**< count since last gvt */
     bool waiting_on_qd;
+    bool forced_gvt;
 
     tw_rng * rng; /**< ROSS rng stream */
 
