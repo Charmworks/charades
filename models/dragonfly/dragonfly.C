@@ -1587,70 +1587,21 @@ tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid)
   return index;
 }
 
-/*
-void dragonfly_mapping(void)
-{
-  tw_lpid kpid;
-  tw_pe * pe;
-
-  int nkp_per_pe=16;
-  for(kpid = 0; kpid < nkp_per_pe; kpid++)
-    tw_kp_onpe(kpid, g_tw_pe[0]);
-
-  int i;
-  //printf("\n Node %d router start %d Terminal start %d MPI procs start %d ", g_tw_mynode,
-//									    g_tw_mynode * nlp_router_per_pe + get_router_rem(),
-//									    total_routers + g_tw_mynode * nlp_terminal_per_pe + get_terminal_rem(),
-//									    total_routers + total_terminals + g_tw_mynode * nlp_mpi_procs_per_pe);
-  for(i = 0; i < nlp_router_per_pe; i++)
-   {
-     kpid = i % g_tw_nkp;
-
-     pe = tw_getpe(kpid % g_tw_npe);
-
-     tw_lp_onpe(i, pe, g_tw_mynode * nlp_router_per_pe + i + get_router_rem());
-     tw_lp_onkp(g_tw_lp[i], g_tw_kp[kpid]);
-     tw_lp_settype(i, &dragonfly_lps[1]);
-
-#ifdef DFDEBUG
-    //printf("\n [Node %d] Local Router ID %d Global Router ID %d ", g_tw_mynode, i, g_tw_mynode * nlp_router_per_pe + i + get_router_rem());
-#endif
-   }
-//apping for terminal LP
-  for(i = 0; i < nlp_terminal_per_pe; i++)
-   {
-      kpid = i % g_tw_nkp;
-
-      pe = tw_getpe(kpid % g_tw_npe);
-
-      tw_lp_onpe(nlp_router_per_pe + i, pe, total_routers + g_tw_mynode * nlp_terminal_per_pe + i + get_terminal_rem());
-      tw_lp_onkp(g_tw_lp[nlp_router_per_pe + i], g_tw_kp[kpid]);
-      tw_lp_settype(nlp_router_per_pe + i, &dragonfly_lps[0]);
-
-#ifdef DFDEBUG
-//    printf("\n [Node %d] Local Terminal ID %d Global Terminal ID %d ", g_tw_mynode, nlp_router_per_pe + i, total_routers + g_tw_mynode * nlp_terminal_per_pe + i + get_terminal_rem());
-#endif
-    }
-// mapping for MPI process LP
-  for(i = 0; i < nlp_mpi_procs_per_pe; i++)
-   {
-      kpid = i % g_tw_nkp;
-
-      pe = tw_getpe(kpid % g_tw_npe);
-
-      tw_lp_onpe(nlp_router_per_pe + nlp_terminal_per_pe + i, pe, total_routers + total_terminals + g_tw_mynode * nlp_mpi_procs_per_pe + i + get_terminal_rem());
-      tw_lp_onkp(g_tw_lp[nlp_router_per_pe + nlp_terminal_per_pe + i], g_tw_kp[kpid]);
-      tw_lp_settype(nlp_router_per_pe + nlp_terminal_per_pe + i, &dragonfly_lps[2]);
-
-#ifdef DFDEBUG
-//    printf("\n [Node %d] Local Terminal ID %d Global Terminal ID %d ", g_tw_mynode, nlp_router_per_pe + i, total_routers + g_tw_mynode * nlp_terminal_per_pe + i + get_terminal_rem());
-#endif
-    }
-}
-*/
-
 tw_lpid dragonfly_mapping (unsigned chare_index, tw_lpid local_id) {
-  tw_lpid gid = 0;
+  tw_lpid gid;
+  if (local_id < nlp_router_per_chare(chare_index)) {
+    // router type
+    gid = g_tw_mynode * nlp_router_per_chare(chare_index) + local_id + get_router_rem();
+  } else if (local_id < nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index)) {
+    // terminal type
+    gid = total_routers + g_tw_mynode * nlp_terminal_per_chare(chare_index) + local_id + get_terminal_rem();
+  } else if (local_id < nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index) + nlp_mpi_procs_per_chare(chare_index)) {
+    // mpi_proc type
+    gid = total_routers + total_terminals + g_tw_mynode * nlp_mpi_procs_per_chare(chare_index) + local_id + get_terminal_rem();
+  } else {
+    tw_error(TW_LOC, "Mapping setup ERROR: unrecognized local id");
+  }
+
   return gid;
 }
 
