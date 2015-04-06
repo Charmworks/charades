@@ -18,6 +18,8 @@
 
 #include <float.h>
 
+#define HEAP_INCREMENT 128
+
 typedef Event *ELEMENT_TYPE;
 typedef double KEY_TYPE;
 
@@ -74,7 +76,7 @@ class PendingHeap : public PendingQueue {
 
   public:
     PendingHeap() {
-      int init_size = 50000;
+      int init_size = HEAP_INCREMENT;
       nelems = 0;
       curr_max = (2*init_size);
       int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
@@ -128,11 +130,11 @@ class PendingHeap : public PendingQueue {
     void push(Event* e) {
       if (nelems >= curr_max) {
         size_t old_max = curr_max;
-        curr_max += 50000;
+        curr_max += HEAP_INCREMENT;
         Event** old = elems;
         int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
         memcpy(elems, old, sizeof(Event**) * old_max);
-        memset(&elems[old_max], 0, sizeof(Event**) * 50000);
+        memset(&elems[old_max], 0, sizeof(Event**) * HEAP_INCREMENT);
         free(old);
       }
 
