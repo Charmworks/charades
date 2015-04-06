@@ -63,6 +63,13 @@ typedef struct router_state router_state;
 typedef struct waiting_packet waiting_packet;
 typedef struct process_state process_state;
 
+struct waiting_packet
+{
+   terminal_message * packet;
+   struct waiting_packet * next;
+   int chan;
+};
+
 struct terminal_state
 {
    // Dragonfly specific parameters
@@ -76,7 +83,7 @@ struct terminal_state
    tw_stime next_credit_available_time;
 
    //first element of linked list
-   struct waiting_packet * waiting_list;
+   waiting_packet waiting_list[TERMINAL_WAITING_PACK_COUNT];
 
   // pointer to the linked list
    struct waiting_packet * head;
@@ -195,7 +202,7 @@ struct router_state
    unsigned int output_vc_state[RADIX];
 
    //first element of linked list
-   struct waiting_packet * waiting_list;
+   waiting_packet waiting_list[ROUTER_WAITING_PACK_COUNT];
 
   // pointer to the linked list
    struct waiting_packet * head;
@@ -211,13 +218,6 @@ struct process_state
    unsigned int group_id;
 //   For matrix transpose traffic
    int row, col;
-};
-
-struct waiting_packet
-{
-   terminal_message * packet;
-   struct waiting_packet * next;
-   int chan;
 };
 
 static int opt_mem = 10000;
