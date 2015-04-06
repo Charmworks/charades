@@ -1563,6 +1563,19 @@ tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid)
 {
   int index;
 
+  // recalculate 'global' variables
+  int nlp_router_per_pe = total_routers / ROSS_CONSTANT(g_num_chares);
+  if (g_tw_mynode < router_rem)
+    nlp_router_per_pe++;
+
+  int nlp_terminal_per_pe = total_terminals / ROSS_CONSTANT(g_num_chares);
+  if (g_tw_mynode < terminal_rem)
+    nlp_terminal_per_pe++;
+
+  int nlp_mpi_procs_per_pe = total_mpi_procs / ROSS_CONSTANT(g_num_chares);
+  if (g_tw_mynode < terminal_rem)
+    nlp_mpi_procs_per_pe++;
+
   if(lpid < total_routers)
       index = lpid - g_tw_mynode * nlp_router_per_pe - get_router_rem();
   else
