@@ -76,7 +76,7 @@ getRouterID(tw_lpid terminal_id)
     return tid/NUM_TERMINALS;
 }
 
-tw_peid mapping( tw_lpid gid) {
+unsigned mapping( tw_lpid gid) {
   int rank;
   int offset;
   int rem = 0;
@@ -1615,7 +1615,7 @@ tw_lptype* dragonfly_type_map (tw_lpid gid) {
   }
 }
 
-int dragonfly_numlp_map (unsigned chareid) {
+unsigned dragonfly_numlp_map (unsigned chareid) {
   return nlp_router_per_chare(chareid) + nlp_terminal_per_chare(chareid) + nlp_mpi_procs_per_chare(chareid);
 }
 
