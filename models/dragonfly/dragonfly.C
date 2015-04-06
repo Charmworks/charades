@@ -1562,28 +1562,27 @@ const tw_optdef app_opt [] =
 tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid)
 {
   int index;
+  unsigned chare_index = mapping(lpid);
 
   // recalculate 'global' variables
   int nlp_router_per_pe = total_routers / ROSS_CONSTANT(g_num_chares);
-  if (g_tw_mynode < router_rem)
+  if (chare_index < router_rem)
     nlp_router_per_pe++;
 
   int nlp_terminal_per_pe = total_terminals / ROSS_CONSTANT(g_num_chares);
-  if (g_tw_mynode < terminal_rem)
+  if (chare_index < terminal_rem)
     nlp_terminal_per_pe++;
 
   int nlp_mpi_procs_per_pe = total_mpi_procs / ROSS_CONSTANT(g_num_chares);
-  if (g_tw_mynode < terminal_rem)
+  if (chare_index < terminal_rem)
     nlp_mpi_procs_per_pe++;
 
-  unsigned chare_index = mapping(lpid);
-
   if(lpid < total_routers)
-      index = lpid - g_tw_mynode * nlp_router_per_pe - get_router_rem(chare_index);
+      index = lpid - chare_index * nlp_router_per_pe - get_router_rem(chare_index);
   else if(lpid >= total_routers && lpid < total_routers+total_terminals)
-      index = nlp_router_per_pe + (lpid - g_tw_mynode * nlp_terminal_per_pe - get_terminal_rem(chare_index) - total_routers);
+      index = nlp_router_per_pe + (lpid - chare_index * nlp_terminal_per_pe - get_terminal_rem(chare_index) - total_routers);
   else if (lpid >= total_routers + total_terminals && lpid < total_routers + total_terminals + total_mpi_procs)
-	    index = nlp_router_per_pe + nlp_terminal_per_pe + (lpid - g_tw_mynode * nlp_mpi_procs_per_pe - get_terminal_rem(chare_index) - total_routers - total_terminals);
+	    index = nlp_router_per_pe + nlp_terminal_per_pe + (lpid - chare_index * nlp_mpi_procs_per_pe - get_terminal_rem(chare_index) - total_routers - total_terminals);
   else
       tw_error(TW_LOC, "LPID out of bounds.");
 
@@ -1594,13 +1593,13 @@ tw_lpid dragonfly_mapping (unsigned chare_index, tw_lpid local_id) {
   tw_lpid gid;
   if (local_id < nlp_router_per_chare(chare_index)) {
     // router type
-    gid = g_tw_mynode * nlp_router_per_chare(chare_index) + local_id + get_router_rem(chare_index);
+    gid = chare_index * nlp_router_per_chare(chare_index) + local_id + get_router_rem(chare_index);
   } else if (local_id < nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index)) {
     // terminal type
-    gid = total_routers + g_tw_mynode * nlp_terminal_per_chare(chare_index) + local_id + get_terminal_rem(chare_index);
+    gid = total_routers + chare_index * nlp_terminal_per_chare(chare_index) + local_id + get_terminal_rem(chare_index);
   } else if (local_id < nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index) + nlp_mpi_procs_per_chare(chare_index)) {
     // mpi_proc type
-    gid = total_routers + total_terminals + g_tw_mynode * nlp_mpi_procs_per_chare(chare_index) + local_id + get_terminal_rem(chare_index);
+    gid = total_routers + total_terminals + chare_index * nlp_mpi_procs_per_chare(chare_index) + local_id + get_terminal_rem(chare_index);
   } else {
     tw_error(TW_LOC, "Mapping setup ERROR: unrecognized local id");
   }
