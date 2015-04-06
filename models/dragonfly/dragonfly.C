@@ -524,7 +524,7 @@ void packet_send(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_lp *
        bf->c3 = 1;
        int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
        s->packet_counter++;
-       N_generated_storage[index]++;
+       // N_generated_storage[index]++;//TODO: STATS
        //if(s->packet_counter >= max_packets)
 	//fprintf(dragonfly_event_log, " \n terminal %d done injecting packets storage %d time stamp %lf ", lp->gid - total_routers, s->packet_counter, tw_now(lp));
     }
@@ -630,19 +630,19 @@ if( msg->packet_ID == TRACK && msg->chunk_id == num_chunks-1)
 /* Packet has arrived at the final destination. Update simulation statistics */
 void packet_finish(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_lp * lp)
 {
-  N_finished++;
+  // N_finished++; //TODO: STATS
   bf->c3 = 0;
 
   int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
-  N_finished_storage[index]++;
-  total_time += (tw_now(lp) - msg->travel_start_time);
-  total_hops += msg->my_N_hop;
+  // N_finished_storage[index]++; //TODO: STATS
+  // total_time += (tw_now(lp) - msg->travel_start_time); //TODO: STATS
+  // total_hops += msg->my_N_hop; //TODO: STATS
 
   if (max_latency < (tw_now(lp) - msg->travel_start_time) )
    {
 	bf->c3 = 1;
 	msg->saved_available_time = max_latency;
-	max_latency=tw_now(lp) - msg->travel_start_time;
+	// max_latency=tw_now(lp) - msg->travel_start_time; //TODO: STATS
 //	max_packet = msg->packet_ID;
    }
 }
@@ -1325,7 +1325,7 @@ void terminal_rc_event_handler(terminal_state * s, tw_bf * bf, terminal_message 
 		   if(bf->c3)
 		    {
 			int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
-			N_generated_storage[index]--;
+			// N_generated_storage[index]--; //TODO: STATS
 		        s->packet_counter--;
 		    }
 	           s->terminal_available_time = msg->saved_available_time;
@@ -1389,13 +1389,13 @@ void terminal_rc_event_handler(terminal_state * s, tw_bf * bf, terminal_message 
 
 	  case FINISH:
 		{
-		    N_finished--;
+		    // N_finished--; //TODO: STATS
 		    int index = floor(N_COLLECT_POINTS*(tw_now(lp)/ROSS_CONSTANT(g_tw_ts_end)));
-		    N_finished_storage[index]--;
-		    total_time -= (tw_now(lp) - msg->travel_start_time);
-		    total_hops -= msg->my_N_hop;
+		    // N_finished_storage[index]--; //TODO: STATS
+		    // total_time -= (tw_now(lp) - msg->travel_start_time); //TODO: STATS
+		    // total_hops -= msg->my_N_hop; //TODO: STATS
 		    if(bf->c3)
-		         max_latency = msg->saved_available_time;
+		         max_latency = msg->saved_available_time; //TODO: STATS
 
 		}
    }
@@ -1690,6 +1690,8 @@ int main(int argc, char **argv)
 	      printf("\n ADAPTIVE ROUTING STATS: %d packets routed minimally %d packets routed non-minimally ", minimal_count, nonmin_count);
     }
 
+/*
+    // MODEL STATS
     unsigned long long total_finished_storage[N_COLLECT_POINTS];
     unsigned long long total_generated_storage[N_COLLECT_POINTS];
     unsigned long long N_total_finish,N_total_hop;
@@ -1723,9 +1725,10 @@ int main(int argc, char **argv)
          total_finished_storage[i]+=total_finished_storage[i-1];
          total_generated_storage[i]+=total_generated_storage[i-1];
        }
-
+*/
      if(tw_ismaster())
       {
+/*
            printf("\n ****************** \n");
            printf("\n total finish:         %lld and %lld; \n",
                    total_finished_storage[N_COLLECT_POINTS-1],N_total_finish);
@@ -1735,7 +1738,7 @@ int main(int argc, char **argv)
                    (double)N_total_hop/total_finished_storage[N_COLLECT_POINTS-1]);
            printf("\n average travel time:  %lf; \n\n",
                    total_time_sum/total_finished_storage[N_COLLECT_POINTS-1]);
-
+*/
 /*          for( i=0; i<N_COLLECT_POINTS; i++ )
            {
              printf(" %d ",i*100/N_COLLECT_POINTS);
@@ -1762,7 +1765,7 @@ int main(int argc, char **argv)
 
           printf("\n Steady state, packet alive: %lld\n",
                    2*steady_sum/N_COLLECT_POINTS);*/
-          printf("\nMax latency is %lf\n\n",g_max_latency);
+           // printf("\nMax latency is %lf\n\n",g_max_latency); //TODO: STATS
 
       }
    tw_end();
