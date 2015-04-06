@@ -23,7 +23,7 @@ int nlp_terminal_per_chare (unsigned chare_index) {
 int nlp_mpi_procs_per_chare (unsigned chare_index) {
   int nlp = total_mpi_procs / ROSS_CONSTANT(g_num_chares);
   if (chare_index < terminal_rem)
-    nlp;
+    nlp++;
   return nlp;
 }
 
