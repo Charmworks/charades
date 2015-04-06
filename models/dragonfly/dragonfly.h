@@ -251,5 +251,5 @@ static unsigned long long       N_finished_storage[N_COLLECT_POINTS];
 static unsigned long long       N_generated_storage[N_COLLECT_POINTS];
 
 void dragonfly_mapping(void);
-tw_lp * dragonfly_mapping_to_lp(tw_lpid lpid);
+tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid);
 #endif

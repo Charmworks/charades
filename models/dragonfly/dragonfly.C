@@ -1559,7 +1559,7 @@ const tw_optdef app_opt [] =
 };
 
 
-int dragonfly_mapping_to_lp(tw_lpid lpid)
+tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid)
 {
   int index;
 
