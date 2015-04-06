@@ -106,7 +106,7 @@ void LP::ResumeFromSync() {
 // Call init on all LPs then stop the charm scheduler.
 void LP::init() {
   current_event = PE_VALUE(abort_event);
-  for (int i = 0 ; i < PE_VALUE(g_lps_per_chare); i++) {
+  for (int i = 0 ; i < lp_structs.size(); i++) {
     lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
   }
   contribute(CkCallback(CkIndex_LP::stop_scheduler(), thisProxy(0)));
