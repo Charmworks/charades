@@ -76,71 +76,69 @@ getRouterID(tw_lpid terminal_id)
     return tid/NUM_TERMINALS;
 }
 
-tw_peid
-mapping( tw_lpid gid)
-{
-   int rank;
-   int offset;
-   int rem = 0;
-   int nlp_per_pe;
-   int N_nodes = ROSS_CONSTANT(g_num_chares);
+tw_peid mapping( tw_lpid gid) {
+  int rank;
+  int offset;
+  int rem = 0;
+  int nlp_per_pe;
+  int N_nodes = ROSS_CONSTANT(g_num_chares);
 
-   if(gid < total_routers)
+  if(gid < total_routers)
+  {
+    rank = gid / nlp_router_per_pe;
+    rem = router_rem;
+
+    if(nlp_router_per_pe == (total_routers/N_nodes))
+    offset = (nlp_router_per_pe + 1) * router_rem;
+    else
+    offset = nlp_router_per_pe * router_rem;
+
+    nlp_per_pe = nlp_router_per_pe;
+  }
+  else if( gid >= total_routers && gid < total_routers + total_terminals)
+  {
+    rank = getTerminalID(gid)/nlp_terminal_per_pe;
+    rem = terminal_rem;
+
+    if(nlp_terminal_per_pe == (total_terminals/N_nodes))
+    offset = total_routers + (nlp_terminal_per_pe + 1) * terminal_rem;
+    else
+    offset = total_routers + nlp_terminal_per_pe * terminal_rem;
+
+    nlp_per_pe = nlp_terminal_per_pe;
+  }
+  else if( gid >= (total_routers + total_terminals) && gid < (total_routers + total_terminals + total_mpi_procs))
+  {
+    rank = getProcID(gid)/nlp_mpi_procs_per_pe;
+    rem = terminal_rem; //same as MPI process rem as there is one to one mapping between MPI process and terminal
+
+    if(nlp_mpi_procs_per_pe == (total_mpi_procs/N_nodes))
+    offset = total_routers + total_terminals + (nlp_mpi_procs_per_pe + 1) * terminal_rem;
+    else
+    offset = total_routers + total_terminals + nlp_mpi_procs_per_pe * terminal_rem;
+
+    nlp_per_pe = nlp_mpi_procs_per_pe;
+  }
+  else
+    printf("\n Invalid LP ID %d given for mapping ", (int)gid);
+
+  if(rem > 0)
+  {
+    if(g_tw_mynode >= rem)
     {
-       rank = gid / nlp_router_per_pe;
-       rem = router_rem;
-
-       if(nlp_router_per_pe == (total_routers/N_nodes))
-            offset = (nlp_router_per_pe + 1) * router_rem;
-       else
-	    offset = nlp_router_per_pe * router_rem;
-
-       nlp_per_pe = nlp_router_per_pe;
-    }
-    else if( gid >= total_routers && gid < total_routers + total_terminals)
-     {
-       rank = getTerminalID(gid)/nlp_terminal_per_pe;
-       rem = terminal_rem;
-
-       if(nlp_terminal_per_pe == (total_terminals/N_nodes))
-            offset = total_routers + (nlp_terminal_per_pe + 1) * terminal_rem;
-       else
-	    offset = total_routers + nlp_terminal_per_pe * terminal_rem;
-
-       nlp_per_pe = nlp_terminal_per_pe;
-     }
-     else if( gid >= (total_routers + total_terminals) && gid < (total_routers + total_terminals + total_mpi_procs))
-	{
-	  rank = getProcID(gid)/nlp_mpi_procs_per_pe;
-	  rem = terminal_rem; //same as MPI process rem as there is one to one mapping between MPI process and terminal
-
-	  if(nlp_mpi_procs_per_pe == (total_mpi_procs/N_nodes))
-            offset = total_routers + total_terminals + (nlp_mpi_procs_per_pe + 1) * terminal_rem;
-          else
-            offset = total_routers + total_terminals + nlp_mpi_procs_per_pe * terminal_rem;
-
-          nlp_per_pe = nlp_mpi_procs_per_pe;
-	}
+      if(gid < offset)
+        rank = gid / (nlp_per_pe + 1);
       else
-	  printf("\n Invalid LP ID %d given for mapping ", (int)gid);
-
-   if(rem > 0)
-    {
-     if(g_tw_mynode >= rem)
-        {
-	  if(gid < offset)
-	    rank = gid / (nlp_per_pe + 1);
-	  else
-	    rank = rem + ((gid - offset)/nlp_per_pe);
-	}
-     else
-	 {
-	   if(gid >= offset)
-	     rank = rem + ((gid - offset)/(nlp_per_pe - 1));
-	 }
+        rank = rem + ((gid - offset)/nlp_per_pe);
     }
-   return rank;
- }
+    else
+    {
+      if(gid >= offset)
+        rank = rem + ((gid - offset)/(nlp_per_pe - 1));
+    }
+  }
+  return rank;
+}
 //////////////////////////////////////// Get router in the group which has a global channel to group id gid /////////////////////////////////
 tw_lpid
 getRouterFromGroupID(int gid,
