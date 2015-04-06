@@ -137,6 +137,7 @@ PE::PE(CProxy_Initialize srcProxy) :
   statistics = new Statistics;
   initialize_statistics(statistics);
 
+  waiting_on_qd = false;
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }
@@ -207,19 +208,22 @@ void PE::execute_cons() {
 // Also process the cancellation queue each iteration.
 // After a fixed number of iterations, compute a new GVT.
 void PE::execute_opt() {
-  int events_left = PE_VALUE(g_tw_mblock);
-  while (events_left) {
-    if(schedule_next_lp()) {
-      events_left--;
-    } else {
+  if (waiting_on_qd) {
+    return;
+  }
+  for (int i = 0; i < PE_VALUE(g_tw_mblock); i++) {
+    if(!schedule_next_lp()) {
       break;
     }
   }
   process_cancel_q();
 
   if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval)) {
+#ifdef ASYNC_BROADCAST
+    thisProxy.gvt_begin();
+#else
     gvt_begin();
-    gvt_cnt = 0;
+#endif
   } else {
     thisProxy[CkMyPe()].execute_opt();
   }
@@ -276,6 +280,11 @@ void PE::update_min_cancel(Time t) {
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.
 void PE::gvt_begin() {
+  if (waiting_on_qd) {
+    return;
+  }
+  waiting_on_qd = true;
+  gvt_cnt = 0;
   PE_STATS(s_ngvts)++;
   DEBUG_PE("GVT #%d: begins\n", PE_STATS(s_ngvts));
   if(CkMyPe() == 0) {
@@ -287,6 +296,7 @@ void PE::gvt_begin() {
 
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
 void PE::gvt_contribute() {
+  waiting_on_qd = false;
   Time min_time = get_min_time();
   DEBUG_PE("GVT #%d: contributed %lf\n", PE_STATS(s_ngvts), min_time);
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
