@@ -699,7 +699,7 @@ terminal_init( terminal_state * s,
       s->vc_occupancy[i]=0;
       s->output_vc_state[i]=VC_IDLE;
     }
-   s->waiting_list = (struct waiting_packet *) calloc(sizeof(struct waiting_packet), TERMINAL_WAITING_PACK_COUNT);
+   //s->waiting_list = (struct waiting_packet *) calloc(sizeof(struct waiting_packet), TERMINAL_WAITING_PACK_COUNT);
 
    int j;
    for (j = 0; j < TERMINAL_WAITING_PACK_COUNT - 1; j++) {
@@ -1119,7 +1119,7 @@ void router_setup(router_state * r, tw_lp * lp)
 	//fprintf(dragonfly_event_log, "\n Router %d connected to Router %d Group %d to Group %d ", local_router_id, r->global_channel[i], r->group_id, (r->global_channel[i]/NUM_ROUTER));
    #endif
     }
-  r->waiting_list = (struct waiting_packet *) calloc(sizeof(struct waiting_packet), ROUTER_WAITING_PACK_COUNT);
+  // r->waiting_list = (struct waiting_packet *) calloc(sizeof(struct waiting_packet), ROUTER_WAITING_PACK_COUNT);
 
   for (j = 0; j < ROUTER_WAITING_PACK_COUNT - 1; j++) {
      r->waiting_list[j].next = &r->waiting_list[j + 1];
