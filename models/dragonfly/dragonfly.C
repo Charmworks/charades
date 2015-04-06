@@ -1578,11 +1578,12 @@ tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid)
 
   if(lpid < total_routers)
       index = lpid - g_tw_mynode * nlp_router_per_pe - get_router_rem();
+  else if(lpid >= total_routers && lpid < total_routers+total_terminals)
+      index = nlp_router_per_pe + (lpid - g_tw_mynode * nlp_terminal_per_pe - get_terminal_rem() - total_routers);
+  else if (lpid >= total_routers + total_terminals && lpid < total_routers + total_terminals + total_mpi_procs)
+	    index = nlp_router_per_pe + nlp_terminal_per_pe + (lpid - g_tw_mynode * nlp_mpi_procs_per_pe - get_terminal_rem() - total_routers - total_terminals);
   else
-     if(lpid >= total_routers && lpid < total_routers+total_terminals)
-        index = nlp_router_per_pe + (lpid - g_tw_mynode * nlp_terminal_per_pe - get_terminal_rem() - total_routers);
-   else
-	 index = nlp_router_per_pe + nlp_terminal_per_pe + (lpid - g_tw_mynode * nlp_mpi_procs_per_pe - get_terminal_rem() - total_routers - total_terminals);
+      tw_error(TW_LOC, "LPID out of bounds.");
 
   return index;
 }
