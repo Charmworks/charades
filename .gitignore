@@ -3,3 +3,5 @@
 *.decl.h
 ci_files
 config.mk
+ross.csv
+charmrun
