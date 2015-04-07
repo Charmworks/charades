@@ -108,27 +108,64 @@ void charm_run() {
 #define PE_STATS(x) statistics->x
 
 PE::PE(CProxy_Initialize srcProxy) :
-    gvt_cnt(0), gvt(0.0), min_cancel_time(DBL_MAX)  {
+    gvt_cnt(0), gvt(0.0), min_cancel_time(DBL_MAX), force_gvt(0),
+    waiting_on_qd(false)  {
   int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
+  err = posix_memalign((void**)&statistics, 64, sizeof(Statistics));
   initialize_globals(globals);
-
-  // Initialize completion detectors
-  current_phase = -1;
-  detector_ready[0] = detector_ready[1] = false;
-  if (CkMyPe() == 0) {
-    detector_proxies[0] = CProxy_CompletionDetector::ckNew();
-    detector_proxies[1] = CProxy_CompletionDetector::ckNew();
-    thisProxy.broadcast_detector_proxies(detector_proxies);
-  }
-
-  gvt = 0.0;
-
-  statistics = new Statistics;
   initialize_statistics(statistics);
 
-  waiting_on_qd = false;
-  force_gvt = 0;
   cancel_q.resize(0);
+
+  // Initialize completion detectors
+  max_phase = 2;
+  current_phase = next_phase = 0;
+  detector_ready = new bool[max_phase];
+  detector_proxies = new CProxy_CompletionDetector[max_phase];
+  detector_pointers = new CompletionDetector*[max_phase];
+  for (int i = 0; i < max_phase; i++) {
+    detector_ready[i] = false;
+    detector_pointers[i] = NULL;
+    if (CkMyPe() == 0) {
+      detector_proxies[i] = CProxy_CompletionDetector::ckNew();
+    }
+  }
+  if (CkMyPe() == 0) {
+    thisProxy.broadcast_detector_proxies(max_phase, detector_proxies);
+  }
+}
+
+void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies) {
+  for (int i = 0; i < num; i++) {
+    detector_proxies[i] = proxies[i];
+    detector_pointers[i] = detector_proxies[i].ckLocalBranch();
+    if (CkMyPe() == 0) {
+      detector_proxies[i].start_detection(CkNumPes(),
+          CkCallback(CkIndex_PE::detector_initialized(), thisProxy),
+          CkCallback(),
+          CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
+    }
+  }
+  if (max_phase == 0) {
+    initialize_rand();
+  }
+}
+
+void PE::detector_initialized() {
+  current_phase++;
+  if (current_phase == max_phase) {
+    detectors_initialized();
+  }
+}
+
+void PE::detectors_initialized() {
+  DEBUG_PE("All %d completion detectors are ready\n", max_phase);
+  for (int i = 0; i < max_phase; i++) {
+    detector_ready[i] = true;
+  }
+  current_phase = 0;
+  next_phase = (current_phase + 1) % max_phase;
+  initialize_rand();
 }
 
 // Called by initialize_detector after both are ready
@@ -136,40 +173,6 @@ void PE::initialize_rand() {
   DEBUG_PE("Random number generator initialized\n");
   rng = tw_rand_init(31, 41);
   contribute(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
-}
-
-void PE::broadcast_detector_proxies(CProxy_CompletionDetector* proxies) {
-  detector_proxies[0] = proxies[0];
-  detector_proxies[1] = proxies[1];
-  detector_pointers[0] = detector_proxies[0].ckLocalBranch();
-  detector_pointers[1] = detector_proxies[1].ckLocalBranch();
-#ifdef FULLY_ASYNC
-  contribute(CkCallback(CkIndex_PE::initialize_detector(), thisProxy));
-#else
-  initialize_rand();
-#endif
-}
-
-void PE::initialize_detector() {
-  if (current_phase == -1) {
-    current_phase = 0;
-  } else if (current_phase == 0) {
-    detector_ready[0] = true;
-    current_phase = 1;
-  } else if (current_phase == 1) {
-    detector_ready[1] = true;
-    current_phase = 0;
-    next_phase = 1;
-    thisProxy[CkMyPe()].initialize_rand();
-    return;
-  }
-
-  if (CkMyPe() == 0) {
-    detector_proxies[current_phase].start_detection(CkNumPes(),
-        CkCallback(CkIndex_PE::initialize_detector(), thisProxy),
-        CkCallback(),
-        CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
-  }
 }
 
 void PE::detector_started() {
@@ -432,6 +435,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
         CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+      DEBUG_PE("Collecting fossils\n");
       collect_fossils();
     }
 #ifndef FULLY_ASYNC

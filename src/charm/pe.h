@@ -48,10 +48,10 @@ class PE: public CBase_PE {
     vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
 
     // Completion detection variables for current phase, proxies, and pointers.
-    unsigned current_phase, next_phase;
-    bool detector_ready[2];
-    CProxy_CompletionDetector detector_proxies[2];
-    CompletionDetector* detector_pointers[2];
+    unsigned current_phase, next_phase, max_phase;
+    bool* detector_ready;
+    CProxy_CompletionDetector* detector_proxies;
+    CompletionDetector** detector_pointers;
   public:
     Globals* globals;       /**< global variables accessed with PE_VALUE */
     Statistics* statistics; /**< statistics variables accessed with PE_STATS */
@@ -63,11 +63,12 @@ class PE: public CBase_PE {
       delete statistics;
     }
 
-    /** \brief Initialize the RNG streams for this PE */
+    /** \brief Initialize the completion detectors and CDs for this PE */
+    void broadcast_detector_proxies(int num, CProxy_CompletionDetector*);
+    void detector_initialized();
+    void detectors_initialized();
     void initialize_rand();
-    void initialize_detector();
     void detector_started();
-    void broadcast_detector_proxies(CProxy_CompletionDetector*);
 
     /** \brief Called as a reduction by LPs when load balancing is complete */
     void resume_scheduler();

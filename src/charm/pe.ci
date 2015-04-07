@@ -10,10 +10,11 @@ module pe {
     entry PE(CProxy_Initialize); /**< constructor called from the mainchare */
     entry [reductiontarget] void resume_scheduler(); /**< Called after ldb */
     entry [reductiontarget] void end_simulation(CkReductionMsg*);
+    entry void broadcast_detector_proxies(int num, CProxy_CompletionDetector proxies[num]);
+    entry void detector_initialized();
+    entry void detectors_initialized();
     entry void initialize_rand();
-    entry void initialize_detector();
     entry void detector_started();
-    entry void broadcast_detector_proxies(CProxy_CompletionDetector proxies[2]);
 
     // GVT methods
     entry void gvt_begin(); /**< begin gvt computation */
