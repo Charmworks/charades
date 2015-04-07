@@ -10,6 +10,8 @@
 
 #include "pe_queue.h"
 
+//#include "completion.h"
+
 class LP;
 class LPToken;
 struct tw_rng;
@@ -44,6 +46,12 @@ class PE: public CBase_PE {
 
     Time min_cancel_time; /**< minumum event time in the cancel queue */
     vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
+
+    // Completion detection variables for current phase, proxies, and pointers.
+    unsigned current_phase, next_phase;
+    bool detector_ready[2];
+    CProxy_CompletionDetector detector_proxies[2];
+    CompletionDetector* detector_pointers[2];
   public:
     Globals* globals;       /**< global variables accessed with PE_VALUE */
     Statistics* statistics; /**< statistics variables accessed with PE_STATS */
@@ -56,7 +64,10 @@ class PE: public CBase_PE {
     }
 
     /** \brief Initialize the RNG streams for this PE */
-    void initialize_rand(CProxy_Initialize);
+    void initialize_rand();
+    void initialize_detector();
+    void detector_started();
+    void broadcast_detector_proxies(CProxy_CompletionDetector*);
 
     /** \brief Called as a reduction by LPs when load balancing is complete */
     void resume_scheduler();
@@ -122,6 +133,19 @@ class PE: public CBase_PE {
     /** \brief Update the entry for a given LP in the oldest_lps */
     void update_oldest(LPToken* token, Time ts) {
       oldest_lps.update(token, ts);
+    }
+
+    void produce(RemoteEvent* msg) {
+      #ifdef FULLY_ASYNC
+      msg->phase = current_phase;
+      detector_pointers[current_phase]->produce();
+      #endif
+    }
+
+    void consume(RemoteEvent* msg) {
+      #ifdef FULLY_ASYNC
+      detector_pointers[msg->phase]->consume();
+      #endif
     }
 };
 

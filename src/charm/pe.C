@@ -9,6 +9,7 @@
 #include "mpi-interoperate.h"
 #include <float.h> // Included for DBL_MAX
 
+extern CProxy_Initialize mainProxy;
 CProxy_PE pes;
 extern CProxy_LP lps;
 CkReduction::reducerType statsReductionType;
@@ -108,8 +109,19 @@ void charm_run() {
 
 PE::PE(CProxy_Initialize srcProxy) :
     gvt_cnt(0), gvt(0.0), min_cancel_time(DBL_MAX)  {
-    int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
+  int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
   initialize_globals(globals);
+
+  // Initialize completion detectors
+  current_phase = -1;
+  detector_ready[0] = detector_ready[1] = false;
+  if (CkMyPe() == 0) {
+    detector_proxies[0] = CProxy_CompletionDetector::ckNew();
+    detector_proxies[1] = CProxy_CompletionDetector::ckNew();
+    thisProxy.broadcast_detector_proxies(detector_proxies);
+  }
+
+  gvt = 0.0;
 
   statistics = new Statistics;
   initialize_statistics(statistics);
@@ -117,12 +129,51 @@ PE::PE(CProxy_Initialize srcProxy) :
   waiting_on_qd = false;
   force_gvt = 0;
   cancel_q.resize(0);
-  thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }
 
-void PE::initialize_rand(CProxy_Initialize srcProxy) {
+// Called by initialize_detector after both are ready
+void PE::initialize_rand() {
+  DEBUG_PE("Random number generator initialized\n");
   rng = tw_rand_init(31, 41);
-  contribute(CkCallback(CkReductionTarget(Initialize,Exit),srcProxy));
+  contribute(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
+}
+
+void PE::broadcast_detector_proxies(CProxy_CompletionDetector* proxies) {
+  detector_proxies[0] = proxies[0];
+  detector_proxies[1] = proxies[1];
+  detector_pointers[0] = detector_proxies[0].ckLocalBranch();
+  detector_pointers[1] = detector_proxies[1].ckLocalBranch();
+#ifdef FULLY_ASYNC
+  contribute(CkCallback(CkIndex_PE::initialize_detector(), thisProxy));
+#else
+  initialize_rand();
+#endif
+}
+
+void PE::initialize_detector() {
+  if (current_phase == -1) {
+    current_phase = 0;
+  } else if (current_phase == 0) {
+    detector_ready[0] = true;
+    current_phase = 1;
+  } else if (current_phase == 1) {
+    detector_ready[1] = true;
+    current_phase = 0;
+    next_phase = 1;
+    thisProxy[CkMyPe()].initialize_rand();
+    return;
+  }
+
+  if (CkMyPe() == 0) {
+    detector_proxies[current_phase].start_detection(CkNumPes(),
+        CkCallback(CkIndex_PE::initialize_detector(), thisProxy),
+        CkCallback(),
+        CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
+  }
+}
+
+void PE::detector_started() {
+  detector_ready[next_phase] = true;
 }
 
 // Pull the next LP from the queue and have it execute events until it hits
@@ -217,6 +268,7 @@ void PE::execute_opt() {
 
   // TODO: If we couldn't execute any events, should we actually force the
   // GVT, or just wait for progress elsewhere.
+#ifndef FULLY_ASYNC
   if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || force_gvt) {
 #ifdef ASYNC_BROADCAST
     thisProxy.gvt_begin();
@@ -226,6 +278,13 @@ void PE::execute_opt() {
   } else {
     thisProxy[CkMyPe()].execute_opt();
   }
+#else
+  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) && detector_ready[next_phase]) {
+    gvt_begin();
+    gvt_cnt = 0;
+  }
+  thisProxy[CkMyPe()].execute_opt();
+#endif
 }
 
 /******************************************************************************/
@@ -279,28 +338,44 @@ void PE::update_min_cancel(Time t) {
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.
 void PE::gvt_begin() {
+#ifndef FULLY_ASYNC
   if (waiting_on_qd) {
     return;
   }
-  waiting_on_qd = true;
   gvt_cnt = 0;
   PE_STATS(s_ngvts)++;
+  waiting_on_qd = true;
   DEBUG_PE("GVT #%d: Waiting on QD...\n", PE_STATS(s_ngvts));
   if(CkMyPe() == 0) {
     // TODO: Can QD be started sooner? Will that improve speed?
     CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
   }
+#else
+  PE_STATS(s_ngvts)++;
+  detector_pointers[current_phase]->done();
+  detector_ready[current_phase] = false;
+  current_phase = next_phase;
+  next_phase = (current_phase+1)%2;
+#endif
 }
 
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
 void PE::gvt_contribute() {
+  GVT gvt_struct;
+  gvt_struct.ts = get_min_time();
+  gvt_struct.type = force_gvt;
+  DEBUG_PE("GVT #%d: {%lf, %d}\n", PE_STATS(s_ngvts), gvt_struct.ts, gvt_struct.type);
+#ifndef FULLY_ASYNC
   waiting_on_qd = false;
-  GVT gvt;
-  gvt.ts = get_min_time();
-  gvt.type = force_gvt;
-  DEBUG_PE("GVT #%d: {%lf, %d}\n", PE_STATS(s_ngvts), gvt.ts, gvt.type);
-
-  contribute(sizeof(GVT), &gvt, gvtReductionType,
+#else
+  if (CkMyPe() == 0) {
+    detector_proxies[next_phase].start_detection(CkNumPes(),
+        CkCallback(CkIndex_PE::detector_started(), thisProxy),
+        CkCallback(),
+        CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
+  }
+#endif
+  contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
 #ifdef ASYNC_REDUCTION
@@ -319,6 +394,7 @@ void PE::gvt_contribute() {
 // Check to see if we are complete. If not, re-enter the appropriate
 // scheduler loop, and possibly do fossil collection.
 void PE::gvt_end(CkReductionMsg* msg) {
+  DEBUG_PE("Got the reduction\n");
   GVT* gvt_struct = (GVT*)msg->getData();
   Time new_gvt = gvt_struct->ts;
 
@@ -358,6 +434,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
     if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
       collect_fossils();
     }
+#ifndef FULLY_ASYNC
     // TODO: This doesn't need to be a broadcast
     if (PE_VALUE(g_tw_ldb_interval) &&
         PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) == 0) {
@@ -376,6 +453,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
       force_gvt = 0;
       resume_scheduler();
     }
+#endif
   }
 }
 
