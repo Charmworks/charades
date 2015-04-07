@@ -86,6 +86,9 @@ void tw_stats(Statistics *s) {
   show_lld("Successful Fossil Attempts", s->s_fossil_collect);
   show_lld("Total GVT Computations", s->s_ngvts);
   show_lld("Total Forced GVT Computations", s->s_forced_gvts);
+  show_lld("Memory Forced GVT Computations", s->s_forced_mem_gvts);
+  show_lld("End Time Forced GVT Computations", s->s_forced_end_gvts);
+  show_lld("Event Forced GVT Computations", s->s_forced_event_gvts);
   printf("\n");
 
   // Summary of events processed and event rate

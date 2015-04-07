@@ -17,16 +17,28 @@ struct tw_rng;
 using std::vector;
 
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs);
+CkReductionMsg *gvtReduction(int nMsg, CkReductionMsg **msgs);
+
+// Bit masks for GVT types
+#define MEM_FORCE 1
+#define END_FORCE 2
+#define EVENT_FORCE 4
+
+struct GVT {
+  GVT() : ts(DBL_MAX), type(0) {}
+  Time ts;
+  unsigned type;
+};
 
 class PE: public CBase_PE {
   private:
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
     PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
 
-    Time gvt;     /**< current gvt on this PE */
-    int gvt_cnt;  /**< count since last gvt */
-    bool waiting_on_qd;
-    bool forced_gvt;
+    Time gvt;           /**< current gvt on this PE */
+    int gvt_cnt;        /**< iteration count since last gvt */
+    bool waiting_on_qd; /**< flag to make sure we don't overlap gvts */
+    unsigned force_gvt; /**< Bitmap used to determine if a gvt was forced */
 
     tw_rng * rng; /**< ROSS rng stream */
 
@@ -75,8 +87,8 @@ class PE: public CBase_PE {
       */
     void gvt_begin(); /**< begin gvt computation */
     void gvt_contribute(); /**< all sent messages received, contribute to GVT */
-    void gvt_end(Time); /**< gvt done, either restart the scheduler or end */
-    void gvt_print(Time);
+    void gvt_end(CkReductionMsg*); /**< gvt done, either restart the scheduler or end */
+    void gvt_print(GVT*);
 
     /** \brief Get time stamp of the minium event */
     Time get_min_time();

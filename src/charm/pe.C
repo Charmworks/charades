@@ -12,6 +12,7 @@
 CProxy_PE pes;
 extern CProxy_LP lps;
 CkReduction::reducerType statsReductionType;
+CkReduction::reducerType gvtReductionType;
 
 // TODO: Find a better place for all of these non-member functions.
 Globals* get_globals() {
@@ -28,6 +29,10 @@ void registerStatsReduction(void) {
   statsReductionType = CkReduction::addReducer(statsReduction);
 }
 
+void registerGVTReduction(void) {
+  gvtReductionType = CkReduction::addReducer(gvtReduction);
+}
+
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
   Statistics *s = new Statistics;
   initialize_statistics(s);
@@ -40,6 +45,17 @@ CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
   }
 
   return CkReductionMsg::buildNew(sizeof(Statistics), s);
+}
+
+CkReductionMsg *gvtReduction(int nMsg, CkReductionMsg **msgs) {
+  GVT* new_gvt = new GVT;
+  for (int i = 0; i < nMsg; i++) {
+    CkAssert(msgs[i]->getSize() == sizeof(GVT));
+    GVT* gvt = (GVT*)msgs[i]->getData();
+    new_gvt->ts = fmin(new_gvt->ts, gvt->ts);
+    new_gvt->type = new_gvt->type | gvt->type;
+  }
+  return CkReductionMsg::buildNew(sizeof(GVT), new_gvt);
 }
 
 int tw_ismaster() {
@@ -99,6 +115,7 @@ PE::PE(CProxy_Initialize srcProxy) :
   initialize_statistics(statistics);
 
   waiting_on_qd = false;
+  force_gvt = 0;
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand(srcProxy);
 }
@@ -143,12 +160,16 @@ void PE::execute_seq() {
     if (!schedule_next_lp()) {
       break;
     }
-    if (gvt / PE_VALUE(g_tw_ts_end) > PE_VALUE(percent_complete)) gvt_print(gvt);
+    if (gvt / PE_VALUE(g_tw_ts_end) > PE_VALUE(percent_complete)) {
+      GVT gvt_struct;
+      gvt_struct.ts = gvt;
+      gvt_print(&gvt_struct);
+    }
     gvt = get_min_time();
   }
   PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
   PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
-  contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
+  contribute(sizeof(Statistics), statistics, statsReductionType,
     CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
 
 }
@@ -175,21 +196,28 @@ void PE::execute_opt() {
   unsigned events_executed = 0;
   for (int i = 0; i < PE_VALUE(g_tw_mblock); i++) {
     if (PE_VALUE(event_buffer)->percent_used() <= 0.01) {
-      DEBUG_PE("Percent of the buffer left: %f\n", PE_VALUE(event_buffer)->percent_used());
-      DEBUG_PE("Events left: %d\n", PE_VALUE(event_buffer)->current_size());
+      force_gvt = MEM_FORCE;
+      break;
     }
-    if (PE_VALUE(event_buffer)->percent_used() <= 0.01 || !schedule_next_lp()) {
+    if (!schedule_next_lp()) {
       break;
     }
     events_executed++;
   }
   process_cancel_q();
 
-  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || events_executed == 0) {
-    if (events_executed == 0) {
-      DEBUG_PE("Executed 0 events in this interval: Forcing GVT\n");
-      forced_gvt = true;
+  // If we weren't able to execute any events, then force a GVT
+  if (events_executed == 0 && !force_gvt) {
+    if (get_min_time() == DBL_MAX) {
+      force_gvt = END_FORCE;
+    } else {
+      force_gvt = EVENT_FORCE;
     }
+  }
+
+  // TODO: If we couldn't execute any events, should we actually force the
+  // GVT, or just wait for progress elsewhere.
+  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || force_gvt) {
 #ifdef ASYNC_BROADCAST
     thisProxy.gvt_begin();
 #else
@@ -257,10 +285,7 @@ void PE::gvt_begin() {
   waiting_on_qd = true;
   gvt_cnt = 0;
   PE_STATS(s_ngvts)++;
-  if (forced_gvt) {
-    PE_STATS(s_forced_gvts)++;
-  }
-  DEBUG_PE("GVT #%d: begins\n", PE_STATS(s_ngvts));
+  DEBUG_PE("GVT #%d: Waiting on QD...\n", PE_STATS(s_ngvts));
   if(CkMyPe() == 0) {
     // TODO: Can QD be started sooner? Will that improve speed?
     CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
@@ -270,16 +295,19 @@ void PE::gvt_begin() {
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
 void PE::gvt_contribute() {
   waiting_on_qd = false;
-  Time min_time = get_min_time();
-  DEBUG_PE("GVT #%d: contributed %lf\n", PE_STATS(s_ngvts), min_time);
-  contribute(sizeof(Time), &min_time, CkReduction::min_double,
+  GVT gvt;
+  gvt.ts = get_min_time();
+  gvt.type = force_gvt;
+  DEBUG_PE("GVT #%d: {%lf, %d}\n", PE_STATS(s_ngvts), gvt.ts, gvt.type);
+
+  contribute(sizeof(GVT), &gvt, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
 #ifdef ASYNC_REDUCTION
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution (unless we plan on doing load
   // balancing in this iteration).
-  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC && !forced_gvt) {
+  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC && !force_gvt) {
     if (!PE_VALUE(g_tw_ldb_interval) ||
         PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) != 0) {
       resume_scheduler();
@@ -290,25 +318,41 @@ void PE::gvt_contribute() {
 
 // Check to see if we are complete. If not, re-enter the appropriate
 // scheduler loop, and possibly do fossil collection.
-void PE::gvt_end(Time new_gvt) {
-  if (gvt == new_gvt) {
-    if (PE_VALUE(event_buffer)->percent_used() <= 0.01) {
-      tw_error(TW_LOC, "[%d]: Can't make progress...out of events to allocate\n");
+void PE::gvt_end(CkReductionMsg* msg) {
+  GVT* gvt_struct = (GVT*)msg->getData();
+  Time new_gvt = gvt_struct->ts;
+
+  // Update stats that track forced GVTs
+  if (gvt_struct->type) {
+    PE_STATS(s_forced_gvts)++;
+    if (gvt_struct->type & MEM_FORCE) {
+      PE_STATS(s_forced_mem_gvts)++;
+    }
+    if (gvt_struct->type & END_FORCE) {
+      PE_STATS(s_forced_end_gvts)++;
+    }
+    if (gvt_struct->type & EVENT_FORCE) {
+      PE_STATS(s_forced_event_gvts)++;
     }
   }
+
+  // If this GVT is the same as the last, and we are low on event memory, then
+  // we will never be able to make progress.
+  if (gvt == new_gvt && force_gvt & MEM_FORCE) {
+    tw_error(TW_LOC, "[%d]: GVT can't progress: Out of events\n", CkMyPe());
+  }
+
   PE_VALUE(g_last_gvt) = gvt;
   gvt = new_gvt;
-  if (tw_ismaster() && gvt / PE_VALUE(g_tw_ts_end) > PE_VALUE(percent_complete)) gvt_print(gvt);
-  DEBUG_MASTER("GVT #%d: simulation %d%% complete (GVT = %.4f).\n",
-      PE_STATS(s_ngvts),
-      (int) fmin(100, floor(100 *(gvt/PE_VALUE(g_tw_ts_end)))),
-      gvt);
+  if (tw_ismaster() && gvt/PE_VALUE(g_tw_ts_end) > PE_VALUE(percent_complete)) {
+    gvt_print(gvt_struct);
+  }
 
   // Either stop the timer and end the simulation, or call the scheduler again.
   if(new_gvt >= PE_VALUE(g_tw_ts_end)) {
     PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
     PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
-    contribute(sizeof(Statistics), pes.ckLocalBranch()->statistics, statsReductionType,
+    contribute(sizeof(Statistics), statistics, statsReductionType,
         CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
     if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
@@ -322,17 +366,20 @@ void PE::gvt_end(Time new_gvt) {
       }
     }
 #ifdef ASYNC_REDUCTION
-    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE || forced_gvt) {
+    // Async reductions don't happen for conservative, or if the GVT is forced.
+    // In these cases we need to restart the scheduler now.
+    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE
+        || force_gvt) {
 #else
     else {
 #endif
-      forced_gvt = false;
+      force_gvt = 0;
       resume_scheduler();
     }
   }
 }
 
-void PE::gvt_print(Time gvt) {
+void PE::gvt_print(GVT* gvt_struct) {
   if (PE_VALUE(gvt_print_interval) == 1.0) {
     return;
   }
@@ -340,11 +387,16 @@ void PE::gvt_print(Time gvt) {
     PE_VALUE(percent_complete) = PE_VALUE(gvt_print_interval);
     return;
   }
-  CkPrintf("GVT #%d: simulation %d%% complete ", PE_STATS(s_ngvts), (int) fmin(100, floor(100 * (gvt/PE_VALUE(g_tw_ts_end)))));
-  if (gvt == DBL_MAX) {
+  CkPrintf("GVT #%d", PE_STATS(s_ngvts));
+  if (gvt_struct->type) {
+    CkPrintf(" (FORCED)");
+  }
+  CkPrintf(": simulation %d%% complete ",
+      (int)fmin(100, floor(100 * (gvt_struct->ts/PE_VALUE(g_tw_ts_end)))));
+  if (gvt_struct->ts == DBL_MAX) {
     CkPrintf("(GVT = MAX).\n");
   } else {
-    CkPrintf("(GVT = %.4f).\n", gvt);
+    CkPrintf("(GVT = %.4f).\n", gvt_struct->ts);
   }
   PE_VALUE(percent_complete) += PE_VALUE(gvt_print_interval);
 }

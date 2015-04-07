@@ -32,6 +32,9 @@ struct Statistics {
     // GVT stats
     tw_stat s_ngvts; // Number of times we do a GVT calculation
     tw_stat s_forced_gvts; // Number of times we force a GVT calculation
+    tw_stat s_forced_mem_gvts; // Number of times we force a GVT calculation from running out of memory
+    tw_stat s_forced_end_gvts; // Number of times we force a GVT calculation from hitting the end time
+    tw_stat s_forced_event_gvts; // Number of times we force a GVT calculation from not having events to execute
     tw_stat s_fc_attempts; // Number of times we attempt to collect fossils
     tw_stat s_fossil_collect; // Number of times that there are actually 1 or more fossils to collect
 
@@ -73,6 +76,9 @@ inline void initialize_statistics(Statistics* statistics) {
 
   statistics->s_ngvts = 0;
   statistics->s_forced_gvts = 0;
+  statistics->s_forced_mem_gvts = 0;
+  statistics->s_forced_end_gvts = 0;
+  statistics->s_forced_event_gvts = 0;
   statistics->s_fc_attempts = 0;
   statistics->s_fossil_collect = 0;
 
@@ -116,7 +122,10 @@ inline void add_statistics(Statistics* s1, Statistics* s2) {
 
   // GVT stats
   s1->s_ngvts = s2->s_ngvts;
-  s1->s_forced_gvts += s2->s_forced_gvts;
+  s1->s_forced_gvts = s2->s_forced_gvts;
+  s1->s_forced_mem_gvts = s2->s_forced_mem_gvts;
+  s1->s_forced_end_gvts = s2->s_forced_end_gvts;
+  s1->s_forced_event_gvts = s2->s_forced_event_gvts;
   s1->s_fc_attempts += s2->s_fc_attempts;
   s1->s_fossil_collect += s2->s_fossil_collect;
 
