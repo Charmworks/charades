@@ -5,7 +5,7 @@ LIBDIR  := ../../src/build/
 
 all: pcs
 
-pcs.o: pcs.C $(LIBDIR)/libross.a
+pcs.o: pcs.C pcs.h $(LIBDIR)/libross.a
 	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) pcs.C -c -o pcs.o 
 
 pcs: pcs.o $(LIBDIR)/libross.a
