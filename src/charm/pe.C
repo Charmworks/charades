@@ -108,8 +108,8 @@ void charm_run() {
 #define PE_STATS(x) statistics->x
 
 PE::PE(CProxy_Initialize srcProxy) :
-    gvt_cnt(0), gvt(0.0), min_cancel_time(DBL_MAX), force_gvt(0),
-    waiting_on_qd(false)  {
+    gvt_cnt(0), gvt(0.0), min_sent(DBL_MAX), min_cancel_time(DBL_MAX),
+    force_gvt(0), waiting_on_qd(false)  {
   int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
   err = posix_memalign((void**)&statistics, 64, sizeof(Statistics));
   initialize_globals(globals);
@@ -203,9 +203,9 @@ bool PE::schedule_next_lp() {
 // pending cancellation event.
 Time PE::get_min_time() {
   if(next_lps.top() != NULL) {
-    return std::min(next_lps.top()->ts, min_cancel_time);
+    return fmin(next_lps.top()->ts, fmin(min_sent, min_cancel_time));
   } else {
-    return min_cancel_time;
+    return fmin(min_sent, min_cancel_time);
   }
 }
 
@@ -357,6 +357,7 @@ void PE::gvt_begin() {
       CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
     }
   } else {
+    min_sent = DBL_MAX;
     detector_pointers[current_phase]->done();
     detector_ready[current_phase] = false;
     current_phase = next_phase;

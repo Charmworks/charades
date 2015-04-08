@@ -38,6 +38,7 @@ class PE: public CBase_PE {
     PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
 
     Time gvt;           /**< current gvt on this PE */
+    Time min_sent;      /**< minimum ts sent out during this phase */
     int gvt_cnt;        /**< iteration count since last gvt */
     bool waiting_on_qd; /**< flag to make sure we don't overlap gvts */
     unsigned force_gvt; /**< Bitmap used to determine if a gvt was forced */
@@ -139,6 +140,9 @@ class PE: public CBase_PE {
 
     void produce(RemoteEvent* msg) {
       if (max_phase) {
+        if (msg->ts < min_sent) {
+          min_sent = msg->ts;
+        }
         msg->phase = current_phase;
         detector_pointers[current_phase]->produce();
       }
