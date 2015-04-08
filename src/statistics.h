@@ -104,11 +104,13 @@ inline void initialize_statistics(Statistics* statistics) {
 // be augmented with the results of the second.
 inline void add_statistics(Statistics* s1, Statistics* s2) {
   // Timing stats
-  s1->s_max_run_time = fmax(s2->s_max_run_time, s2->s_max_run_time);
-  s1->s_min_run_time = fmin(s2->s_min_run_time, s2->s_min_run_time);
+  s1->s_max_run_time = fmax(s1->s_max_run_time, s2->s_max_run_time);
+  s1->s_min_run_time = fmin(s1->s_min_run_time, s2->s_min_run_time);
 
   // Event count stats
   s1->s_nevent_processed += s2->s_nevent_processed;
+  //net event computed using nevent and rollbacks
+  s1->s_min_detected_offset = fmin(s1->s_min_detected_offset, s2->s_min_detected_offset);
 
   // Rollback stats
   s1->s_e_rbs += s2->s_e_rbs;
@@ -117,8 +119,8 @@ inline void add_statistics(Statistics* s1, Statistics* s2) {
   s1->s_rb_secondary += s2->s_rb_secondary;
 
   // Send stats
-  s1->s_nsend_remote_rb += s2->s_nsend_remote_rb;
   s1->s_nsend_loc_remote += s2->s_nsend_loc_remote;
+  s1->s_nsend_net_remote += s2->s_nsend_net_remote;
 
   // GVT stats
   s1->s_ngvts = s2->s_ngvts;
@@ -127,26 +129,25 @@ inline void add_statistics(Statistics* s1, Statistics* s2) {
   s1->s_forced_end_gvts = s2->s_forced_end_gvts;
   s1->s_forced_event_gvts = s2->s_forced_event_gvts;
   s1->s_fc_attempts += s2->s_fc_attempts;
-  s1->s_fossil_collect += s2->s_fossil_collect;
+  s1->s_fossil_collect = fmax(s1->s_fossil_collect, s2->s_fossil_collect);
 
   // Currently unused stats // TODO: Document or remove
-  s1->s_nevent_abort += s2->s_nevent_abort;
   s1->s_pq_qsize += s2->s_pq_qsize;
   s1->s_nsend_network += s2->s_nsend_network;
   s1->s_nread_network += s2->s_nread_network;
-  s1->s_nsend_net_remote += s2->s_nsend_net_remote;
+  s1->s_nsend_remote_rb += s2->s_nsend_remote_rb;
   s1->s_mem_buffers_used += s2->s_mem_buffers_used;
   s1->s_pe_event_ties += s2->s_pe_event_ties;
-  s1->s_min_detected_offset = fmin(s1->s_min_detected_offset, s2->s_min_detected_offset);
   s1->s_total = fmax(s1->s_total, s2->s_total);
   s1->s_net_read = fmax(s1->s_net_read, s2->s_net_read);
   s1->s_gvt = fmax(s1->s_gvt, s2->s_gvt);
-  s1->s_fossil_collect = fmax(s1->s_fossil_collect, s2->s_fossil_collect);
   s1->s_event_abort = fmax(s1->s_event_abort, s2->s_event_abort);
   s1->s_event_process = fmax(s1->s_event_process, s2->s_event_process);
   s1->s_pq = fmax(s1->s_pq, s2->s_pq);
   s1->s_rollback = fmax(s1->s_rollback, s2->s_rollback);
+  s1->s_cancel_q = fmax(s1->s_cancel_q, s2->s_cancel_q);
   s1->s_avl = fmax(s1->s_avl, s2->s_avl);
+  s1->s_nevent_abort += s2->s_nevent_abort;
 }
 
 // Defined in pe.C
