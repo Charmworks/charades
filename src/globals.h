@@ -56,7 +56,7 @@ struct Globals {
 // Function for setting default/initial values
 inline void initialize_globals(Globals* globals) {
   globals->g_tw_synchronization_protocol = CONSERVATIVE;
-  globals->g_tw_ts_end        = 1024;
+  globals->g_tw_ts_end        = 100000.0;
   globals->g_tw_mblock        = 16;
   globals->g_tw_gvt_interval  = 16;
   globals->g_tw_ldb_interval  = 0;

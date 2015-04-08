@@ -109,6 +109,26 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
 
+  // In sequential mode there can only be one chare. Enforce that here.
+  if (PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
+    if (PE_VALUE(g_num_chares) > 1) {
+      CkPrintf("WARNING: In sequential mode there can only be one chare!\n");
+      CkPrintf("Overriding number of chares to be 1.\n");
+    }
+    if (PE_VALUE(g_lps_per_chare) != PE_VALUE(g_total_lps)) {
+      CkPrintf("WARNING: In sequential mode all lps must be on one chare!\n");
+      CkPrintf("Overriding lps per chare to be %d.\n", PE_VALUE(g_total_lps));
+    }
+    PE_VALUE(g_num_chares) = 1;
+    PE_VALUE(g_lps_per_chare) = PE_VALUE(g_total_lps);
+    CkPrintf("WARNING: In sequential mode all LPs must map to chare 0\n");
+    CkPrintf("Overriding LP placement maps.\n");
+    PE_VALUE(g_numlp_map)  = NULL;
+    PE_VALUE(g_init_map)   = init_block_map;
+    PE_VALUE(g_local_map)  = local_block_map;
+    PE_VALUE(g_chare_map)  = chare_block_map;
+  }
+
   bool constant_per_chare = false;
   // Check consistency and calculate values for number of lps and chares
   if (PE_VALUE(g_numlp_map) == NULL) {
