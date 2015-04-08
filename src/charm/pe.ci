@@ -11,6 +11,7 @@ module pe {
     entry [reductiontarget] void resume_scheduler(); /**< Called after ldb */
     entry [reductiontarget] void end_simulation(CkReductionMsg*);
     entry void broadcast_detector_proxies(int num, CProxy_CompletionDetector proxies[num]);
+    entry void initialize_detectors();
     entry void detector_initialized();
     entry void detectors_initialized();
     entry void initialize_rand();

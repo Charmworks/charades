@@ -65,6 +65,7 @@ class PE: public CBase_PE {
 
     /** \brief Initialize the completion detectors and CDs for this PE */
     void broadcast_detector_proxies(int num, CProxy_CompletionDetector*);
+    void initialize_detectors();
     void detector_initialized();
     void detectors_initialized();
     void initialize_rand();
@@ -137,16 +138,16 @@ class PE: public CBase_PE {
     }
 
     void produce(RemoteEvent* msg) {
-      #ifdef FULLY_ASYNC
-      msg->phase = current_phase;
-      detector_pointers[current_phase]->produce();
-      #endif
+      if (max_phase) {
+        msg->phase = current_phase;
+        detector_pointers[current_phase]->produce();
+      }
     }
 
     void consume(RemoteEvent* msg) {
-      #ifdef FULLY_ASYNC
-      detector_pointers[msg->phase]->consume();
-      #endif
+      if (max_phase) {
+        detector_pointers[msg->phase]->consume();
+      }
     }
 };
 

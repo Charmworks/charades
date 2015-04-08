@@ -89,10 +89,10 @@ void charm_run() {
       pes.execute_seq();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
       CkPrintf("**** Starting Parallel Conservative Simulation ****\n");
-      pes.execute_cons();
+      pes.initialize_detectors();
     } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
       CkPrintf("**** Starting Parallel Optimistic Simulation ****\n");
-      pes.execute_opt();
+      pes.initialize_detectors();
     } else {
       tw_error(TW_LOC, "Incorrect scheduler values, Aborting\n");
     }
@@ -116,9 +116,25 @@ PE::PE(CProxy_Initialize srcProxy) :
   initialize_statistics(statistics);
 
   cancel_q.resize(0);
+  thisProxy[CkMyPe()].initialize_rand();
+}
 
-  // Initialize completion detectors
-  max_phase = 2;
+void PE::initialize_rand() {
+  DEBUG_PE("Random number generator initialized\n");
+  rng = tw_rand_init(31, 41);
+  contribute(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
+}
+
+void PE::initialize_detectors() {
+  max_phase = PE_VALUE(g_tw_gvt_phases);
+  if (max_phase > 1 && PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+    CkPrintf("WARNING: Cannot have multiple phases in conservative mode.\n");
+    CkPrintf("Setting number of phases to 1\n");
+    max_phase = 1;
+  }
+  if (max_phase == 0) {
+    resume_scheduler();
+  }
   current_phase = next_phase = 0;
   detector_ready = new bool[max_phase];
   detector_proxies = new CProxy_CompletionDetector[max_phase];
@@ -146,9 +162,6 @@ void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies)
           CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
     }
   }
-  if (max_phase == 0) {
-    initialize_rand();
-  }
 }
 
 void PE::detector_initialized() {
@@ -165,14 +178,7 @@ void PE::detectors_initialized() {
   }
   current_phase = 0;
   next_phase = (current_phase + 1) % max_phase;
-  initialize_rand();
-}
-
-// Called by initialize_detector after both are ready
-void PE::initialize_rand() {
-  DEBUG_PE("Random number generator initialized\n");
-  rng = tw_rand_init(31, 41);
-  contribute(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
+  resume_scheduler();
 }
 
 void PE::detector_started() {
@@ -269,25 +275,22 @@ void PE::execute_opt() {
     }
   }
 
-  // TODO: If we couldn't execute any events, should we actually force the
-  // GVT, or just wait for progress elsewhere.
-#ifndef FULLY_ASYNC
-  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || force_gvt) {
-#ifdef ASYNC_BROADCAST
-    thisProxy.gvt_begin();
-#else
-    gvt_begin();
-#endif
-  } else {
+  bool ready_for_gvt = ++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || force_gvt;
+  if (max_phase) {
+    ready_for_gvt = ready_for_gvt && detector_ready[next_phase];
+  }
+
+  if (ready_for_gvt) {
+    // Right now, broadcasting to start GVT is only supported with QD.
+    if (max_phase == 0) {
+      thisProxy.gvt_begin();
+    } else {
+      gvt_begin();
+    }
+  }
+  if (!ready_for_gvt || (max_phase > 1 && !force_gvt)) {
     thisProxy[CkMyPe()].execute_opt();
   }
-#else
-  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) && detector_ready[next_phase]) {
-    gvt_begin();
-    gvt_cnt = 0;
-  }
-  thisProxy[CkMyPe()].execute_opt();
-#endif
 }
 
 /******************************************************************************/
@@ -341,25 +344,24 @@ void PE::update_min_cancel(Time t) {
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.
 void PE::gvt_begin() {
-#ifndef FULLY_ASYNC
   if (waiting_on_qd) {
     return;
   }
   gvt_cnt = 0;
   PE_STATS(s_ngvts)++;
-  waiting_on_qd = true;
-  DEBUG_PE("GVT #%d: Waiting on QD...\n", PE_STATS(s_ngvts));
-  if(CkMyPe() == 0) {
-    // TODO: Can QD be started sooner? Will that improve speed?
-    CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
+  if (max_phase == 0) {
+    DEBUG_PE("GVT #%d: Waiting on QD...\n", PE_STATS(s_ngvts));
+    waiting_on_qd = true;
+    if(CkMyPe() == 0) {
+      // TODO: Can QD be started sooner? Will that improve speed?
+      CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
+    }
+  } else {
+    detector_pointers[current_phase]->done();
+    detector_ready[current_phase] = false;
+    current_phase = next_phase;
+    next_phase = (current_phase+1)%max_phase;
   }
-#else
-  PE_STATS(s_ngvts)++;
-  detector_pointers[current_phase]->done();
-  detector_ready[current_phase] = false;
-  current_phase = next_phase;
-  next_phase = (current_phase+1)%2;
-#endif
 }
 
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
@@ -368,30 +370,27 @@ void PE::gvt_contribute() {
   gvt_struct.ts = get_min_time();
   gvt_struct.type = force_gvt;
   DEBUG_PE("GVT #%d: {%lf, %d}\n", PE_STATS(s_ngvts), gvt_struct.ts, gvt_struct.type);
-#ifndef FULLY_ASYNC
-  waiting_on_qd = false;
-#else
-  if (CkMyPe() == 0) {
+  if (max_phase == 0) {
+    waiting_on_qd = false;
+  } else if (CkMyPe() == 0) {
     detector_proxies[next_phase].start_detection(CkNumPes(),
         CkCallback(CkIndex_PE::detector_started(), thisProxy),
         CkCallback(),
         CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
   }
-#endif
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
-#ifdef ASYNC_REDUCTION
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution (unless we plan on doing load
   // balancing in this iteration).
-  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC && !force_gvt) {
-    if (!PE_VALUE(g_tw_ldb_interval) ||
-        PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) != 0) {
-      resume_scheduler();
-    }
+  // For now this is only supported with QD.
+  bool can_resume = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
+  can_resume = can_resume && !force_gvt && max_phase == 0;
+  can_resume = can_resume && (!PE_VALUE(g_tw_ldb_interval) || PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) != 0);
+  if (can_resume) {
+    resume_scheduler();
   }
-#endif
 }
 
 // Check to see if we are complete. If not, re-enter the appropriate
@@ -438,26 +437,17 @@ void PE::gvt_end(CkReductionMsg* msg) {
       DEBUG_PE("Collecting fossils\n");
       collect_fossils();
     }
-#ifndef FULLY_ASYNC
     // TODO: This doesn't need to be a broadcast
     if (PE_VALUE(g_tw_ldb_interval) &&
         PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) == 0) {
       if (tw_ismaster()) {
         lps.load_balance();
       }
-    }
-#ifdef ASYNC_REDUCTION
-    // Async reductions don't happen for conservative, or if the GVT is forced.
-    // In these cases we need to restart the scheduler now.
-    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE
-        || force_gvt) {
-#else
-    else {
-#endif
+    } else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE
+        || force_gvt || max_phase == 1) {
       force_gvt = 0;
       resume_scheduler();
     }
-#endif
   }
 }
 

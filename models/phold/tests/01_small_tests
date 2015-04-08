@@ -1,4 +1,5 @@
 # Short basic tests on a varying number of procs
+./charmrun +p1 ./phold --end=64 --num-lps=32 --lps-per-chare=32 --synch=1
 ./charmrun +p1 ./phold --end=64 --num-lps=32 --lps-per-chare=4 --synch=2
 ./charmrun +p2 ./phold --end=64 --num-lps=32 --lps-per-chare=4 --synch=2
 ./charmrun +p4 ./phold --end=64 --num-lps=32 --lps-per-chare=4 --synch=2

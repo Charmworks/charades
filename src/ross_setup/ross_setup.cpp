@@ -62,6 +62,7 @@ void tw_init(int* argc, char*** argv) {
     TWOPT_STIME("lookahead", PE_VALUE(g_tw_lookahead), "Lookahead for events"),
     TWOPT_UINT("batch", PE_VALUE(g_tw_mblock), "Messages per scheduler block"),
     TWOPT_UINT("gvt-interval", PE_VALUE(g_tw_gvt_interval), "GVT Interval"),
+    TWOPT_UINT("gvt-phases", PE_VALUE(g_tw_gvt_phases), "Number of GVT Phases"),
     TWOPT_UINT("ldb-interval", PE_VALUE(g_tw_ldb_interval), "Load Balancing Interval"),
     TWOPT_UINT("num-lps", PE_VALUE(g_total_lps), "Number of total LPs"),
     TWOPT_UINT("num-chares", PE_VALUE(g_num_chares), "Number of chares"),
