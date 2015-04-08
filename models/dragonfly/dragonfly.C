@@ -6,21 +6,21 @@
 
 ////////////////////////////////////////////////// LP_CHARE MAPPINGS //////////////////////////////////////////////////
 
-int nlp_router_per_chare (unsigned chare_index) {
+static inline int nlp_router_per_chare (unsigned chare_index) {
   int nlp = total_routers / ROSS_CONSTANT(g_num_chares);
   if(chare_index < router_rem)
     nlp++;
   return nlp;
 }
 
-int nlp_terminal_per_chare (unsigned chare_index) {
+static inline int nlp_terminal_per_chare (unsigned chare_index) {
   int nlp = total_terminals / ROSS_CONSTANT(g_num_chares);
   if (chare_index < terminal_rem)
     nlp++;
   return nlp;
 }
 
-int nlp_mpi_procs_per_chare (unsigned chare_index) {
+static inline int nlp_mpi_procs_per_chare (unsigned chare_index) {
   int nlp = total_mpi_procs / ROSS_CONSTANT(g_num_chares);
   if (chare_index < terminal_rem)
     nlp++;
@@ -30,7 +30,7 @@ int nlp_mpi_procs_per_chare (unsigned chare_index) {
 ////////////////////////////////////////////////// Router-Group-Terminal mapping functions ///////////////////////////////////////
 
 FILE * dragonfly_event_log=NULL;
-int
+static inline int
 get_terminal_rem(unsigned chare_index)
 {
    if(terminal_rem > 0 && terminal_rem <= chare_index)
@@ -39,7 +39,7 @@ get_terminal_rem(unsigned chare_index)
    return 0;
 }
 
-int
+static inline int
 get_router_rem(unsigned chare_index)
 {
   if(router_rem > 0 && router_rem <= chare_index)
@@ -48,27 +48,19 @@ get_router_rem(unsigned chare_index)
   return 0;
 }
 
-int
-get_inv_router_rem(unsigned chare_index)
-{
-   if(router_rem > 0 && router_rem >= chare_index)
-	return router_rem;
-
-  return 0;
-}
-int
+static inline int
 getTerminalID(tw_lpid lpid)
 {
     return lpid - total_routers;
 }
 
-int
+static inline int
 getProcID(tw_lpid lpid)
 {
     return lpid - total_routers - total_terminals;
 }
 
-int
+static inline int
 getRouterID(tw_lpid terminal_id)
 {
     int tid = getTerminalID(terminal_id);
@@ -86,33 +78,39 @@ unsigned mapping( tw_lpid gid) {
   if(gid < total_routers)
   {
     nlp_per_pe = total_routers/N_nodes;
-    rem = router_rem;
+    int max_with_rem = (nlp_per_pe + 1) * router_rem;
+    if(gid < max_with_rem) {
+      return gid / (nlp_per_pe + 1);
+    } else {
+      return router_rem + (gid - max_with_rem) / nlp_per_pe;
+    }
   }
   else if( gid >= total_routers && gid < total_routers + total_terminals)
   {
-    nlp_per_pe = total_terminals/N_nodes;
-    rem = terminal_rem;
     gid -= total_routers;
+    nlp_per_pe = total_terminals/N_nodes;
+    int max_with_rem = (nlp_per_pe + 1) * terminal_rem;
+    if(gid < max_with_rem) {
+      return gid / (nlp_per_pe + 1);
+    } else {
+      return terminal_rem + (gid - max_with_rem) / nlp_per_pe;
+    }
   }
   else if( gid >= (total_routers + total_terminals) && gid < (total_routers + total_terminals + total_mpi_procs))
   {
+    gid -= (total_routers + total_terminals);
     nlp_per_pe = total_mpi_procs/N_nodes;
-    rem = terminal_rem;
-    gid -= (total_routers+total_terminals);
+    int max_with_rem = (nlp_per_pe + 1) * terminal_rem;
+    if(gid < max_with_rem) {
+      return gid / (nlp_per_pe + 1);
+    } else {
+      return terminal_rem + (gid - max_with_rem) / nlp_per_pe;
+    }
   }
   else
     printf("\n Invalid LP ID %d given for mapping ", (int)gid);
-
-  cmp = 0;
-  for (rank = 0; rank < N_nodes; rank++) {
-    cmp += nlp_per_pe;
-    if (rank < rem)
-      cmp++;
-
-    if (gid < cmp)
-      return rank;
-  }
 }
+
 //////////////////////////////////////// Get router in the group which has a global channel to group id gid /////////////////////////////////
 tw_lpid
 getRouterFromGroupID(int gid,
@@ -122,14 +120,14 @@ getRouterFromGroupID(int gid,
   int group_end=(r->group_id*NUM_ROUTER) + NUM_ROUTER-1;
   int offset=(gid*NUM_ROUTER-group_begin)/NUM_ROUTER;
 
-  if((gid * NUM_ROUTER) < group_begin)
+ if((gid * NUM_ROUTER) < group_begin)
     offset=(group_begin-gid*NUM_ROUTER)/NUM_ROUTER; // take absolute value
 
-  int half_channel=GLOBAL_CHANNELS/2;
-  int index=(offset-1)/(half_channel * NUM_ROUTER);
+  int half_channel = GLOBAL_CHANNELS/2;
+  int index = (offset-1)/(half_channel * NUM_ROUTER);
 
-  offset=(offset-1)%(half_channel * NUM_ROUTER);
-
+  offset = (offset-1) % (half_channel * NUM_ROUTER);
+   
   // If the destination router is in the same group
   tw_lpid router_id;
 
@@ -727,6 +725,7 @@ terminal_buf_update(terminal_state * s,
 {
   // Update the buffer space associated with this router LP
     int msg_indx = msg->vc_index;
+    assert(msg_indx == 0);
 
     s->vc_occupancy[msg_indx]--;
     s->output_vc_state[msg_indx] = VC_IDLE;
@@ -1147,7 +1146,7 @@ update_router_waiting_list( router_state * s,
    if(loc >= ROUTER_WAITING_PACK_COUNT)
     {
 //       In the unusual case where all waiting packets are full, the packets will be dropped
-//       printf(" Reached maximum count of linked list %d ", s->wait_count);
+       printf(" Reached maximum count of linked list %d ", s->wait_count);
        bf->c3 = 1;
        return;
     }
@@ -1520,48 +1519,65 @@ const tw_optdef app_opt [] =
 };
 
 
-tw_lpid dragonfly_mapping_to_lp(tw_lpid lpid)
+tw_lpid dragonfly_mapping_to_lp(tw_lpid gid)
 {
-  int index;
-  unsigned chare_index = mapping(lpid);
+  int rank;
+  int rem = 0;
+  int nlp_per_pe;
+  int N_nodes = ROSS_CONSTANT(g_num_chares);
 
-  // recalculate 'global' variables
-  int nlp_router_per_pe = total_routers / ROSS_CONSTANT(g_num_chares);
-  if (chare_index < router_rem)
-    nlp_router_per_pe++;
-
-  int nlp_terminal_per_pe = total_terminals / ROSS_CONSTANT(g_num_chares);
-  if (chare_index < terminal_rem)
-    nlp_terminal_per_pe++;
-
-  int nlp_mpi_procs_per_pe = total_mpi_procs / ROSS_CONSTANT(g_num_chares);
-  if (chare_index < terminal_rem)
-    nlp_mpi_procs_per_pe++;
-
-  if(lpid < total_routers)
-      index = lpid - chare_index * nlp_router_per_pe - get_router_rem(chare_index);
-  else if(lpid >= total_routers && lpid < total_routers+total_terminals)
-      index = nlp_router_per_pe + (lpid - chare_index * nlp_terminal_per_pe - get_terminal_rem(chare_index) - total_routers);
-  else if (lpid >= total_routers + total_terminals && lpid < total_routers + total_terminals + total_mpi_procs)
-	    index = nlp_router_per_pe + nlp_terminal_per_pe + (lpid - chare_index * nlp_mpi_procs_per_pe - get_terminal_rem(chare_index) - total_routers - total_terminals);
+  if(gid < total_routers)
+  {
+    nlp_per_pe = total_routers/N_nodes;
+    int max_with_rem = (nlp_per_pe + 1) * router_rem;
+    if(gid < max_with_rem) {
+      return gid % (nlp_per_pe + 1);
+    } else {
+      return (gid - max_with_rem) % nlp_per_pe;
+    }
+  } else if( gid >= total_routers && gid < total_routers + total_terminals)
+  {
+    gid -= total_routers;
+    nlp_per_pe = total_terminals/N_nodes;
+    int max_with_rem = (nlp_per_pe + 1) * terminal_rem;
+    if(gid < max_with_rem) {
+      int chare = gid / (nlp_per_pe + 1);
+      return nlp_router_per_chare(chare) + (gid % (nlp_per_pe + 1));
+    } else {
+      int chare =  terminal_rem + (gid - max_with_rem) / nlp_per_pe;
+      return nlp_router_per_chare(chare) + (gid - max_with_rem) % nlp_per_pe;
+    }
+  } else if( gid >= (total_routers + total_terminals) && gid < (total_routers + total_terminals + total_mpi_procs))
+  {
+    gid -= (total_routers + total_terminals);
+    nlp_per_pe = total_mpi_procs/N_nodes;
+    int max_with_rem = (nlp_per_pe + 1) * terminal_rem;
+    if(gid < max_with_rem) {
+      int chare = gid / (nlp_per_pe + 1);
+      return nlp_router_per_chare(chare) + nlp_terminal_per_chare(chare) + (gid % (nlp_per_pe + 1));
+    } else {
+      int chare = terminal_rem + (gid - max_with_rem) / nlp_per_pe;
+      return nlp_router_per_chare(chare) + nlp_terminal_per_chare(chare) + ((gid - max_with_rem) % nlp_per_pe);
+    }
+  }
   else
-      tw_error(TW_LOC, "LPID out of bounds.");
-
-  return index;
+    printf("\n Invalid LP ID %d given for mapping ", (int)gid);
 }
 
 tw_lpid dragonfly_mapping (unsigned chare_index, tw_lpid local_id) {
   tw_lpid gid;
+  int routers_on_chare = nlp_router_per_chare(chare_index);
+  int terms_on_chare;
   if (local_id < nlp_router_per_chare(chare_index)) {
     // router type
-    gid = chare_index * nlp_router_per_chare(chare_index) + local_id + get_router_rem(chare_index);
-  } else if (local_id < nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index)) {
+    gid = chare_index * routers_on_chare + local_id + get_router_rem(chare_index);
+  } else if (local_id < routers_on_chare + nlp_terminal_per_chare(chare_index)) {
     // terminal type
-    local_id -= nlp_router_per_chare(chare_index);
+    local_id -= routers_on_chare;
     gid = total_routers + chare_index * nlp_terminal_per_chare(chare_index) + local_id + get_terminal_rem(chare_index);
-  } else if (local_id < nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index) + nlp_mpi_procs_per_chare(chare_index)) {
+  } else if (local_id < routers_on_chare + nlp_terminal_per_chare(chare_index) + nlp_mpi_procs_per_chare(chare_index)) {
     // mpi_proc type
-    local_id -= (nlp_router_per_chare(chare_index) + nlp_terminal_per_chare(chare_index));
+    local_id -= (routers_on_chare + nlp_terminal_per_chare(chare_index));
     gid = total_routers + total_terminals + chare_index * nlp_mpi_procs_per_chare(chare_index) + local_id + get_terminal_rem(chare_index);
   } else {
     tw_error(TW_LOC, "Mapping setup ERROR: unrecognized local id");
@@ -1624,9 +1640,13 @@ int main(int argc, char **argv)
      ROSS_CONSTANT(g_numlp_map) = dragonfly_numlp_map;
 
      // PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * (nlp_terminal_per_pe + nlp_router_per_pe) + opt_mem;
-     PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * ((total_terminals+total_routers)/ROSS_CONSTANT(g_num_chares)) + opt_mem;
+     PE_VALUE(g_tw_max_events_buffered) = mem_factor * 1024 * ((total_terminals+total_routers)/tw_nnodes()) + opt_mem;
 
+      printf("[%d] Calling define LP with mem size %d %.2lfMB\n", CkMyPe(), PE_VALUE(g_tw_max_events_buffered),
+      CmiMemoryUsage()/(1024.*1024));
      tw_define_lps(sizeof(terminal_message), 0);
+      printf("[%d] After Calling define LP with mem size %d %.2lfMB\n", CkMyPe(), PE_VALUE(g_tw_max_events_buffered),
+      CmiMemoryUsage()/(1024.*1024));
 
 
 #if DFDEBUG

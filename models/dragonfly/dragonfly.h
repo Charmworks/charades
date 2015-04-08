@@ -42,7 +42,7 @@
 #define RADIX (NUM_VC * NUM_ROUTER)+ (NUM_VC*GLOBAL_CHANNELS) + (NUM_VC * NUM_TERMINALS)
 
 // debugging parameters
-#define DFDEBUG 1
+#define DFDEBUG 0
 #define TRACK 601
 #define PRINT_ROUTER_TABLE 1
 
