@@ -62,12 +62,22 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 
 // Return LPChare index based on GID
 unsigned pcs_grid_map (tw_lpid gid) {
-  return gid / ROSS_CONSTANT(g_lps_per_chare);
+  int cell_vp_x = (NUM_CELLS_X / NUM_VP_X);
+  int cell_vp_y = (NUM_CELLS_Y / NUM_VP_Y);
+  int local_x = ((gid % NUM_CELLS_X) / cell_vp_x);
+  local_x %= NUM_VP_X;
+  int local_y = ((gid / NUM_CELLS_X) /cell_vp_y);
+  local_y %= NUM_VP_Y;
+  return (local_y * NUM_VP_X + local_x);
 }
 
 // Return local index based on GID
 tw_lpid pcs_local_map (tw_lpid gid) {
-  return gid % ROSS_CONSTANT(g_lps_per_chare);
+  int cell_vp_x = (NUM_CELLS_X / NUM_VP_X);
+  int cell_vp_y = (NUM_CELLS_Y / NUM_VP_Y);
+  int local_x = (gid % NUM_CELLS_X) % cell_vp_x;
+  int local_y = (gid / NUM_CELLS_X) % cell_vp_y;
+  return (local_y * cell_vp_x + local_x);
 }
 
 Min_t
@@ -782,8 +792,21 @@ tw_lpid pcs_init_map(unsigned chare, tw_lpid local_id) {
 	// 4. THE UNDERLYING ACTUAL MAPPING DOES NOT MATTER
 	//    As long as all the routing-map functions are consistent for event sending,
 	//    the actual "movement" functions do their own thing
+        int cell_vp_x = (NUM_CELLS_X / NUM_VP_X);
+        int cell_vp_y = (NUM_CELLS_Y / NUM_VP_Y);
 
-	return (tw_lpid) (chare * ROSS_CONSTANT(g_lps_per_chare) + local_id);
+        int chare_x = chare % NUM_VP_X;
+        int chare_y = chare / NUM_VP_X;
+       
+        int off_x = chare_x * cell_vp_x;
+        int off_y = chare_y * cell_vp_y;
+
+        off_x += (local_id % cell_vp_x);
+        off_y += (local_id / cell_vp_x);
+        printf("[%d] Chare %d, id %d, global %d\n", CkMyPe(), chare, local_id,
+         (off_y * NUM_CELLS_X + off_x));
+
+	return (tw_lpid) (off_y * NUM_CELLS_X + off_x);
 }
 
 int
