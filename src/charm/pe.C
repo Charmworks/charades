@@ -81,7 +81,6 @@ void charm_exit() {
 
 // Starts the simulation by calling the scheduler on all pes
 void charm_run() {
-  PE_STATS(s_max_run_time) = CkWallTimer();
   if (tw_ismaster()) {
     DEBUG_MASTER("Initializing schedulers \n");
     if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
@@ -137,21 +136,24 @@ void PE::initialize_detectors() {
     max_phase = 1;
   }
   if (max_phase == 0) {
+    // Start the timer and the scheduler
+    PE_STATS(s_max_run_time) = CkWallTimer();
     resume_scheduler();
-  }
-  current_phase = next_phase = 0;
-  detector_ready = new bool[max_phase];
-  detector_proxies = new CProxy_CompletionDetector[max_phase];
-  detector_pointers = new CompletionDetector*[max_phase];
-  for (int i = 0; i < max_phase; i++) {
-    detector_ready[i] = false;
-    detector_pointers[i] = NULL;
-    if (CkMyPe() == 0) {
-      detector_proxies[i] = CProxy_CompletionDetector::ckNew();
+  } else {
+    current_phase = next_phase = 0;
+    detector_ready = new bool[max_phase];
+    detector_proxies = new CProxy_CompletionDetector[max_phase];
+    detector_pointers = new CompletionDetector*[max_phase];
+    for (int i = 0; i < max_phase; i++) {
+      detector_ready[i] = false;
+      detector_pointers[i] = NULL;
+      if (CkMyPe() == 0) {
+        detector_proxies[i] = CProxy_CompletionDetector::ckNew();
+      }
     }
-  }
-  if (CkMyPe() == 0) {
-    thisProxy.broadcast_detector_proxies(max_phase, detector_proxies);
+    if (CkMyPe() == 0) {
+      thisProxy.broadcast_detector_proxies(max_phase, detector_proxies);
+    }
   }
 }
 
@@ -169,6 +171,9 @@ void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies)
   }
   current_phase = 0;
   next_phase = (current_phase + 1) % max_phase;
+
+  // Start the timer and the scheduler
+  PE_STATS(s_max_run_time) = CkWallTimer();
   resume_scheduler();
 }
 
@@ -201,12 +206,20 @@ Time PE::get_min_time() {
   }
 }
 
+// Receives a reduction of statistics for the simulation, prints them, and ends
+// the simulation by exiting Charm++.
+void PE::end_simulation(CkReductionMsg* m) {
+  tw_stats((Statistics*)m->getData());
+  CkExit();
+}
+
 /******************************************************************************/
 /* Schedulers                                                                 */
 /******************************************************************************/
 
 // Just execute events one at a time until the end time.
 void PE::execute_seq() {
+  PE_STATS(s_max_run_time) = CkWallTimer();
   Time gvt = get_min_time();
   while (gvt < PE_VALUE(g_tw_ts_end)) {
     if (!schedule_next_lp()) {
@@ -467,21 +480,6 @@ void PE::gvt_print(GVT* gvt_struct) {
     CkPrintf("(GVT = %.4f).\n", gvt_struct->ts);
   }
   PE_VALUE(percent_complete) += PE_VALUE(gvt_print_interval);
-}
-
-void PE::resume_scheduler() {
-  if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-    thisProxy[CkMyPe()].execute_cons();
-  } else if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
-    thisProxy[CkMyPe()].execute_opt();
-  }
-}
-
-// Receives a reduction of statistics for the simulation, prints them, and ends
-// the simulation by exiting Charm++.
-void PE::end_simulation(CkReductionMsg* m) {
-  tw_stats((Statistics*)m->getData());
-  CkExit();
 }
 
 #include "pe.def.h"

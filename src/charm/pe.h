@@ -69,14 +69,11 @@ class PE: public CBase_PE {
     void initialize_detectors();
     void initialize_rand();
 
-    /** \brief Called as a reduction by LPs when load balancing is complete */
-    void resume_scheduler();
-
     /** \brief Print final stats and end the simulation */
     void end_simulation(CkReductionMsg *m);
 
     /** \brief Various schedulers
-        sequential: single PE, run to end
+        sequential: single PE, single chare, run to end
         conservative: find next epoch, assume a lookahead, run to end of epoch
         optimistic: execute events, rollback as needed, compute GVT periodically
       */
@@ -103,6 +100,14 @@ class PE: public CBase_PE {
 
     /** \brief Get time stamp of the minium event */
     Time get_min_time();
+
+    inline void resume_scheduler() {
+      if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+        thisProxy[CkMyPe()].execute_cons();
+      } else if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+        thisProxy[CkMyPe()].execute_opt();
+      }
+    }
 
     /** \brief Register the given LP to our queues */
     void register_lp(LPToken* next_token, Time next_ts,
