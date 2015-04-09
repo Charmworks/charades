@@ -174,7 +174,7 @@ void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies)
 
   // Start the timer and the scheduler
   PE_STATS(s_max_run_time) = CkWallTimer();
-  resume_scheduler();
+  contribute(CkCallback(CkIndex_PE::resume_scheduler(), thisProxy));
 }
 
 /******************************************************************************/
