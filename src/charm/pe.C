@@ -108,7 +108,7 @@ void charm_run() {
 
 PE::PE(CProxy_Initialize srcProxy) :
     gvt_cnt(0), gvt(0.0), min_sent(DBL_MAX), min_cancel_time(DBL_MAX),
-    force_gvt(0), waiting_on_qd(false)  {
+    force_gvt(0), waiting_on_gvt(false)  {
   int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
   err = posix_memalign((void**)&statistics, 64, sizeof(Statistics));
   initialize_globals(globals);
@@ -255,7 +255,7 @@ void PE::execute_cons() {
 // Also process the cancellation queue each iteration.
 // After a fixed number of iterations, compute a new GVT.
 void PE::execute_opt() {
-  if (waiting_on_qd) {
+  if (waiting_on_gvt) {
     return;
   }
   unsigned events_executed = 0;
@@ -287,7 +287,7 @@ void PE::execute_opt() {
 
   if (ready_for_gvt) {
     // Right now, broadcasting to start GVT is only supported with QD.
-    if (max_phase == 0) {
+    if (max_phase <= 1) {
       thisProxy.gvt_begin();
     } else {
       gvt_begin();
@@ -349,14 +349,15 @@ void PE::update_min_cancel(Time t) {
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.
 void PE::gvt_begin() {
-  if (waiting_on_qd) {
+  if (waiting_on_gvt) {
     return;
   }
   gvt_cnt = 0;
   PE_STATS(s_ngvts)++;
+  if (max_phase <= 1) {
+    waiting_on_gvt = true;
+  }
   if (max_phase == 0) {
-    DEBUG_PE("GVT #%d: Waiting on QD...\n", PE_STATS(s_ngvts));
-    waiting_on_qd = true;
     if(CkMyPe() == 0) {
       // TODO: Can QD be started sooner? Will that improve speed?
       CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
@@ -375,10 +376,10 @@ void PE::gvt_contribute() {
   GVT gvt_struct;
   gvt_struct.ts = get_min_time();
   gvt_struct.type = force_gvt;
-  DEBUG_PE("GVT #%d: {%lf, %d}\n", PE_STATS(s_ngvts), gvt_struct.ts, gvt_struct.type);
-  if (max_phase == 0) {
-    waiting_on_qd = false;
-  } else {
+  if (max_phase <=1) {
+    waiting_on_gvt = false;
+  }
+  if (max_phase) {
     detector_ready[next_phase] = true;
     if (CkMyPe() == 0) {
       detector_proxies[next_phase].start_detection(CkNumPes(),

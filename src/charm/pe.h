@@ -40,7 +40,7 @@ class PE: public CBase_PE {
     Time gvt;           /**< current gvt on this PE */
     Time min_sent;      /**< minimum ts sent out during this phase */
     int gvt_cnt;        /**< iteration count since last gvt */
-    bool waiting_on_qd; /**< flag to make sure we don't overlap gvts */
+    bool waiting_on_gvt;/**< flag to make sure we don't overlap gvts */
     unsigned force_gvt; /**< Bitmap used to determine if a gvt was forced */
 
     tw_rng * rng; /**< ROSS rng stream */
