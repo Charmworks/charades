@@ -136,8 +136,11 @@ void PE::initialize_detectors() {
     max_phase = 1;
   }
   if (max_phase == 0) {
-    // Start the timer and the scheduler
+    // Start the timer, the scheduler, and QD.
     PE_STATS(s_max_run_time) = CkWallTimer();
+    if (CkMyPe() == 0) {
+      CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
+    }
     resume_scheduler();
   } else {
     current_phase = next_phase = 0;
@@ -357,12 +360,7 @@ void PE::gvt_begin() {
   if (max_phase <= 1) {
     waiting_on_gvt = true;
   }
-  if (max_phase == 0) {
-    if(CkMyPe() == 0) {
-      // TODO: Can QD be started sooner? Will that improve speed?
-      CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
-    }
-  } else {
+  if (max_phase) {
     min_sent = DBL_MAX;
     detector_pointers[current_phase]->done();
     detector_ready[current_phase] = false;
@@ -379,7 +377,11 @@ void PE::gvt_contribute() {
   if (max_phase <=1) {
     waiting_on_gvt = false;
   }
-  if (max_phase) {
+  if (max_phase == 0) {
+    if (CkMyPe() == 0) {
+      CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
+    }
+  } else {
     detector_ready[next_phase] = true;
     if (CkMyPe() == 0) {
       detector_proxies[next_phase].start_detection(CkNumPes(),
