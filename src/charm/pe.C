@@ -119,6 +119,10 @@ PE::PE(CProxy_Initialize srcProxy) :
   thisProxy[CkMyPe()].initialize_rand();
 }
 
+/******************************************************************************/
+/* Initialization functions                                                   */
+/******************************************************************************/
+
 void PE::initialize_rand() {
   DEBUG_PE("Random number generator initialized\n");
   rng = tw_rand_init(31, 41);
@@ -155,35 +159,22 @@ void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies)
   for (int i = 0; i < num; i++) {
     detector_proxies[i] = proxies[i];
     detector_pointers[i] = detector_proxies[i].ckLocalBranch();
+    detector_ready[i] = true;
     if (CkMyPe() == 0) {
       detector_proxies[i].start_detection(CkNumPes(),
-          CkCallback(CkIndex_PE::detector_initialized(), thisProxy),
+          CkCallback(),
           CkCallback(),
           CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
     }
-  }
-}
-
-void PE::detector_initialized() {
-  current_phase++;
-  if (current_phase == max_phase) {
-    detectors_initialized();
-  }
-}
-
-void PE::detectors_initialized() {
-  DEBUG_PE("All %d completion detectors are ready\n", max_phase);
-  for (int i = 0; i < max_phase; i++) {
-    detector_ready[i] = true;
   }
   current_phase = 0;
   next_phase = (current_phase + 1) % max_phase;
   resume_scheduler();
 }
 
-void PE::detector_started() {
-  detector_ready[next_phase] = true;
-}
+/******************************************************************************/
+/* Helper functions                                                           */
+/******************************************************************************/
 
 // Pull the next LP from the queue and have it execute events until it hits
 // execute_until, or executes max events.
@@ -200,7 +191,8 @@ bool PE::schedule_next_lp() {
 
 // Compute the minimum time for gvt purposes. We not only need to take into
 // account the earliest pending event in the system, but also the earliest
-// pending cancellation event.
+// pending cancellation event, and in the case of fully asychronous, the
+// minimum event sent out since a phase shift.
 Time PE::get_min_time() {
   if(next_lps.top() != NULL) {
     return fmin(next_lps.top()->ts, fmin(min_sent, min_cancel_time));
@@ -276,7 +268,7 @@ void PE::execute_opt() {
   }
 
   bool ready_for_gvt = ++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || force_gvt;
-  if (max_phase) {
+  if (max_phase > 1) {
     ready_for_gvt = ready_for_gvt && detector_ready[next_phase];
   }
 
@@ -373,11 +365,14 @@ void PE::gvt_contribute() {
   DEBUG_PE("GVT #%d: {%lf, %d}\n", PE_STATS(s_ngvts), gvt_struct.ts, gvt_struct.type);
   if (max_phase == 0) {
     waiting_on_qd = false;
-  } else if (CkMyPe() == 0) {
-    detector_proxies[next_phase].start_detection(CkNumPes(),
-        CkCallback(CkIndex_PE::detector_started(), thisProxy),
-        CkCallback(),
-        CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
+  } else {
+    detector_ready[next_phase] = true;
+    if (CkMyPe() == 0) {
+      detector_proxies[next_phase].start_detection(CkNumPes(),
+          CkCallback(),
+          CkCallback(),
+          CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
+    }
   }
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
@@ -385,10 +380,10 @@ void PE::gvt_contribute() {
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution (unless we plan on doing load
   // balancing in this iteration).
-  // For now this is only supported with QD.
   bool can_resume = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
-  can_resume = can_resume && !force_gvt && max_phase == 0;
-  can_resume = can_resume && (!PE_VALUE(g_tw_ldb_interval) || PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) != 0);
+  can_resume = can_resume && !force_gvt && max_phase <= 1 &&
+      (!PE_VALUE(g_tw_ldb_interval) ||
+        PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) != 0);
   if (can_resume) {
     resume_scheduler();
   }
@@ -445,7 +440,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
         lps.load_balance();
       }
     } else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE
-        || force_gvt || max_phase == 1) {
+        || force_gvt) {
       force_gvt = 0;
       resume_scheduler();
     }

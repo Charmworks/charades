@@ -67,10 +67,7 @@ class PE: public CBase_PE {
     /** \brief Initialize the completion detectors and CDs for this PE */
     void broadcast_detector_proxies(int num, CProxy_CompletionDetector*);
     void initialize_detectors();
-    void detector_initialized();
-    void detectors_initialized();
     void initialize_rand();
-    void detector_started();
 
     /** \brief Called as a reduction by LPs when load balancing is complete */
     void resume_scheduler();
