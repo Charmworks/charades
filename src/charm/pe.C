@@ -389,7 +389,7 @@ void PE::gvt_print(GVT* gvt_struct) {
   }
   CkPrintf("GVT #%d", PE_STATS(s_ngvts));
   if (gvt_struct->type) {
-    CkPrintf(" (FORCED)");
+    CkPrintf(" (FORCED %d)", gvt_struct->type);
   }
   CkPrintf(": simulation %d%% complete ",
       (int)fmin(100, floor(100 * (gvt_struct->ts/PE_VALUE(g_tw_ts_end)))));

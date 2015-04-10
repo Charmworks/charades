@@ -1,5 +1,5 @@
 # Long tests on 4 pes.
-./charmrun +p4 ./phold --num-lps=16 --synch=1
-./charmrun +p4 ./phold --num-lps=16 --lps-per-chare=4 --synch=2
-./charmrun +p4 ./phold --num-lps=16 --lps-per-chare=4 --synch=3
+./charmrun ./phold --end=1024 --num-lps=16 --synch=1
+./charmrun +p4 ./phold --end=1024 --num-lps=16 --lps-per-chare=4 --synch=2
+./charmrun +p4 ./phold --end=1024 --num-lps=16 --lps-per-chare=4 --synch=3
 Net Events Processed 16361
