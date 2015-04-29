@@ -193,8 +193,8 @@ void PE::execute_opt() {
   if (waiting_on_qd) {
     return;
   }
-  unsigned events_executed = 0;
-  for (int i = 0; i < PE_VALUE(g_tw_mblock); i++) {
+  unsigned num_executed;
+  for (num_executed = 0; num_executed < PE_VALUE(g_tw_mblock); num_executed++) {
     if (PE_VALUE(event_buffer)->percent_used() <= 0.01) {
       force_gvt = MEM_FORCE;
       break;
@@ -202,12 +202,11 @@ void PE::execute_opt() {
     if (!schedule_next_lp()) {
       break;
     }
-    events_executed++;
   }
   process_cancel_q();
 
   // If we weren't able to execute any events, then force a GVT
-  if (events_executed == 0 && !force_gvt) {
+  if (num_executed == 0 && !force_gvt) {
     if (get_min_time() == DBL_MAX) {
       force_gvt = END_FORCE;
     } else {
@@ -215,11 +214,15 @@ void PE::execute_opt() {
     }
   }
 
-  // TODO: If we couldn't execute any events, should we actually force the
-  // GVT, or just wait for progress elsewhere.
   if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || force_gvt) {
 #ifdef ASYNC_BROADCAST
-    thisProxy.gvt_begin();
+    // If there are no events, or we are at the end, there is no point in
+    // forcing a GVT early because we still won't have work after it.
+    if (force_gvt == END_FORCE || force_gvt == EVENT_FORCE) {
+      gvt_begin();
+    } else {
+      thisProxy.gvt_begin();
+    }
 #else
     gvt_begin();
 #endif
