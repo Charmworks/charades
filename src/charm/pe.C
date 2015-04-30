@@ -261,8 +261,8 @@ void PE::execute_opt() {
   if (waiting_on_gvt) {
     return;
   }
-  unsigned events_executed = 0;
-  for (int i = 0; i < PE_VALUE(g_tw_mblock); i++) {
+  unsigned num_executed;
+  for (num_executed = 0; num_executed < PE_VALUE(g_tw_mblock); num_executed++) {
     if (PE_VALUE(event_buffer)->percent_used() <= 0.01) {
       force_gvt = MEM_FORCE;
       break;
@@ -270,12 +270,11 @@ void PE::execute_opt() {
     if (!schedule_next_lp()) {
       break;
     }
-    events_executed++;
   }
   process_cancel_q();
 
   // If we weren't able to execute any events, then force a GVT
-  if (events_executed == 0 && !force_gvt) {
+  if (num_executed == 0 && !force_gvt) {
     if (get_min_time() == DBL_MAX) {
       force_gvt = END_FORCE;
     } else {
@@ -290,11 +289,15 @@ void PE::execute_opt() {
 
   if (ready_for_gvt) {
     // Right now, broadcasting to start GVT is only supported with QD.
-    if (max_phase <= 1) {
+#ifdef ASYNC_BROADCAST
+    if (max_phase <= 1 && force_gvt != END_FORCE && force_gvt != EVENT_FORCE) {
       thisProxy.gvt_begin();
     } else {
       gvt_begin();
     }
+#else
+    gvt_begin();
+#endif
   }
   if (!ready_for_gvt || (max_phase > 1 && !force_gvt)) {
     thisProxy[CkMyPe()].execute_opt();
@@ -393,6 +396,7 @@ void PE::gvt_contribute() {
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
+#ifdef ASYNC_REDUCTION
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution (unless we plan on doing load
   // balancing in this iteration).
@@ -403,6 +407,7 @@ void PE::gvt_contribute() {
   if (can_resume) {
     resume_scheduler();
   }
+#endif
 }
 
 // Check to see if we are complete. If not, re-enter the appropriate
@@ -455,11 +460,20 @@ void PE::gvt_end(CkReductionMsg* msg) {
       if (tw_ismaster()) {
         lps.load_balance();
       }
-    } else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE
+    }
+#ifdef ASYNC_REDUCTION
+    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE
         || force_gvt) {
       force_gvt = 0;
       resume_scheduler();
     }
+#else
+    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE
+        || force_gvt || max_phase <= 1) {
+      force_gvt = 0;
+      resume_scheduler();
+    }
+#endif
   }
 }
 
