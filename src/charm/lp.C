@@ -25,7 +25,7 @@ int isLpSet = 0;
 // TODO: Move this API to an appropriate place
 void create_lps() {
   if (tw_ismaster()) {
-    CProxy_LP::ckNew(PE_VALUE(g_num_chares));
+    CProxy_LP::ckNew(g_num_chares);
   }
   StartCharmScheduler();
 }
@@ -73,19 +73,19 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
   // collection, and cancelation.
   pe->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
-  isOptimistic = PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC;
+  isOptimistic = g_tw_synchronization_protocol == OPTIMISTIC;
 
   // Create array of LPStructs based on globals
-  lp_structs.resize(PE_VALUE(g_numlp_map)(thisIndex));
+  lp_structs.resize(g_numlp_map(thisIndex));
   for (int i = 0; i < lp_structs.size(); i++) {
     lp_structs[i].owner = this;
-    lp_structs[i].gid   = PE_VALUE(g_init_map)(thisIndex, i);
-    lp_structs[i].type  = PE_VALUE(g_type_map)(lp_structs[i].gid);
+    lp_structs[i].gid   = g_init_map(thisIndex, i);
+    lp_structs[i].type  = g_type_map(lp_structs[i].gid);
     lp_structs[i].state = malloc(lp_structs[i].type->state_size);
 
     // Initialize the RNG streams for each LP
-    if (PE_VALUE(g_tw_rng_default) == 1) {
-      tw_rand_init_streams(&lp_structs[i], PE_VALUE(g_tw_nRNG_per_lp));
+    if (g_tw_rng_default == 1) {
+      tw_rand_init_streams(&lp_structs[i], g_tw_nRNG_per_lp);
     }
   }
 
@@ -150,7 +150,7 @@ void LP::recv_remote_event(RemoteEvent* event) {
 // 2) Do any required PE updates or rollbacks.
 // 3) Push event into the priority queue.
 void LP::recv_local_event(Event* e) {
-  e->dest_lp = (tw_lpid)&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)];
+  e->dest_lp = (tw_lpid)&lp_structs[g_local_map(e->dest_lp)];
 
   if (e->ts < events.min()) {
     pe->update_next(&next_token, e->ts);

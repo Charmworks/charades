@@ -9,6 +9,27 @@
 #include "mpi-interoperate.h"
 #include <float.h> // Included for DBL_MAX
 
+numlp_map_f g_numlp_map;  // chare -> numlps on that chare
+init_map_f  g_init_map;   // (chare x lid) -> gid
+type_map_f  g_type_map;   // gid -> type
+local_map_f g_local_map;  // gid -> lid
+chare_map_f g_chare_map;  // gid -> chare
+unsigned g_tw_synchronization_protocol;
+tw_stime g_tw_ts_end;       // end time of simulation
+unsigned g_tw_mblock;       // number of events per gvt interval
+unsigned g_tw_gvt_interval; // number of intervals per gvt
+unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
+tw_stime g_tw_lookahead;    // event lookahead for conservative
+double  gvt_print_interval; // determines frequency of progress print outs
+size_t    g_tw_rng_max;
+unsigned  g_tw_nRNG_per_lp;
+unsigned  g_tw_rng_default;
+unsigned g_num_chares;    // number of chares
+unsigned g_lps_per_chare; // number of LPs per chare (if constant)
+unsigned g_total_lps;     // number of LPs in the simulation
+size_t        g_tw_msg_sz;
+unsigned      g_tw_max_events_buffered;
+
 CProxy_PE pes;
 extern CProxy_LP lps;
 CkReduction::reducerType statsReductionType;
@@ -16,13 +37,13 @@ CkReduction::reducerType gvtReductionType;
 
 // TODO: Find a better place for all of these non-member functions.
 Globals* get_globals() {
-  static PE* local_pe = pes.ckLocalBranch();
-  return local_pe->globals;
+  static Globals* globals = pes.ckLocalBranch()->globals;
+  return globals;
 }
 
 Statistics* get_statistics() {
-  static PE* local_pe = pes.ckLocalBranch();
-  return local_pe->statistics;
+  static Statistics* statistics = pes.ckLocalBranch()->statistics;
+  return statistics;
 }
 
 void registerStatsReduction(void) {
@@ -83,13 +104,13 @@ void charm_run() {
   PE_STATS(s_max_run_time) = CkWallTimer();
   if (tw_ismaster()) {
     DEBUG_MASTER("Initializing schedulers \n");
-    if(PE_VALUE(g_tw_synchronization_protocol) == SEQUENTIAL) {
+    if(g_tw_synchronization_protocol == SEQUENTIAL) {
       CkPrintf("**** Starting Sequential Simulation ****\n");
       pes.execute_seq();
-    } else if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+    } else if(g_tw_synchronization_protocol == CONSERVATIVE) {
       CkPrintf("**** Starting Parallel Conservative Simulation ****\n");
       pes.execute_cons();
-    } else if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    } else if(g_tw_synchronization_protocol == OPTIMISTIC) {
       CkPrintf("**** Starting Parallel Optimistic Simulation ****\n");
       pes.execute_opt();
     } else {
@@ -156,11 +177,11 @@ Time PE::get_min_time() {
 // Just execute events one at a time until the end time.
 void PE::execute_seq() {
   Time gvt = get_min_time();
-  while (gvt < PE_VALUE(g_tw_ts_end)) {
+  while (gvt < g_tw_ts_end) {
     if (!schedule_next_lp()) {
       break;
     }
-    if (gvt / PE_VALUE(g_tw_ts_end) > PE_VALUE(percent_complete)) {
+    if (gvt / g_tw_ts_end > PE_VALUE(percent_complete)) {
       GVT gvt_struct;
       gvt_struct.ts = gvt;
       gvt_print(&gvt_struct);
@@ -178,7 +199,7 @@ void PE::execute_seq() {
 // Because of lookahead constraints we can batch execution by having each LP
 // execute all the way up to the next window.
 void PE::execute_cons() {
-  while (get_min_time() < gvt + PE_VALUE(g_tw_lookahead)) {
+  while (get_min_time() < gvt + g_tw_lookahead) {
     if (!schedule_next_lp()) {
       break;
     }
@@ -194,7 +215,7 @@ void PE::execute_opt() {
     return;
   }
   unsigned num_executed;
-  for (num_executed = 0; num_executed < PE_VALUE(g_tw_mblock); num_executed++) {
+  for (num_executed = 0; num_executed < g_tw_mblock; num_executed++) {
     if (PE_VALUE(event_buffer)->percent_used() <= 0.01) {
       force_gvt = MEM_FORCE;
       break;
@@ -214,7 +235,7 @@ void PE::execute_opt() {
     }
   }
 
-  if(++gvt_cnt > PE_VALUE(g_tw_gvt_interval) || force_gvt) {
+  if(++gvt_cnt > g_tw_gvt_interval || force_gvt) {
 #ifdef ASYNC_BROADCAST
     // If there are no events, or we are at the end, there is no point in
     // forcing a GVT early because we still won't have work after it.
@@ -310,9 +331,8 @@ void PE::gvt_contribute() {
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution (unless we plan on doing load
   // balancing in this iteration).
-  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC && !force_gvt) {
-    if (!PE_VALUE(g_tw_ldb_interval) ||
-        PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) != 0) {
+  if (g_tw_synchronization_protocol == OPTIMISTIC && !force_gvt) {
+    if (g_tw_ldb_interval || PE_STATS(s_ngvts) % g_tw_ldb_interval != 0) {
       resume_scheduler();
     }
   }
@@ -347,23 +367,22 @@ void PE::gvt_end(CkReductionMsg* msg) {
 
   PE_VALUE(g_last_gvt) = gvt;
   gvt = new_gvt;
-  if (tw_ismaster() && gvt/PE_VALUE(g_tw_ts_end) > PE_VALUE(percent_complete)) {
+  if (tw_ismaster() && gvt/g_tw_ts_end > PE_VALUE(percent_complete)) {
     gvt_print(gvt_struct);
   }
 
   // Either stop the timer and end the simulation, or call the scheduler again.
-  if(new_gvt >= PE_VALUE(g_tw_ts_end)) {
+  if(new_gvt >= g_tw_ts_end) {
     PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
     PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
     contribute(sizeof(Statistics), statistics, statsReductionType,
         CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
-    if(PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+    if(g_tw_synchronization_protocol == OPTIMISTIC) {
       collect_fossils();
     }
     // TODO: This doesn't need to be a broadcast
-    if (PE_VALUE(g_tw_ldb_interval) &&
-        PE_STATS(s_ngvts) % PE_VALUE(g_tw_ldb_interval) == 0) {
+    if (g_tw_ldb_interval && PE_STATS(s_ngvts) % g_tw_ldb_interval == 0) {
       if (tw_ismaster()) {
         lps.load_balance();
       }
@@ -371,8 +390,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
 #ifdef ASYNC_REDUCTION
     // Async reductions don't happen for conservative, or if the GVT is forced.
     // In these cases we need to restart the scheduler now.
-    else if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE
-        || force_gvt) {
+    else if (g_tw_synchronization_protocol == CONSERVATIVE || force_gvt) {
 #else
     else {
 #endif
@@ -383,11 +401,11 @@ void PE::gvt_end(CkReductionMsg* msg) {
 }
 
 void PE::gvt_print(GVT* gvt_struct) {
-  if (PE_VALUE(gvt_print_interval) == 1.0) {
+  if (gvt_print_interval == 1.0) {
     return;
   }
   if (PE_VALUE(percent_complete) == 0.0) {
-    PE_VALUE(percent_complete) = PE_VALUE(gvt_print_interval);
+    PE_VALUE(percent_complete) = gvt_print_interval;
     return;
   }
   CkPrintf("GVT #%d", PE_STATS(s_ngvts));
@@ -395,19 +413,19 @@ void PE::gvt_print(GVT* gvt_struct) {
     CkPrintf(" (FORCED %d)", gvt_struct->type);
   }
   CkPrintf(": simulation %d%% complete ",
-      (int)fmin(100, floor(100 * (gvt_struct->ts/PE_VALUE(g_tw_ts_end)))));
+      (int)fmin(100, floor(100 * (gvt_struct->ts/g_tw_ts_end))));
   if (gvt_struct->ts == DBL_MAX) {
     CkPrintf("(GVT = MAX).\n");
   } else {
     CkPrintf("(GVT = %.4f).\n", gvt_struct->ts);
   }
-  PE_VALUE(percent_complete) += PE_VALUE(gvt_print_interval);
+  PE_VALUE(percent_complete) += gvt_print_interval;
 }
 
 void PE::resume_scheduler() {
-  if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+  if (g_tw_synchronization_protocol == CONSERVATIVE) {
     thisProxy[CkMyPe()].execute_cons();
-  } else if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+  } else if (g_tw_synchronization_protocol == OPTIMISTIC) {
     thisProxy[CkMyPe()].execute_opt();
   }
 }

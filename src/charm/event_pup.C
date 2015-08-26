@@ -15,7 +15,7 @@ void RemoteEvent::pup(PUP::er& p) {
   p | ts;
   p | send_pe;
   p | dest_lp;
-  p((char*)userData, PE_VALUE(g_tw_msg_sz));
+  p((char*)userData, g_tw_msg_sz);
 }
 PUPbytes(tw_event_state);
 PUPbytes(tw_bf);

@@ -37,13 +37,13 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
 
   recv_ts = tw_now(sender) + offset_ts;
 
-  if(PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+  if(g_tw_synchronization_protocol == CONSERVATIVE) {
     if(offset_ts < PE_STATS(s_min_detected_offset)) {
       PE_STATS(s_min_detected_offset) = offset_ts;
     }
   }
 
-  if (recv_ts >= PE_VALUE(g_tw_ts_end)) {
+  if (recv_ts >= g_tw_ts_end) {
     e = PE_VALUE(abort_event);
   } else {
     e = charm_allocate_event();
@@ -70,7 +70,7 @@ void tw_event_send(tw_event * e) {
   int dest_peid;
 
   if (e == PE_VALUE(abort_event)) {
-    if (e->ts < PE_VALUE(g_tw_ts_end)) {
+    if (e->ts < g_tw_ts_end) {
       tw_error(TW_LOC,
           "Attempting to send an abort event before simulation end");
     }
@@ -78,8 +78,8 @@ void tw_event_send(tw_event * e) {
   }
 
   //Trap lookahead violations in debug mode
-  if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
-    assert(e->ts - tw_now(src_lp) >= PE_VALUE(g_tw_lookahead) &&
+  if (g_tw_synchronization_protocol == CONSERVATIVE) {
+    assert(e->ts - tw_now(src_lp) >= g_tw_lookahead &&
         "Lookahead violation: try decreasing the lookahead value");
   }
 
@@ -89,13 +89,13 @@ void tw_event_send(tw_event * e) {
   }
 
   link_causality(e, current_event(src_lp));
-  dest_peid = PE_VALUE(g_chare_map)(e->dest_lp);
+  dest_peid = g_chare_map(e->dest_lp);
 
   // The charm backend will fill in the remote event and send it
   int isRemote = charm_event_send(dest_peid, e); 
 
   // Unless we are doing optimistic simulation we can just free the event
-  if(isRemote && PE_VALUE(g_tw_synchronization_protocol) != OPTIMISTIC) {
+  if(isRemote && g_tw_synchronization_protocol != OPTIMISTIC) {
     charm_free_event(e);
   }
 }

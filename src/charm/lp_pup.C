@@ -22,7 +22,7 @@ void operator|(PUP::er& p, tw_rng_stream* s) {
 void operator|(PUP::er& p, LPStruct& lp) {
   p | lp.gid;
   if (p.isUnpacking()) {
-    lp.type = PE_VALUE(g_type_map)(lp.gid);
+    lp.type = g_type_map(lp.gid);
     lp.state = malloc(lp.type->state_size);
     lp.rng = (tw_rng_stream*)malloc(sizeof(tw_rng_stream));
   }
@@ -98,7 +98,7 @@ void LP::pup(PUP::er& p) {
 // to the cancel_q and/or avl_tree.
 void LP::reconstruct_pending_event(Event* e) {
   // Reconstruct pointers
-  e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
+  e->dest_lp = (tw_lpid)(&lp_structs[g_local_map(e->dest_lp)]);
 
   // Add the event to the avl_tree if necessary
   if (e->state.avl_tree) {
@@ -115,7 +115,7 @@ void LP::reconstruct_pending_event(Event* e) {
 // if necessary.
 void LP::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
   // Reconstruct pointers
-  e->dest_lp = (tw_lpid)(&lp_structs[PE_VALUE(g_local_map)(e->dest_lp)]);
+  e->dest_lp = (tw_lpid)(&lp_structs[g_local_map(e->dest_lp)]);
   reconstruct_causality(e, pending, processed);
 
   // Add the event to the avl_tree if necessary

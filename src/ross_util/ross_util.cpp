@@ -49,7 +49,7 @@ void tw_stats(Statistics *s) {
   show_lld("Events Rolled Back", s->s_e_rbs);
   show_lld("Event Ties Detected in PE Queues", s->s_pe_event_ties);
 
-  if (PE_VALUE(g_tw_synchronization_protocol) == CONSERVATIVE) {
+  if (g_tw_synchronization_protocol == CONSERVATIVE) {
     printf("\t%-50s %11.9lf\n",
         "Minimum TS Offset Detected in Conservative Mode",
         (double) s->s_min_detected_offset);
@@ -100,7 +100,7 @@ void tw_stats(Statistics *s) {
   // TODO: Everything below here is unused...either implement or remove
   // TODO: Check that memory usage is correct
   /*printf("\nTW Memory Statistics:\n");
-  show_lld("Events Allocated", PE_VALUE(g_tw_max_events_buffered));
+  show_lld("Events Allocated", g_tw_max_events_buffered);
   show_lld("Memory Allocated", m_alloc / 1024);
   show_lld("Memory Wasted", m_waste / 1024);
 
@@ -120,21 +120,21 @@ void tw_stats(Statistics *s) {
   show_lld("LP RNGs", sizeof(*lp->rng));
   show_lld("Total LP", sizeof(tw_lp) + lp->type->state_sz + sizeof(*lp->rng));
   show_lld("Event struct", sizeof(tw_event));
-  show_lld("Event struct with Model", sizeof(tw_event) + PE_VALUE(g_tw_msg_sz));
+  show_lld("Event struct with Model", sizeof(tw_event) + g_tw_msg_sz);
 
 #ifdef ROSS_timing
-  printf("\nTW Clock Cycle Statistics (MAX values in secs at %1.4lf GHz):\n", PE_VALUE(g_tw_clock_rate) / 1000000000.0);
-  show_4f("Priority Queue (enq/deq)", (double) s->s_pq / PE_VALUE(g_tw_clock_rate));
-    show_4f("AVL Tree (insert/delete)", (double) s->s_avl / PE_VALUE(g_tw_clock_rate));
-  show_4f("Event Processing", (double) s->s_event_process / PE_VALUE(g_tw_clock_rate));
-  show_4f("Event Cancel", (double) s->s_cancel_q / PE_VALUE(g_tw_clock_rate));
-  show_4f("Event Abort", (double) s->s_event_abort / PE_VALUE(g_tw_clock_rate));
+  printf("\nTW Clock Cycle Statistics (MAX values in secs at %1.4lf GHz):\n", g_tw_clock_rate / 1000000000.0);
+  show_4f("Priority Queue (enq/deq)", (double) s->s_pq / g_tw_clock_rate);
+    show_4f("AVL Tree (insert/delete)", (double) s->s_avl / g_tw_clock_rate);
+  show_4f("Event Processing", (double) s->s_event_process / g_tw_clock_rate);
+  show_4f("Event Cancel", (double) s->s_cancel_q / g_tw_clock_rate);
+  show_4f("Event Abort", (double) s->s_event_abort / g_tw_clock_rate);
   printf("\n");
-  show_4f("GVT", (double) s->s_gvt / PE_VALUE(g_tw_clock_rate));
-  show_4f("Fossil Collect", (double) s->s_fossil_collect / PE_VALUE(g_tw_clock_rate));
-  show_4f("Primary Rollbacks", (double) s->s_rollback / PE_VALUE(g_tw_clock_rate));
-  show_4f("Network Read", (double) s->s_net_read / PE_VALUE(g_tw_clock_rate));
-  show_4f("Total Time (Note: Using Running Time above for Speedup)", (double) s->s_total / PE_VALUE(g_tw_clock_rate));
+  show_4f("GVT", (double) s->s_gvt / g_tw_clock_rate);
+  show_4f("Fossil Collect", (double) s->s_fossil_collect / g_tw_clock_rate);
+  show_4f("Primary Rollbacks", (double) s->s_rollback / g_tw_clock_rate);
+  show_4f("Network Read", (double) s->s_net_read / g_tw_clock_rate);
+  show_4f("Total Time (Note: Using Running Time above for Speedup)", (double) s->s_total / g_tw_clock_rate);
 #endif
 
   //tw_gvt_stats(stdout);*/
@@ -152,7 +152,7 @@ int tw_output(tw_lp *lp, const char *fmt, ...) {
   tw_event *cev;
   tw_out *temp;
 
-  if (PE_VALUE(g_tw_synchronization_protocol) != OPTIMISTIC) {
+  if (g_tw_synchronization_protocol != OPTIMISTIC) {
     va_start(ap, fmt);
     vfprintf(stdout, fmt, ap);
     va_end(ap);

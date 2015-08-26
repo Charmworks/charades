@@ -32,7 +32,7 @@ Event* charm_allocate_event(int needMsg) {
 void charm_free_event(Event* e) {
   // If we are optimistic, the event may need to be removed from the avl tree,
   // as well as freeing any events caused by it.
-  if (PE_VALUE(g_tw_synchronization_protocol) == OPTIMISTIC) {
+  if (g_tw_synchronization_protocol == OPTIMISTIC) {
     if(e->state.avl_tree == 1) {
       avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
     }
@@ -115,7 +115,7 @@ void charm_event_cancel(Event * e) {
 
   // If already sent, have charm send an anti message, and free the local event
   if(e->state.owner == TW_sent) {
-    unsigned dest_peid = PE_VALUE(g_chare_map)(e->dest_lp);
+    unsigned dest_peid = g_chare_map(e->dest_lp);
     charm_anti_send(dest_peid, e);
 
     tw_event_free(e);

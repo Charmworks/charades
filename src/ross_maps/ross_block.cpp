@@ -7,21 +7,21 @@
 // the global id for that chare. Has to be consistent with the local and
 // chare maps defined below.
 tw_lpid init_block_map(unsigned chare, tw_lpid local_id) {
-  return ROSS_CONSTANT(g_lps_per_chare)*chare + local_id;
+  return g_lps_per_chare*chare + local_id;
 }
 
 // Given a global lp id, this map returns the index of the LP chare that holds
 // the desired LP.
 unsigned chare_block_map(tw_lpid global_id) {
-  return global_id / ROSS_CONSTANT(g_lps_per_chare);
+  return global_id / g_lps_per_chare;
 }
 
 // Given a global lp id, this map returns the local id of the desired LP.
 tw_lpid local_block_map(tw_lpid global_id) {
-  return global_id % ROSS_CONSTANT(g_lps_per_chare);
+  return global_id % g_lps_per_chare;
 }
 
 // Constant number of lps per chare, as defined by the global
 unsigned constant_numlp_map(unsigned chare) {
-  return ROSS_CONSTANT(g_lps_per_chare);
+  return g_lps_per_chare;
 }

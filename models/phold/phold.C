@@ -17,14 +17,14 @@ phold_init(phold_state* s, tw_lp* lp) {
     bool is_long = i < long_start_events;
 
     // Set offset based on if the event is long, and whether we have stagger.
-    offset = ROSS_CONSTANT(g_tw_lookahead);
+    offset = g_tw_lookahead;
     if (is_long) {
       offset += long_delay(lp);
     } else {
       offset += regular_delay(lp);
     }
     if( stagger ) {
-      offset += (tw_stime)(lp->gid % (unsigned int)ROSS_CONSTANT(g_tw_ts_end));
+      offset += (tw_stime)(lp->gid % (unsigned int)g_tw_ts_end);
     }
 
     // Create and send the event, marking whether it is long.
@@ -40,18 +40,18 @@ phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
 
   if(tw_rand_unif(lp->rng) <= percent_remote) {
     bf->c1 = 1;
-    dest = tw_rand_integer(lp->rng, 0, ROSS_CONSTANT(g_total_lps) - 1);
+    dest = tw_rand_integer(lp->rng, 0, g_total_lps - 1);
   } else {
     bf->c1 = 0;
     dest = lp->gid;
   }
 
-  if(dest < 0 || dest >= ROSS_CONSTANT(g_total_lps)) {
+  if(dest < 0 || dest >= g_total_lps) {
     tw_error(TW_LOC, "bad dest");
   }
 
   // Set offset based on whether this event is part of a long chain or not.
-  tw_stime offset = ROSS_CONSTANT(g_tw_lookahead);
+  tw_stime offset = g_tw_lookahead;
   if (m->is_long) {
     offset += long_delay(lp);
   } else {
@@ -110,7 +110,7 @@ int main(int argc, char **argv, char **env) {
   tw_init(&argc, &argv);
 
   // Check for a valid configuration
-  if (ROSS_CONSTANT(g_tw_lookahead) > 1.0) {
+  if (g_tw_lookahead > 1.0) {
     tw_error(TW_LOC, "Lookahead > 1.0 .. needs to be less\n");
   }
   if (long_start_events > start_events) {
@@ -118,11 +118,11 @@ int main(int argc, char **argv, char **env) {
   }
 
   // Adjust means based on lookahead
-  mean = mean - ROSS_CONSTANT(g_tw_lookahead);
-  long_mean = long_mean - ROSS_CONSTANT(g_tw_lookahead);
+  mean = mean - g_tw_lookahead;
+  long_mean = long_mean - g_tw_lookahead;
 
   // Type map must be set before tw_define_lps, all other maps will be default
-  ROSS_CONSTANT(g_type_map) = phold_type_map;
+  g_type_map = phold_type_map;
 
   // Call tw_define_lps to create LPs and event queues
   tw_define_lps(sizeof(phold_message), 0);
