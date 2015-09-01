@@ -1,7 +1,14 @@
 # Replace ROSS_SRC and CHARMC with your own absolute paths
 ROSS_SRC=/dcsdata/home/mikida2/ross/src
 CHARMC=/scratch/mikida2/charm_for_ross/bin/charmc
-CC=g++
+
+ifeq($(ARCH), "bgq")
+  CC = bgxlC
+  OPTS = -O3 -qmaxmem=-1 -qipa=level=1 
+else
+  CC = g++
+  OPTS = -O3
+endif
 
 BUILD_DIR=$(ROSS_SRC)/build
 

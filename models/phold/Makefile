@@ -1,7 +1,5 @@
 include ../../src/config.mk
 
-CFLAGS  := -w -O3
-
 all: phold
 clean:
 	rm -f phold charmrun
