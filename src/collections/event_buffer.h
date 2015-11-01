@@ -58,7 +58,8 @@ class EventBuffer {
 
     Event* get_event() {
       if (stack_pointer > 0) {
-        return buffer[--stack_pointer];
+        buffer[--stack_pointer]->clear();
+        return buffer[stack_pointer];
       } else {
         return abort_event;
       }
@@ -68,21 +69,20 @@ class EventBuffer {
       if (e->eventMsg) {
         free_remote_event(e->eventMsg);
       }
-      e->clear();
       buffer[stack_pointer++] = e;
     }
 
 
     RemoteEvent* get_remote_event() {
       if (remote_stack_pointer > 0) {
-        return remote_buffer[--remote_stack_pointer];
+        remote_buffer[--remote_stack_pointer]->clear();
+        return remote_buffer[remote_stack_pointer];
       } else {
         return new (msg_size) RemoteEvent;
       }
     }
     void free_remote_event(RemoteEvent* e) {
       if (remote_stack_pointer < max_events) {
-        e->clear();
         remote_buffer[remote_stack_pointer++] = e;
       } else {
         delete e;
