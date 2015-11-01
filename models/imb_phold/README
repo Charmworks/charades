@@ -1,0 +1,44 @@
+===============================================================================
+RUNNING PHOLD
+===============================================================================
+===============================================================================
+To run PHOLD with default settings on N processors:
+> make
+> ./charmrun +pN ./phold
+
+To get a list of available options for phold run:
+> ./phold --help
+
+===============================================================================
+TESTING PHOLD
+===============================================================================
+===============================================================================
+To run tests, run ./test_script
+For now all tests are based on the principle that running an instance of PHOLD
+with x lps, y initial messages per lp, and an end time of z, should result in
+the same number net events processed regardless of all other parameters.
+
+In the future, a more rigorous test may be needed.
+
+To add test cases see the example tests in the 'tests' directory. Each test
+is a list of commands that should all generate the same number of net events
+processed. The last line of the test should be:
+Net Events Processed <x>
+
+When each test is run, it will compare the net events processed to this line,
+and fail if they don't match.
+
+===============================================================================
+PHOLD WITH TWO CHAINS
+===============================================================================
+===============================================================================
+This variant of phold includes the option to have two chains of events, one with
+short delays, and one with long delays. This is off by default, but is included
+to cause a higher percentage of rollbacks in order to see the performance
+impact.
+
+To use the two chains functionality simply specify the number of starting events
+per LP that are part of long chains with the --long-start-events command line
+option. This must be less than the total number of start events per LP.
+Optionally you can also use the --long-mean command line option to set the mean
+delay of these long events (default is 5.0 compared to 1.0 of regular events).
