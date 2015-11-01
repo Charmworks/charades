@@ -20,7 +20,7 @@ static tw_stime percent_remote = 0.1;
 static tw_stime percent_heavy = 0.0;
 static int regular_load = 0;
 static int heavy_load = 0;
-static int heavy_seed = 10000000000000000;
+static int heavy_seed = 0;
 
 static tw_stime percent_long = 0.0;
 static tw_stime regular_mean = 1.0;

@@ -9,7 +9,7 @@ inline tw_stime long_delay(tw_lp* lp) {
 }
 
 inline int get_load(tw_lpid dest) {
-  if (dest == 0 || dest % heavy_seed) {
+  if (heavy_seed == 0 || dest == 0 || dest % heavy_seed) {
     return regular_load;
   } else {
     return heavy_load;
@@ -20,7 +20,6 @@ void
 phold_init(phold_state* s, tw_lp* lp) {
   tw_stime offset;
   tw_event* e;
-  int load;
 
   for (int i = 0; i < start_events; i++) {
     // Set offset based on if the event is long, and whether we have stagger.
@@ -43,6 +42,12 @@ phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
   tw_lpid	 rand_dest, dest;
   tw_stime remote_val, heavy_val, long_val, offset;
 
+  // First, process the message load
+  for (int i = 0; i < m->work_load; i++) {
+    s->dummy_state += i * m->work_load;
+  }
+
+  // Then send a new message
   remote_val = tw_rand_unif(lp->rng);
   heavy_val = tw_rand_unif(lp->rng);
   long_val = tw_rand_unif(lp->rng);
@@ -51,7 +56,7 @@ phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
   rand_dest = tw_rand_integer(lp->rng, 0, g_total_lps-1);
   if (remote_val < percent_remote) {
     dest = rand_dest;
-    if (heavy_val < percent_heavy) {
+    if (heavy_seed && heavy_val < percent_heavy) {
       dest = (dest / heavy_seed) * heavy_seed;
     }
   } else {
