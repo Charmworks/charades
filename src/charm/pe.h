@@ -103,7 +103,7 @@ class PE: public CBase_PE {
     /** \brief Unregister the given LP from our queues */
     void unregister_lp(LPToken* next_token, LPToken* oldest_token) {
       next_lps.remove(next_token);
-      oldest_lps.remove(next_token);
+      oldest_lps.remove(oldest_token);
       vector<LP*>::iterator it = cancel_q.begin();
       while (it != cancel_q.end()) {
         if (*it == next_token->lp) {

@@ -382,10 +382,9 @@ void PE::gvt_end(CkReductionMsg* msg) {
       collect_fossils();
     }
     // TODO: This doesn't need to be a broadcast
+    // TODO: Made this a reduction to ensure that all PEs finish fc before lb
     if (g_tw_ldb_interval && PE_STATS(s_ngvts) % g_tw_ldb_interval == 0) {
-      if (tw_ismaster()) {
-        lps.load_balance();
-      }
+      contribute(CkCallback(CkReductionTarget(LP,load_balance), lps));
     }
 #ifdef ASYNC_REDUCTION
     // Async reductions don't happen for conservative, or if the GVT is forced.

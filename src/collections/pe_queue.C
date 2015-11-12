@@ -7,6 +7,7 @@ PEQueue::PEQueue() {
   // TODO: Set this sensibly. Maybe 2x number of LPs per PE or something.
   capacity = 32;
   int err = posix_memalign((void **)&heap, 64, sizeof(LPToken*)*capacity);
+  memset(heap, 0, sizeof(LPToken*) * capacity);
 }
 
 PEQueue::~PEQueue() {
@@ -36,6 +37,7 @@ void PEQueue::insert(LPToken* t, Time ts) {
     for (int i = 0; i < capacity; i++) {
       tmp[i] = heap[i];
     }
+    memset(tmp[capacity], 0, sizeof(LPToken*) * capacity);
     free(heap);
     heap = tmp;
     capacity = capacity*2;
@@ -55,8 +57,11 @@ void PEQueue::insert(LPToken* t, Time ts) {
 void PEQueue::remove(LPToken* t) {
   unsigned index = t->index;
   size--;
-  swap(index, size);
-  push_down(index);
+  if (index != size) {
+    swap(index, size);
+    push_down(index);
+  }
+  heap[size] = NULL;
 }
 
 // Update the timestamp of the token, and then if necessary move the token.
