@@ -107,15 +107,15 @@ tw_lptype* phold_type_map(tw_lpid global_id) {
 const tw_optdef app_opt[] =
 {
   TWOPT_GROUP("PHOLD Model"),
-  TWOPT_UINT("start_events", start_events, "number of initial messages per LP"),
+  TWOPT_UINT("start-events", start_events, "number of initial messages per LP"),
   TWOPT_STIME("remote", percent_remote, "desired remote event rate"),
   TWOPT_STIME("heavy", percent_heavy, "desired percent of heavy sends"),
   TWOPT_UINT("load", regular_load, "load in ms for events"),
-  TWOPT_UINT("heavy_load", heavy_load, "exponential distribution mean for timestamps of long events"),
-  TWOPT_UINT("heavy_seed", heavy_seed, "a heavy lp every 'heavy_seed' lps"),
+  TWOPT_UINT("heavy-load", heavy_load, "exponential distribution mean for timestamps of long events"),
+  TWOPT_UINT("heavy-seed", heavy_seed, "a heavy lp every 'heavy_seed' lps"),
   TWOPT_STIME("long", percent_long, "desired percent of long sends"),
   TWOPT_STIME("mean", regular_mean, "exponential distribution mean for timestamps"),
-  TWOPT_STIME("long_mean", long_mean, "exponential distribution mean for timestamps of long events"),
+  TWOPT_STIME("long-mean", long_mean, "exponential distribution mean for timestamps of long events"),
   TWOPT_END()
 };
 
