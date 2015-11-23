@@ -186,7 +186,7 @@ void LP::recv_anti_event(RemoteEvent* event) {
 // 2) Execute event
 // 3) Free event, or put into processed queue if optimistic
 // 4) Update the PE with our new earliest timestamp
-bool LP::execute_me() {
+void* LP::execute_me() {
   if (events.size()) {
     // Pull off the top event for execution
     Event* e = events.pop();
@@ -208,9 +208,9 @@ bool LP::execute_me() {
       tw_event_free(e);
     }
     pe->update_next(&next_token, events.min());
-    return true;
+    return (void*)true;
   }
-  return false;
+  return (void*)false;
 }
 
 // Rollback all processed events up to the passed in timestamp.

@@ -162,7 +162,8 @@ void PE::initialize_rand(CProxy_Initialize srcProxy) {
 bool PE::schedule_next_lp() {
   LPToken *min = next_lps.top();
   if(min == NULL) return 0;
-  if (min->lp->execute_me()) {
+  if (lps(min->lp->thisIndex).execute_me()) {
+  //if (min->lp->execute_me()) {
     PE_STATS(s_nevent_processed)++;
     return true;
   } else {

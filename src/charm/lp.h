@@ -104,7 +104,7 @@ class LP : public CBase_LP {
 
     // Execute a single event from the pending queue. If optimistic, we also
     // push the event onto the processed queue.
-    bool execute_me();
+    void* execute_me();
 
     // Rollback and fossil collection only occur in optimistic mode.
     // When detecting a rollback upon receiving an event, we rollback to that
