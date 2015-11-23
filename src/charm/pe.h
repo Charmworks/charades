@@ -44,6 +44,11 @@ class PE: public CBase_PE {
 
     Time min_cancel_time; /**< minumum event time in the cancel queue */
     vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
+
+#ifdef CMK_TRACE_ENABLED
+    double gvt_start, ldb_start;
+#endif
+
   public:
     Globals* globals;       /**< global variables accessed with PE_VALUE */
     Statistics* statistics; /**< statistics variables accessed with PE_STATS */
@@ -59,6 +64,7 @@ class PE: public CBase_PE {
     void initialize_rand(CProxy_Initialize);
 
     /** \brief Called as a reduction by LPs when load balancing is complete */
+    void load_balance_complete();
     void resume_scheduler();
 
     /** \brief Print final stats and end the simulation */

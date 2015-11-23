@@ -11,6 +11,23 @@ int tw_nnodes();
 int tw_mype();
 void tw_abort(const char*);
 
+#define USER_EVENT_FWD    1001
+#define USER_EVENT_RB     1002
+#define USER_EVENT_CANCEL 1003
+#define USER_EVENT_GVT    1004
+#define USER_EVENT_LDB    1005
+#define USER_EVENT_FC     1006
+
+#ifdef CMK_TRACE_ENABLED
+#define BRACKET_TRACE(code,event) \
+double start = CmiWallTimer(), end; \
+code \
+end = CmiWallTimer(); \
+traceUserBracketEvent(event, start, end);
+#else
+#define BRACKET_TRACE(code, event) code
+#endif
+
 #ifdef DEBUG_ON
 #define DEBUG(format, ...) { CkPrintf("DEBUG: "format, ## __VA_ARGS__); }
 #else

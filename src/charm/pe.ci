@@ -8,7 +8,7 @@ module pe {
   group PE {
     entry PE(CProxy_Initialize); /**< constructor called from the mainchare */
     entry void initialize_rand(CProxy_Initialize);
-    entry [reductiontarget] void resume_scheduler(); /**< Called after ldb */
+    entry [reductiontarget] void load_balance_complete(); /**< Called after ldb */
     entry [reductiontarget] void end_simulation(CkReductionMsg*);
 
     // GVT methods

@@ -100,7 +100,7 @@ void LP::load_balance() {
 
 void LP::ResumeFromSync() {
   // TODO: This doens't have to be a broadcast
-  contribute(CkCallback(CkReductionTarget(PE, resume_scheduler), pes));
+  contribute(CkCallback(CkReductionTarget(PE, load_balance_complete), pes));
 }
 
 // Call init on all LPs then stop the charm scheduler.
@@ -156,7 +156,7 @@ void LP::recv_local_event(Event* e) {
     pe->update_next(&next_token, e->ts);
   }
   if(isOptimistic && e->ts < current_time) {
-    rollback_me(e->ts);
+    BRACKET_TRACE(rollback_me(e->ts);,USER_EVENT_RB)
   }
 
   events.push(e);
@@ -196,7 +196,7 @@ bool LP::execute_me() {
     if (isOptimistic) {
       reset_bitfields(e);
     }
-    lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);
+    BRACKET_TRACE(lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);, USER_EVENT_FWD)
 
     // Enqueue or deallocate the event depending on sync mode
     if (isOptimistic) {

@@ -130,6 +130,17 @@ void charm_run() {
 PE::PE(CProxy_Initialize srcProxy) :
     gvt_cnt(0), gvt(0.0), min_cancel_time(DBL_MAX)  {
     int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
+
+  #ifdef CMK_TRACE_ENABLED
+  if (CkMyPe() == 0) {
+    traceRegisterUserEvent("Forward Execution", USER_EVENT_FWD);
+    traceRegisterUserEvent("Rollback", USER_EVENT_RB);
+    traceRegisterUserEvent("Cancellation", USER_EVENT_CANCEL);
+    traceRegisterUserEvent("GVT", USER_EVENT_GVT);
+    traceRegisterUserEvent("LDB", USER_EVENT_LDB);
+  }
+  #endif
+
   initialize_globals(globals);
 
   statistics = new Statistics;
@@ -306,6 +317,9 @@ void PE::gvt_begin() {
   if (waiting_on_qd) {
     return;
   }
+#ifdef CMK_TRACE_ENABLED
+  gvt_start = CmiWallTimer();
+#endif
   waiting_on_qd = true;
   gvt_cnt = 0;
   PE_STATS(s_ngvts)++;
@@ -371,6 +385,11 @@ void PE::gvt_end(CkReductionMsg* msg) {
     gvt_print(gvt_struct);
   }
 
+#ifdef CMK_TRACE_ENABLED
+  double gvt_end = CmiWallTimer();
+  traceUserBracketEvent(USER_EVENT_GVT, gvt_start, gvt_end);
+#endif
+
   // Either stop the timer and end the simulation, or call the scheduler again.
   if(new_gvt >= g_tw_ts_end) {
     PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
@@ -379,11 +398,14 @@ void PE::gvt_end(CkReductionMsg* msg) {
         CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
     if(g_tw_synchronization_protocol == OPTIMISTIC) {
-      collect_fossils();
+      BRACKET_TRACE(collect_fossils();, USER_EVENT_FC);
     }
     // TODO: This doesn't need to be a broadcast
     // TODO: Made this a reduction to ensure that all PEs finish fc before lb
     if (g_tw_ldb_interval && PE_STATS(s_ngvts) % g_tw_ldb_interval == 0) {
+#ifdef CMK_TRACE_ENABLED
+      ldb_start = CmiWallTimer();
+#endif
       contribute(CkCallback(CkReductionTarget(LP,load_balance), lps));
     }
 #ifdef ASYNC_REDUCTION
@@ -419,6 +441,14 @@ void PE::gvt_print(GVT* gvt_struct) {
     CkPrintf("(GVT = %.4f).\n", gvt_struct->ts);
   }
   PE_VALUE(percent_complete) += gvt_print_interval;
+}
+
+void PE::load_balance_complete() {
+#ifdef CMK_TRACE_ENABLED
+  double ldb_end = CmiWallTimer();
+  traceUserBracketEvent(USER_EVENT_LDB, ldb_start, ldb_end);
+#endif
+  resume_scheduler();
 }
 
 void PE::resume_scheduler() {
