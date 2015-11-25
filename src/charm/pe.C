@@ -407,6 +407,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
 #ifdef CMK_TRACE_ENABLED
       ldb_start = CmiWallTimer();
 #endif
+      g_tw_ldb_interval = 0;
       contribute(CkCallback(CkReductionTarget(LP,load_balance), lps));
     }
 #ifdef ASYNC_REDUCTION
