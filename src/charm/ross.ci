@@ -1,4 +1,5 @@
 mainmodule ross {
+  readonly CProxy_Initialize mainProxy;
   /** \brief Main chare that initializes pes */
   mainchare Initialize {
     entry Initialize(CkArgMsg *);

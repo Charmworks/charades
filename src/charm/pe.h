@@ -36,8 +36,9 @@ class PE: public CBase_PE {
     PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
 
     Time gvt;           /**< current gvt on this PE */
+    Time min_sent;      /**< minimum ts sent out during this phase */
     int gvt_cnt;        /**< iteration count since last gvt */
-    bool waiting_on_qd; /**< flag to make sure we don't overlap gvts */
+    bool waiting_on_gvt;/**< flag to make sure we don't overlap gvts */
     unsigned force_gvt; /**< Bitmap used to determine if a gvt was forced */
 
     tw_rng * rng; /**< ROSS rng stream */
@@ -49,6 +50,11 @@ class PE: public CBase_PE {
     double gvt_start, ldb_start;
 #endif
 
+    // Completion detection variables for current phase, proxies, and pointers.
+    unsigned current_phase, next_phase, max_phase;
+    bool* detector_ready;
+    CProxy_CompletionDetector* detector_proxies;
+    CompletionDetector** detector_pointers;
   public:
     Globals* globals;       /**< global variables accessed with PE_VALUE */
     Statistics* statistics; /**< statistics variables accessed with PE_STATS */
@@ -60,18 +66,20 @@ class PE: public CBase_PE {
       delete statistics;
     }
 
-    /** \brief Initialize the RNG streams for this PE */
-    void initialize_rand(CProxy_Initialize);
-
     /** \brief Called as a reduction by LPs when load balancing is complete */
     void load_balance_complete();
     void resume_scheduler();
+
+    /** \brief Initialize the completion detectors and CDs for this PE */
+    void broadcast_detector_proxies(int num, CProxy_CompletionDetector*);
+    void initialize_detectors();
+    void initialize_rand();
 
     /** \brief Print final stats and end the simulation */
     void end_simulation(CkReductionMsg *m);
 
     /** \brief Various schedulers
-        sequential: single PE, run to end
+        sequential: single PE, single chare, run to end
         conservative: find next epoch, assume a lookahead, run to end of epoch
         optimistic: execute events, rollback as needed, compute GVT periodically
       */
@@ -128,6 +136,22 @@ class PE: public CBase_PE {
     /** \brief Update the entry for a given LP in the oldest_lps */
     void update_oldest(LPToken* token, Time ts) {
       oldest_lps.update(token, ts);
+    }
+
+    void produce(RemoteEvent* msg) {
+      if (max_phase) {
+        if (msg->ts < min_sent) {
+          min_sent = msg->ts;
+        }
+        msg->phase = current_phase;
+        detector_pointers[current_phase]->produce();
+      }
+    }
+
+    void consume(RemoteEvent* msg) {
+      if (max_phase) {
+        detector_pointers[msg->phase]->consume();
+      }
     }
 };
 
