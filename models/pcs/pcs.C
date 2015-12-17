@@ -803,8 +803,6 @@ tw_lpid pcs_init_map(unsigned chare, tw_lpid local_id) {
 
         off_x += (local_id % cell_vp_x);
         off_y += (local_id / cell_vp_x);
-        printf("[%d] Chare %d, id %d, global %d\n", CkMyPe(), chare, local_id,
-         (off_y * NUM_CELLS_X + off_x));
 
 	return (tw_lpid) (off_y * NUM_CELLS_X + off_x);
 }
@@ -821,17 +819,17 @@ main(int argc, char **argv)
   }
 
   int nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes());
-  int additional_memory_buffers = 2 * PE_VALUE(g_tw_mblock) * PE_VALUE(g_tw_gvt_interval);
-  PE_VALUE(g_tw_max_events_buffered) = (nlp_per_pe * BIG_N) + additional_memory_buffers + 5000;
+  int additional_memory_buffers = 2 * g_tw_mblock * g_tw_gvt_interval;
+  g_tw_max_events_buffered = (nlp_per_pe * BIG_N) + additional_memory_buffers + 50000;
 
   // Total LPs = (NUM_CELLS_X * NUM_CELLS_Y);
-  ROSS_CONSTANT(g_num_chares) = (NUM_VP_X * NUM_VP_Y);
-  ROSS_CONSTANT(g_lps_per_chare) = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
+  g_num_chares = (NUM_VP_X * NUM_VP_Y);
+  g_lps_per_chare = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
 
-  ROSS_CONSTANT(g_type_map) = pcs_type_map;
-  ROSS_CONSTANT(g_init_map) = pcs_init_map;
-  ROSS_CONSTANT(g_local_map) = pcs_local_map;
-  ROSS_CONSTANT(g_chare_map) = pcs_grid_map;
+  g_type_map = pcs_type_map;
+  g_init_map = pcs_init_map;
+  g_local_map = pcs_local_map;
+  g_chare_map = pcs_grid_map;
 
   /*
    * Some some of the settings.
@@ -847,8 +845,8 @@ main(int argc, char **argv)
       printf("NUM CELLS Y      = %d\n", NUM_CELLS_Y);
       printf("NUM VP X         = %d\n", NUM_VP_X);
       printf("NUM VP Y         = %d\n", NUM_VP_Y);
-      printf("NUM LP Chares    = %d\n", ROSS_CONSTANT(g_num_chares));
-      printf("NUM lps per Chare= %d\n", ROSS_CONSTANT(g_lps_per_chare));
+      printf("NUM LP Chares    = %d\n", g_num_chares);
+      printf("NUM lps per Chare= %d\n", g_lps_per_chare);
       printf("/**********************************************/\n");
       printf("\n\n");
       fflush(stdout);
