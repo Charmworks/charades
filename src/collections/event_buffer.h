@@ -15,6 +15,7 @@ class EventBuffer {
   private:
     size_t msg_size;
     unsigned max_events;
+    unsigned max_remote_events;
     unsigned stack_pointer;
     unsigned remote_stack_pointer;
     Event* abort_event;
@@ -24,13 +25,15 @@ class EventBuffer {
   public:
     EventBuffer(unsigned max, size_t sz) :
         max_events(max), msg_size(sz),
-        stack_pointer(max), remote_stack_pointer(max*0.1) {
+        stack_pointer(max) {
       abort_event = new Event;
       abort_event->eventMsg = new (msg_size) RemoteEvent;
       abort_event->userData = abort_event->eventMsg->userData;
 
-      int err = posix_memalign((void **)&buffer, 64, max*sizeof(Event*));
-      err = posix_memalign((void **)&remote_buffer, 64, max*sizeof(RemoteEvent*));
+      max_remote_events = 0.1 * max_events;
+      remote_stack_pointer = max_remote_events;
+      int err = posix_memalign((void **)&buffer, 64, max_events*sizeof(Event*));
+      err = posix_memalign((void **)&remote_buffer, 64, max_remote_events*sizeof(RemoteEvent*));
 
       // Calculate the buffer size per event to be a multiple of 8 bytes, large
       // enough to hold an event.
@@ -43,11 +46,11 @@ class EventBuffer {
             buf_size, sizeof(Event));
       }
 
-      for (int i = 0; i < max; i++) {
+      for (int i = 0; i < max_events; i++) {
         buffer[i] = (Event*)temp_buf;
         temp_buf += buf_size;
       }
-      for (int i = 0; i < remote_stack_pointer; i++) {
+      for (int i = 0; i < max_remote_events; i++) {
         remote_buffer[i] = new (msg_size) RemoteEvent;
       }
     }
@@ -81,7 +84,7 @@ class EventBuffer {
       }
     }
     void free_remote_event(RemoteEvent* e) {
-      if (remote_stack_pointer < max_events) {
+      if (remote_stack_pointer < max_remote_events) {
         e->clear();
         remote_buffer[remote_stack_pointer++] = e;
       } else {
