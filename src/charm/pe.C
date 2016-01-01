@@ -395,6 +395,11 @@ void PE::gvt_end(CkReductionMsg* msg) {
     else {
 #endif
       force_gvt = 0;
+      if (PE_STATS(s_ngvts) == 5) {
+        traceBegin();
+      } else if (PE_STATS(s_ngvts) == 8) {
+        traceEnd();
+      }
       resume_scheduler();
     }
   }

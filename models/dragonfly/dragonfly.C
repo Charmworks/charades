@@ -1624,9 +1624,9 @@ int main(int argc, char **argv)
 
      if (g_tw_mynode == 0) {
         printf("Num nodes: %d\n", tw_nnodes());
-        printf("terminal lps per pe: %d\n", total_terminals);
-        printf("mpi lps per pe: %d\n", total_mpi_procs);
-        printf("router lps per pe: %d\n", total_routers);
+        printf("Total terminal lps: %d\n", total_terminals);
+        printf("Total mpi lps: %d\n", total_mpi_procs);
+        printf("Total router lps: %d\n", total_routers);
      }
 
      terminal_rem = total_terminals % (g_num_chares);
@@ -1652,8 +1652,8 @@ int main(int argc, char **argv)
       //printf("[%d] Calling define LP with mem size %d %.2lfMB\n", CkMyPe(), g_tw_max_events_buffered,
       //CmiMemoryUsage()/(1024.*1024));
      tw_define_lps(sizeof(terminal_message), 0);
-      //printf("[%d] After Calling define LP with mem size %d %.2lfMB\n", CkMyPe(), g_tw_max_events_buffered,
-      //CmiMemoryUsage()/(1024.*1024));
+     printf("[%d] After Calling define LP with mem size %d %.2lfMB\n", CkMyPe(), g_tw_max_events_buffered,
+     CmiMemoryUsage()/(1024.*1024));
 
 
 #if DFDEBUG

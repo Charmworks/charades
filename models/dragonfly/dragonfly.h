@@ -5,9 +5,9 @@
 #include <ross_api.h>
 
 // dragonfly basic configuration parameters
-#define GLOBAL_CHANNELS 16
-#define NUM_ROUTER 32
-#define NUM_TERMINALS 16
+#define GLOBAL_CHANNELS 40
+#define NUM_ROUTER 80
+#define NUM_TERMINALS 40
 
 #define MESSAGE_SIZE 512.0
 #define PACKET_SIZE 512.0

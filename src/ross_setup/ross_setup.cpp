@@ -29,9 +29,11 @@ void tw_event_setup() {
   PE_VALUE(output) = output_head;
 
   DEBUG_MASTER("Created %d output messages\n", NUM_OUT_MESG);
-
+  
+  CkPrintf("[%d]: Creating event buffer\n", CkMyPe());
   PE_VALUE(event_buffer) = new EventBuffer(g_tw_max_events_buffered,
                                            g_tw_msg_sz);
+  CkPrintf("[%d]: Created event buffer\n", CkMyPe());
   PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_abort_event();
 
   DEBUG_MASTER("Created event buffer with %d events of size %d\n",
@@ -104,7 +106,9 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
   g_tw_msg_sz = msg_sz;
   PE_VALUE(g_tw_rng_seed) = seed;
 
+  CkPrintf("[%d]: About to setup events\n", CkMyPe());
   tw_event_setup();
+  CkPrintf("[%d]: Setup events\n", CkMyPe());
 
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
