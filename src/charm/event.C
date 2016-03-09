@@ -1,5 +1,6 @@
 #include "event.h"
 #include "lp.h"
+#include "pe.h"
 
 #include "typedefs.h"
 #include "globals.h"
@@ -55,6 +56,7 @@ void charm_free_event(Event* e) {
 // Fill an event's remote message and send it.
 // Returns 1 if the send was remote, 0 if it was local.
 int charm_event_send(unsigned dest_peid, Event * e) {
+  static PE* pe = pes.ckLocalBranch();
   LP* send_pe = (LP*)(e->send_pe);
   LP* dest_pe;
 
@@ -85,6 +87,7 @@ int charm_event_send(unsigned dest_peid, Event * e) {
     e->eventMsg->dest_lp = e->dest_lp;
     e->eventMsg->send_pe = e->send_pe;
 
+    pe->produce(e->eventMsg);
     lps(dest_peid).recv_remote_event(e->eventMsg);
     e->state.owner = TW_sent;
     e->eventMsg = NULL;
@@ -96,12 +99,14 @@ int charm_event_send(unsigned dest_peid, Event * e) {
 // An anti send will never be to a local chare, because locally sent events
 // will never have the owner set to TW_sent.
 void charm_anti_send(unsigned dest_peid, Event * e) {
+  static PE* pe = pes.ckLocalBranch();
   RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;
   eventMsg->dest_lp = e->dest_lp;
   eventMsg->send_pe = e->send_pe;
 
+  pe->produce(eventMsg);
   lps(dest_peid).recv_anti_event(eventMsg);
 }
 

@@ -2,14 +2,18 @@ module pe {
   extern module ross;
 
   include "typedefs.h";
+  include "completion.h";
 
   readonly CProxy_PE pes;
 
   group PE {
     entry PE(CProxy_Initialize); /**< constructor called from the mainchare */
-    entry void initialize_rand(CProxy_Initialize);
     entry [reductiontarget] void load_balance_complete(); /**< Called after ldb */
+    entry [reductiontarget] void resume_scheduler(); /**< Called after ldb */
     entry [reductiontarget] void end_simulation(CkReductionMsg*);
+    entry void broadcast_detector_proxies(int num, CProxy_CompletionDetector proxies[num]);
+    entry void initialize_detectors();
+    entry void initialize_rand();
 
     // GVT methods
     entry void gvt_begin(); /**< begin gvt computation */

@@ -18,6 +18,7 @@ extern unsigned g_tw_synchronization_protocol;
 extern tw_stime g_tw_ts_end;       // end time of simulation
 extern unsigned g_tw_mblock;       // number of events per gvt interval
 extern unsigned g_tw_gvt_interval; // number of intervals per gvt
+extern unsigned g_tw_gvt_phases;   // number of phases in the gvt
 extern unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 extern tw_stime g_tw_lookahead;    // event lookahead for conservative
 extern double  gvt_print_interval; // determines frequency of progress print outs
@@ -52,6 +53,7 @@ inline void initialize_globals(Globals* globals) {
   g_tw_ts_end        = 100000.0;
   g_tw_mblock        = 16;
   g_tw_gvt_interval  = 16;
+  g_tw_gvt_phases    = 0;
   g_tw_ldb_interval  = 0;
   g_tw_lookahead     = .005;
   gvt_print_interval = 1.0;
