@@ -9,6 +9,7 @@ typedef struct phold_state {
 
 typedef struct phold_message {
   int work_load;
+  tw_stime mean_delay;
 } phold_message;
 
 	/*

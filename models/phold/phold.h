@@ -12,7 +12,7 @@ typedef struct phold_state {
 } phold_state;
 
 typedef struct phold_message {
-  long int  is_long;
+  long int  dummy_message;
 } phold_message;
 
 	/*
@@ -22,8 +22,6 @@ static unsigned int stagger = 0;
 static tw_stime percent_remote = 0.1;
 static int start_events = 1;
 static tw_stime mean = 1.0;
-static int long_start_events = 0;
-static tw_stime long_mean = 5.0;
 
 static char run_id[1024] = "undefined";
 
