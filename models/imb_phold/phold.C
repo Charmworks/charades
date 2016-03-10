@@ -1,94 +1,72 @@
 #include "phold.h"
 
-inline tw_stime regular_delay(tw_lp* lp) {
-  return tw_rand_exponential(lp->rng, regular_mean);
-}
-
-inline tw_stime long_delay(tw_lp* lp) {
-  return tw_rand_exponential(lp->rng, long_mean);
-}
-
-inline int get_load(tw_lpid dest) {
-  if (heavy_seed == 0 || dest == 0 || dest % heavy_seed) {
-    return regular_load;
-  } else {
-    return heavy_load;
-  }
-}
-
 void
 phold_init(phold_state* s, tw_lp* lp) {
   tw_stime offset;
   tw_event* e;
 
-  for (int i = 0; i < start_events; i++) {
-    // Set offset based on if the event is long, and whether we have stagger.
-    offset = g_tw_lookahead;
-    if (tw_rand_unif(lp->rng) < percent_long) {
-      offset += long_delay(lp);
-    } else {
-      offset += regular_delay(lp);
-    }
+  // Set my load and mean delays
+  s->work_load = lp_load_map(lp->gid);
+  s->mean_delay = lp_delay_map(lp->gid);
 
-    // Create and send the event, marking whether it is long.
+  for (int i = 0; i < start_events; i++) {
+    // Determine the offset based on our lps mean delay
+    offset = g_tw_lookahead + tw_rand_exponential(lp->rng, s->mean_delay);
+
+    // Create and send the event
     e = tw_event_new(lp->gid, offset, lp);
-    ((phold_message*)(e->userData))->work_load = get_load(lp->gid);
+    phold_message* msg = (phold_message*)tw_event_data(e);
+    msg->work_load = 0;
+    msg->mean_delay = 0.0;
     tw_event_send(e);
   }
 }
 
 void
 phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
-  tw_lpid	 rand_dest, dest;
-  tw_stime remote_val, heavy_val, long_val, offset;
+  tw_lpid dest;
+  tw_stime offset;
 
-  // First, process the message load
-  for (int i = 0; i < m->work_load; i++) {
+  // First, process the load for the event
+  // The state modification is so the compiler doesn't optimize the work away
+  for (int i = 0; i < s->work_load + m->work_load; i++) {
     s->dummy_state += i * m->work_load;
   }
 
-  // Then send a new message
-  remote_val = tw_rand_unif(lp->rng);
-  heavy_val = tw_rand_unif(lp->rng);
-  long_val = tw_rand_unif(lp->rng);
-
   // Set destination
-  rand_dest = tw_rand_integer(lp->rng, 0, g_total_lps-1);
-  if (remote_val < percent_remote) {
-    dest = rand_dest;
-    if (heavy_seed && heavy_val < percent_heavy) {
-      dest = (dest / heavy_seed) * heavy_seed;
-    }
+  if (tw_rand_unif(lp->rng) < percent_remote) {
+    bf->c1 = 1;
+    dest = tw_rand_integer(lp->rng, 0, g_total_lps-1);
   } else {
+    bf->c1 = 0;
     dest = lp->gid;
   }
 
   // Set offset
-  offset = g_tw_lookahead;
-  if (long_val < percent_long) {
-    offset += long_delay(lp);
-  } else {
-    offset += regular_delay(lp);
-  }
-
+  tw_stime mean = s->mean_delay + m->mean_delay;
+  offset = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
 
   tw_event* e = tw_event_new(dest, offset, lp);
-  ((phold_message*)(e->userData))->work_load = get_load(dest);
+  phold_message* msg = (phold_message*)tw_event_data(e);
+  msg->work_load = 0;
+  msg->mean_delay = 0.0;
   tw_event_send(e);
 }
 
 void
 phold_event_handler_rc(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
+  // We definitely used rng for offset and remote percent
   tw_rand_reverse_unif(lp->rng);
   tw_rand_reverse_unif(lp->rng);
-  tw_rand_reverse_unif(lp->rng);
-  tw_rand_reverse_unif(lp->rng);
-  tw_rand_reverse_unif(lp->rng);
+
+  // If it was a remote message then we also used rng for the destination
+  if (bf->c1 == 1) {
+    tw_rand_reverse_unif(lp->rng);
+  }
 }
 
 void
-phold_finish(phold_state * s, tw_lp * lp) {
-}
+phold_finish(phold_state * s, tw_lp * lp) {}
 
 tw_lptype mylps[] = {
   { (init_f) phold_init,
@@ -109,13 +87,17 @@ const tw_optdef app_opt[] =
   TWOPT_GROUP("PHOLD Model"),
   TWOPT_UINT("start-events", start_events, "number of initial messages per LP"),
   TWOPT_STIME("remote", percent_remote, "desired remote event rate"),
-  TWOPT_STIME("heavy", percent_heavy, "desired percent of heavy sends"),
-  TWOPT_UINT("load", regular_load, "load in ms for events"),
-  TWOPT_UINT("heavy-load", heavy_load, "exponential distribution mean for timestamps of long events"),
-  TWOPT_UINT("heavy-seed", heavy_seed, "a heavy lp every 'heavy_seed' lps"),
-  TWOPT_STIME("long", percent_long, "desired percent of long sends"),
-  TWOPT_STIME("mean", regular_mean, "exponential distribution mean for timestamps"),
-  TWOPT_STIME("long-mean", long_mean, "exponential distribution mean for timestamps of long events"),
+
+  TWOPT_UINT("load-map", load_map, "0 - Uniform, 1 - blocked, 2 - Linear"),
+  TWOPT_STIME("percent-heavy", percent_heavy, "desired percent of heavy sends"),
+  TWOPT_UINT("light-load", light_load, "load for lightly loaded lps"),
+  TWOPT_UINT("heavy-load", heavy_load, "load for heavily loaded lps"),
+  TWOPT_UINT("load-seed", load_seed, "extra param used by certain load maps"),
+
+  TWOPT_UINT("delay-map", delay_map, "0 - Uniform"),
+  TWOPT_STIME("percent-long", percent_long, "desired percent of long sends"),
+  TWOPT_STIME("short-delay", short_delay, "exponential distribution mean for event delays"),
+  TWOPT_STIME("long-delay", long_delay, "long exponential distribution mean for event delays"),
   TWOPT_END()
 };
 
@@ -129,9 +111,39 @@ int main(int argc, char **argv, char **env) {
     tw_error(TW_LOC, "Lookahead > 1.0 .. needs to be less\n");
   }
 
-  // Adjust means based on lookahead
-  regular_mean = regular_mean - g_tw_lookahead;
-  long_mean = long_mean - g_tw_lookahead;
+  // Set the load map for lps
+  switch (load_map) {
+    case 0:
+      lp_load_map = &uniform_lp_load;
+      break;
+    case 1:
+      lp_load_map = &blocked_lp_load;
+      break;
+    case 2:
+      lp_load_map = &linear_lp_load;
+      break;
+    default:
+      tw_error(TW_LOC, "Bad map type specified\n");
+  }
+
+  // Adjust means based on lookahead and set delay map for lps
+  short_delay = short_delay - g_tw_lookahead;
+  long_delay = long_delay - g_tw_lookahead;
+
+  // Set the load map for lps
+  switch (delay_map) {
+    case 0:
+      lp_delay_map = &uniform_lp_delay;
+      break;
+    case 1:
+      lp_delay_map = &blocked_lp_delay;
+      break;
+    case 2:
+      lp_delay_map = &linear_lp_delay;
+      break;
+    default:
+      tw_error(TW_LOC, "Bad map type specified\n");
+  }
 
   // Type map must be set before tw_define_lps, all other maps will be default
   g_type_map = phold_type_map;
@@ -145,14 +157,37 @@ int main(int argc, char **argv, char **env) {
     printf("   Start events...........%u\n", start_events);
     printf("   %% Remote..............%lf\n", percent_remote);
     printf("\n");
-    printf("   %% Heavy...............%lf\n", percent_heavy);
-    printf("   Regular Load...........%u\n", regular_load);
+    switch (load_map) {
+      case 0:
+        printf("   Load Map...............UNIFORM\n");
+        break;
+      case 1:
+        printf("   Load Map...............BLOCKED\n");
+        break;
+      case 2:
+        printf("   Load Map...............LINEAR\n");
+        break;
+    }
+    printf("   %% Heavy................%lf\n", percent_heavy);
+    printf("   Light Load.............%u\n", light_load);
     printf("   Heavy Load.............%u\n", heavy_load);
-    printf("   Heavy Seed.............%u\n", heavy_seed);
+    printf("   Heavy Seed.............%u\n", load_seed);
     printf("\n");
-    printf("   %% Long................%lf\n", percent_long);
-    printf("   Regular Mean...........%lf\n", regular_mean);
-    printf("   Long Mean..............%lf\n", long_mean);
+    switch (delay_map) {
+      case 0:
+        printf("   Delay Map..............UNIFORM\n");
+        break;
+      case 1:
+        printf("   Delay Map..............BLOCKED\n");
+        break;
+      case 2:
+        printf("   Delay Map..............LINEAR\n");
+        break;
+    }
+    printf("   %% Long.................%lf\n", percent_long);
+    printf("   Short Delay............%lf\n", short_delay);
+    printf("   Long Delay.............%lf\n", long_delay);
+    printf("   Delay Seed.............%u\n", delay_seed);
     printf("========================================\n\n");
   }
 

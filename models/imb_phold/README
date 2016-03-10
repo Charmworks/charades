@@ -1,4 +1,56 @@
 ===============================================================================
+IMBALANCED PHOLD
+===============================================================================
+===============================================================================
+This model is an imbalanced version of PHOLD that can be set up to show multiple
+kinds of imbalance:
+
+Load imbalance:   Certain events or lps require more work when processing events
+Delay imbalance:  Certain lps or events generate events with different delays
+Msg imbalance:    Certain lps receive more events than others (WIP)
+
+
+===============================================================================
+LOAD IMBALANCE CONFIGURATION
+===============================================================================
+===============================================================================
+When processing events, lps first run a dummy for loop for a number of
+iterations determined by both the lp load and event load. Currently event loads
+are always 0, and lp loads are set based on the command line configuration.
+
+To use load imbalance the user must specify: light load, heavy load, load seed,
+percent heavy, and/or load map.
+
+--light-load, --heavy-load, --percent-heavy and --load-seed are used by load
+maps to specify loads of specific lps in terms of how many iterations they
+contribute.
+
+--load-map determines the specific load set for each lp based on the above
+parameters. Currently there are three different maps:
+
+1) Uniform: All LPs have their load set to --light-load
+2) Blocked: A contiguous block of LPs have their load set to --heavy-load, all
+            others are set to --light-load. The size of the block is determined
+            by --percent-heavy, and the first lp in the block is determined by
+            --load-seed.
+3) Linear:  LPs loads are set in proportion to their global ID. The LP with ID
+            0 is given --light-load, and the LP with ID equal to the total
+            number of lps minus one gets --heavy-load. LPs in between get a
+            linear interpolation of the two loads.
+
+===============================================================================
+DELAY IMBALANCE CONFIGURATION
+===============================================================================
+===============================================================================
+Same setup as load imbalance configuration. See above.
+
+===============================================================================
+MSG IMBALANCE CONFIGURATION
+===============================================================================
+WIP
+===============================================================================
+
+===============================================================================
 RUNNING PHOLD
 ===============================================================================
 ===============================================================================
@@ -8,37 +60,3 @@ To run PHOLD with default settings on N processors:
 
 To get a list of available options for phold run:
 > ./phold --help
-
-===============================================================================
-TESTING PHOLD
-===============================================================================
-===============================================================================
-To run tests, run ./test_script
-For now all tests are based on the principle that running an instance of PHOLD
-with x lps, y initial messages per lp, and an end time of z, should result in
-the same number net events processed regardless of all other parameters.
-
-In the future, a more rigorous test may be needed.
-
-To add test cases see the example tests in the 'tests' directory. Each test
-is a list of commands that should all generate the same number of net events
-processed. The last line of the test should be:
-Net Events Processed <x>
-
-When each test is run, it will compare the net events processed to this line,
-and fail if they don't match.
-
-===============================================================================
-PHOLD WITH TWO CHAINS
-===============================================================================
-===============================================================================
-This variant of phold includes the option to have two chains of events, one with
-short delays, and one with long delays. This is off by default, but is included
-to cause a higher percentage of rollbacks in order to see the performance
-impact.
-
-To use the two chains functionality simply specify the number of starting events
-per LP that are part of long chains with the --long-start-events command line
-option. This must be less than the total number of start events per LP.
-Optionally you can also use the --long-mean command line option to set the mean
-delay of these long events (default is 5.0 compared to 1.0 of regular events).
