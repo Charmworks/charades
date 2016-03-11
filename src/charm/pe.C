@@ -317,6 +317,7 @@ void PE::execute_opt() {
   }
 
   bool ready_for_gvt = ++gvt_cnt > g_tw_gvt_interval || force_gvt;
+  bool ready_for_ldb = g_tw_ldb_interval && (PE_STATS(s_ngvts)+1) % g_tw_ldb_interval == 0;
   if (max_phase > 1) {
     ready_for_gvt = ready_for_gvt && detector_ready[next_phase];
   }
@@ -333,7 +334,7 @@ void PE::execute_opt() {
     gvt_begin();
 #endif
   }
-  if (!ready_for_gvt || (max_phase > 1 && !force_gvt)) {
+  if (!ready_for_gvt || (max_phase > 1 && !force_gvt && !ready_for_ldb)) {
     thisProxy[CkMyPe()].execute_opt();
   }
 }
@@ -422,7 +423,6 @@ void PE::gvt_contribute() {
       CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
     }
   } else {
-    detector_ready[next_phase] = true;
     if (CkMyPe() == 0) {
       detector_proxies[next_phase].start_detection(CkNumPes(),
           CkCallback(),
@@ -452,6 +452,7 @@ void PE::gvt_contribute() {
 void PE::gvt_end(CkReductionMsg* msg) {
   GVT* gvt_struct = (GVT*)msg->getData();
   Time new_gvt = gvt_struct->ts;
+  detector_ready[next_phase] = true;
 
   // Update stats that track forced GVTs
   if (gvt_struct->type) {
