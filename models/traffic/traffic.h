@@ -2,16 +2,16 @@
 #define INC_traffic_h
 
 #include <ross_api.h>
-
+//NOT USED IN CODE
 #define INTERSECTION_LPS 0
 
 #define MAX_CARS_ON_ROAD 5
 
-#define NUM_CELLS_X 1024        //32     //256
-#define NUM_CELLS_Y 1024        //32     //256
+#define NUM_CELLS_X 32        //256     //1024
+#define NUM_CELLS_Y 32        //256     //1024
 
-#define NUM_VP_X 32     //8                                     
-#define NUM_VP_Y 32     //8 
+#define NUM_VP_X 8     //32                                     
+#define NUM_VP_Y 8     //32 
 
 
 enum events { ARIVAL, DEPARTURE, DIRECTION_SELECT };
@@ -66,10 +66,13 @@ typedef struct {
 } Intersection_State;
 
 static unsigned int stagger = 0;
-static unsigned int offset_lpid = 0;
-static tw_stime mult = 1.6;
-static tw_stime percent_remote = 0.25;
-static int g_traffic_start_events = 15;
+static unsigned int offset_lpid = 0;	//currently does nothing
+
+
+static tw_stime mult = 1.6;  	//currently does nothing
+
+static tw_stime percent_remote = 0.25;	//unsure of usage
+static int g_traffic_start_events = 5;
 static int optimistic_memory = 65536;
 
 // rate for timestamp exponential distribution

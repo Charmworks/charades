@@ -234,7 +234,6 @@ int main(int argc, char * argv[])
 	mean = mean - g_tw_lookahead;
 /*
 	offset_lpid = g_tw_mynode * nlp_per_pe;
-	ttl_lps = tw_nnodes() * g_tw_npe * nlp_per_pe;
 	//g_tw_rng_default = TW_FALSE;
 
 	nlp_per_pe = (NUM_CELLS_X * NUM_CELLS_Y) / (tw_nnodes() * g_tw_npe);
@@ -288,7 +287,7 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 	//printf("begin init\n");
 	int i;
 	tw_event *CurEvent;
-	tw_stime ts;
+	tw_stime ts = 0;
 	Msg_Data *NewM;
 
 	SV->total_cars_arrived = 0;
@@ -320,7 +319,7 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 
 	for(i = 0; i < g_traffic_start_events; i++) 
 	{
-		ts = tw_rand_exponential(lp->rng, MEAN_SERVICE );
+		ts = g_tw_lookahead + tw_rand_exponential(lp->rng, MEAN_SERVICE );
 		CurEvent = tw_event_new(lp->gid, ts, lp);
 		NewM = (Msg_Data *)tw_event_data(CurEvent);
 		NewM->event_type = ARIVAL;
@@ -335,7 +334,8 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 
 void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, tw_lp *lp) 
 {
-	tw_stime ts=0.0;
+
+	tw_stime ts = g_tw_lookahead;
 	int new_event_direction=0;
 	tw_event *CurEvent=NULL;
 	Msg_Data *NewM=NULL;
@@ -409,7 +409,7 @@ void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, t
 
 		M->car.in_out = IN;
 
-		ts = tw_rand_exponential(lp->rng, MEAN_SERVICE);
+		ts += tw_rand_exponential(lp->rng, MEAN_SERVICE);
 		CurEvent = tw_event_new(lp->gid, ts, lp);
 		NewM = (Msg_Data *)tw_event_data(CurEvent);
 		NewM->car.x_to_go = M->car.x_to_go;
@@ -479,7 +479,7 @@ void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, t
 		}
 
 		lp->gid = Cell_ComputeMove(lp->gid, new_event_direction);
-		ts = tw_rand_exponential(lp->rng, MEAN_SERVICE);
+		ts += tw_rand_exponential(lp->rng, MEAN_SERVICE);
 		CurEvent = tw_event_new(lp->gid, ts, lp);
 		NewM = (Msg_Data *) tw_event_data(CurEvent);
 		NewM->car.x_to_go = M->car.x_to_go;
@@ -962,7 +962,7 @@ void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, t
 
 		M->car.arrived_from = temp_direction;
 		M->car.in_out = OUT;
-		ts = tw_rand_exponential(lp->rng, MEAN_SERVICE);
+		ts += tw_rand_exponential(lp->rng, MEAN_SERVICE);
 		CurEvent = tw_event_new(lp->gid, ts, lp);
 		NewM = (Msg_Data *)tw_event_data(CurEvent);
 		NewM->car.x_to_go = M->car.x_to_go;
