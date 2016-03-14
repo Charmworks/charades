@@ -452,7 +452,7 @@ void PE::gvt_contribute() {
 void PE::gvt_end(CkReductionMsg* msg) {
   GVT* gvt_struct = (GVT*)msg->getData();
   Time new_gvt = gvt_struct->ts;
-  detector_ready[next_phase] = true;
+  if (max_phase) detector_ready[next_phase] = true;
 
   // Update stats that track forced GVTs
   if (gvt_struct->type) {
