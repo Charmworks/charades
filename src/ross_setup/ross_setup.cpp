@@ -63,6 +63,7 @@ void tw_init(int* argc, char*** argv) {
     TWOPT_UINT("batch", g_tw_mblock, "Messages per scheduler block"),
     TWOPT_UINT("gvt-interval", g_tw_gvt_interval, "GVT Interval"),
     TWOPT_UINT("gvt-phases", g_tw_gvt_phases, "Number of GVT Phases"),
+    TWOPT_STIME("gvt-leash", g_tw_leash, "GVT Leash"),
     TWOPT_UINT("ldb-interval", g_tw_ldb_interval, "Load Balancing Interval"),
     TWOPT_UINT("num-lps", g_total_lps, "Number of total LPs"),
     TWOPT_UINT("num-chares", g_num_chares, "Number of chares"),

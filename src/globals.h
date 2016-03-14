@@ -21,6 +21,7 @@ extern unsigned g_tw_gvt_interval; // number of intervals per gvt
 extern unsigned g_tw_gvt_phases;   // number of phases in the gvt
 extern unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 extern tw_stime g_tw_lookahead;    // event lookahead for conservative
+extern tw_stime g_tw_leash;        // GVT leash for optimistic
 extern double  gvt_print_interval; // determines frequency of progress print outs
 extern size_t    g_tw_rng_max;
 extern unsigned  g_tw_nRNG_per_lp;
@@ -55,7 +56,8 @@ inline void initialize_globals(Globals* globals) {
   g_tw_gvt_interval  = 16;
   g_tw_gvt_phases    = 0;
   g_tw_ldb_interval  = 0;
-  g_tw_lookahead     = .005;
+  g_tw_lookahead     = 0.005;
+  g_tw_leash         = 0.0;
   gvt_print_interval = 1.0;
 
   g_tw_rng_max     = 1;
