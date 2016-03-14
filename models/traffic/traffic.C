@@ -1,9 +1,16 @@
 #include "traffic.h"
 
-tw_lpid g_vp_per_proc =0; // set in main
+
+//tw_lpid g_vp_per_proc =0; // set in main
 tw_lpid g_cells_per_vp_x = NUM_CELLS_X/NUM_VP_X;
 tw_lpid g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;
 tw_lpid g_cells_per_vp = (NUM_CELLS_X/NUM_VP_X)*(NUM_CELLS_Y/NUM_VP_Y);
+
+
+//TENTATTIVE DESCRIPTION
+
+//Map consists of NUM_CELLS_X x NUM_CELL_Y LPS
+
 
 tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 {
@@ -48,7 +55,7 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 	// printf("ComputeMove: Src LP %llu (%d, %d), Dir %u, Dest LP %llu (%d, %d)\n", lpid, lpid_x, lpid_y, direction, dest_lpid, n_x, n_y);
 	return( dest_lpid );
 }
-
+/*
 tw_peid
 	CellMapping_lp_to_pe(tw_lpid lpid) 
 {
@@ -60,7 +67,33 @@ tw_peid
 	tw_peid peid = vp_num/g_vp_per_proc;  
 	return peid;
 }
+*/
+//CHARE MAP (TENTATIVE)
+unsigned  traffic_chare_map( tw_lpid lpid)
+{
+	tw_lpid lp_x = lpid % NUM_CELLS_X; //lpid -> (lp_x,lp_y)
+	tw_lpid lp_y = lpid / NUM_CELLS_X;
+	tw_lpid vp_index_x = lp_x / g_cells_per_vp_x;
+	tw_lpid vp_index_y = lp_y / g_cells_per_vp_y;
+	tw_lpid vp_index = vp_index_x + (vp_index_y * (NUM_VP_X));
+	
+	return (unsigned) vp_index;
+}
 
+// LOCAL MAP( TENTATIVE)
+
+tw_lpid traffic_local_map( tw_lpid lpid)
+{
+
+	tw_lpid lp_x = lpid % NUM_CELLS_X; //lpid -> (lp_x,lp_y)
+	tw_lpid lp_y = lpid / NUM_CELLS_X;
+	tw_lpid vp_index_x = lp_x % g_cells_per_vp_x;
+	tw_lpid vp_index_y = lp_y % g_cells_per_vp_y;
+	tw_lpid vp_index = vp_index_x + (vp_index_y * (g_cells_per_vp_x));
+	
+	return vp_index;
+}
+/*
 tw_lp *CellMapping_to_lp(tw_lpid lpid) 
 {
 	tw_lpid lp_x = lpid % NUM_CELLS_X; //lpid -> (lp_x,lp_y)
@@ -77,7 +110,7 @@ tw_lp *CellMapping_to_lp(tw_lpid lpid)
 #ifdef ROSS_runtime_check  
 	if( index >= g_tw_nlp )
 		tw_error(TW_LOC, "index (%llu) beyond g_tw_nlp (%llu) range \n", index, g_tw_nlp);
-#endif /* ROSS_runtime_check */
+#endif   ROSS_runtime_check 
 
 	return g_tw_lp[index];
 }
@@ -100,7 +133,7 @@ tw_lpid CellMapping_to_local_index(tw_lpid lpid)
 
 	return( index );
 }
-
+*/
 tw_lptype mylps[] = {
 	{
             (init_f) Intersection_StartUp,
@@ -111,7 +144,11 @@ tw_lptype mylps[] = {
 	},
 	{ 0 },
 };
-
+tw_lptype * traffic_type_map(tw_lpid global_id)
+{
+	return &mylps[0];
+}
+/*
 void traffic_grid_mapping()
 {
 	tw_lpid         x, y;
@@ -149,6 +186,36 @@ void traffic_grid_mapping()
 		}
 	}
 }
+*/
+tw_lpid traffic_init_map(unsigned chare, tw_lpid local_id)
+{
+        int chare_x = chare % NUM_VP_X;
+        int chare_y = chare / NUM_VP_X;
+
+        int off_x = chare_x * g_cells_per_vp_x;
+        int off_y = chare_y * g_cells_per_vp_y;
+
+        off_x += (local_id % g_cells_per_vp_x);
+        off_y += (local_id / g_cells_per_vp_x);
+
+        return (tw_lpid) (off_y * NUM_CELLS_X + off_x);
+}
+
+const tw_optdef app_opt[] =
+{
+  TWOPT_GROUP("TRAFFIC Model"),
+  TWOPT_STIME("remote", percent_remote, "desired remote event rate"),
+  TWOPT_STIME("mean", mean, "exponential distribution mean for timestamps"),
+  TWOPT_UINT("start-events", g_traffic_start_events, "number of initial messages per LP"),
+  TWOPT_UINT("stagger", stagger, "Set to 1 to stagger event uniformly across 0 to end time."),
+  TWOPT_CHAR("run", run_id, "user supplied run name"),
+  TWOPT_END()
+};
+
+
+
+
+
 
 int main(int argc, char * argv[]) 
 {
@@ -157,7 +224,7 @@ int main(int argc, char * argv[])
 	int i;
 
 	// get rid of error if compiled w/ MEMORY queues
-	//tw_opt_add(app_opt);
+	tw_opt_add(app_opt);
 	tw_init(&argc, &argv);
 
 	if( g_tw_lookahead > 1.0 )
@@ -165,7 +232,7 @@ int main(int argc, char * argv[])
 
 	//reset mean based on lookahead
 	mean = mean - g_tw_lookahead;
-
+/*
 	offset_lpid = g_tw_mynode * nlp_per_pe;
 	ttl_lps = tw_nnodes() * g_tw_npe * nlp_per_pe;
 	//g_tw_rng_default = TW_FALSE;
@@ -176,19 +243,25 @@ int main(int argc, char * argv[])
 	num_cells_per_kp = (NUM_CELLS_X * NUM_CELLS_Y) / (NUM_VP_X * NUM_VP_Y);
 	vp_per_proc = (NUM_VP_X * NUM_VP_Y) / ((tw_nnodes() * g_tw_npe)) ;
 	g_vp_per_proc = vp_per_proc;
-	g_tw_nlp = nlp_per_pe;
+g_tw_nlp = nlp_per_pe;
 	g_tw_nkp = vp_per_proc;
 
-	g_tw_mapping = CUSTOM;
-	g_tw_custom_initial_mapping = &traffic_grid_mapping;
-	g_tw_custom_lp_global_to_local_map = &CellMapping_to_lp;
 
-	tw_define_lps(nlp_per_pe, sizeof(Msg_Data));
+*/
+	//not sure if these are needed. 
+	//I'm assuming chare = VP
 
-	for(i = 0; i < g_tw_nlp; i++)
-		tw_lp_settype(i, &mylps[0]);
+	g_num_chares = NUM_VP_X * NUM_VP_Y;
+	g_lps_per_chare = g_cells_per_vp;
+	g_total_lps = NUM_CELLS_X * NUM_CELLS_Y;
 
-	if( g_tw_mynode == 0 )
+	g_type_map = traffic_type_map;	
+	g_chare_map = traffic_chare_map;	
+	g_local_map = traffic_local_map;
+	g_init_map = traffic_init_map;
+
+	tw_define_lps(sizeof(Msg_Data), 0);
+	if(tw_ismaster() )
 	{
 		printf("========================================\n");
 		printf("Traffice Model Configuration..............\n");
@@ -253,7 +326,7 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 		NewM->event_type = ARIVAL;
 		NewM->car.x_to_go =tw_rand_integer(lp->rng,0,199) - 99;
 		NewM->car.y_to_go = tw_rand_integer(lp->rng,0,199) - 99;
-		NewM->car.current_lane = tw_rand_integer(lp->rng,0,11);
+		NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
 		NewM->car.sent_back = 0;
 		NewM->car.in_out = IN;
 		tw_event_send(CurEvent);
@@ -266,7 +339,8 @@ void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, t
 	int new_event_direction=0;
 	tw_event *CurEvent=NULL;
 	Msg_Data *NewM=NULL;
-	enum abs_directions temp_direction=0;
+//	enum abs_directions temp_direction=0;   NOT SURE WHAT ISSUE IS
+	enum abs_directions temp_direction;
 	*(int *)CV = (int)0;
 
 	switch(M->event_type) {

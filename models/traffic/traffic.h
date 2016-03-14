@@ -69,27 +69,23 @@ static unsigned int stagger = 0;
 static unsigned int offset_lpid = 0;
 static tw_stime mult = 1.6;
 static tw_stime percent_remote = 0.25;
-static unsigned int ttl_lps = 0;
-static unsigned int nlp_per_pe = 8;
 static int g_traffic_start_events = 15;
 static int optimistic_memory = 65536;
 
 // rate for timestamp exponential distribution
 static tw_stime mean = 1.0;
 
-//static char run_id[1024] = "undefined";
+static char run_id[1024] = "undefined";
 static unsigned long long totalCars=0;
 static unsigned long long carsFinished=0;
 
 tw_stime MEAN_SERVICE=1.0;
-tw_lpid         num_cells_per_kp=0;
-tw_lpid         vp_per_proc=0;
 
 
 
 void Intersection_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
 void Intersection_RC_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
 void Intersection_Statistics_CollectStats(Intersection_State *, tw_lp *);
-
+void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp); 
 
 #endif
