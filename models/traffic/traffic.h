@@ -2,18 +2,9 @@
 #define INC_traffic_h
 
 #include <ross_api.h>
+#include<math.h>   //used for sqrt
+
 //NOT USED IN CODE
-#define INTERSECTION_LPS 0
-
-#define MAX_CARS_ON_ROAD 5
-
-#define NUM_CELLS_X 32        //256     //1024
-#define NUM_CELLS_Y 32        //256     //1024
-
-#define NUM_VP_X 8     //32                                     
-#define NUM_VP_Y 8     //32 
-
-
 enum events { ARIVAL, DEPARTURE, DIRECTION_SELECT };
 
 enum abs_directions { WEST_LEFT = 0, WEST_STRAIGHT, WEST_RIGHT, EAST_LEFT, EAST_STRAIGHT, EAST_RIGHT, NORTH_LEFT, NORTH_STRAIGHT, NORTH_RIGHT, SOUTH_LEFT, SOUTH_STRAIGHT, SOUTH_RIGHT }; 
@@ -65,15 +56,7 @@ typedef struct {
 	int num_out_east_right;
 } Intersection_State;
 
-static unsigned int stagger = 0;
-static unsigned int offset_lpid = 0;	//currently does nothing
-
-
-static tw_stime mult = 1.6;  	//currently does nothing
-
-static tw_stime percent_remote = 0.25;	//unsure of usage
 static int g_traffic_start_events = 5;
-static int optimistic_memory = 65536;
 
 // rate for timestamp exponential distribution
 static tw_stime mean = 1.0;
@@ -82,9 +65,17 @@ static char run_id[1024] = "undefined";
 static unsigned long long totalCars=0;
 static unsigned long long carsFinished=0;
 
-tw_stime MEAN_SERVICE=1.0;
+static unsigned INTERSECTION_LPS = 1024;
+static unsigned  MAX_CARS_ON_ROAD =  5;
+static unsigned NUM_CELLS_X = 32;        //256     //1024
+static unsigned  NUM_CELLS_Y  = 32;        //256     //1024
 
+static unsigned  NUM_VP_X  = 8;     //32       
+static unsigned  NUM_VP_Y=  8;     //32 
 
+static tw_lpid g_cells_per_vp_x = NUM_CELLS_X/NUM_VP_X;
+static tw_lpid g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;
+static unsigned  g_cells_per_vp = (NUM_CELLS_X/NUM_VP_X)*(NUM_CELLS_Y/NUM_VP_Y);
 
 void Intersection_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
 void Intersection_RC_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
