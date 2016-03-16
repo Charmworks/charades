@@ -27,11 +27,9 @@ phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
   tw_lpid dest;
   tw_stime offset;
 
-  // First, process the load for the event
-  // The state modification is so the compiler doesn't optimize the work away
-  for (int i = 0; i < s->work_load + m->work_load; i++) {
-    s->dummy_state += i * m->work_load;
-  }
+  // First, process the load for the event. The load is in microseconds.
+  double start = CmiWallTimer();
+  while ((CmiWallTimer()-start) < (s->work_load + m->work_load)/1000000);
 
   // Set destination
   if (tw_rand_unif(lp->rng) < percent_remote) {
@@ -86,16 +84,16 @@ const tw_optdef app_opt[] =
 {
   TWOPT_GROUP("PHOLD Model"),
   TWOPT_UINT("start-events", start_events, "number of initial messages per LP"),
-  TWOPT_STIME("remote", percent_remote, "desired remote event rate"),
+  TWOPT_STIME("remote", percent_remote, "desired remote event rate [0.0-1.0]"),
 
   TWOPT_UINT("load-map", load_map, "0 - Uniform, 1 - blocked, 2 - Linear"),
-  TWOPT_STIME("percent-heavy", percent_heavy, "desired percent of heavy sends"),
-  TWOPT_UINT("light-load", light_load, "load for lightly loaded lps"),
-  TWOPT_UINT("heavy-load", heavy_load, "load for heavily loaded lps"),
+  TWOPT_STIME("percent-heavy", percent_heavy, "desired percent of heavy sends [0.0-1.0]"),
+  TWOPT_STIME("light-load", light_load, "load for lightly loaded lps in us"),
+  TWOPT_STIME("heavy-load", heavy_load, "load for heavily loaded lps in us"),
   TWOPT_UINT("load-seed", load_seed, "extra param used by certain load maps"),
 
   TWOPT_UINT("delay-map", delay_map, "0 - Uniform"),
-  TWOPT_STIME("percent-long", percent_long, "desired percent of long sends"),
+  TWOPT_STIME("percent-long", percent_long, "desired percent of long sends [0.0-1.0]"),
   TWOPT_STIME("short-delay", short_delay, "exponential distribution mean for event delays"),
   TWOPT_STIME("long-delay", long_delay, "long exponential distribution mean for event delays"),
   TWOPT_END()
@@ -155,7 +153,7 @@ int main(int argc, char **argv, char **env) {
     printf("========================================\n");
     printf("PHOLD Model Configuration..............\n");
     printf("   Start events...........%u\n", start_events);
-    printf("   %% Remote..............%lf\n", percent_remote);
+    printf("   %% Remote..............%0.2f%%\n", percent_remote * 100);
     printf("\n");
     switch (load_map) {
       case 0:
@@ -168,9 +166,9 @@ int main(int argc, char **argv, char **env) {
         printf("   Load Map...............LINEAR\n");
         break;
     }
-    printf("   %% Heavy................%lf\n", percent_heavy);
-    printf("   Light Load.............%u\n", light_load);
-    printf("   Heavy Load.............%u\n", heavy_load);
+    printf("   %% Heavy................%0.2f%%\n", percent_heavy * 100);
+    printf("   Light Load.............%0.2f us\n", light_load);
+    printf("   Heavy Load.............%0.2f us\n", heavy_load);
     printf("   Heavy Seed.............%u\n", load_seed);
     printf("\n");
     switch (delay_map) {
@@ -184,7 +182,7 @@ int main(int argc, char **argv, char **env) {
         printf("   Delay Map..............LINEAR\n");
         break;
     }
-    printf("   %% Long.................%lf\n", percent_long);
+    printf("   %% Long.................%0.2f%%\n", percent_long * 100);
     printf("   Short Delay............%lf\n", short_delay);
     printf("   Long Delay.............%lf\n", long_delay);
     printf("   Delay Seed.............%u\n", delay_seed);
