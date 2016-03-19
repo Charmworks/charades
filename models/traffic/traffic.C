@@ -29,13 +29,13 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 	case 2:
 		//South
 		n_x = lpid_x;
-		n_y = ((lpid_y - 1) + NUM_CELLS_Y) % NUM_CELLS_Y;
+		n_y = (lpid_y + 1) % NUM_CELLS_Y;
 		break;
 
 	case 3:
 		//North
 		n_x = lpid_x;
-		n_y = (lpid_y + 1) % NUM_CELLS_Y;
+		n_y = ((lpid_y - 1) + NUM_CELLS_Y) % NUM_CELLS_Y;
 		break;
 
 	default:
