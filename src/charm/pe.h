@@ -38,6 +38,7 @@ class PE: public CBase_PE {
     Time gvt;           /**< current gvt on this PE */
     Time min_sent;      /**< minimum ts sent out during this phase */
     int gvt_cnt;        /**< iteration count since last gvt */
+    bool gvt_started;
     bool waiting_on_gvt;/**< flag to make sure we don't overlap gvts */
     unsigned force_gvt; /**< Bitmap used to determine if a gvt was forced */
 
@@ -101,6 +102,7 @@ class PE: public CBase_PE {
         GVT is only used in conservative and optimistic
         In conservative it is equivalent to finding the next epoch
       */
+    void greedy_gvt_begin(); /**< attempt to greedily begin gvt computation */
     void gvt_begin(); /**< begin gvt computation */
     void gvt_contribute(); /**< all sent messages received, contribute to GVT */
     void gvt_end(CkReductionMsg*); /**< gvt done, either restart the scheduler or end */
