@@ -214,10 +214,12 @@ int main(int argc, char **argv, char **env) {
         printf("   Remote Map.............BLOCKED\n");
         break;
     }
-    printf("   %% Greedy...............%lf\n", percent_greedy);
-    printf("   Generous Remote........%lf\n", generous_remote);
-    printf("   Greedy Remote..........%lf\n", greedy_remote);
+    printf("   %% Greedy...............%0.2f%%\n", percent_greedy * 100);
+    printf("   Generous Remote........%0.2f%%\n", generous_remote * 100);
+    printf("   Greedy Remote..........%0.2f%%\n", greedy_remote * 100);
     printf("   Remote Seed............%u\n", remote_seed);
+    printf("\n");
+    printf("   Region Size............%u\n", region_size);
     printf("========================================\n\n");
   }
 
