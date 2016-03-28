@@ -39,8 +39,7 @@ static tw_stime generous_remote = 0.1;
 static tw_stime greedy_remote = 0.0;
 static int remote_seed = 0;
 
-static int region_size;
-static int region_type;
+static int region_size = 0;
 
 int (*lp_load_map)(tw_lpid);
 tw_stime (*lp_delay_map)(tw_lpid);

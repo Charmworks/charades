@@ -36,11 +36,16 @@ phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
   // Set destination
   if (tw_rand_unif(lp->rng) < s->percent_remote) {
     bf->c1 = 1;
-    dest = tw_rand_integer(lp->rng, 0, g_total_lps-1);
+    if (region_size == g_total_lps) {
+      dest_offset = tw_rand_integer(lp->rng, 1, 2*g_total_lps) - g_total_lps;
+    } else {
+      dest_offset = tw_rand_integer(lp->rng, 0, region_size) - (region_size/2);
+    }
   } else {
     bf->c1 = 0;
-    dest = lp->gid;
+    dest_offset = 0;
   }
+  dest = (lp->gid + dest_offset + g_total_lps) % g_total_lps;
 
   // Set offset
   tw_stime mean = s->mean_delay + m->mean_delay;
@@ -104,6 +109,8 @@ const tw_optdef app_opt[] =
   TWOPT_STIME("generous-remote", generous_remote, "remote percent for generous lps [0.0-1.0]"),
   TWOPT_STIME("greedy-remote", greedy_remote, "remote percent for greedy lps [0.0-1.0]"),
   TWOPT_UINT("remote-seed", remote_seed, "extra param used by certain remote maps"),
+
+  TWOPT_UINT("region-size", region_size, "defines the size of the region in which lps send events"),
   TWOPT_END()
 };
 
@@ -115,6 +122,14 @@ int main(int argc, char **argv, char **env) {
   // Check for a valid configuration
   if (g_tw_lookahead > 1.0) {
     tw_error(TW_LOC, "Lookahead > 1.0 .. needs to be less\n");
+  }
+
+  if (region_size > g_total_lps) {
+    tw_error(TW_LOC, "Region size is larger than total lps");
+  }
+
+  if (region_size == 0) {
+    region_size = g_total_lps;
   }
 
   // Set the load map for lps
