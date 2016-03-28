@@ -15,15 +15,15 @@ LOAD IMBALANCE CONFIGURATION
 ===============================================================================
 ===============================================================================
 When processing events, lps first run a dummy for loop for a number of
-iterations determined by both the lp load and event load. Currently event loads
-are always 0, and lp loads are set based on the command line configuration.
+microseconds determined by both the lp load and event load. Currently event
+loads are always 0, and lp loads are set based on the command line
+configuration.
 
 To use load imbalance the user must specify: light load, heavy load, load seed,
 percent heavy, and/or load map.
 
 --light-load, --heavy-load, --percent-heavy and --load-seed are used by load
-maps to specify loads of specific lps in terms of how many iterations they
-contribute.
+maps to specify loads of specific lps in microseconds.
 
 --load-map determines the specific load set for each lp based on the above
 parameters. Currently there are three different maps:
