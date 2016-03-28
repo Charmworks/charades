@@ -64,6 +64,7 @@ void tw_init(int* argc, char*** argv) {
     TWOPT_UINT("gvt-interval", g_tw_gvt_interval, "GVT Interval"),
     TWOPT_UINT("gvt-phases", g_tw_gvt_phases, "Number of GVT Phases"),
     TWOPT_UINT("greedy-start", g_tw_greedy_start, "0=regular start, 1=greedy start"),
+    TWOPT_UINT("async-reduction", g_tw_async_reduction, "0=sync red, 1=async red"),
     TWOPT_STIME("gvt-leash", g_tw_leash, "GVT Leash"),
     TWOPT_UINT("ldb-interval", g_tw_ldb_interval, "Load Balancing Interval"),
     TWOPT_UINT("num-lps", g_total_lps, "Number of total LPs"),
