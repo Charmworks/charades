@@ -19,6 +19,8 @@ tw_stime g_tw_ts_end;       // end time of simulation
 unsigned g_tw_mblock;       // number of events per gvt interval
 unsigned g_tw_gvt_interval; // number of intervals per gvt
 unsigned g_tw_gvt_phases;   // number of phases of the gvt
+unsigned g_tw_greedy_start; // whether we allow a greedy start or not
+unsigned g_tw_async_reduction; // allow GVT reduction and event exec to overlap
 unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 tw_stime g_tw_lookahead;    // event lookahead for conservative
 tw_stime g_tw_leash;        // gvt leash for optimistic
@@ -131,7 +133,7 @@ void charm_run() {
 
 PE::PE(CProxy_Initialize srcProxy) :
     gvt_cnt(0), gvt(0.0), min_sent(DBL_MAX), min_cancel_time(DBL_MAX),
-    force_gvt(0), waiting_on_gvt(false)  {
+    force_gvt(0), waiting_on_gvt(false), gvt_started(false) {
 
   #ifdef CMK_TRACE_ENABLED
   if (CkMyPe() == 0) {
@@ -338,16 +340,15 @@ void PE::execute_opt() {
   gvt_cnt++;
   bool ready_for_ldb = g_tw_ldb_interval && (PE_STATS(s_ngvts)+1) % g_tw_ldb_interval == 0;
   if (gvt_ready()) {
-    // Right now, broadcasting to start GVT is only supported with QD.
-#ifdef ASYNC_BROADCAST
-    if (max_phase <= 1 && force_gvt != END_FORCE && force_gvt != EVENT_FORCE) {
-      thisProxy.gvt_begin();
+    // If greedy_start is allowed, then we can force a GVT early if we've either
+    // executed up to the next GVT, or are out of memory (we should not greedy
+    // start if we are simply out of events). This is only supported with QD.
+    if (g_tw_greedy_start && max_phase <= 1 && force_gvt != END_FORCE
+                                            && force_gvt != EVENT_FORCE) {
+      thisProxy[0].greedy_gvt_begin();
     } else {
       gvt_begin();
     }
-#else
-    gvt_begin();
-#endif
   }
   if (!gvt_ready() || (max_phase > 1 && !force_gvt && !ready_for_ldb)) {
     thisProxy[CkMyPe()].execute_opt();
@@ -402,6 +403,14 @@ void PE::update_min_cancel(Time t) {
 /* GVT methods                                                                */
 /******************************************************************************/
 
+// This should only be called on PE 0. If it's the first time, then tell
+// all PEs to start the GVT, otherwise do nothing.
+void PE::greedy_gvt_begin() {
+  if (gvt_started) return;
+  gvt_started = true;
+  thisProxy.gvt_begin();
+}
+
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.
 void PE::gvt_begin() {
@@ -432,6 +441,7 @@ void PE::gvt_contribute() {
   gvt_struct.type = force_gvt;
   if (max_phase <=1) {
     waiting_on_gvt = false;
+    gvt_started = false;
   }
   if (max_phase == 0) {
     if (CkMyPe() == 0) {
@@ -448,18 +458,18 @@ void PE::gvt_contribute() {
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
-#ifdef ASYNC_REDUCTION
   // If we are doing optimistic simulation, we don't need to wait for the result
   // of the reduction to continue execution (unless we plan on doing load
   // balancing in this iteration).
-  bool can_resume = g_tw_synchronization_protocol == OPTIMISTIC;
-  can_resume = can_resume && !force_gvt && max_phase <= 1 &&
-      (!g_tw_ldb_interval ||
-        PE_STATS(s_ngvts) % g_tw_ldb_interval != 0);
-  if (can_resume) {
-    resume_scheduler();
+  if (g_tw_async_reduction && max_phase <= 1) {
+    // If we forced the GVT, we should wait until it completes.
+    if (!force_gvt) {
+      // If we are doing LDB this GVT then we should wait until it completes.
+      if (!g_tw_ldb_interval || PE_STATS(s_ngvts % g_tw_ldb_interval != 0)) {
+        resume_scheduler();
+      }
+    }
   }
-#endif
 }
 
 // Check to see if we are complete. If not, re-enter the appropriate
@@ -521,18 +531,12 @@ void PE::gvt_end(CkReductionMsg* msg) {
 #endif
       g_tw_ldb_interval = 0;
       contribute(CkCallback(CkReductionTarget(LP,load_balance), lps));
-    }
-#ifdef ASYNC_REDUCTION
-    // Async reductions don't happen for conservative, or if the GVT is forced.
-    // In these cases we need to restart the scheduler now.
-    else if (g_tw_synchronization_protocol == CONSERVATIVE || force_gvt) {
-#else
-    else if (g_tw_synchronization_protocol == CONSERVATIVE
-        || force_gvt || max_phase <= 1) {
+    } else if (!g_tw_async_reduction || force_gvt) {
       force_gvt = 0;
-      resume_scheduler();
+      if (max_phase <= 1) {
+        resume_scheduler();
+      }
     }
-#endif
   }
 }
 
