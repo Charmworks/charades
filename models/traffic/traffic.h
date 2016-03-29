@@ -4,7 +4,6 @@
 #include <ross_api.h>
 #include<math.h>   //used for sqrt
 
-//NOT USED IN CODE
 enum events { ARIVAL, DEPARTURE, DIRECTION_SELECT };
 
 enum abs_directions { WEST_LEFT = 0, WEST_STRAIGHT, WEST_RIGHT, EAST_LEFT, EAST_STRAIGHT, EAST_RIGHT, NORTH_LEFT, NORTH_STRAIGHT, NORTH_RIGHT, SOUTH_LEFT, SOUTH_STRAIGHT, SOUTH_RIGHT }; 

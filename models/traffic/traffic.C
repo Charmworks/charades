@@ -136,7 +136,8 @@ int main(int argc, char * argv[])
 	NUM_CELLS_Y = NUM_CELLS_X;
 	NUM_VP_X = (unsigned) sqrt( NUM_CELLS_X * NUM_CELLS_X / g_cells_per_vp);
 	NUM_VP_Y = NUM_VP_X;
-	//not sure if these are needed. 
+	g_cells_per_vp_x = NUM_CELLS_X/NUM_VP_X;
+	g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;
 	//I'm assuming chare = VP
 
 	g_num_chares = NUM_VP_X * NUM_VP_Y;
