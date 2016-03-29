@@ -529,10 +529,10 @@ void PE::gvt_end(CkReductionMsg* msg) {
 #else
     else if (g_tw_synchronization_protocol == CONSERVATIVE
         || force_gvt || max_phase <= 1) {
+#endif
       force_gvt = 0;
       resume_scheduler();
     }
-#endif
   }
 }
 

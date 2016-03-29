@@ -37,15 +37,15 @@ phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
   if (tw_rand_unif(lp->rng) < s->percent_remote) {
     bf->c1 = 1;
     if (region_size == g_total_lps) {
-      dest_offset = tw_rand_integer(lp->rng, 1, 2*g_total_lps) - g_total_lps;
+      dest = tw_rand_integer(lp->rng, 0, g_total_lps-1);
     } else {
       dest_offset = tw_rand_integer(lp->rng, 0, region_size) - (region_size/2);
+      dest = (lp->gid + dest_offset + g_total_lps) % g_total_lps;
     }
   } else {
     bf->c1 = 0;
-    dest_offset = 0;
+    dest = lp->gid;
   }
-  dest = (lp->gid + dest_offset + g_total_lps) % g_total_lps;
 
   // Set offset
   tw_stime mean = s->mean_delay + m->mean_delay;
@@ -160,7 +160,7 @@ int main(int argc, char **argv, char **env) {
       lp_delay_map = &blocked_lp_delay;
       break;
     case 2:
-      lp_delay_map = &linear_lp_delay;
+      lp_delay_map = inverse_blocked_lp_delay;
       break;
     default:
       tw_error(TW_LOC, "Bad map type specified\n");
@@ -173,6 +173,9 @@ int main(int argc, char **argv, char **env) {
       break;
     case 1:
       lp_remote_map = &blocked_lp_remote;
+      break;
+    case 2:
+      lp_remote_map = &inverse_blocked_lp_remote;
       break;
     default:
       tw_error(TW_LOC, "Bad map type specified\n");
@@ -213,7 +216,7 @@ int main(int argc, char **argv, char **env) {
         printf("   Delay Map..............BLOCKED\n");
         break;
       case 2:
-        printf("   Delay Map..............LINEAR\n");
+        printf("   Delay Map..............INVERSE BLOCKED\n");
         break;
     }
     printf("   %% Long.................%0.2f%%\n", percent_long * 100);
@@ -227,6 +230,9 @@ int main(int argc, char **argv, char **env) {
         break;
       case 1:
         printf("   Remote Map.............BLOCKED\n");
+        break;
+      case 2:
+        printf("   Remote Map.............INVERSE BLOCKED\n");
         break;
     }
     printf("   %% Greedy...............%0.2f%%\n", percent_greedy * 100);

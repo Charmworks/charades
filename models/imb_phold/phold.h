@@ -61,8 +61,12 @@ inline tw_stime blocked_lp_delay(tw_lpid lp) {
   }
 }
 
-inline tw_stime linear_lp_delay(tw_lpid lp) {
-  return ((long_delay-short_delay)*((double)lp / (g_total_lps-1)))+short_delay;
+inline tw_stime inverse_blocked_lp_delay(tw_lpid lp) {
+  if (lp >= delay_seed  && lp < delay_seed + g_total_lps*percent_long) {
+    return short_delay;
+  } else {
+    return long_delay;
+  }
 }
 
 // Maps for load (same as maps for delay)
@@ -95,5 +99,12 @@ inline tw_stime blocked_lp_remote(tw_lpid lp) {
   }
 }
 
+inline tw_stime inverse_blocked_lp_remote(tw_lpid lp) {
+  if (lp >= remote_seed  && lp < remote_seed + g_total_lps*percent_greedy) {
+    return generous_remote;
+  } else {
+    return greedy_remote;
+  }
+}
 
 #endif
