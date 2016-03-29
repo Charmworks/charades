@@ -55,6 +55,8 @@ class PE: public CBase_PE {
     bool* detector_ready;
     CProxy_CompletionDetector* detector_proxies;
     CompletionDetector** detector_pointers;
+
+    bool gvt_ready() const;
   public:
     Globals* globals;       /**< global variables accessed with PE_VALUE */
     Statistics* statistics; /**< statistics variables accessed with PE_STATS */
@@ -105,7 +107,7 @@ class PE: public CBase_PE {
     void gvt_print(GVT*);
 
     /** \brief Get time stamp of the minium event */
-    Time get_min_time();
+    Time get_min_time() const;
 
     /** \brief Register the given LP to our queues */
     void register_lp(LPToken* next_token, Time next_ts,

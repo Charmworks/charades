@@ -21,6 +21,7 @@ unsigned g_tw_gvt_interval; // number of intervals per gvt
 unsigned g_tw_gvt_phases;   // number of phases of the gvt
 unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 tw_stime g_tw_lookahead;    // event lookahead for conservative
+tw_stime g_tw_leash;        // gvt leash for optimistic
 double  gvt_print_interval; // determines frequency of progress print outs
 size_t    g_tw_rng_max;
 unsigned  g_tw_nRNG_per_lp;
@@ -235,7 +236,7 @@ bool PE::schedule_next_lp() {
 // account the earliest pending event in the system, but also the earliest
 // pending cancellation event, and in the case of fully asychronous, the
 // minimum event sent out since a phase shift.
-Time PE::get_min_time() {
+Time PE::get_min_time() const {
   if(next_lps.top() != NULL) {
     return fmin(next_lps.top()->ts, fmin(min_sent, min_cancel_time));
   } else {
@@ -253,6 +254,24 @@ void PE::end_simulation(CkReductionMsg* m) {
 /******************************************************************************/
 /* Schedulers                                                                 */
 /******************************************************************************/
+
+bool PE::gvt_ready() const {
+  // Use event count instead of leash
+  if (g_tw_leash == 0) {
+    if (gvt_cnt > g_tw_gvt_interval || force_gvt) {
+      if (max_phase == 0 || detector_ready[next_phase]) {
+        return true;
+      }
+    }
+  } else {
+    if (get_min_time() > gvt + g_tw_leash || force_gvt) {
+      if (max_phase == 0 || detector_ready[next_phase]) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 // Just execute events one at a time until the end time.
 void PE::execute_seq() {
@@ -316,13 +335,9 @@ void PE::execute_opt() {
     }
   }
 
-  bool ready_for_gvt = ++gvt_cnt > g_tw_gvt_interval || force_gvt;
+  gvt_cnt++;
   bool ready_for_ldb = g_tw_ldb_interval && (PE_STATS(s_ngvts)+1) % g_tw_ldb_interval == 0;
-  if (max_phase > 1) {
-    ready_for_gvt = ready_for_gvt && detector_ready[next_phase];
-  }
-
-  if (ready_for_gvt) {
+  if (gvt_ready()) {
     // Right now, broadcasting to start GVT is only supported with QD.
 #ifdef ASYNC_BROADCAST
     if (max_phase <= 1 && force_gvt != END_FORCE && force_gvt != EVENT_FORCE) {
@@ -334,7 +349,7 @@ void PE::execute_opt() {
     gvt_begin();
 #endif
   }
-  if (!ready_for_gvt || (max_phase > 1 && !force_gvt && !ready_for_ldb)) {
+  if (!gvt_ready() || (max_phase > 1 && !force_gvt && !ready_for_ldb)) {
     thisProxy[CkMyPe()].execute_opt();
   }
 }
@@ -452,7 +467,7 @@ void PE::gvt_contribute() {
 void PE::gvt_end(CkReductionMsg* msg) {
   GVT* gvt_struct = (GVT*)msg->getData();
   Time new_gvt = gvt_struct->ts;
-  detector_ready[next_phase] = true;
+  if (max_phase) detector_ready[next_phase] = true;
 
   // Update stats that track forced GVTs
   if (gvt_struct->type) {
