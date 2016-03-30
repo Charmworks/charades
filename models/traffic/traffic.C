@@ -213,8 +213,8 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 		CurEvent = tw_event_new(lp->gid, ts, lp);
 		NewM = (Msg_Data *)tw_event_data(CurEvent);
 		NewM->event_type = ARIVAL;
-		NewM->car.x_to_go =tw_rand_integer(lp->rng,0,199) - 99;
-		NewM->car.y_to_go = tw_rand_integer(lp->rng,0,199) - 99;
+		NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
+		NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
 		NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
 		NewM->car.sent_back = 0;
 		NewM->car.in_out = IN;

@@ -1,6 +1,7 @@
 #ifndef INC_traffic_h
 #define INC_traffic_h
 
+#include<stdio.h>
 #include <ross_api.h>
 #include<math.h>   //used for sqrt
 
@@ -55,7 +56,7 @@ typedef struct {
 	int num_out_east_right;
 } Intersection_State;
 
-static int g_traffic_start_events = 5;
+static int g_traffic_start_events = 5 * 1024;
 
 // rate for timestamp exponential distribution
 static tw_stime mean = 1.0;
@@ -75,6 +76,15 @@ static unsigned  NUM_VP_Y=  8;     //32
 static tw_lpid g_cells_per_vp_x = NUM_CELLS_X/NUM_VP_X;
 static tw_lpid g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;
 static unsigned  g_cells_per_vp = (NUM_CELLS_X/NUM_VP_X)*(NUM_CELLS_Y/NUM_VP_Y);
+static unsigned g_balance = 0;
+static tw_stime g_percentStart = 0.1;
+static unsigned g_startSize = 10;
+static unsigned g_startX = 0;
+static unsigned g_startY= 0;
+static tw_stime g_percentEnd = 0.1;
+static unsigned g_endSize = 10;
+static unsigned g_endX = NUM_CELLS_X / 2;
+static unsigned g_endY= NUM_CELLS_Y / 2;
 
 void Intersection_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
 void Intersection_RC_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
