@@ -33,6 +33,7 @@ unsigned g_lps_per_chare; // number of LPs per chare (if constant)
 unsigned g_total_lps;     // number of LPs in the simulation
 size_t        g_tw_msg_sz;
 unsigned      g_tw_max_events_buffered;
+unsigned      g_tw_max_remote_events_buffered;
 
 extern CProxy_Initialize mainProxy;
 CProxy_PE pes;

@@ -33,6 +33,7 @@ extern unsigned g_lps_per_chare; // number of LPs per chare (if constant)
 extern unsigned g_total_lps;     // number of LPs in the simulation
 extern size_t        g_tw_msg_sz;
 extern unsigned      g_tw_max_events_buffered;
+extern unsigned      g_tw_max_remote_events_buffered;
 
 // A struct for holding global variables used by ROSS. An instance of this
 // struct will be held by each PE group chare.
@@ -74,6 +75,7 @@ inline void initialize_globals(Globals* globals) {
 
   g_tw_msg_sz              = 0;
   g_tw_max_events_buffered = 1024;
+  g_tw_max_remote_events_buffered = 1024;
 
   g_numlp_map  = NULL;
   g_init_map   = init_block_map;

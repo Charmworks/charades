@@ -103,6 +103,7 @@ const tw_optdef app_opt[] =
   TWOPT_STIME("percent-long", percent_long, "desired percent of long sends [0.0-1.0]"),
   TWOPT_STIME("short-delay", short_delay, "exponential distribution mean for event delays"),
   TWOPT_STIME("long-delay", long_delay, "long exponential distribution mean for event delays"),
+  TWOPT_UINT("delay-seed", delay_seed, "used with some delay maps"),
 
   TWOPT_UINT("remote-map", remote_map, "0 - Uniform, 1 - Blocked"),
   TWOPT_STIME("percent-greedy", percent_greedy, "desired percent of greedy lps [0.0-1.0]"),
@@ -204,8 +205,8 @@ int main(int argc, char **argv, char **env) {
         break;
     }
     printf("   %% Heavy................%0.2f%%\n", percent_heavy * 100);
-    printf("   Light Load.............%0.2f us\n", light_load);
-    printf("   Heavy Load.............%0.2f us\n", heavy_load);
+    printf("   Light Load.............%i us\n", light_load);
+    printf("   Heavy Load.............%i us\n", heavy_load);
     printf("   Heavy Seed.............%u\n", load_seed);
     printf("\n");
     switch (delay_map) {
