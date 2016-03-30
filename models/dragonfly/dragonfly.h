@@ -5,9 +5,9 @@
 #include <ross_api.h>
 
 // dragonfly basic configuration parameters
-#define GLOBAL_CHANNELS 4
-#define NUM_ROUTER 8
-#define NUM_TERMINALS 4
+#define GLOBAL_CHANNELS 12
+#define NUM_ROUTER 24
+#define NUM_TERMINALS 12
 
 #define MESSAGE_SIZE 512.0
 #define PACKET_SIZE 512.0
@@ -48,8 +48,8 @@
 
 #define NUM_ROWS NUM_ROUTER*NUM_TERMINALS
 #define NUM_COLS (NUM_ROUTER*NUM_TERMINALS)+1
-#define TERMINAL_WAITING_PACK_COUNT (1 << 16)
-#define ROUTER_WAITING_PACK_COUNT (1 << 18)
+#define TERMINAL_WAITING_PACK_COUNT (1 << 8)
+#define ROUTER_WAITING_PACK_COUNT (1 << 8)
 
 extern FILE *dragonfly_event_log;
 

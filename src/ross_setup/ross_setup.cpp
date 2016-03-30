@@ -31,11 +31,12 @@ void tw_event_setup() {
   DEBUG_MASTER("Created %d output messages\n", NUM_OUT_MESG);
 
   PE_VALUE(event_buffer) = new EventBuffer(g_tw_max_events_buffered,
+                                           g_tw_max_remote_events_buffered,
                                            g_tw_msg_sz);
   PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_abort_event();
 
-  DEBUG_MASTER("Created event buffer with %d events of size %d\n",
-      g_tw_max_events_buffered, g_tw_msg_sz);
+  DEBUG_MASTER("Created event buffer with %d events and %d msgs of size %d\n",
+      g_tw_max_events_buffered, g_tw_max_remote_events_buffered, g_tw_msg_sz);
 }
 
 char **CopyArgs(char **argv)
@@ -71,6 +72,7 @@ void tw_init(int* argc, char*** argv) {
     TWOPT_UINT("num-chares", g_num_chares, "Number of chares"),
     TWOPT_UINT("lps-per-chare", g_lps_per_chare, "LPs per chare"),
     TWOPT_UINT("buffer-size", g_tw_max_events_buffered, "Number of events buffered"),
+    TWOPT_UINT("msg-buffer-size", g_tw_max_remote_events_buffered, "Number of events buffered"),
     TWOPT_STIME("report-interval", gvt_print_interval, "percent of runtime to print GVT"),
     TWOPT_END()
   };

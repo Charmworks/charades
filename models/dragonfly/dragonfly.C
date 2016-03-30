@@ -1603,160 +1603,48 @@ unsigned dragonfly_numlp_map (unsigned chareid) {
   return nlp_router_per_chare(chareid) + nlp_terminal_per_chare(chareid) + nlp_mpi_procs_per_chare(chareid);
 }
 
-int main(int argc, char **argv)
-{
-     char log[32];
-     tw_opt_add(app_opt);
-     tw_init(&argc, &argv);
+int main(int argc, char **argv) {
+  char log[32];
+  tw_opt_add(app_opt);
+  tw_init(&argc, &argv);
 
-     // UNIFORM_RANDOM
-     // WORST_CASE
-     // TRANSPOSE (send packets to the transpose of a 2D matrix)
-     minimal_count = 0;
-     nonmin_count = 0;
-     num_packets = MESSAGE_SIZE / PACKET_SIZE;
-     num_chunks = PACKET_SIZE / CHUNK_SIZE;
-     max_packets = INJECTION_INTERVAL / MEAN_INTERVAL;
+  minimal_count = 0;
+  nonmin_count = 0;
+  num_packets = MESSAGE_SIZE / PACKET_SIZE;
+  num_chunks = PACKET_SIZE / CHUNK_SIZE;
+  max_packets = INJECTION_INTERVAL / MEAN_INTERVAL;
 
-     total_routers=NUM_ROUTER*num_groups;
-     total_terminals=NUM_ROUTER*NUM_TERMINALS*num_groups;
-     total_mpi_procs = NUM_ROUTER*NUM_TERMINALS*num_groups;
+  total_routers=NUM_ROUTER*num_groups;
+  total_terminals=NUM_ROUTER*NUM_TERMINALS*num_groups;
+  total_mpi_procs = NUM_ROUTER*NUM_TERMINALS*num_groups;
 
-     terminal_rem = total_terminals % (g_num_chares);
+  g_num_chares = total_routers;
 
-#ifdef LOG_DRAGONFLY
-     sprintf( log, "dragonfly-log.%d", g_tw_mynode );
-     dragonfly_event_log = fopen( log, "w+");
-     if( dragonfly_event_log == NULL )
-        tw_error( TW_LOC, "Failed to Open DRAGONFLY Event Log file \n");
-#endif
+  terminal_rem = total_terminals % (g_num_chares);
+  router_rem = total_routers % (g_num_chares);
 
-     router_rem = total_routers % (g_num_chares);
+  g_type_map = dragonfly_type_map;
+  g_init_map = dragonfly_mapping;
+  g_local_map = dragonfly_mapping_to_lp;
+  g_chare_map = mapping;
+  g_numlp_map = dragonfly_numlp_map;
 
-     g_type_map = dragonfly_type_map;
-     g_init_map = dragonfly_mapping;
-     g_local_map = dragonfly_mapping_to_lp;
-     g_chare_map = mapping;
-     g_numlp_map = dragonfly_numlp_map;
+  g_tw_max_events_buffered = mem_factor * 1024 * ((total_terminals+total_routers)/tw_nnodes()) + opt_mem;
 
-     // g_tw_max_events_buffered = mem_factor * 1024 * (nlp_terminal_per_pe + nlp_router_per_pe) + opt_mem;
-     g_tw_max_events_buffered = mem_factor * 1024 * ((total_terminals+total_routers)/tw_nnodes()) + opt_mem;
+  if (tw_ismaster()) {
+    printf("Creating Dragonfly Network:\n");
+    printf("Total Routers %d (%d per group)\n", total_routers, NUM_ROUTER);
+    printf("Total Terminals %d (%d per router)\n", total_terminals, NUM_TERMINALS);
+    printf("Calling define LP with mem usage %.2lfMB\n", CmiMemoryUsage()/(1024.*1024));
+  }
+  tw_define_lps(sizeof(terminal_message), 0);
+  if (tw_ismaster()) {
+    printf("After Calling define LP with mem usage %.2lfMB\n", CmiMemoryUsage()/(1024.*1024));
+  }
 
-      printf("[%d] Calling define LP with mem size %d %.2lfMB\n", CkMyPe(), g_tw_max_events_buffered,
-      CmiMemoryUsage()/(1024.*1024));
-     tw_define_lps(sizeof(terminal_message), 0);
-      printf("[%d] After Calling define LP with mem size %d %.2lfMB\n", CkMyPe(), g_tw_max_events_buffered,
-      CmiMemoryUsage()/(1024.*1024));
+  packet_offset = (g_tw_ts_end/MEAN_INTERVAL) * num_packets;
+  tw_run();
+  tw_end();
 
-
-#if DFDEBUG
-     //sprintf( log, "dragonfly-log.%d", g_tw_mynode );
-     //dragonfly_event_log=fopen(log, "w+");
-
-     //if(dragonfly_event_log == NULL)
-	//tw_error(TW_LOC, "\n Failed to open dragonfly event log file \n");
-#endif
-
-
-#if DFDEBUG
-     if(tw_ismaster())
-	{
-          printf("\n total_routers %d total_terminals %d g_num_chares %d g_tw_mynode: %d \n ", total_routers, total_terminals, (int)g_num_chares, (int)g_tw_mynode);
-
-	  //printf("\n Arrival rate %f g_tw_mynode %d nlp_terminal_per_pe is %d, nlp_router_per_pe is %d \n ", MEAN_INTERVAL, (int)g_tw_mynode, nlp_terminal_per_pe, nlp_router_per_pe);
-	}
-#endif
-    packet_offset = (g_tw_ts_end/MEAN_INTERVAL) * num_packets;
-    tw_run();
-
-    if(tw_ismaster())
-    {
-      printf("\nDragonfly Network Model Statistics \n");
-      //printf("\t%-50s %11lld\n", "Number of nodes", nlp_terminal_per_pe * g_num_chares);
-//      printf("\n Slowest packet %lld ", max_packet);
-      if(ROUTING == ADAPTIVE)
-	      printf("\n ADAPTIVE ROUTING STATS: %d packets routed minimally %d packets routed non-minimally ", minimal_count, nonmin_count);
-    }
-
-/*
-    // MODEL STATS
-    unsigned long long total_finished_storage[N_COLLECT_POINTS];
-    unsigned long long total_generated_storage[N_COLLECT_POINTS];
-    unsigned long long N_total_finish,N_total_hop;
-
-   tw_stime total_time_sum,g_max_latency;
-
-   int i;
-
-   for( i=0; i<N_COLLECT_POINTS; i++ )
-    {
-     MPI_Reduce( &N_finished_storage[i], &total_finished_storage[i],1,
-                 MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-
-     MPI_Reduce( &N_generated_storage[i], &total_generated_storage[i],1,
-                  MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-     }
-     MPI_Reduce( &total_time, &total_time_sum,1,
-                    MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
-     MPI_Reduce( &N_finished, &N_total_finish,1,
-                    MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-
-     MPI_Reduce( &total_hops, &N_total_hop,1,
-                    MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-
-     MPI_Reduce( &max_latency, &g_max_latency,1,
-                    MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-
-    for( i=1; i<N_COLLECT_POINTS; i++ )
-       {
-         total_finished_storage[i]+=total_finished_storage[i-1];
-         total_generated_storage[i]+=total_generated_storage[i-1];
-       }
-*/
-     if(tw_ismaster())
-      {
-/*
-           printf("\n ****************** \n");
-           printf("\n total finish:         %lld and %lld; \n",
-                   total_finished_storage[N_COLLECT_POINTS-1],N_total_finish);
-           printf("\n total generate:       %lld; \n",
-                  total_generated_storage[N_COLLECT_POINTS-1]);
-           printf("\n total hops:           %lf; \n",
-                   (double)N_total_hop/total_finished_storage[N_COLLECT_POINTS-1]);
-           printf("\n average travel time:  %lf; \n\n",
-                   total_time_sum/total_finished_storage[N_COLLECT_POINTS-1]);
-*/
-/*          for( i=0; i<N_COLLECT_POINTS; i++ )
-           {
-             printf(" %d ",i*100/N_COLLECT_POINTS);
-             printf("finish: %lld; generate: %lld; alive: %lld\n",
-                     total_finished_storage[i],
-                     total_generated_storage[i],
-                     total_generated_storage[i]-total_finished_storage[i]);
-           }
-
-	tw_stime bandwidth;
-	tw_stime interval = (g_tw_ts_end / N_COLLECT_POINTS);
-	interval = interval / (1000.0 * 1000.0 * 1000.0); //convert seconds to ns
-	for( i=1; i<N_COLLECT_POINTS; i++ )
-	   {
-		bandwidth = total_finished_storage[i] - total_finished_storage[i - 1];
-		bandwidth = (bandwidth * PACKET_SIZE) / (1024.0 * 1024.0 * 1024.0);
-		bandwidth = bandwidth / interval;
-		printf("\n Interval %.7lf Bandwidth %lf ", interval, bandwidth);
-	   }
-            // capture the steady state statistics
-          unsigned long long steady_sum=0;
-          for( i = N_COLLECT_POINTS/2; i<N_COLLECT_POINTS;i++)
-             steady_sum+=total_generated_storage[i]-total_finished_storage[i];
-
-          printf("\n Steady state, packet alive: %lld\n",
-                   2*steady_sum/N_COLLECT_POINTS);*/
-           // printf("\nMax latency is %lf\n\n",g_max_latency); //TODO: STATS
-
-      }
-   tw_end();
-   return 0;
+  return 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////

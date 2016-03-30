@@ -23,8 +23,8 @@ static int start_events = 1;
 
 static int load_map = 0;
 static tw_stime percent_heavy = 0.0;
-static tw_stime light_load = 0.0;
-static tw_stime heavy_load = 0.0;
+static int light_load = 0;
+static int heavy_load = 0;
 static int load_seed = 0;
 
 static int delay_map = 0;
