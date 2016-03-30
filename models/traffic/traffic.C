@@ -47,7 +47,7 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 	return( dest_lpid );
 }
 
-//CHARE MAP (TENTATIVE)
+//CHARE MAP
 unsigned  traffic_chare_map( tw_lpid lpid)
 {
 	tw_lpid lp_x = lpid % NUM_CELLS_X; //lpid -> (lp_x,lp_y)
@@ -59,7 +59,7 @@ unsigned  traffic_chare_map( tw_lpid lpid)
 	return (unsigned) vp_index;
 }
 
-// LOCAL MAP( TENTATIVE)
+// LOCAL MAP
 
 tw_lpid traffic_local_map( tw_lpid lpid)
 {
@@ -106,9 +106,18 @@ const tw_optdef app_opt[] =
 {
   TWOPT_GROUP("TRAFFIC Model"),
   TWOPT_STIME("mean", mean, "exponential distribution mean for timestamps"),
-   TWOPT_UINT("start-events", g_traffic_start_events, "number of initial messages per LP"),
-  TWOPT_UINT("total-lps", INTERSECTION_LPS, "Total LPS (intersections) in simulation. Should be perfect square"),
-  TWOPT_UINT("lpPerChare", g_cells_per_vp, "Number of lps per chare. Should be perfect square"),
+  TWOPT_UINT("balance",g_balance, "distribution of cars: 0 = balanced, 1=imbalanced"),
+  TWOPT_STIME("percentStart",g_percentStart, "Pecent of cars that start in clustered block [0-1]"),
+  TWOPT_UINT("startSize",g_startSize, "Size of start cluster block. X by X block"),
+  TWOPT_UINT("startX",g_startX, "X coord of upper left corner of start cluster"),
+  TWOPT_UINT("startY",g_startY, "Y coord of upper left corner of start cluster"),
+   TWOPT_STIME("percentEnd",g_percentEnd, "Pecent of cars that end in clustered block [0-1]"),
+  TWOPT_UINT("destSize",g_endSize, "Size of end cluster block. X by X block"),
+  TWOPT_UINT("destX",g_endX, "X coord of upper left corner of end cluster"),
+  TWOPT_UINT("destY",g_endY, "Y coord of upper left corner of end cluster"),
+   TWOPT_UINT("start-events", g_traffic_start_events, "number of initial cars in system"),
+//  TWOPT_UINT("total-lps", INTERSECTION_LPS, "Total LPS (intersections) in simulation. Should be perfect square"),
+//  TWOPT_UINT("lpPerChare", g_cells_per_vp, "Number of lps per chare. Should be perfect square"),
   TWOPT_UINT("carsPerRoad", MAX_CARS_ON_ROAD, "Max number of cars on a given road"),
   TWOPT_CHAR("run", run_id, "user supplied run name"),
   TWOPT_END()
@@ -123,6 +132,8 @@ int main(int argc, char * argv[])
 {
 	g_tw_ts_end = 30;
 	g_tw_gvt_interval = 16;
+	g_num_chares = 10;
+
 
 	tw_opt_add(app_opt);
 	tw_init(&argc, &argv);
@@ -130,19 +141,18 @@ int main(int argc, char * argv[])
 	if( g_tw_lookahead > 1.0 )
 		tw_error(TW_LOC, "Lookahead > 1.0 .. needs to be less\n");
 
-	//reset mean based on lookahead
-	mean = mean - g_tw_lookahead;
+	INTERSECTION_LPS = g_total_lps;
+	g_cells_per_vp = g_lps_per_chare;	
 	NUM_CELLS_X = (unsigned) sqrt(INTERSECTION_LPS);
 	NUM_CELLS_Y = NUM_CELLS_X;
 	NUM_VP_X = (unsigned) sqrt( NUM_CELLS_X * NUM_CELLS_X / g_cells_per_vp);
 	NUM_VP_Y = NUM_VP_X;
 	g_cells_per_vp_x = NUM_CELLS_X/NUM_VP_X;
-	g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;
-	//I'm assuming chare = VP
-
+	g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;	
 	g_num_chares = NUM_VP_X * NUM_VP_Y;
-	g_lps_per_chare = g_cells_per_vp;
-	g_total_lps = NUM_CELLS_X * NUM_CELLS_Y;
+
+	//reset mean based on lookahead
+	mean = mean - g_tw_lookahead;
 
 	g_type_map = traffic_type_map;	
 	g_chare_map = traffic_chare_map;	
@@ -157,13 +167,18 @@ int main(int argc, char * argv[])
 		printf("   Lookahead..............%lf\n", g_tw_lookahead);
 		printf("   Start-events...........%u\n", g_traffic_start_events);
 		printf("   Mean...................%lf\n", mean);
-		printf("   Total LP's.............%u\n",INTERSECTION_LPS);
-		printf("   LP's per Chare.........%u\n",g_cells_per_vp);
+		printf("   percentStart...........%lf\n", g_percentStart);
+		printf("   startSize..............%u\n", g_startSize);
+		printf("   startX.................%u\n", g_startX);
+		printf("   startY.................%u\n", g_startY);
+		printf("   percentEnd.............%lf\n", g_percentEnd);
+		printf("   destSize..............%u\n", g_endSize);
+		printf("   destX.................%u\n", g_endX);
+		printf("   destY.................%u\n", g_endY);
 		printf("   Max Cars on Road.......%u\n", MAX_CARS_ON_ROAD);
 		printf("========================================\n\n");
 
 	}
-
 	tw_run();
 	tw_end();
 
@@ -174,11 +189,7 @@ int main(int argc, char * argv[])
 }
 
 void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
-	//printf("begin init\n");
-	int i;
-	tw_event *CurEvent;
-	tw_stime ts = 0;
-	Msg_Data *NewM;
+//	printf("begin init\n");
 
 	SV->total_cars_arrived = 0;
 	SV->total_cars_finished = 0;
@@ -206,25 +217,87 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 	SV->num_out_east_left = 0;
 	SV->num_out_east_straight = 0;
 	SV->num_out_east_right = 0;
-
-	for(i = 0; i < g_traffic_start_events; i++) 
+	if(lp->gid==0)
 	{
-		ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
-		CurEvent = tw_event_new(lp->gid, ts, lp);
-		NewM = (Msg_Data *)tw_event_data(CurEvent);
-		NewM->event_type = ARIVAL;
-		NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
-		NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
-		NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
-		NewM->car.sent_back = 0;
-		NewM->car.in_out = IN;
-		tw_event_send(CurEvent);
+
+		int i = 0;
+		tw_event *CurEvent;
+		tw_stime ts = 0;
+		Msg_Data *NewM;
+		tw_lpid dest = 0;			//used to pick start location
+		tw_lpid destX = 0;
+		tw_lpid destY = 0;
+		tw_lpid endX = 0;
+		tw_lpid endY = 0;
+		switch(g_balance) {
+		
+		case 0: 				//balanced distribution
+			for(i = 0; i < g_traffic_start_events; i++) 
+			{
+				dest = tw_rand_integer(lp->rng,0,INTERSECTION_LPS-1);
+				ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
+				CurEvent = tw_event_new(dest, ts, lp);
+				NewM = (Msg_Data *)tw_event_data(CurEvent);
+				NewM->event_type = ARIVAL;
+				NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
+				NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
+				NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
+				NewM->car.sent_back = 0;
+				NewM->car.in_out = IN;
+				tw_event_send(CurEvent);
+			}
+			break;
+		
+		case 1:					//unbalanced
+		
+			for(i = 0; i < g_traffic_start_events; i++) 
+			{
+				if( i > g_percentStart * g_traffic_start_events)
+				{	
+					dest = tw_rand_integer(lp->rng,0,INTERSECTION_LPS-1);
+					destX = dest % NUM_CELLS_X;
+					destY = dest / NUM_CELLS_X;
+				}
+				else
+				{
+					destX = tw_rand_integer(lp->rng,0,g_startSize-1)+ g_startX;
+					destY = tw_rand_integer(lp->rng,0,g_startSize-1)+g_startY;
+					dest = destX + NUM_CELLS_X * destY;
+				}
+				ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
+				CurEvent = tw_event_new(dest, ts, lp);
+				NewM = (Msg_Data *)tw_event_data(CurEvent);
+				NewM->event_type = ARIVAL;
+
+				if( i > g_percentEnd * g_traffic_start_events)
+				{
+					NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
+					NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
+				}
+				else
+				{
+					endX = tw_rand_integer(lp->rng,0,g_endSize-1)+ g_endX;
+					endY = tw_rand_integer(lp->rng,0,g_endSize-1)+g_endY;
+					NewM->car.x_to_go = endX-destX;		
+					NewM->car.y_to_go = endY-destY;
+	
+				}
+				
+					
+				NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
+				NewM->car.sent_back = 0;
+				NewM->car.in_out = IN;
+				tw_event_send(CurEvent);
+			}
+			break;
+		
+		}
 	}
 }
 
 void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, tw_lp *lp) 
 {
-
+	
 	tw_stime ts = g_tw_lookahead;
 	int new_event_direction=0;
 	tw_event *CurEvent=NULL;
