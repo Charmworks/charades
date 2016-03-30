@@ -29,13 +29,13 @@ tw_lpid Cell_ComputeMove( tw_lpid lpid, int direction )
 	case 2:
 		//South
 		n_x = lpid_x;
-		n_y = ((lpid_y - 1) + NUM_CELLS_Y) % NUM_CELLS_Y;
+		n_y = (lpid_y + 1) % NUM_CELLS_Y;
 		break;
 
 	case 3:
 		//North
 		n_x = lpid_x;
-		n_y = (lpid_y + 1) % NUM_CELLS_Y;
+		n_y = ((lpid_y - 1) + NUM_CELLS_Y) % NUM_CELLS_Y;
 		break;
 
 	default:
@@ -136,7 +136,8 @@ int main(int argc, char * argv[])
 	NUM_CELLS_Y = NUM_CELLS_X;
 	NUM_VP_X = (unsigned) sqrt( NUM_CELLS_X * NUM_CELLS_X / g_cells_per_vp);
 	NUM_VP_Y = NUM_VP_X;
-	//not sure if these are needed. 
+	g_cells_per_vp_x = NUM_CELLS_X/NUM_VP_X;
+	g_cells_per_vp_y = NUM_CELLS_Y/NUM_VP_Y;
 	//I'm assuming chare = VP
 
 	g_num_chares = NUM_VP_X * NUM_VP_Y;
@@ -212,8 +213,8 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 		CurEvent = tw_event_new(lp->gid, ts, lp);
 		NewM = (Msg_Data *)tw_event_data(CurEvent);
 		NewM->event_type = ARIVAL;
-		NewM->car.x_to_go =tw_rand_integer(lp->rng,0,199) - 99;
-		NewM->car.y_to_go = tw_rand_integer(lp->rng,0,199) - 99;
+		NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
+		NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
 		NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
 		NewM->car.sent_back = 0;
 		NewM->car.in_out = IN;
