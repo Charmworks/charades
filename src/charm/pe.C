@@ -133,8 +133,9 @@ void charm_run() {
 #define PE_STATS(x) statistics->x
 
 PE::PE(CProxy_Initialize srcProxy) :
-    gvt_cnt(0), gvt(0.0), min_sent(DBL_MAX), min_cancel_time(DBL_MAX),
-    force_gvt(0), waiting_on_gvt(false), gvt_started(false) {
+    gvt_cnt(0), gvt(0.0), leash_start(0.0), min_sent(DBL_MAX),
+    min_cancel_time(DBL_MAX), force_gvt(0), waiting_on_gvt(false),
+    gvt_started(false) {
 
   #ifdef CMK_TRACE_ENABLED
   if (CkMyPe() == 0) {
@@ -267,7 +268,7 @@ bool PE::gvt_ready() const {
       }
     }
   } else {
-    if (get_min_time() > gvt + g_tw_leash || force_gvt) {
+    if (get_min_time() > leash_start + g_tw_leash || force_gvt) {
       if (max_phase == 0 || detector_ready[next_phase]) {
         return true;
       }
@@ -456,6 +457,7 @@ void PE::gvt_contribute() {
           CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
     }
   }
+  leash_start = get_min_time();
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
@@ -502,6 +504,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
 
   PE_VALUE(g_last_gvt) = gvt;
   gvt = new_gvt;
+  leash_start = new_gvt;
   if (tw_ismaster() && gvt/g_tw_ts_end > PE_VALUE(percent_complete)) {
     gvt_print(gvt_struct);
   }

@@ -37,6 +37,7 @@ class PE: public CBase_PE {
 
     Time gvt;           /**< current gvt on this PE */
     Time min_sent;      /**< minimum ts sent out during this phase */
+    Time leash_start;   /**< start of the current leash (usually == gvt) */
     int gvt_cnt;        /**< iteration count since last gvt */
     bool gvt_started;
     bool waiting_on_gvt;/**< flag to make sure we don't overlap gvts */
