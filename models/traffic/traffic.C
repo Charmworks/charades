@@ -1,5 +1,6 @@
 #include "traffic.h"
 
+
 //Map consists of NUM_CELLS_X x NUM_CELL_Y LPS
 
 
@@ -115,7 +116,7 @@ const tw_optdef app_opt[] =
   TWOPT_UINT("destSize",g_endSize, "Size of end cluster block. X by X block"),
   TWOPT_UINT("destX",g_endX, "X coord of upper left corner of end cluster"),
   TWOPT_UINT("destY",g_endY, "Y coord of upper left corner of end cluster"),
-   TWOPT_UINT("start-events", g_traffic_start_events, "number of initial cars in system"),
+   TWOPT_UINT("start-events", g_traffic_start_events, "average start events per LP. start-events * numLPS = total start events"),
 //  TWOPT_UINT("total-lps", INTERSECTION_LPS, "Total LPS (intersections) in simulation. Should be perfect square"),
 //  TWOPT_UINT("lpPerChare", g_cells_per_vp, "Number of lps per chare. Should be perfect square"),
   TWOPT_UINT("carsPerRoad", MAX_CARS_ON_ROAD, "Max number of cars on a given road"),
@@ -217,81 +218,77 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 	SV->num_out_east_left = 0;
 	SV->num_out_east_straight = 0;
 	SV->num_out_east_right = 0;
-	if(lp->gid==0)
-	{
 
-		int i = 0;
-		tw_event *CurEvent;
-		tw_stime ts = 0;
-		Msg_Data *NewM;
-		tw_lpid dest = 0;			//used to pick start location
-		tw_lpid destX = 0;
-		tw_lpid destY = 0;
-		tw_lpid endX = 0;
-		tw_lpid endY = 0;
-		switch(g_balance) {
-		
-		case 0: 				//balanced distribution
-			for(i = 0; i < g_traffic_start_events; i++) 
-			{
+	int i = 0;
+	tw_event *CurEvent;
+	tw_stime ts = 0;
+	Msg_Data *NewM;
+	tw_lpid dest = 0;			//used to pick start location
+	tw_lpid destX = 0;
+	tw_lpid destY = 0;
+	tw_lpid endX = 0;
+	tw_lpid endY = 0;
+	switch(g_balance) {
+	
+	case 0: 				//balanced distribution
+		for(i = 0; i < g_traffic_start_events; i++) 
+		{
+			ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
+			CurEvent = tw_event_new(lp->gid, ts, lp);
+			NewM = (Msg_Data *)tw_event_data(CurEvent);
+			NewM->event_type = ARIVAL;
+			NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
+			NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
+			NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
+			NewM->car.sent_back = 0;
+			NewM->car.in_out = IN;
+			tw_event_send(CurEvent);
+		}
+		break;
+	
+	case 1:					//unbalanced
+	
+		for(i = 0; i < g_traffic_start_events; i++) 
+		{
+			if( g_percentStart < tw_rand_unif(lp->rng))
+			{	
 				dest = tw_rand_integer(lp->rng,0,INTERSECTION_LPS-1);
-				ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
-				CurEvent = tw_event_new(dest, ts, lp);
-				NewM = (Msg_Data *)tw_event_data(CurEvent);
-				NewM->event_type = ARIVAL;
+				destX = dest % NUM_CELLS_X;
+				destY = dest / NUM_CELLS_X;
+			}
+			else
+			{
+				destX = tw_rand_integer(lp->rng,0,g_startSize-1)+ g_startX;
+				destY = tw_rand_integer(lp->rng,0,g_startSize-1)+g_startY;
+				dest = destX + NUM_CELLS_X * destY;
+			}
+			ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
+			CurEvent = tw_event_new(dest, ts, lp);
+			NewM = (Msg_Data *)tw_event_data(CurEvent);
+			NewM->event_type = ARIVAL;
+
+			if( g_percentEnd < tw_rand_unif(lp->rng))
+			{
 				NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
 				NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
-				NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
-				NewM->car.sent_back = 0;
-				NewM->car.in_out = IN;
-				tw_event_send(CurEvent);
 			}
-			break;
-		
-		case 1:					//unbalanced
-		
-			for(i = 0; i < g_traffic_start_events; i++) 
+			else
 			{
-				if( i > g_percentStart * g_traffic_start_events)
-				{	
-					dest = tw_rand_integer(lp->rng,0,INTERSECTION_LPS-1);
-					destX = dest % NUM_CELLS_X;
-					destY = dest / NUM_CELLS_X;
-				}
-				else
-				{
-					destX = tw_rand_integer(lp->rng,0,g_startSize-1)+ g_startX;
-					destY = tw_rand_integer(lp->rng,0,g_startSize-1)+g_startY;
-					dest = destX + NUM_CELLS_X * destY;
-				}
-				ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
-				CurEvent = tw_event_new(dest, ts, lp);
-				NewM = (Msg_Data *)tw_event_data(CurEvent);
-				NewM->event_type = ARIVAL;
+				endX = tw_rand_integer(lp->rng,0,g_endSize-1)+ g_endX;
+				endY = tw_rand_integer(lp->rng,0,g_endSize-1)+g_endY;
+				NewM->car.x_to_go = endX-destX;		
+				NewM->car.y_to_go = endY-destY;
 
-				if( i > g_percentEnd * g_traffic_start_events)
-				{
-					NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
-					NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
-				}
-				else
-				{
-					endX = tw_rand_integer(lp->rng,0,g_endSize-1)+ g_endX;
-					endY = tw_rand_integer(lp->rng,0,g_endSize-1)+g_endY;
-					NewM->car.x_to_go = endX-destX;		
-					NewM->car.y_to_go = endY-destY;
-	
-				}
-				
-					
-				NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
-				NewM->car.sent_back = 0;
-				NewM->car.in_out = IN;
-				tw_event_send(CurEvent);
 			}
-			break;
-		
+			
+				
+			NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
+			NewM->car.sent_back = 0;
+			NewM->car.in_out = IN;
+			tw_event_send(CurEvent);
 		}
+		break;
+	
 	}
 }
 

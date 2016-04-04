@@ -56,7 +56,7 @@ typedef struct {
 	int num_out_east_right;
 } Intersection_State;
 
-static int g_traffic_start_events = 5 * 1024;
+static int g_traffic_start_events = 5;
 
 // rate for timestamp exponential distribution
 static tw_stime mean = 1.0;
