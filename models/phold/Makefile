@@ -8,4 +8,4 @@ clean:
 
 
 phold: phold.C phold.h $(BUILD_DIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module RotateLB phold.C -o phold $(LDFLAGS) -L$(BUILD_DIR) -lross
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs phold.C -o phold $(LDFLAGS) -L$(BUILD_DIR) -lross

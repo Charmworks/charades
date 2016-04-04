@@ -22,6 +22,7 @@ unsigned g_tw_gvt_phases;   // number of phases of the gvt
 unsigned g_tw_greedy_start; // whether we allow a greedy start or not
 unsigned g_tw_async_reduction; // allow GVT reduction and event exec to overlap
 unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
+unsigned g_tw_max_ldb;      // max number of times we will load balance
 tw_stime g_tw_lookahead;    // event lookahead for conservative
 tw_stime g_tw_leash;        // gvt leash for optimistic
 double  gvt_print_interval; // determines frequency of progress print outs
@@ -135,7 +136,7 @@ void charm_run() {
 PE::PE(CProxy_Initialize srcProxy) :
     gvt_cnt(0), gvt(0.0), leash_start(0.0), min_sent(DBL_MAX),
     min_cancel_time(DBL_MAX), force_gvt(0), waiting_on_gvt(false),
-    gvt_started(false) {
+    gvt_started(false), ldb_cnt(0) {
 
   #ifdef CMK_TRACE_ENABLED
   if (CkMyPe() == 0) {
@@ -535,7 +536,9 @@ void PE::gvt_end(CkReductionMsg* msg) {
 #ifdef CMK_TRACE_ENABLED
       ldb_start = CmiWallTimer();
 #endif
-      g_tw_ldb_interval = 0;
+      if (ldb_cnt++ >= g_tw_max_ldb) {
+        g_tw_ldb_interval = 0;
+      }
       contribute(CkCallback(CkReductionTarget(LP,load_balance), lps));
     } else if (!g_tw_async_reduction || force_gvt) {
       force_gvt = 0;
