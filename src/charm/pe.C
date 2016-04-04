@@ -268,7 +268,9 @@ bool PE::gvt_ready() const {
       }
     }
   } else {
-    if (get_min_time() > leash_start + g_tw_leash || force_gvt) {
+    LPToken* min = next_lps.top();
+    if (min == NULL) return true;
+    if (min->ts > leash_start + g_tw_leash || force_gvt) {
       if (max_phase == 0 || detector_ready[next_phase]) {
         return true;
       }
