@@ -22,6 +22,7 @@ unsigned g_tw_gvt_phases;   // number of phases of the gvt
 unsigned g_tw_greedy_start; // whether we allow a greedy start or not
 unsigned g_tw_async_reduction; // allow GVT reduction and event exec to overlap
 unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
+unsigned g_tw_max_ldb;      // max number of times we will load balance
 tw_stime g_tw_lookahead;    // event lookahead for conservative
 tw_stime g_tw_leash;        // gvt leash for optimistic
 double  gvt_print_interval; // determines frequency of progress print outs
@@ -133,8 +134,9 @@ void charm_run() {
 #define PE_STATS(x) statistics->x
 
 PE::PE(CProxy_Initialize srcProxy) :
-    gvt_cnt(0), gvt(0.0), min_sent(DBL_MAX), min_cancel_time(DBL_MAX),
-    force_gvt(0), waiting_on_gvt(false), gvt_started(false) {
+    gvt_cnt(0), gvt(0.0), leash_start(0.0), min_sent(DBL_MAX),
+    min_cancel_time(DBL_MAX), force_gvt(0), waiting_on_gvt(false),
+    gvt_started(false), ldb_cnt(0) {
 
   #ifdef CMK_TRACE_ENABLED
   if (CkMyPe() == 0) {
@@ -267,7 +269,9 @@ bool PE::gvt_ready() const {
       }
     }
   } else {
-    if (get_min_time() > gvt + g_tw_leash || force_gvt) {
+    LPToken* min = next_lps.top();
+    if (min == NULL) return true;
+    if (min->ts > leash_start + g_tw_leash || force_gvt) {
       if (max_phase == 0 || detector_ready[next_phase]) {
         return true;
       }
@@ -456,6 +460,7 @@ void PE::gvt_contribute() {
           CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
     }
   }
+  leash_start = get_min_time();
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
 
@@ -502,6 +507,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
 
   PE_VALUE(g_last_gvt) = gvt;
   gvt = new_gvt;
+  leash_start = new_gvt;
   if (tw_ismaster() && gvt/g_tw_ts_end > PE_VALUE(percent_complete)) {
     gvt_print(gvt_struct);
   }
@@ -530,7 +536,9 @@ void PE::gvt_end(CkReductionMsg* msg) {
 #ifdef CMK_TRACE_ENABLED
       ldb_start = CmiWallTimer();
 #endif
-      g_tw_ldb_interval = 0;
+      if (ldb_cnt++ >= g_tw_max_ldb) {
+        g_tw_ldb_interval = 0;
+      }
       contribute(CkCallback(CkReductionTarget(LP,load_balance), lps));
     } else if (!g_tw_async_reduction || force_gvt) {
       force_gvt = 0;
