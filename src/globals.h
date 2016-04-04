@@ -22,6 +22,7 @@ extern unsigned g_tw_gvt_phases;   // number of phases in the gvt
 extern unsigned g_tw_greedy_start; // whether or not we greedily start the gvt
 extern unsigned g_tw_async_reduction; // allow GVT rdn and event exec overlap
 extern unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
+extern unsigned g_tw_max_ldb;      // number of intervals to wait before ldb
 extern tw_stime g_tw_lookahead;    // event lookahead for conservative
 extern tw_stime g_tw_leash;        // GVT leash for optimistic
 extern double  gvt_print_interval; // determines frequency of progress print outs
@@ -61,6 +62,7 @@ inline void initialize_globals(Globals* globals) {
   g_tw_greedy_start  = 0;
   g_tw_async_reduction = 0;
   g_tw_ldb_interval  = 0;
+  g_tw_max_ldb       = 0;
   g_tw_lookahead     = 0.005;
   g_tw_leash         = 0.0;
   gvt_print_interval = 1.0;

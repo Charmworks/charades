@@ -39,6 +39,7 @@ class PE: public CBase_PE {
     Time min_sent;      /**< minimum ts sent out during this phase */
     Time leash_start;   /**< start of the current leash (usually == gvt) */
     int gvt_cnt;        /**< iteration count since last gvt */
+    int ldb_cnt;        /**< number of times we've called load balancing */
     bool gvt_started;
     bool waiting_on_gvt;/**< flag to make sure we don't overlap gvts */
     unsigned force_gvt; /**< Bitmap used to determine if a gvt was forced */
