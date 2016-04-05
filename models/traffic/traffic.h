@@ -14,8 +14,6 @@ enum ariv_dept {IN, OUT};
 typedef struct {
 	int x_to_go;
 	int y_to_go;
-	int sent_back;
-	enum abs_directions arrived_from;
 	enum abs_directions current_lane;
 	enum ariv_dept in_out;
 } a_car;
