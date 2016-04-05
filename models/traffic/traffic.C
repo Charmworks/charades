@@ -107,7 +107,6 @@ const tw_optdef app_opt[] =
 {
   TWOPT_GROUP("TRAFFIC Model"),
   TWOPT_STIME("mean", mean, "exponential distribution mean for timestamps"),
-  TWOPT_UINT("balance",g_balance, "distribution of cars: 0 = balanced, 1=imbalanced"),
   TWOPT_STIME("percentStart",g_percentStart, "Pecent of cars that start in clustered block [0-1]"),
   TWOPT_UINT("startSize",g_startSize, "Size of start cluster block. X by X block"),
   TWOPT_UINT("startX",g_startX, "X coord of upper left corner of start cluster"),
@@ -190,8 +189,14 @@ int main(int argc, char * argv[])
 }
 
 void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
-//	printf("begin init\n");
+	tw_event* e;
+	Msg_Data* msg;
+	tw_stime ts;
+	tw_lpid source, dest;
+	tw_lpid sourceX, sourceY;
+	tw_lpid destX, destY;
 
+	// Initialize state variables
 	SV->total_cars_arrived = 0;
 	SV->total_cars_finished = 0;
 	SV->num_in_west_left = 0;
@@ -219,76 +224,51 @@ void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp) {
 	SV->num_out_east_straight = 0;
 	SV->num_out_east_right = 0;
 
-	int i = 0;
-	tw_event *CurEvent;
-	tw_stime ts = 0;
-	Msg_Data *NewM;
-	tw_lpid dest = 0;			//used to pick start location
-	tw_lpid destX = 0;
-	tw_lpid destY = 0;
-	tw_lpid endX = 0;
-	tw_lpid endY = 0;
-	switch(g_balance) {
-	
-	case 0: 				//balanced distribution
-		for(i = 0; i < g_traffic_start_events; i++) 
-		{
-			ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
-			CurEvent = tw_event_new(lp->gid, ts, lp);
-			NewM = (Msg_Data *)tw_event_data(CurEvent);
-			NewM->event_type = ARRIVAL;
-			NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
-			NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
-			NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
-			NewM->car.sent_back = 0;
-			NewM->car.in_out = IN;
-			tw_event_send(CurEvent);
+	// Create and send an event for each car with its own source and dest
+	for (int i = 0; i < g_traffic_start_events; i++) {
+		// Compute the source LP for each car.
+		if (g_percentStart == 0.0) {
+			source = lp->gid;
+			sourceX = source % NUM_CELLS_X;
+			sourceY = source / NUM_CELLS_X;
+		} else {
+			// g_percentStart of the cars start in the congested start region, the
+			// rest are uniformly distributed across all intersections.
+			if (g_percentStart > tw_rand_unif(lp->rng)) {
+				sourceX = tw_rand_integer(lp->rng,0,g_startSize-1) + g_startX;
+				sourceY = tw_rand_integer(lp->rng,0,g_startSize-1) + g_startY;
+				source = sourceX + NUM_CELLS_X * sourceY;
+			} else {
+				source = tw_rand_integer(lp->rng,0,INTERSECTION_LPS-1);
+				sourceX = source % NUM_CELLS_X;
+				sourceY = source / NUM_CELLS_X;
+			}
 		}
-		break;
-	
-	case 1:					//unbalanced
-	
-		for(i = 0; i < g_traffic_start_events; i++) 
-		{
-			if( g_percentStart < tw_rand_unif(lp->rng))
-			{	
-				dest = tw_rand_integer(lp->rng,0,INTERSECTION_LPS-1);
-				destX = dest % NUM_CELLS_X;
-				destY = dest / NUM_CELLS_X;
-			}
-			else
-			{
-				destX = tw_rand_integer(lp->rng,0,g_startSize-1)+ g_startX;
-				destY = tw_rand_integer(lp->rng,0,g_startSize-1)+g_startY;
-				dest = destX + NUM_CELLS_X * destY;
-			}
-			ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
-			CurEvent = tw_event_new(dest, ts, lp);
-			NewM = (Msg_Data *)tw_event_data(CurEvent);
-			NewM->event_type = ARRIVAL;
 
-			if( g_percentEnd < tw_rand_unif(lp->rng))
-			{
-				NewM->car.x_to_go =tw_rand_integer(lp->rng,0,198) - 99;		//distance for car to travel. ranges from -99 to 99.
-				NewM->car.y_to_go = tw_rand_integer(lp->rng,0,198) - 99;
-			}
-			else
-			{
-				endX = tw_rand_integer(lp->rng,0,g_endSize-1)+ g_endX;
-				endY = tw_rand_integer(lp->rng,0,g_endSize-1)+g_endY;
-				NewM->car.x_to_go = endX-destX;		
-				NewM->car.y_to_go = endY-destY;
+		// Create an arrival event for whatever source LP we computed.
+		ts = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
+		e = tw_event_new(source, ts, lp);
+		msg = (Msg_Data *)tw_event_data(e);
+		msg->event_type = ARRIVAL;
+		msg->car.current_lane = static_cast<abs_directions>(tw_rand_integer(lp->rng,0,11));
+		msg->car.sent_back = 0;
+		msg->car.in_out = IN;
 
-			}
-			
-				
-			NewM->car.current_lane = static_cast<abs_directions> (tw_rand_integer(lp->rng,0,11));
-			NewM->car.sent_back = 0;
-			NewM->car.in_out = IN;
-			tw_event_send(CurEvent);
+		// Choose a destination for the car based on the distribution configuration.
+		if (g_percentEnd > tw_rand_unif(lp->rng)) {
+			destX = tw_rand_integer(lp->rng,0,g_endSize-1) + g_endX;
+			destY = tw_rand_integer(lp->rng,0,g_endSize-1) + g_endY;
+			dest = destX + NUM_CELLS_X * destY;
+		} else {
+			dest = tw_rand_integer(lp->rng,0,INTERSECTION_LPS-1);
+			destX = dest % NUM_CELLS_X;
+			destY = dest / NUM_CELLS_X;
 		}
-		break;
-	
+
+		// Set the x_to_go and y_to_go based on source and dest, and send the event
+		msg->car.x_to_go = destX - sourceX;
+		msg->car.y_to_go = destY - sourceY;
+		tw_event_send(e);
 	}
 }
 
