@@ -2,7 +2,7 @@ include ../../src/config.mk
 
 all: traffic
 clean:
-	rm -f phold charmrun
+	rm -f traffic charmrun
 	rm -f *.o *~ core*
 	rm -f output ross.csv
 
