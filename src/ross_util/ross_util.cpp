@@ -139,6 +139,12 @@ void tw_stats(Statistics *s) {
 
   //tw_gvt_stats(stdout);*/
 #endif
+
+  if (g_tw_expected_events && g_tw_expected_events != s->s_net_events) {
+    tw_error(TW_LOC,
+             "TEST RESULT: FAILURE!\nNet Events (%i) != Expected Events (%i)\n",
+             s->s_net_events, g_tw_expected_events);
+  }
 }
 
 

@@ -15,6 +15,7 @@ extern type_map_f  g_type_map;   // gid -> type
 extern local_map_f g_local_map;  // gid -> lid
 extern chare_map_f g_chare_map;  // gid -> chare
 extern unsigned g_tw_synchronization_protocol;
+extern unsigned g_tw_expected_events;
 extern tw_stime g_tw_ts_end;       // end time of simulation
 extern unsigned g_tw_mblock;       // number of events per gvt interval
 extern unsigned g_tw_gvt_interval; // number of intervals per gvt
