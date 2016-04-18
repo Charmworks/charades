@@ -312,14 +312,17 @@ void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, t
 			if(M->car.xDest < curX && SV->outLane[11]  < MAX_CARS_ON_ROAD){
 				SV->outLane[11]++;
 				NewM->car.current_lane = 11;
+				CV->c1 = 1;
 			}
 			else if(M->car.xDest > curX && SV->outLane[9] < MAX_CARS_ON_ROAD){
 				SV->outLane[9]++;
 				NewM->car.current_lane = 9;
+				CV->c2 = 1;
 			}
 			else if(SV->outLane[10] < MAX_CARS_ON_ROAD){
 				SV->outLane[10]++;
 				NewM->car.current_lane = 10;
+				CV->c3 = 1;
 			}
 
 			else{			
@@ -331,14 +334,18 @@ void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, t
 			if(M->car.yDest < curY && SV->outLane[8]  < MAX_CARS_ON_ROAD){
 				SV->outLane[8]++;
 				NewM->car.current_lane = 8;
+				CV->c1 = 1;
+
 			}
 			else if(M->car.yDest > curY && SV->outLane[6] < MAX_CARS_ON_ROAD){
 				SV->outLane[6]++;
 				NewM->car.current_lane = 6;
+				CV->c2 = 1;
 			}
 			else if(SV->outLane[7] < MAX_CARS_ON_ROAD){
 				SV->outLane[7]++;
 				NewM->car.current_lane = 7;
+				CV->c3 = 1;
 			}
 
 			else{			
@@ -350,14 +357,18 @@ void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, t
 			if(M->car.xDest < curX && SV->outLane[3]  < MAX_CARS_ON_ROAD){
 				SV->outLane[3]++;
 				NewM->car.current_lane = 3;
+				CV->c1 = 1;
+
 			}
 			else if(M->car.xDest > curX && SV->outLane[5] < MAX_CARS_ON_ROAD){
 				SV->outLane[5]++;
 				NewM->car.current_lane = 5;
+				CV->c2 = 1;
 			}
 			else if(SV->outLane[4] < MAX_CARS_ON_ROAD){
 				SV->outLane[4]++;
 				NewM->car.current_lane = 4;
+				CV->c3 = 1;
 			}
 
 			else{			
@@ -369,14 +380,18 @@ void Intersection_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, t
 			if(M->car.yDest < curY && SV->outLane[0]  < MAX_CARS_ON_ROAD){
 				SV->outLane[0]++;
 				NewM->car.current_lane = 0;
+				CV->c1 = 1;
+
 			}
 			else if(M->car.yDest > curY && SV->outLane[2] < MAX_CARS_ON_ROAD){
 				SV->outLane[2]++;
 				NewM->car.current_lane = 2;
+				CV->c2 = 1;
 			}
 			else if(SV->outLane[1] < MAX_CARS_ON_ROAD){
 				SV->outLane[1]++;
 				NewM->car.current_lane = 1;
+				CV->c3 = 1;
 			}
 
 			else{			
@@ -435,13 +450,13 @@ void Intersection_RC_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M
 		switch(M->car.current_lane % 4){
 
 		case 0:		//Lanes with this value are all going South, ending up in lane 9,10,or 11
-			if(M->car.xDest < curX && SV->outLane[11]-1  < MAX_CARS_ON_ROAD){
+			if(CV->c1){
 				SV->outLane[11]--;
 			}
-			else if(M->car.xDest > curX && SV->outLane[9]-1 < MAX_CARS_ON_ROAD){
+			else if(CV->c2){
 				SV->outLane[9]--;
 			}
-			else if(SV->outLane[10]-1 < MAX_CARS_ON_ROAD){
+			else if(CV->c3){
 				SV->outLane[10]--;
 			}
 
@@ -451,13 +466,13 @@ void Intersection_RC_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M
 			break;
 
 		case 1:		//Lanes with this value are all going West, ending up in lane 6,7,or 8
-			if(M->car.yDest < curY && SV->outLane[8]-1  < MAX_CARS_ON_ROAD){
+			if(CV->c1){
 				SV->outLane[8]--;
 			}
-			else if(M->car.yDest > curY && SV->outLane[6]-1 < MAX_CARS_ON_ROAD){
+			else if(CV->c2){
 				SV->outLane[6]--;
 			}
-			else if(SV->outLane[7]-1 < MAX_CARS_ON_ROAD){
+			else if(CV->c3){
 				SV->outLane[7]--;
 			}
 
@@ -467,13 +482,13 @@ void Intersection_RC_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M
 			break;
 
 		case 2:		//Lanes with this value are all going North, ending up in lane 3,4,or 5
-			if(M->car.xDest < curX && SV->outLane[3]-1  < MAX_CARS_ON_ROAD){
+			if(CV->c1){
 				SV->outLane[3]--;
 			}
-			else if(M->car.xDest > curX && SV->outLane[5]-1 < MAX_CARS_ON_ROAD){
+			else if(CV->c2){
 				SV->outLane[5]--;
 			}
-			else if(SV->outLane[4]-1 < MAX_CARS_ON_ROAD){
+			else if(CV->c3){
 				SV->outLane[4]--;
 			}
 
@@ -483,13 +498,13 @@ void Intersection_RC_EventHandler(Intersection_State *SV, tw_bf *CV, Msg_Data *M
 			break;
 
 		case 3:		//Lanes with this value are all going East, ending up in lane 0,1,or 2
-			if(M->car.yDest < curY && SV->outLane[0]-1  < MAX_CARS_ON_ROAD){
+			if(CV->c1){
 				SV->outLane[0]--;
 			}
-			else if(M->car.yDest > curY && SV->outLane[2]-1 < MAX_CARS_ON_ROAD){
+			else if(CV->c2){
 				SV->outLane[2]--;
 			}
-			else if(SV->outLane[1]-1 < MAX_CARS_ON_ROAD){
+			else if(CV->c3){
 				SV->outLane[1]--;
 			}
 
