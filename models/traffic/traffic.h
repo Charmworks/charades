@@ -7,14 +7,13 @@
 
 enum events { ARRIVAL, DEPARTURE, DIRECTION_SELECT };
 
-enum abs_directions { WEST_LEFT = 0, WEST_STRAIGHT, WEST_RIGHT, EAST_LEFT, EAST_STRAIGHT, EAST_RIGHT, NORTH_LEFT, NORTH_STRAIGHT, NORTH_RIGHT, SOUTH_LEFT, SOUTH_STRAIGHT, SOUTH_RIGHT }; 
 enum ariv_dept {IN, OUT};
 
 //struct desribing a car
 typedef struct {
-	int x_to_go;
-	int y_to_go;
-	enum abs_directions current_lane;
+	int xDest;
+	int yDest;
+	int current_lane;
 	enum ariv_dept in_out;
 } a_car;
 
@@ -24,38 +23,16 @@ typedef struct {
 	a_car car;
 } Msg_Data;
 
-//State struct. describes intersection
-typedef struct {
-	int total_cars_arrived;
-	int total_cars_finished;
-	int num_in_west_left;
-	int num_in_west_straight;
-	int num_in_west_right;
-	int num_in_north_left;
-	int num_in_north_straight;
-	int num_in_north_right;
-	int num_in_south_left;
-	int num_in_south_straight;
-	int num_in_south_right;
-	int num_in_east_left;
-	int num_in_east_straight;
-	int num_in_east_right;
-	int num_out_west_left;
-	int num_out_west_straight;
-	int num_out_west_right;
-	int num_out_north_left;
-	int num_out_north_straight;
-	int num_out_north_right;
-	int num_out_south_left;
-	int num_out_south_straight;
-	int num_out_south_right;
-	int num_out_east_left;
-	int num_out_east_straight;
-	int num_out_east_right;
-} Intersection_State;
-
-static int g_traffic_start_events = 5;
-
+//State struct. describes intersection	//		     N	
+typedef struct {			//		   I	O
+	int total_cars_arrived;		//		_|543|345|_
+	int total_cars_finished;	//	 O      876	   210	I
+	int inLane[12];			//	W	_	    _		E
+	int outLane[12];		//	 I    678	    012	O	
+} Intersection_State;			//		_	     _			
+					//		 |11109|91011|
+static int g_traffic_start_events = 5;	//		   O	 I		
+					//		       S
 // rate for timestamp exponential distribution
 static tw_stime mean = 1.0;
 
@@ -84,6 +61,9 @@ static tw_stime g_percentEnd = 0.0;
 static unsigned g_endSize = 1;
 static unsigned g_endX = 0;
 static unsigned g_endY= 0;
+
+unsigned (*lp_source_map)(tw_lpid lp);
+
 
 void Intersection_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
 void Intersection_RC_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
