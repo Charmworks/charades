@@ -2,9 +2,9 @@
 ROSS_SRC=/dcsdata/home/mikida2/ross/src
 CHARMC=/scratch/mikida2/charm_for_ross/bin/charmc
 
-ifeq($(ARCH), "bgq")
+ifeq ($(ARCH), "bgq")
   CC = bgxlC
-  OPTS = -O3 -qmaxmem=-1 -qipa=level=1 
+  OPTS = -O3 -qmaxmem=-1 -qipa=level=2
 else
   CC = g++
   OPTS = -O3
@@ -15,7 +15,7 @@ BUILD_DIR=$(ROSS_SRC)/build
 MODULES=charm collections ross_setup ross_opts ross_util ross_rand ross_event ross_maps
 
 # Add each module to the include path, as well as the top level directory.
-OPTS+=$(addprefix -I$(ROSS_SRC)/, $(MODULES)) -I$(ROSS_SRC)
+OPTS+=$(addprefix -I$(ROSS_SRC)/, $(MODULES)) -I$(ROSS_SRC) -module completion
 
 # Conditional compilation options (Uncomment to turn them on)
 #OPTS+=-DUSE_SPLAY       # Use splay tree instead of array-based heap
