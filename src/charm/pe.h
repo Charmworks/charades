@@ -30,6 +30,11 @@ struct GVT {
   unsigned type;
 };
 
+struct MemUsage {
+  unsigned long long max_memory;
+  double avg_memory;
+
+};
 class PE: public CBase_PE {
   private:
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
@@ -49,6 +54,7 @@ class PE: public CBase_PE {
     Time min_cancel_time; /**< minumum event time in the cancel queue */
     vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
 
+    MemUsage mem_usage; //holds stats about total memory usage. data collected during gvts
 #ifdef CMK_TRACE_ENABLED
     double gvt_start, ldb_start;
 #endif
@@ -159,6 +165,18 @@ class PE: public CBase_PE {
         detector_pointers[msg->phase]->consume();
       }
     }
+    void add_memory_stats() {
+      //Event stats
+      PE_STATS(s_max_allocated) = PE_VALUE(event_buffer)->memory_stats.max_allocated;
+      PE_STATS(s_avg_max_allocated) = PE_STATS(s_max_allocated);
+      PE_STATS(s_remote_deallocated) = PE_VALUE(event_buffer)->memory_stats.remote_deallocated;
+      PE_STATS(s_remote_new_allocated) = PE_VALUE(event_buffer)->memory_stats.remote_new_allocated;
+      //Total Memory stats
+      PE_STATS(s_max_memory) = mem_usage.max_memory;
+      PE_STATS(s_avg_memory) = mem_usage.avg_memory / PE_STATS(s_ngvts);
+    }
+    void add_mem_usage(); 
+    
 };
 
 #endif

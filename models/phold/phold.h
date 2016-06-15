@@ -12,7 +12,7 @@ typedef struct phold_state {
 } phold_state;
 
 typedef struct phold_message {
-  long int  dummy_message;
+  tw_stime  virtual_time;
 } phold_message;
 
 	/*

@@ -45,6 +45,7 @@ void tw_stats(Statistics *s) {
 
   printf("\nTW Library Statistics:\n");
   show_lld("Total Events Processed", s->s_nevent_processed);
+  //show_lld("Commited Events", s->s_committed_events);
   show_lld("Events Aborted (part of RBs)", s->s_nevent_abort);
   show_lld("Events Rolled Back", s->s_e_rbs);
   show_lld("Event Ties Detected in PE Queues", s->s_pe_event_ties);
@@ -90,6 +91,13 @@ void tw_stats(Statistics *s) {
   show_lld("End Time Forced GVT Computations", s->s_forced_end_gvts);
   show_lld("Event Forced GVT Computations", s->s_forced_event_gvts);
   printf("\n");
+  //Memory Stats
+  show_lld("Max Allocated Events per PE", s->s_max_allocated);
+  show_1f("Average Max Allocated Events per PE", ( (double) s->s_avg_max_allocated)/((double)CkNumPes()));
+  show_1f("Extra Remote Events Allocated per PE",((double)s->s_remote_new_allocated)/((double)CkNumPes()));
+  show_1f("Remote Events Deleted per PE", ((double)s->s_remote_deallocated)/((double)CkNumPes())); 
+
+  show_1f("Max Memory Usage in a PE (MB)", ((double) s->s_max_memory / (1024. * 1024)));
 
   // Summary of events processed and event rate
   show_lld("Net Events Processed", s->s_net_events);

@@ -1478,6 +1478,23 @@ void mpi_rc_event_handler(process_state * s, tw_bf * bf, terminal_message * msg,
 	   break;
 	}
 }
+
+/////////////////////////////////////////////COMMIT HANDLERS///////////////////////////////////////////////////
+void
+terminal_commit( terminal_state * s,
+		tw_bf * bf,
+		terminal_message * msg,
+		tw_lp * lp ) {}
+
+void router_commit(router_state * s, tw_bf * bf, terminal_message * msg, tw_lp * lp) {}
+
+void
+mpi_commit( process_state * s,
+	      tw_bf * bf,
+	      terminal_message * msg,
+              tw_lp * lp ) {}
+
+
 ////////////////////////////////////////////////////// MAIN ///////////////////////////////////////////////////////
 ////////////////////////////////////////////////////// LP TYPES /////////////////////////////////////////////////
 tw_lptype dragonfly_lps[] =
@@ -1488,6 +1505,7 @@ tw_lptype dragonfly_lps[] =
     (event_f) terminal_event,
     (revent_f) terminal_rc_event_handler,
     (final_f) final,
+    (commit_f) terminal_commit,
     sizeof(terminal_state)
     },
    {
@@ -1495,6 +1513,7 @@ tw_lptype dragonfly_lps[] =
      (event_f) router_event,
      (revent_f) router_rc_event_handler,
      (final_f) final,
+     (commit_f) router_commit,
      sizeof(router_state),
    },
    {
@@ -1502,6 +1521,7 @@ tw_lptype dragonfly_lps[] =
      (event_f) mpi_event,
      (revent_f) mpi_rc_event_handler,
      (final_f) final,
+     (commit_f) mpi_commit,
      sizeof(process_state),
    },
    {0},

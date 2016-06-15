@@ -69,5 +69,6 @@ void Intersection_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp 
 void Intersection_RC_EventHandler(Intersection_State *, tw_bf *, Msg_Data *, tw_lp *);
 void Intersection_Statistics_CollectStats(Intersection_State *, tw_lp *);
 void  Intersection_StartUp(Intersection_State *SV, tw_lp * lp); 
+void Intersection_Commit_Handler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, tw_lp *lp);
 
 #endif

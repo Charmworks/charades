@@ -18,7 +18,7 @@ class ProcessedQueue {
   ~ProcessedQueue() {
     while (length) {
       Event* e = pop_front();
-      tw_event_free(e);
+      tw_event_free(e,false);
     }
   }
 

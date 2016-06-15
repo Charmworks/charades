@@ -137,8 +137,8 @@ void LP::recv_remote_event(RemoteEvent* event) {
   if (isOptimistic) {
     Event* anti_event = avlInsertOrDelete(&all_events, e);
     if (anti_event != NULL) {
-      tw_event_free(anti_event);
-      tw_event_free(e);
+      tw_event_free(anti_event,false);
+      tw_event_free(e,false);
       return;
     }
   }
@@ -177,7 +177,7 @@ void LP::recv_anti_event(RemoteEvent* event) {
 
   if (real_event != NULL) {
     charm_event_cancel(real_event);
-    tw_event_free(key);
+    tw_event_free(key,false);
   }
 
   delete event;
@@ -207,7 +207,7 @@ void* LP::execute_me() {
       }
       processed_events.push_front(e);
     } else {
-      tw_event_free(e);
+      tw_event_free(e,true);
     }
     pe->update_next(&next_token, events.min());
     return (void*)true;
@@ -270,8 +270,9 @@ void LP::rollback_me(Event *event) {
 void LP::fossil_me(tw_stime gvt) {
   Event* e;
   while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
+    PE_STATS(s_committed_events)++;
     e = processed_events.pop_back();
-    tw_event_free(e);
+    tw_event_free(e,true);
   }
   if(processed_events.size()) {
     pe->update_oldest(&oldest_token, processed_events.back()->ts);
@@ -286,7 +287,7 @@ void LP::cancel_event(Event* e) {
     case TW_chare_q:
       // If the event hasn't been executed, just free it
       delete_pending(e);
-      tw_event_free(e);
+      tw_event_free(e,false);
       return;
     case TW_rollback_q:
       // If the event has already been executed, add it to the cancel_q
@@ -336,12 +337,12 @@ void LP::process_cancel_q() {
       switch (curr->state.owner) {
         case TW_chare_q:
           delete_pending(curr);
-          tw_event_free(curr);
+          tw_event_free(curr,false);
           break;
 
         case TW_rollback_q:
           rollback_me(curr);
-          tw_event_free(curr);
+          tw_event_free(curr,false);
           break;
 
         default:

@@ -735,6 +735,9 @@ CellStatistics_CollectStats(struct State *SV, tw_lp * lp)
 #endif
 }
 
+void
+Cell_CommitHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp) {}
+
 #ifdef CELL_STATS
 void
 CellStatistics_Compute(struct CellStatistics *CS)
@@ -774,6 +777,7 @@ tw_lptype       mylps[] =
     (event_f) Cell_EventHandler,
     (revent_f) RC_Cell_EventHandler,
     (final_f) CellStatistics_CollectStats,
+    (commit_f) Cell_CommitHandler,
     sizeof(struct State)
   },
   {0},

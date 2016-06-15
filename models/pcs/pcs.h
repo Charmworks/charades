@@ -114,6 +114,7 @@ void            RC_Cell_CompletionCall(struct State *SV, tw_bf * CV, struct Msg_
 void            RC_Cell_MoveCallIn(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp);
 void            RC_Cell_MoveCallOut(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp);
 void            CellStatistics_CollectStats(struct State *, tw_lp *lp);
+void            Cell_CommitHandler(struct State *SV, tw_bf * CV, struct Msg_Data *M, tw_lp * lp);
 #ifdef CELL_STATS
 void            CellStatistics_Compute();
 void            CellStatistics_Print();

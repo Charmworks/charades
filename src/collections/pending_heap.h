@@ -92,7 +92,7 @@ class PendingHeap : public PendingQueue {
 
     ~PendingHeap() {
       for (int i = 0; i < nelems; i++) {
-        tw_event_free(elems[i]);
+        tw_event_free(elems[i],false);
       }
       delete[] elems;
     }

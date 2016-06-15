@@ -18,6 +18,7 @@ struct Statistics {
     tw_stat s_nevent_processed; // Total number of events executed
     tw_stat s_net_events; // Number of events executed that weren't rolled back
     tw_stime s_min_detected_offset; // Minimum offset used in conservative mode
+    tw_stat s_committed_events; 	//Number of commited events. Should match net_events at end of execution
 
     // Rollback stats
     tw_stat s_e_rbs; // Total number of events rolled back
@@ -38,6 +39,15 @@ struct Statistics {
     tw_stat s_fc_attempts; // Number of times we attempt to collect fossils
     tw_stat s_fossil_collect; // Number of times that there are actually 1 or more fossils to collect
 
+    //Memory stats
+    tw_stat s_max_allocated;	//Max number of events allocated at a time in a single PE
+    tw_stat s_remote_deallocated; //total number of remote events deleted, resulting from full event buffer
+    tw_stat s_remote_new_allocated; //total number of new remote events that had to allocated from empty event buffer
+    tw_stat s_avg_max_allocated; //Average Max number of events accross all PE's
+    
+    tw_stat s_max_memory;
+    double s_avg_memory;    
+ 
     // Currently unused stats // TODO: Document or remove these
     tw_stat s_pq_qsize;
     tw_stat s_nsend_network;
@@ -64,6 +74,7 @@ inline void initialize_statistics(Statistics* statistics) {
 
   statistics->s_nevent_processed = 0;
   statistics->s_net_events = 0;
+  statistics->s_committed_events = 0;
   statistics->s_min_detected_offset = DBL_MAX;
 
   statistics->s_e_rbs = 0;
@@ -81,6 +92,15 @@ inline void initialize_statistics(Statistics* statistics) {
   statistics->s_forced_event_gvts = 0;
   statistics->s_fc_attempts = 0;
   statistics->s_fossil_collect = 0;
+
+
+  statistics->s_max_allocated = 0;
+  statistics->s_remote_deallocated = 0;
+  statistics->s_remote_new_allocated = 0;
+  statistics->s_avg_max_allocated = 0;
+
+  statistics->s_max_memory = 0;
+  statistics->s_avg_memory = 0;
 
   statistics->s_pq_qsize = 0;
   statistics->s_nsend_network = 0;
@@ -111,6 +131,7 @@ inline void add_statistics(Statistics* s1, Statistics* s2) {
   s1->s_nevent_processed += s2->s_nevent_processed;
   //net event computed using nevent and rollbacks
   s1->s_min_detected_offset = fmin(s1->s_min_detected_offset, s2->s_min_detected_offset);
+  s1->s_committed_events += s2->s_committed_events;
 
   // Rollback stats
   s1->s_e_rbs += s2->s_e_rbs;
@@ -130,6 +151,15 @@ inline void add_statistics(Statistics* s1, Statistics* s2) {
   s1->s_forced_event_gvts = s2->s_forced_event_gvts;
   s1->s_fc_attempts += s2->s_fc_attempts;
   s1->s_fossil_collect = fmax(s1->s_fossil_collect, s2->s_fossil_collect);
+
+  //Memory stats
+  if(s2->s_max_allocated > s1->s_max_allocated)
+    s1->s_max_allocated = s2->s_max_allocated;
+  s1->s_avg_max_allocated += s2->s_avg_max_allocated;
+  s1->s_remote_deallocated += s2->s_remote_deallocated;
+  s1->s_remote_new_allocated += s2->s_remote_new_allocated;
+  if(s2->s_max_memory > s1->s_max_memory)
+    s1->s_max_memory = s2->s_max_memory;
 
   // Currently unused stats // TODO: Document or remove
   s1->s_pq_qsize += s2->s_pq_qsize;

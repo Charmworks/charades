@@ -4,7 +4,7 @@ void
 phold_init(phold_state* s, tw_lp* lp) {
   tw_stime offset;
   tw_event* e;
-
+  phold_message* msg;
   for (int i = 0; i < start_events; i++) {
     // Set offset using an exponential distribution, adding stagger if necessary
     offset = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);;
@@ -14,6 +14,8 @@ phold_init(phold_state* s, tw_lp* lp) {
 
     // Create and send the event.
     e = tw_event_new(lp->gid, offset, lp);
+    msg = (phold_message *)tw_event_data(e);
+    msg->virtual_time = e->ts;
     tw_event_send(e);
   }
 }
@@ -21,7 +23,7 @@ phold_init(phold_state* s, tw_lp* lp) {
 void
 phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
   tw_lpid	 dest;
-
+  phold_message* msg;
   if(tw_rand_unif(lp->rng) <= percent_remote) {
     bf->c1 = 1;
     dest = tw_rand_integer(lp->rng, 0, g_total_lps - 1);
@@ -32,6 +34,8 @@ phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
 
   tw_stime offset = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
   tw_event* e = tw_event_new(dest, offset, lp);
+  msg = (phold_message *)tw_event_data(e);
+  msg->virtual_time = e->ts;
   tw_event_send(e);
 }
 
@@ -50,11 +54,19 @@ phold_event_handler_rc(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
 void
 phold_finish(phold_state * s, tw_lp * lp) {}
 
+void
+phold_commit(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
+
+  //printf("LP %d  Time: %f \n",lp->gid, m->virtual_time);
+
+}
+
 tw_lptype mylps[] = {
   { (init_f) phold_init,
     (event_f) phold_event_handler,
     (revent_f) phold_event_handler_rc,
     (final_f) phold_finish,
+    (commit_f) phold_commit,
     sizeof(phold_state) },
   {0},
 };

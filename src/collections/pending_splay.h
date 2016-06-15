@@ -179,7 +179,7 @@ class PendingSplay : public PendingQueue {
     ~PendingSplay() {
       while (nitems) {
         Event* e = pop();
-        tw_event_free(e);
+        tw_event_free(e,false);
       }
     }
 

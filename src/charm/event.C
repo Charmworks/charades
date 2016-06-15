@@ -123,7 +123,7 @@ void charm_event_cancel(Event * e) {
     unsigned dest_peid = g_chare_map(e->dest_lp);
     charm_anti_send(dest_peid, e);
 
-    tw_event_free(e);
+    tw_event_free(e,false);
     return;
   }
 

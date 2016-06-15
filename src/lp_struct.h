@@ -10,6 +10,7 @@ struct LPType {
   event_f execute;
   revent_f reverse;
   final_f finalize;
+  commit_f commit;
   size_t state_size;
 };
 

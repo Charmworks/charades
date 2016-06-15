@@ -59,6 +59,7 @@ typedef void (*init_f) (void*,LPStruct*);
 typedef void (*event_f) (void*, tw_bf*, char*, LPStruct*);
 typedef void (*revent_f) (void*, tw_bf*, char*, LPStruct*);
 typedef void (*final_f) (void*, LPStruct*);
+typedef void (*commit_f) (void*, tw_bf*, char*, LPStruct*);
 
 // This map takes an LP chare index, and a local lpid and returns a global id.
 typedef tw_lpid (*init_map_f) (unsigned, tw_lpid);

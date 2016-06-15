@@ -1,5 +1,4 @@
 #include "pe.h"
-
 #include "lp.h"
 #include "charm_functions.h"
 
@@ -42,6 +41,8 @@ CProxy_PE pes;
 extern CProxy_LP lps;
 CkReduction::reducerType statsReductionType;
 CkReduction::reducerType gvtReductionType;
+
+
 
 // TODO: Find a better place for all of these non-member functions.
 Globals* get_globals() {
@@ -146,6 +147,12 @@ PE::PE(CProxy_Initialize srcProxy) :
     traceRegisterUserEvent("Cancellation", USER_EVENT_CANCEL);
     traceRegisterUserEvent("GVT", USER_EVENT_GVT);
     traceRegisterUserEvent("LDB", USER_EVENT_LDB);
+   //USER STATS 
+    traceRegisterUserStat("Memory usage", USER_STAT_MEMORY_USAGE);
+    traceRegisterUserStat("Events committed", USER_STAT_EVENTS_COMMITTED);
+    traceRegisterUserStat("Events rolled back", USER_STAT_ROLLED_BACK);
+    traceRegisterUserStat("Events executed", USER_STAT_EXECUTED);
+
   }
   #endif
 
@@ -153,6 +160,10 @@ PE::PE(CProxy_Initialize srcProxy) :
   err = posix_memalign((void**)&statistics, 64, sizeof(Statistics));
   initialize_globals(globals);
   initialize_statistics(statistics);
+
+  //initialize memory stats
+  mem_usage.max_memory = 0;
+  mem_usage.avg_memory = 0;
 
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand();
@@ -298,6 +309,7 @@ void PE::execute_seq() {
   }
   PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
   PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
+  add_memory_stats();
   contribute(sizeof(Statistics), statistics, statsReductionType,
     CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
 
@@ -499,7 +511,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
       PE_STATS(s_forced_event_gvts)++;
     }
   }
-
+  add_mem_usage();
   // If this GVT is the same as the last, and we are low on event memory, then
   // we will never be able to make progress.
   if (gvt == new_gvt && force_gvt & MEM_FORCE) {
@@ -521,16 +533,17 @@ void PE::gvt_end(CkReductionMsg* msg) {
   // In multi-phase gvts, we can have multiple that go past end time.
   if (PE_VALUE(g_last_gvt) >= g_tw_ts_end) return;
 
+  if(g_tw_synchronization_protocol == OPTIMISTIC) {
+    BRACKET_TRACE(collect_fossils();, USER_EVENT_FC);
+  }
   // Either stop the timer and end the simulation, or call the scheduler again.
   if(new_gvt >= g_tw_ts_end) {
     PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
     PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
+    add_memory_stats();
     contribute(sizeof(Statistics), statistics, statsReductionType,
         CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
-    if(g_tw_synchronization_protocol == OPTIMISTIC) {
-      BRACKET_TRACE(collect_fossils();, USER_EVENT_FC);
-    }
     // TODO: This doesn't need to be a broadcast
     // TODO: Made this a reduction to ensure that all PEs finish fc before lb
     if (g_tw_ldb_interval && PE_STATS(s_ngvts) % g_tw_ldb_interval == 0) {
@@ -587,5 +600,16 @@ void PE::resume_scheduler() {
     thisProxy[CkMyPe()].execute_opt();
   }
 }
+void PE::add_mem_usage() { 
+  unsigned long long cur_mem = CmiMemoryUsage();
+  if(cur_mem > mem_usage.max_memory)
+    mem_usage.max_memory = cur_mem;
+  mem_usage.avg_memory += cur_mem;
+  updateStatPair(USER_STAT_MEMORY_USAGE, cur_mem / (1024. * 1024),PE_STATS(s_ngvts));
+  updateStatPair(USER_STAT_EVENTS_COMMITTED,PE_STATS(s_committed_events) , PE_STATS(s_ngvts));
+  updateStatPair(USER_STAT_ROLLED_BACK, PE_STATS(s_e_rbs), PE_STATS(s_ngvts));
+  updateStatPair(USER_STAT_EXECUTED, PE_STATS(s_nevent_processed), PE_STATS(s_ngvts));
+}
+
 
 #include "pe.def.h"

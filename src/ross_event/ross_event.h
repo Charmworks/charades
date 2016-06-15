@@ -140,7 +140,7 @@ class Event {
 
 // Publicly exposed functions
 tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
-void tw_event_free(tw_event *e);
+void tw_event_free(tw_event *e, bool commit);
 void tw_event_send(tw_event * event);
 void tw_event_rollback(tw_event * event);
 

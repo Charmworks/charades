@@ -98,6 +98,7 @@ tw_lptype mylps[] = {
 			(event_f) Intersection_EventHandler,
 			(revent_f) Intersection_RC_EventHandler,
 			(final_f) Intersection_Statistics_CollectStats,
+                        (commit_f) Intersection_Commit_Handler,
 			sizeof(Intersection_State)
 	},
 	{ 0 },
@@ -524,3 +525,5 @@ void Intersection_Statistics_CollectStats(Intersection_State *SV, tw_lp * lp) {
 	totalCars += SV->total_cars_arrived;
 	carsFinished += SV->total_cars_finished;
 }
+
+void Intersection_Commit_Handler(Intersection_State *SV, tw_bf *CV, Msg_Data *M, tw_lp *lp) {}

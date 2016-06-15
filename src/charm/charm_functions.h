@@ -17,6 +17,10 @@ void tw_abort(const char*);
 #define USER_EVENT_GVT    1004
 #define USER_EVENT_LDB    1005
 #define USER_EVENT_FC     1006
+#define USER_STAT_MEMORY_USAGE 1007
+#define USER_STAT_EVENTS_COMMITTED 1008
+#define USER_STAT_ROLLED_BACK 1009
+#define USER_STAT_EXECUTED 1010
 
 #ifdef CMK_TRACE_ENABLED
 #define BRACKET_TRACE(code,event) \
