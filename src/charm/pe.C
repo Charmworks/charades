@@ -161,7 +161,6 @@ PE::PE(CProxy_Initialize srcProxy) :
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand();
   // TODO: tighter start and end time
-  start_time = CmiWallTimer();
 }
 
 /******************************************************************************/
@@ -186,6 +185,7 @@ void PE::initialize_detectors() {
     if (CkMyPe() == 0) {
       CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
     }
+    start_time = CmiWallTimer();
     resume_scheduler();
   } else {
     current_phase = next_phase = 0;
@@ -221,6 +221,7 @@ void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies)
   next_phase = (current_phase + 1) % max_phase;
 
   // Start the timer and the scheduler
+  start_time = CmiWallTimer();
   contribute(CkCallback(CkIndex_PE::resume_scheduler(), thisProxy));
 }
 
@@ -258,7 +259,6 @@ Time PE::get_min_time() const {
 void PE::end_simulation(CkReductionMsg* m) {
   end_time = CmiWallTimer();
   Statistics* final_stats = (Statistics*)m->getData();
-  final_stats->total_time = end_time - start_time;
   final_stats->print();
   CkExit();
 }
@@ -289,6 +289,7 @@ bool PE::gvt_ready() const {
 
 // Just execute events one at a time until the end time.
 void PE::execute_seq() {
+  start_time = CmiWallTimer();
   Time gvt = get_min_time();
   while (gvt < g_tw_ts_end) {
     if (!schedule_next_lp()) {
@@ -301,7 +302,9 @@ void PE::execute_seq() {
     }
     gvt = get_min_time();
   }
-  //log_stats();
+  end_time = CmiWallTimer();
+  cumulative_stats->add(current_stats);
+  cumulative_stats->total_time = end_time - start_time;
   contribute(sizeof(Statistics), cumulative_stats, statsReductionType,
       CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
 
@@ -541,6 +544,8 @@ void PE::gvt_end(CkReductionMsg* msg) {
 
   // Either stop the timer and end the simulation, or call the scheduler again.
   if(new_gvt >= g_tw_ts_end) {
+    end_time = CmiWallTimer();
+    cumulative_stats->total_time = end_time - start_time;
     contribute(sizeof(Statistics), cumulative_stats, statsReductionType,
         CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
