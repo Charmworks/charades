@@ -37,11 +37,11 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
 
   recv_ts = tw_now(sender) + offset_ts;
 
-  if(g_tw_synchronization_protocol == CONSERVATIVE) {
+  /*if(g_tw_synchronization_protocol == CONSERVATIVE) {
     if(offset_ts < PE_STATS(s_min_detected_offset)) {
       PE_STATS(s_min_detected_offset) = offset_ts;
     }
-  }
+  }*/
 
   if (recv_ts >= g_tw_ts_end) {
     e = PE_VALUE(abort_event);
@@ -125,7 +125,7 @@ void tw_event_rollback(tw_event * event) {
 
   event->caused_by_me = NULL;
 
-  PE_STATS(s_e_rbs)++;
+  PE_STATS(events_rolled_back)++;
 }
 
 // TODO: Is this supposed to be publicly exposed?

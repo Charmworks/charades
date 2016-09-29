@@ -70,6 +70,7 @@ void tw_init(int* argc, char*** argv) {
     TWOPT_STIME("gvt-leash", g_tw_leash, "GVT Leash"),
     TWOPT_UINT("ldb-interval", g_tw_ldb_interval, "Load Balancing Interval"),
     TWOPT_UINT("max-ldb", g_tw_max_ldb, "Max number of load balancing calls"),
+    TWOPT_UINT("stat-interval", g_tw_stat_interval, "Stat Interval"),
     TWOPT_UINT("num-lps", g_total_lps, "Number of total LPs"),
     TWOPT_UINT("num-chares", g_num_chares, "Number of chares"),
     TWOPT_UINT("lps-per-chare", g_lps_per_chare, "LPs per chare"),

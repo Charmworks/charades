@@ -37,44 +37,55 @@ struct MemUsage {
 };
 class PE: public CBase_PE {
   private:
+    /** LP queue variables */
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
     PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
 
-    Time gvt;           /**< current gvt on this PE */
+    /** GVT variables */
+    Time gvt;           /**< current GVT */
     Time min_sent;      /**< minimum ts sent out during this phase */
     Time leash_start;   /**< start of the current leash (usually == gvt) */
-    int gvt_cnt;        /**< iteration count since last gvt */
-    int ldb_cnt;        /**< number of times we've called load balancing */
-    bool gvt_started;
+    int gvt_num;        /**< Current GVT number */
+    int iter_cnt;       /**< iteration count since last gvt */
+    bool gvt_started;   /**< true if the GVT computation has begun */
     bool waiting_on_gvt;/**< flag to make sure we don't overlap gvts */
     unsigned force_gvt; /**< Bitmap used to determine if a gvt was forced */
 
-    tw_rng * rng; /**< ROSS rng stream */
+    /** Load balancing variables */
+    int ldb_cnt;        /**< number of times we've called load balancing */
 
-    Time min_cancel_time; /**< minumum event time in the cancel queue */
-    vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
-
-    MemUsage mem_usage; //holds stats about total memory usage. data collected during gvts
+    /** Timer variables */
+    double start_time;  /**< Start wall time for the simulation */
+    double end_time;    /**< End wall time for the simulation */
 #ifdef CMK_TRACE_ENABLED
     double gvt_start, ldb_start;
 #endif
 
-    // Completion detection variables for current phase, proxies, and pointers.
+    /** Event cancellation variables */
+    Time min_cancel_time; /**< minumum event time in the cancel queue */
+    vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
+
+    /** Asynchronous GVT variables */
     unsigned current_phase, next_phase, max_phase;
     bool* detector_ready;
     CProxy_CompletionDetector* detector_proxies;
     CompletionDetector** detector_pointers;
 
+    /** Misc variables */
+    tw_rng * rng; /**< ROSS rng stream */
+
     bool gvt_ready() const;
   public:
-    Globals* globals;       /**< global variables accessed with PE_VALUE */
-    Statistics* statistics; /**< statistics variables accessed with PE_STATS */
+    Globals* globals;             /**< "global" variables per PE */
+    Statistics* current_stats;    /**< statistics for the current GVT period */
+    Statistics* cumulative_stats; /**< statistics for the whole run */
 
     PE(CProxy_Initialize);
 
     ~PE() {
-      free(globals);
-      delete statistics;
+      delete globals;
+      delete current_stats;
+      delete cumulative_stats;
     }
 
     /** \brief Called as a reduction by LPs when load balancing is complete */
@@ -97,6 +108,7 @@ class PE: public CBase_PE {
     void execute_seq();
     void execute_cons();
     void execute_opt();
+    void log_stats();
 
     bool schedule_next_lp(); /**< call execute_me on the next LP */
 
@@ -165,18 +177,6 @@ class PE: public CBase_PE {
         detector_pointers[msg->phase]->consume();
       }
     }
-    void add_memory_stats() {
-      //Event stats
-      PE_STATS(s_max_allocated) = PE_VALUE(event_buffer)->memory_stats.max_allocated;
-      PE_STATS(s_avg_max_allocated) = PE_STATS(s_max_allocated);
-      PE_STATS(s_remote_deallocated) = PE_VALUE(event_buffer)->memory_stats.remote_deallocated;
-      PE_STATS(s_remote_new_allocated) = PE_VALUE(event_buffer)->memory_stats.remote_new_allocated;
-      //Total Memory stats
-      PE_STATS(s_max_memory) = mem_usage.max_memory;
-      PE_STATS(s_avg_memory) = mem_usage.avg_memory / PE_STATS(s_ngvts);
-    }
-    void add_mem_usage(); 
-    
 };
 
 #endif

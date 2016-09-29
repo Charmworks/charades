@@ -6,8 +6,8 @@
 
 // API functions
 
-void show_lld(const char *name, tw_stat v);
-void show_2f(const char *name, double v);
+//void show_lld(const char *name, tw_stat v);
+//void show_2f(const char *name, double v);
 void show_1f(const char *name, double v);
 void show_4f(const char *name, double v);
 

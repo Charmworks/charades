@@ -75,12 +75,12 @@ int charm_event_send(unsigned dest_peid, Event * e) {
   if (dest_pe != NULL) {
     // Check if an LP is sending to an LP other than itself (for stats).
     if (e->dest_lp != e->src_lp) {
-      PE_STATS(s_nsend_loc_remote)++;
+      PE_STATS(local_sends)++;
     }
     dest_pe->recv_local_event(e);
     return 0;
   } else {
-    PE_STATS(s_nsend_net_remote)++;
+    PE_STATS(remote_sends)++;
     // Fill the fields of the charm message to prepare it for sending.
     e->eventMsg->event_id = e->event_id = send_pe->uniqID++;
     e->eventMsg->ts = e->ts;
@@ -107,6 +107,7 @@ void charm_anti_send(unsigned dest_peid, Event * e) {
   eventMsg->send_pe = e->send_pe;
 
   pe->produce(eventMsg);
+  PE_STATS(anti_sends)++;
   lps(dest_peid).recv_anti_event(eventMsg);
 }
 

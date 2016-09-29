@@ -54,7 +54,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 #define PE_VALUE(x) pe->globals->x
 
 #undef PE_STATS
-#define PE_STATS(x) pe->statistics->x
+#define PE_STATS(x) pe->current_stats->x
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
 LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
@@ -218,8 +218,8 @@ void* LP::execute_me() {
 // Rollback all processed events up to the passed in timestamp.
 void LP::rollback_me(tw_stime ts) {
   Event* e;
-  PE_STATS(s_rb_total)++;
-  PE_STATS(s_rb_primary)++;
+  PE_STATS(total_rollback_calls)++;
+  PE_STATS(ts_rollback_calls)++;
   while(processed_events.size() && processed_events.front()->ts > ts) {
     e = processed_events.pop_front();
     tw_event_rollback(e);
@@ -239,8 +239,8 @@ void LP::rollback_me(tw_stime ts) {
 
 // Rollback until we get to event, and roll it back.
 void LP::rollback_me(Event *event) {
-  PE_STATS(s_rb_total)++;
-  PE_STATS(s_rb_secondary)++;
+  PE_STATS(total_rollback_calls)++;
+  PE_STATS(event_rollback_calls)++;
   Event* e = processed_events.pop_front();
   while (e != event) {
     tw_event_rollback(e);
@@ -270,7 +270,7 @@ void LP::rollback_me(Event *event) {
 void LP::fossil_me(tw_stime gvt) {
   Event* e;
   while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
-    PE_STATS(s_committed_events)++;
+    PE_STATS(events_committed)++;
     e = processed_events.pop_back();
     tw_event_free(e,true);
   }
