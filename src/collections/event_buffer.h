@@ -70,8 +70,8 @@ class EventBuffer {
     Event* get_event() {
       if (stack_pointer > 0) {
         buffer[--stack_pointer]->clear();
-	if(max_events - stack_pointer > memory_stats.max_allocated)
-	  memory_stats.max_allocated = max_events - stack_pointer;
+        if(max_events - stack_pointer > memory_stats.max_allocated)
+          memory_stats.max_allocated = max_events - stack_pointer;
         return buffer[stack_pointer];
       } else {
         return abort_event;

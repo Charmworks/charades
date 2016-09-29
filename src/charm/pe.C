@@ -23,6 +23,7 @@ unsigned g_tw_greedy_start; // whether we allow a greedy start or not
 unsigned g_tw_async_reduction; // allow GVT reduction and event exec to overlap
 unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 unsigned g_tw_max_ldb;      // max number of times we will load balance
+unsigned g_tw_stat_interval;// number of intervals between stat logging
 tw_stime g_tw_lookahead;    // event lookahead for conservative
 tw_stime g_tw_leash;        // gvt leash for optimistic
 double  gvt_print_interval; // determines frequency of progress print outs
@@ -51,7 +52,7 @@ Globals* get_globals() {
 }
 
 Statistics* get_statistics() {
-  static Statistics* statistics = pes.ckLocalBranch()->statistics;
+  static Statistics* statistics = pes.ckLocalBranch()->current_stats;
   return statistics;
 }
 
@@ -64,14 +65,13 @@ void registerGVTReduction(void) {
 }
 
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
-  Statistics *s = new Statistics;
-  initialize_statistics(s);
+  Statistics *s = new Statistics();
 
   for (int i = 0; i < nMsg; i++) {
     CkAssert(msgs[i]->getSize() == sizeof(Statistics));
 
     Statistics *c = (Statistics *)msgs[i]->getData();
-    add_statistics(s, c);
+    s->add(c);
   }
 
   return CkReductionMsg::buildNew(sizeof(Statistics), s);
@@ -133,40 +133,35 @@ void charm_run() {
 #define PE_VALUE(x) globals->x
 
 #undef PE_STATS
-#define PE_STATS(x) statistics->x
+#define PE_STATS(x) current_stats->x
 
 PE::PE(CProxy_Initialize srcProxy) :
-    gvt_cnt(0), gvt(0.0), leash_start(0.0), min_sent(DBL_MAX),
+    gvt_num(0), iter_cnt(0), gvt(0.0), leash_start(0.0), min_sent(DBL_MAX),
     min_cancel_time(DBL_MAX), force_gvt(0), waiting_on_gvt(false),
     gvt_started(false), ldb_cnt(0) {
 
-  #ifdef CMK_TRACE_ENABLED
+  int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
+  err = posix_memalign((void**)&current_stats, 64, sizeof(Statistics));
+  err = posix_memalign((void**)&cumulative_stats, 64, sizeof(Statistics));
+  clear_globals(globals);
+  current_stats->clear();
+  cumulative_stats->clear();
+
+#ifdef CMK_TRACE_ENABLED
   if (CkMyPe() == 0) {
     traceRegisterUserEvent("Forward Execution", USER_EVENT_FWD);
     traceRegisterUserEvent("Rollback", USER_EVENT_RB);
     traceRegisterUserEvent("Cancellation", USER_EVENT_CANCEL);
     traceRegisterUserEvent("GVT", USER_EVENT_GVT);
     traceRegisterUserEvent("LDB", USER_EVENT_LDB);
-   //USER STATS 
-    traceRegisterUserStat("Memory usage", USER_STAT_MEMORY_USAGE);
-    traceRegisterUserStat("Events committed", USER_STAT_EVENTS_COMMITTED);
-    traceRegisterUserStat("Events rolled back", USER_STAT_ROLLED_BACK);
-    traceRegisterUserStat("Events executed", USER_STAT_EXECUTED);
-
   }
-  #endif
-
-  int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
-  err = posix_memalign((void**)&statistics, 64, sizeof(Statistics));
-  initialize_globals(globals);
-  initialize_statistics(statistics);
-
-  //initialize memory stats
-  mem_usage.max_memory = 0;
-  mem_usage.avg_memory = 0;
+  current_stats->init_tracing();
+#endif
 
   cancel_q.resize(0);
   thisProxy[CkMyPe()].initialize_rand();
+  // TODO: tighter start and end time
+  start_time = CmiWallTimer();
 }
 
 /******************************************************************************/
@@ -188,7 +183,6 @@ void PE::initialize_detectors() {
   }
   if (max_phase == 0) {
     // Start the timer, the scheduler, and QD.
-    PE_STATS(s_max_run_time) = CkWallTimer();
     if (CkMyPe() == 0) {
       CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
     }
@@ -227,7 +221,6 @@ void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies)
   next_phase = (current_phase + 1) % max_phase;
 
   // Start the timer and the scheduler
-  PE_STATS(s_max_run_time) = CkWallTimer();
   contribute(CkCallback(CkIndex_PE::resume_scheduler(), thisProxy));
 }
 
@@ -241,8 +234,7 @@ bool PE::schedule_next_lp() {
   LPToken *min = next_lps.top();
   if(min == NULL) return 0;
   if (lps(min->lp->thisIndex).execute_me()) {
-  //if (min->lp->execute_me()) {
-    PE_STATS(s_nevent_processed)++;
+    PE_STATS(events_executed)++;
     return true;
   } else {
     return false;
@@ -264,7 +256,11 @@ Time PE::get_min_time() const {
 // Receives a reduction of statistics for the simulation, prints them, and ends
 // the simulation by exiting Charm++.
 void PE::end_simulation(CkReductionMsg* m) {
-  tw_stats((Statistics*)m->getData());
+  end_time = CmiWallTimer();
+  Statistics* final_stats = (Statistics*)m->getData();
+  final_stats->total_gvts = gvt_num;
+  final_stats->total_time = end_time - start_time;
+  final_stats->print();
   CkExit();
 }
 
@@ -275,7 +271,7 @@ void PE::end_simulation(CkReductionMsg* m) {
 bool PE::gvt_ready() const {
   // Use event count instead of leash
   if (g_tw_leash == 0) {
-    if (gvt_cnt > g_tw_gvt_interval || force_gvt) {
+    if (iter_cnt > g_tw_gvt_interval || force_gvt) {
       if (max_phase == 0 || detector_ready[next_phase]) {
         return true;
       }
@@ -294,7 +290,6 @@ bool PE::gvt_ready() const {
 
 // Just execute events one at a time until the end time.
 void PE::execute_seq() {
-  PE_STATS(s_max_run_time) = CkWallTimer();
   Time gvt = get_min_time();
   while (gvt < g_tw_ts_end) {
     if (!schedule_next_lp()) {
@@ -307,11 +302,9 @@ void PE::execute_seq() {
     }
     gvt = get_min_time();
   }
-  PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
-  PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
-  add_memory_stats();
-  contribute(sizeof(Statistics), statistics, statsReductionType,
-    CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
+  //log_stats();
+  contribute(sizeof(Statistics), cumulative_stats, statsReductionType,
+      CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
 
 }
 
@@ -355,8 +348,8 @@ void PE::execute_opt() {
     }
   }
 
-  gvt_cnt++;
-  bool ready_for_ldb = g_tw_ldb_interval && (PE_STATS(s_ngvts)+1) % g_tw_ldb_interval == 0;
+  iter_cnt++;
+  bool ready_for_ldb = g_tw_ldb_interval && gvt_num+1 % g_tw_ldb_interval == 0;
   if (gvt_ready()) {
     // If greedy_start is allowed, then we can force a GVT early if we've either
     // executed up to the next GVT, or are out of memory (we should not greedy
@@ -380,12 +373,9 @@ void PE::execute_opt() {
 // Call fossil_me on all lps that have fossils older than the current gvt.
 // The oldest_lps queue ensures we will only call fossil_me on lps that need it.
 void PE::collect_fossils() {
-  PE_STATS(s_fc_attempts)++;
   LPToken *min = oldest_lps.top();
-  if ((min != NULL) && (min->ts < gvt)) {
-    PE_STATS(s_fossil_collect)++;
-  }
   while((min != NULL) && (min->ts < gvt)) {
+    PE_STATS(fossil_collect_calls)++;
     min->lp->fossil_me(gvt);
     min = oldest_lps.top();
   }
@@ -438,8 +428,8 @@ void PE::gvt_begin() {
 #ifdef CMK_TRACE_ENABLED
   gvt_start = CmiWallTimer();
 #endif
-  gvt_cnt = 0;
-  PE_STATS(s_ngvts)++;
+  iter_cnt = 0;
+  gvt_num++;
   if (max_phase <= 1) {
     waiting_on_gvt = true;
   }
@@ -484,7 +474,7 @@ void PE::gvt_contribute() {
     // If we forced the GVT, we should wait until it completes.
     if (!force_gvt) {
       // If we are doing LDB this GVT then we should wait until it completes.
-      if (!g_tw_ldb_interval || PE_STATS(s_ngvts % g_tw_ldb_interval != 0)) {
+      if (!g_tw_ldb_interval || gvt_num % g_tw_ldb_interval != 0) {
         resume_scheduler();
       }
     }
@@ -500,18 +490,17 @@ void PE::gvt_end(CkReductionMsg* msg) {
 
   // Update stats that track forced GVTs
   if (gvt_struct->type) {
-    PE_STATS(s_forced_gvts)++;
+    PE_STATS(total_forced_gvts)++;
     if (gvt_struct->type & MEM_FORCE) {
-      PE_STATS(s_forced_mem_gvts)++;
+      PE_STATS(mem_forced_gvts)++;
     }
     if (gvt_struct->type & END_FORCE) {
-      PE_STATS(s_forced_end_gvts)++;
+      PE_STATS(end_forced_gvts)++;
     }
     if (gvt_struct->type & EVENT_FORCE) {
-      PE_STATS(s_forced_event_gvts)++;
+      PE_STATS(event_forced_gvts)++;
     }
   }
-  add_mem_usage();
   // If this GVT is the same as the last, and we are low on event memory, then
   // we will never be able to make progress.
   if (gvt == new_gvt && force_gvt & MEM_FORCE) {
@@ -536,17 +525,27 @@ void PE::gvt_end(CkReductionMsg* msg) {
   if(g_tw_synchronization_protocol == OPTIMISTIC) {
     BRACKET_TRACE(collect_fossils();, USER_EVENT_FC);
   }
+
+  PE_STATS(max_events_used) = PE_VALUE(event_buffer)->memory_stats.max_allocated;
+  PE_STATS(new_event_calls) = PE_VALUE(event_buffer)->memory_stats.remote_new_allocated - cumulative_stats->new_event_calls;
+  PE_STATS(del_event_calls) = PE_VALUE(event_buffer)->memory_stats.remote_deallocated - cumulative_stats->del_event_calls;
+  //log_stats();
+
+  if (gvt_num % g_tw_stat_interval == 0 || new_gvt >= g_tw_ts_end) {
+#ifdef CMK_TRACE_ENABLED
+    current_stats->log_tracing(gvt_num);
+#endif
+    cumulative_stats->add(current_stats);
+    current_stats->clear();
+  }
+
   // Either stop the timer and end the simulation, or call the scheduler again.
   if(new_gvt >= g_tw_ts_end) {
-    PE_STATS(s_max_run_time) = CkWallTimer() - PE_STATS(s_max_run_time);
-    PE_STATS(s_min_run_time) = PE_STATS(s_max_run_time);
-    add_memory_stats();
-    contribute(sizeof(Statistics), statistics, statsReductionType,
+    contribute(sizeof(Statistics), cumulative_stats, statsReductionType,
         CkCallback(CkReductionTarget(PE,end_simulation),thisProxy[0]));
   } else {
     // TODO: This doesn't need to be a broadcast
-    // TODO: Made this a reduction to ensure that all PEs finish fc before lb
-    if (g_tw_ldb_interval && PE_STATS(s_ngvts) % g_tw_ldb_interval == 0) {
+    if (g_tw_ldb_interval && gvt_num % g_tw_ldb_interval == 0) {
 #ifdef CMK_TRACE_ENABLED
       ldb_start = CmiWallTimer();
 #endif
@@ -571,7 +570,7 @@ void PE::gvt_print(GVT* gvt_struct) {
     PE_VALUE(percent_complete) = gvt_print_interval;
     return;
   }
-  CkPrintf("GVT #%d", PE_STATS(s_ngvts));
+  CkPrintf("GVT #%d", gvt_num);
   if (gvt_struct->type) {
     CkPrintf(" (FORCED %d)", gvt_struct->type);
   }
@@ -600,16 +599,5 @@ void PE::resume_scheduler() {
     thisProxy[CkMyPe()].execute_opt();
   }
 }
-void PE::add_mem_usage() { 
-  unsigned long long cur_mem = CmiMemoryUsage();
-  if(cur_mem > mem_usage.max_memory)
-    mem_usage.max_memory = cur_mem;
-  mem_usage.avg_memory += cur_mem;
-  updateStatPair(USER_STAT_MEMORY_USAGE, cur_mem / (1024. * 1024),PE_STATS(s_ngvts));
-  updateStatPair(USER_STAT_EVENTS_COMMITTED,PE_STATS(s_committed_events) , PE_STATS(s_ngvts));
-  updateStatPair(USER_STAT_ROLLED_BACK, PE_STATS(s_e_rbs), PE_STATS(s_ngvts));
-  updateStatPair(USER_STAT_EXECUTED, PE_STATS(s_nevent_processed), PE_STATS(s_ngvts));
-}
-
 
 #include "pe.def.h"

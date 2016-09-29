@@ -9,7 +9,7 @@
 #include <stdarg.h>
 
 // From tw-stats.c
-void show_lld(const char *name, tw_stat v) {
+/*void show_lld(const char *name, tw_stat v) {
   printf("\t%-50s %11lld\n", name, v);
   fprintf(PE_VALUE(g_tw_csv), "%lld,", v);
 }
@@ -17,7 +17,7 @@ void show_lld(const char *name, tw_stat v) {
 void show_2f(const char *name, double v) {
   printf("\t%-50s %11.2f %%\n", name, v);
   fprintf(PE_VALUE(g_tw_csv), "%.2f,", v);
-}
+}*/
 
 void show_1f(const char *name, double v) {
   printf("\t%-50s %11.1f\n", name, v);
@@ -33,6 +33,7 @@ void show_4f(const char *name, double v) {
  * Prints out final stats for a simulation.
  */
 void tw_stats(Statistics *s) {
+#if 0
   size_t m_alloc, m_waste;
 
   // Calculate the net events based on total event executed and rolled back
@@ -103,7 +104,7 @@ void tw_stats(Statistics *s) {
   show_lld("Net Events Processed", s->s_net_events);
   show_1f(
     "Event Rate (events/sec)",
-    ((double)s->s_net_events / PE_STATS(s_max_run_time)));
+    ((double)s->s_net_events / PE_STATS(s_max_run_time)));*/
 
   // TODO: Everything below here is unused...either implement or remove
   // TODO: Check that memory usage is correct
@@ -153,6 +154,7 @@ void tw_stats(Statistics *s) {
              "TEST RESULT: FAILURE!\nNet Events (%i) != Expected Events (%i)\n",
              s->s_net_events, g_tw_expected_events);
   }
+#endif
 }
 
 
