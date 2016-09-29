@@ -71,7 +71,7 @@ CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
     CkAssert(msgs[i]->getSize() == sizeof(Statistics));
 
     Statistics *c = (Statistics *)msgs[i]->getData();
-    s->add(c);
+    s->reduce(c);
   }
 
   return CkReductionMsg::buildNew(sizeof(Statistics), s);
@@ -258,7 +258,6 @@ Time PE::get_min_time() const {
 void PE::end_simulation(CkReductionMsg* m) {
   end_time = CmiWallTimer();
   Statistics* final_stats = (Statistics*)m->getData();
-  final_stats->total_gvts = gvt_num;
   final_stats->total_time = end_time - start_time;
   final_stats->print();
   CkExit();
@@ -489,6 +488,7 @@ void PE::gvt_end(CkReductionMsg* msg) {
   if (max_phase) detector_ready[next_phase] = true;
 
   // Update stats that track forced GVTs
+  PE_STATS(total_gvts)++;
   if (gvt_struct->type) {
     PE_STATS(total_forced_gvts)++;
     if (gvt_struct->type & MEM_FORCE) {

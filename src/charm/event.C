@@ -74,7 +74,9 @@ int charm_event_send(unsigned dest_peid, Event * e) {
   // If we got a pointer, do a local send. Otherwise, send remotely.
   if (dest_pe != NULL) {
     // Check if an LP is sending to an LP other than itself (for stats).
-    if (e->dest_lp != e->src_lp) {
+    if (e->dest_lp == e->src_lp) {
+      PE_STATS(self_sends)++;
+    } else {
       PE_STATS(local_sends)++;
     }
     dest_pe->recv_local_event(e);
