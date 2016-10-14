@@ -2,8 +2,8 @@ mainmodule ross {
   readonly CProxy_Initialize mainProxy;
   /** \brief Main chare that initializes pes */
   mainchare Initialize {
-    entry Initialize(CkArgMsg *);
-    entry [reductiontarget] void Exit();
+    entry [notrace] Initialize(CkArgMsg *);
+    entry [notrace,reductiontarget] void Exit();
   };
   extern module pe;
   extern module lp;

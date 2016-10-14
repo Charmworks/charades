@@ -3,13 +3,13 @@ module lp {
   extern module event;
 
   array [1D] LP {
-    entry LP(); /**< constructor */
-    entry void init(); /**< call the init handler on all lps on all lp chares */
-    entry [reductiontarget] void stop_scheduler(); /**< stops charm scheduler */
-    entry [expedited] void recv_remote_event(RemoteEvent*); /**< receive an event for this LP */
-    entry [expedited] void recv_anti_event(RemoteEvent*);   /**< receive an anti event for this LP */
-    entry [local] void* execute_me();
+    entry [notrace] LP(); /**< constructor */
+    entry [notrace] void init(); /**< call the init handler on all lps on all lp chares */
+    entry [notrace,reductiontarget] void stop_scheduler(); /**< stops charm scheduler */
+    entry [notrace,expedited] void recv_remote_event(RemoteEvent*); /**< receive an event for this LP */
+    entry [notrace,expedited] void recv_anti_event(RemoteEvent*);   /**< receive an anti event for this LP */
+    entry [notrace,local] void* execute_me();
 
-    entry [reductiontarget] void load_balance(); /**< PE calls this when ready to load balance */
+    entry [notrace,reductiontarget] void load_balance(); /**< PE calls this when ready to load balance */
   };
 };
