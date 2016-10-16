@@ -61,6 +61,8 @@ class Statistics {
   int EVENTS_COMMITTED;
   int EVENTS_ROLLED_BACK;
 
+  int EFFICIENCY;
+
   int SELF_SENDS;
   int LOCAL_SENDS;
   int REMOTE_SENDS;

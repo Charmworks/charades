@@ -176,6 +176,8 @@ void Statistics::init_tracing() {
     EVENTS_COMMITTED = traceRegisterUserStat("Events committed", -1);
     EVENTS_ROLLED_BACK = traceRegisterUserStat("Events rolled back", -1);
 
+    EFFICIENCY = traceRegisterUserStat("Efficiency", -1);
+
     SELF_SENDS = traceRegisterUserStat("Self sends", -1);
     LOCAL_SENDS = traceRegisterUserStat("Local sends", -1);
     REMOTE_SENDS = traceRegisterUserStat("Remote sends", -1);
@@ -190,6 +192,8 @@ void Statistics::log_tracing(int gvt_num) const {
   updateStatPair(EVENTS_EXECUTED, events_executed, gvt_num);
   updateStatPair(EVENTS_COMMITTED, events_committed, gvt_num);
   updateStatPair(EVENTS_ROLLED_BACK, events_rolled_back, gvt_num);
+
+  updateStatPair(EFFICIENCY, 100.0 * (1.0 - ((double) events_rolled_back / (double) events_committed)), gvt_num);
 
   updateStatPair(SELF_SENDS, self_sends, gvt_num);
   updateStatPair(LOCAL_SENDS, local_sends, gvt_num);
