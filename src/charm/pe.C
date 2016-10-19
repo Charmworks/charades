@@ -182,9 +182,9 @@ void PE::initialize_detectors() {
   }
   if (max_phase == 0) {
     // Start the timer, the scheduler, and QD.
-    if (CkMyPe() == 0) {
-      CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
-    }
+    //if (CkMyPe() == 0) {
+    //  CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
+    //}
     start_time = CmiWallTimer();
     resume_scheduler();
   } else {
@@ -352,7 +352,8 @@ void PE::execute_opt() {
 
   iter_cnt++;
   bool ready_for_ldb = g_tw_ldb_interval && gvt_num+1 % g_tw_ldb_interval == 0;
-  if (gvt_ready()) {
+  bool do_gvt = gvt_ready();
+  if (do_gvt) {
     // If greedy_start is allowed, then we can force a GVT early if we've either
     // executed up to the next GVT, or are out of memory (we should not greedy
     // start if we are simply out of events). This is only supported with QD.
@@ -363,7 +364,7 @@ void PE::execute_opt() {
       gvt_begin();
     }
   }
-  if (!gvt_ready() || (max_phase > 1 && !force_gvt && !ready_for_ldb)) {
+  if (!do_gvt || (max_phase > 1 && !force_gvt && !ready_for_ldb)) {
     thisProxy[CkMyPe()].execute_opt();
   }
 }
@@ -442,6 +443,10 @@ void PE::gvt_begin() {
     current_phase = next_phase;
     next_phase = (current_phase+1)%max_phase;
   }
+
+  if (CkMyPe() == 0 && max_phase == 0) {
+    CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
+  }
 }
 
 // Contribute this PEs minimum time to a min reduction to compute the gvt.
@@ -453,18 +458,18 @@ void PE::gvt_contribute() {
     waiting_on_gvt = false;
     gvt_started = false;
   }
-  if (max_phase == 0) {
-    if (CkMyPe() == 0) {
-      CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
-    }
-  } else {
-    if (CkMyPe() == 0) {
+  //if (max_phase == 0) {
+  //  if (CkMyPe() == 0) {
+  //    CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
+  //  }
+  //} else {
+    if (CkMyPe() == 0 && max_phase > 0) {
       detector_proxies[next_phase].start_detection(CkNumPes(),
           CkCallback(),
           CkCallback(),
           CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
     }
-  }
+  //}
   leash_start = get_min_time();
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
