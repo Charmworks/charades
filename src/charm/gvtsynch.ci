@@ -1,0 +1,20 @@
+module gvtsynch {
+  extern module ross;
+  //extern module pe;
+  include "typedefs.h";
+  include "completion.h";
+
+  readonly CProxy_GvtSynch gvts;
+  group GvtSynch {
+    
+    entry [notrace] GvtSynch(CProxy_Initialize);
+    // GVT methods
+    entry [notrace] void gvt_begin(); /**< begin gvt computation */
+    //entry [notrace] void greedy_gvt_begin(); /**< attempt to greedily force a GVT */
+    entry [notrace] void gvt_contribute(); /**< contribute to gvt reduction */
+    entry [notrace,reductiontarget] void gvt_end(CkReductionMsg*); /**< end of gvt computation */
+
+  };
+
+  initnode registerGVTReduction(void);
+}
