@@ -28,5 +28,4 @@ module pe {
   };
 
   initnode registerStatsReduction(void);
-  initnode registerGVTReduction(void);
 }

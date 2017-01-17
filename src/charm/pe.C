@@ -41,7 +41,6 @@ extern CProxy_Initialize mainProxy;
 CProxy_PE pes;
 extern CProxy_LP lps;
 CkReduction::reducerType statsReductionType;
-CkReduction::reducerType gvtReductionType;
 
 
 
@@ -60,9 +59,7 @@ void registerStatsReduction(void) {
   statsReductionType = CkReduction::addReducer(statsReduction);
 }
 
-void registerGVTReduction(void) {
-  gvtReductionType = CkReduction::addReducer(gvtReduction);
-}
+
 
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
   Statistics *s = new Statistics();
@@ -77,16 +74,7 @@ CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
   return CkReductionMsg::buildNew(sizeof(Statistics), s);
 }
 
-CkReductionMsg *gvtReduction(int nMsg, CkReductionMsg **msgs) {
-  GVT* new_gvt = new GVT;
-  for (int i = 0; i < nMsg; i++) {
-    CkAssert(msgs[i]->getSize() == sizeof(GVT));
-    GVT* gvt = (GVT*)msgs[i]->getData();
-    new_gvt->ts = fmin(new_gvt->ts, gvt->ts);
-    new_gvt->type = new_gvt->type | gvt->type;
-  }
-  return CkReductionMsg::buildNew(sizeof(GVT), new_gvt);
-}
+
 
 int tw_ismaster() {
   return (CkMyPe() == 0);
@@ -424,76 +412,13 @@ void PE::greedy_gvt_begin() {
 
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.
-void PE::gvt_begin() {
-  if (waiting_on_gvt) {
-    return;
-  }
-#ifdef CMK_TRACE_ENABLED
-  gvt_start = CmiWallTimer();
-#endif
-  iter_cnt = 0;
-  gvt_num++;
-  if (max_phase <= 1) {
-    waiting_on_gvt = true;
-  }
-  if (max_phase) {
-    min_sent = DBL_MAX;
-    detector_pointers[current_phase]->done();
-    detector_ready[current_phase] = false;
-    current_phase = next_phase;
-    next_phase = (current_phase+1)%max_phase;
-  }
 
-  if (CkMyPe() == 0 && max_phase == 0) {
-    CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
-  }
-}
-
-// Contribute this PEs minimum time to a min reduction to compute the gvt.
-void PE::gvt_contribute() {
-  GVT gvt_struct;
-  gvt_struct.ts = get_min_time();
-  gvt_struct.type = force_gvt;
-  if (max_phase <=1) {
-    waiting_on_gvt = false;
-    gvt_started = false;
-  }
-  //if (max_phase == 0) {
-  //  if (CkMyPe() == 0) {
-  //    CkStartQD(CkCallback(CkIndex_PE::gvt_contribute(), thisProxy));
-  //  }
-  //} else {
-    if (CkMyPe() == 0 && max_phase > 0) {
-      detector_proxies[next_phase].start_detection(CkNumPes(),
-          CkCallback(),
-          CkCallback(),
-          CkCallback(CkIndex_PE::gvt_contribute(), thisProxy), 0);
-    }
-  //}
-  leash_start = get_min_time();
-  contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
-      CkCallback(CkReductionTarget(PE,gvt_end),thisProxy));
-
-  // If we are doing optimistic simulation, we don't need to wait for the result
-  // of the reduction to continue execution (unless we plan on doing load
-  // balancing in this iteration).
-  if (g_tw_async_reduction && max_phase <= 1) {
-    // If we forced the GVT, we should wait until it completes.
-    if (!force_gvt) {
-      // If we are doing LDB this GVT then we should wait until it completes.
-      if (!g_tw_ldb_interval || gvt_num % g_tw_ldb_interval != 0) {
-        resume_scheduler();
-      }
-    }
-  }
-}
 
 // Check to see if we are complete. If not, re-enter the appropriate
 // scheduler loop, and possibly do fossil collection.
-void PE::gvt_end(CkReductionMsg* msg) {
-  GVT* gvt_struct = (GVT*)msg->getData();
+void PE::gvt_done(GVT * gvt_struct) {
+
   Time new_gvt = gvt_struct->ts;
-  if (max_phase) detector_ready[next_phase] = true;
 
   // Update stats that track forced GVTs
   PE_STATS(total_gvts)++;

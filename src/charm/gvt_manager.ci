@@ -1,0 +1,19 @@
+module gvt_manager {
+  extern module ross;
+
+  include "typedefs.h";
+  include "completion.h";
+
+
+  group gvt_manager {
+    
+    // GVT methods
+    entry [notrace] void gvt_begin(); /**< begin gvt computation */
+    //entry [notrace] void greedy_gvt_begin(); /**< attempt to greedily force a GVT */
+    entry [notrace] void gvt_contribute(); /**< contribute to gvt reduction */
+    entry [notrace,reductiontarget] void gvt_end(CkReductionMsg*); /**< end of gvt computation */
+
+  };
+
+  initnode registerGVTReduction(void);
+}
