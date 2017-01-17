@@ -8,10 +8,12 @@
 #include "statistics.h"
 #include "lp.h" // Included for LPToken definition
 
+//#include "gvtsynch.h"
 #include "pe_queue.h"
 
 class LP;
 class LPToken;
+//class GvtSynch;
 struct tw_rng;
 
 using std::vector;
@@ -123,9 +125,10 @@ class PE: public CBase_PE {
         In conservative it is equivalent to finding the next epoch
       */
     void greedy_gvt_begin(); /**< attempt to greedily begin gvt computation */
-    void gvt_begin(); /**< begin gvt computation */
-    void gvt_contribute(); /**< all sent messages received, contribute to GVT */
-    void gvt_end(CkReductionMsg*); /**< gvt done, either restart the scheduler or end */
+//    void gvt_begin(); /**< begin gvt computation */
+//    void gvt_contribute(); /**< all sent messages received, contribute to GVT */
+    void gvt_done(GVT *); /**< gvt done, either restart the scheduler or end */
+    unsigned get_gvt_type();
     void gvt_print(GVT*);
 
     /** \brief Get time stamp of the minium event */

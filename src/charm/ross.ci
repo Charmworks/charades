@@ -6,6 +6,7 @@ mainmodule ross {
     entry [notrace,reductiontarget] void Exit();
   };
   extern module pe;
+  extern module gvtsynch;
   extern module lp;
   extern module event;
 }
