@@ -1,6 +1,7 @@
 #include "pe.h"
 #include "lp.h"
 #include "charm_functions.h"
+#include "gvtsynch.h"
 
 #include "ross_util.h"
 #include "ross_api.h"
@@ -39,6 +40,7 @@ unsigned      g_tw_max_remote_events_buffered;
 
 extern CProxy_Initialize mainProxy;
 CProxy_PE pes;
+extern CProxy_GvtSynch gvts;
 extern CProxy_LP lps;
 CkReduction::reducerType statsReductionType;
 
@@ -188,13 +190,13 @@ void PE::initialize_detectors() {
       }
     }
     if (CkMyPe() == 0) {
-      thisProxy.broadcast_detector_proxies(max_phase, detector_proxies);
+      //thisProxy.broadcast_detector_proxies(max_phase, detector_proxies);
     }
   }
 }
 
 void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies) {
-  for (int i = 0; i < num; i++) {
+  /*for (int i = 0; i < num; i++) {
     detector_proxies[i] = proxies[i];
     detector_pointers[i] = detector_proxies[i].ckLocalBranch();
     detector_ready[i] = true;
@@ -211,6 +213,7 @@ void PE::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies)
   // Start the timer and the scheduler
   start_time = CmiWallTimer();
   contribute(CkCallback(CkIndex_PE::resume_scheduler(), thisProxy));
+*/
 }
 
 /******************************************************************************/
@@ -307,7 +310,8 @@ void PE::execute_cons() {
       break;
     }
   }
-  gvt_begin();
+  gvt_num++;
+  //gvt_begin();
 }
 
 // Execute events speculatively, processing g_tw_mblock messages each iteration.
@@ -347,9 +351,11 @@ void PE::execute_opt() {
     // start if we are simply out of events). This is only supported with QD.
     if (g_tw_greedy_start && max_phase <= 1 && force_gvt != END_FORCE
                                             && force_gvt != EVENT_FORCE) {
-      thisProxy[0].greedy_gvt_begin();
+      //thisProxy[0].greedy_gvt_begin();
     } else {
-      gvt_begin();
+     //CALL PROPER GVT METHOD 
+      gvt_num++;
+      gvts.ckLocalBranch()->gvt_begin();
     }
   }
   if (!do_gvt || (max_phase > 1 && !force_gvt && !ready_for_ldb)) {
@@ -404,11 +410,13 @@ void PE::update_min_cancel(Time t) {
 
 // This should only be called on PE 0. If it's the first time, then tell
 // all PEs to start the GVT, otherwise do nothing.
+
+/*
 void PE::greedy_gvt_begin() {
   if (gvt_started) return;
   gvt_started = true;
   thisProxy.gvt_begin();
-}
+} */
 
 // Wait for total quiessence before allowing anyone to contribute to the
 // gvt reduction.

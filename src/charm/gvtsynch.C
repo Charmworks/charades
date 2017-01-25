@@ -1,12 +1,15 @@
-#include "gvt_manager.h"
+#include "gvtsynch.h"
 #include "lp.h"
 #include "charm_functions.h"
-
+#include "pe.h"
+ 
 #include "ross_util.h"
 #include "ross_api.h"
 
 #include "mpi-interoperate.h"
 
+CProxy_GvtSynch gvts;
+extern CProxy_PE pes;
 CkReduction::reducerType gvtReductionType;
 
 /* NON-MEMBER functions */
@@ -55,48 +58,48 @@ void GVT_Manager::gvt_print(GVT* gvt_struct) {
 */
 
 /* GVT SYNCH FUNCTIONS */
-GVT_Synch::GVT_Synch(): waiting_on_gvt(false), gvt_started(false) {}
+GvtSynch::GvtSynch(CProxy_Initialize srcProxy): gvt_started(false) {}
 
-void GVT_Synch::gvt_begin() {
+void GvtSynch::gvt_begin() {
 
-  if(waiting_on_gvt) {
+/*  if(waiting_on_gvt) {
     return;
   }
-
+*/
   //iter_cnt = 0;
   //gvt_num++;
-  waiting_on_gvt = true;
+ // waiting_on_gvt = true;
   if(CkMyPe() == 0) {
-    CkStartQD(CkCallback(CkIndex_GVT_Synch::gvt_contribute(), thisProxy)); 
+    CkStartQD(CkCallback(CkIndex_GvtSynch::gvt_contribute(), thisProxy)); 
   }
 }
 
-void GVT_Synch::gvt_contribute() {
+void GvtSynch::gvt_contribute() {
   
   GVT gvt_struct;
   //Call Scheduler method to get these values.
  // gvt_struct.ts = get_min_time();
  // gvt_struct.type = force_gvt;
 
-  waiting_on_gvt = false;
+//  waiting_on_gvt = false;
   gvt_started = false;
 
   //leash_start = get_min_time();
   
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
-      CkCallback(CkReductionTarget(GVT_Synch,gvt_end),thisProxy)); 
+      CkCallback(CkReductionTarget(GvtSynch,gvt_end),thisProxy)); 
 }
 
-void GVT_Synch::gvt_end(CkReductionMsg* msg) {
+void GvtSynch::gvt_end(CkReductionMsg* msg) {
 
   GVT* gvt_struct = (GVT*)msg->getData();
   
   //Call Scheduler gvt_done
-
+  pes.ckLocalBranch()->gvt_done(gvt_struct);
 }
 
-bool GVT_Synch::wait_on_gvt() {
+/*bool GVT_Synch::wait_on_gvt() {
   return waiting_on_gvt;
-}
+}*/
 
-#include "gvt_handler.def.h"
+#include "gvtsynch.def.h"
