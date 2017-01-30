@@ -7,6 +7,7 @@ module gvtsynch {
   readonly CProxy_GvtSynch gvts;
   group GvtSynch {
     
+    entry [notrace] GvtSynch(CProxy_Initialize);
     // GVT methods
     entry [notrace] void gvt_begin(); /**< begin gvt computation */
     //entry [notrace] void greedy_gvt_begin(); /**< attempt to greedily force a GVT */
