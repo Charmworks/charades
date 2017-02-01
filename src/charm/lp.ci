@@ -1,5 +1,5 @@
 module lp {
-  extern module pe;
+  extern module scheduler;
   extern module event;
 
   array [1D] LP {

@@ -1,8 +1,8 @@
 #include "ross.h"
-#include "pe.h"
+#include "scheduler.h"
 #include "gvtmanager.h"
 
-extern CProxy_PE pes;
+extern CProxy_Scheduler scheduler;
 extern CProxy_GvtManager gvts;
 CProxy_Initialize mainProxy;
 
@@ -14,7 +14,7 @@ void charm_init(int argc, char** argv) {
 
 Initialize::Initialize(CkArgMsg *m) {
   mainProxy = thisProxy;
-  pes = CProxy_PE::ckNew(thisProxy);
+  scheduler = CProxy_ConservativeScheduler::ckNew(thisProxy);
   gvts = CProxy_GvtSync::ckNew(thisProxy);
   delete m;
 }

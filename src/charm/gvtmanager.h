@@ -2,12 +2,12 @@
 #define _GVTMANAGER_H
 
 #include "gvtmanager.decl.h"
-#include "typedefs.h"
-#include "globals.h"
-#include "statistics.h"
+//#include "typedefs.h"
+//#include "globals.h"
+//#include "statistics.h"
 
-#include "pe.h"
-#include "pe_queue.h"
+//#include "pe.h"
+//#include "pe_queue.h"
 
 
 class GvtManager : public CBase_GvtManager {
