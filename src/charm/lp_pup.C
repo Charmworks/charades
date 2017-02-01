@@ -1,9 +1,9 @@
 #include "lp.h"
-#include "pe.h"
+#include "scheduler.h"
 #include "avl_tree.h"
 #include "globals.h"
 
-extern CProxy_PE pes;
+extern CProxy_Scheduler scheduler;
 
 // Pup function for tw_rng_stream in the LPStruct.
 void operator|(PUP::er& p, tw_rng_stream* s) {
@@ -35,7 +35,7 @@ LP::LP(CkMigrateMessage* m) : next_token(this), oldest_token(this),
                               cancel_q(NULL), min_cancel_q(DBL_MAX),
                               in_pe_queue(false), all_events(0),
                               current_time(0.0), current_event(NULL) {
-  pe = pes.ckLocalBranch();
+  pe = scheduler.ckLocalBranch();
 }
 
 void LP::pup(PUP::er& p) {

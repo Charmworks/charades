@@ -18,6 +18,7 @@
 #include <vector>
 
 class RemoteEvent;
+class Scheduler;
 
 void operator|(PUP::er&, tw_rng_stream*);
 void operator|(PUP::er&, LPStruct&);
@@ -38,6 +39,7 @@ struct LPToken {
 
     friend class PEQueue;
     friend class PE;
+    friend class Scheduler;
 };
 
 typedef std::vector<LPStruct> LPList;
@@ -65,7 +67,7 @@ class LP : public CBase_LP {
     bool in_pe_queue;   // Whether or not this LP is in the PE cancel queue
 
     // A direct pointer to the PE where this LP chare resides
-    PE* pe;
+    Scheduler* pe;
 
     // Some control flow varies when we are in optimistic mode
     bool isOptimistic;

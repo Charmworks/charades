@@ -1,7 +1,6 @@
 #include "gvtmanager.h"
-#include "lp.h"
+#include "scheduler.h"
 #include "charm_functions.h"
-#include "pe.h"
  
 #include "ross_util.h"
 #include "ross_api.h"
@@ -9,7 +8,7 @@
 #include "mpi-interoperate.h"
 
 CProxy_GvtManager gvts;
-extern CProxy_PE pes;
+extern CProxy_Scheduler scheduler;
 extern unsigned g_tw_async_reduction;
 CkReduction::reducerType gvtReductionType;
 
@@ -62,7 +61,7 @@ void GvtSync::gvt_contribute() {
   
   GVT gvt_struct;
   //Call Scheduler method to get these values.
-  gvt_struct.ts = pes.ckLocalBranch()->get_min_time();
+  gvt_struct.ts = scheduler.ckLocalBranch()->get_min_time();
   //TODO: Change this type??
   gvt_struct.type = 0;
   
@@ -86,7 +85,7 @@ void GvtSync::gvt_end(CkReductionMsg* msg) {
 */
   
   //Call Scheduler gvt_done
-  pes.ckLocalBranch()->gvt_done(gvt_struct);
+  scheduler.ckLocalBranch()->gvt_done(gvt_struct->ts);
 }
 
 
