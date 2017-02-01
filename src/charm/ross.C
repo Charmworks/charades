@@ -1,7 +1,7 @@
 #include "ross.h"
-#include "pe.h"
+#include "scheduler.h"
 
-extern CProxy_PE pes;
+extern CProxy_Scheduler scheduler;
 CProxy_Initialize mainProxy;
 
 // Function that starts the charm library and results in the creation of the
@@ -12,7 +12,7 @@ void charm_init(int argc, char** argv) {
 
 Initialize::Initialize(CkArgMsg *m) {
   mainProxy = thisProxy;
-  pes = CProxy_PE::ckNew(thisProxy);
+  scheduler = CProxy_ConservativeScheduler::ckNew(thisProxy);
   delete m;
 }
 

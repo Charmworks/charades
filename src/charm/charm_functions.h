@@ -33,25 +33,25 @@ traceUserBracketEvent(event, start, end);
 #endif
 
 #ifdef DEBUG_ON
-#define DEBUG(format, ...) { CkPrintf("DEBUG: "format, ## __VA_ARGS__); }
+#define DEBUG(format, ...) { CkPrintf("DEBUG: " format, ## __VA_ARGS__); }
 #else
 #define DEBUG(format, ...) { }
 #endif
 
 #ifdef DEBUG_MASTER_ON
-#define DEBUG_MASTER(format, ...) { if(tw_ismaster()) CkPrintf("MASTER: "format, ## __VA_ARGS__); }
+#define DEBUG_MASTER(format, ...) { if(tw_ismaster()) CkPrintf("MASTER: " format, ## __VA_ARGS__); }
 #else
 #define DEBUG_MASTER(format, ...) { }
 #endif
 
 #ifdef DEBUG_LP_ON
-#define DEBUG_LP(format, ...) { CkPrintf("LP[%d]: "format, thisIndex, ## __VA_ARGS__); }
+#define DEBUG_LP(format, ...) { CkPrintf("LP[%d]: " format, thisIndex, ## __VA_ARGS__); }
 #else
 #define DEBUG_LP(format, ...) {}
 #endif
 
 #ifdef DEBUG_PE_ON
-#define DEBUG_PE(format, ...) { CkPrintf("PE[%d] "format, CkMyPe(), ## __VA_ARGS__); }
+#define DEBUG_PE(format, ...) { CkPrintf("PE[%d] " format, CkMyPe(), ## __VA_ARGS__); }
 #else
 #define DEBUG_PE(format, ...) {}
 #endif

@@ -1,5 +1,5 @@
 #include "lp.h"
-#include "pe.h"
+#include "scheduler.h"
 #include "event.h"
 
 #include "globals.h"
@@ -18,7 +18,7 @@
 #include <assert.h>
 
 // Readonly variables for the global proxies.
-extern CProxy_PE pes;
+extern CProxy_Scheduler scheduler;
 CProxy_LP lps;
 int isLpSet = 0;
 
@@ -67,7 +67,7 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
   usesAtSync = true;
 
   // Cache the pointer to the local PE chare
-  pe = pes.ckLocalBranch();
+  pe = scheduler.ckLocalBranch();
 
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
@@ -100,7 +100,7 @@ void LP::load_balance() {
 
 void LP::ResumeFromSync() {
   // TODO: This doens't have to be a broadcast
-  contribute(CkCallback(CkReductionTarget(PE, load_balance_complete), pes));
+  //contribute(CkCallback(CkReductionTarget(PE, load_balance_complete), scheduler));
 }
 
 // Call init on all LPs then stop the charm scheduler.

@@ -1,16 +1,19 @@
 include ../config.mk
 
-all: $(BUILD_DIR)/pe.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o $(BUILD_DIR)/lp_pup.o $(BUILD_DIR)/event_pup.o $(BUILD_DIR)/statistics.o
+all: $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o $(BUILD_DIR)/lp_pup.o $(BUILD_DIR)/event_pup.o $(BUILD_DIR)/statistics.o $(BUILD_DIR)/scheduler.o
 
-ci_files: ross.ci pe.ci lp.ci event.ci
-	$(CHARMC) ross.ci pe.ci lp.ci event.ci
+ci_files: ross.ci lp.ci event.ci scheduler.ci
+	$(CHARMC) ross.ci pe.ci lp.ci event.ci scheduler.ci
 	touch ci_files
 
 $(BUILD_DIR)/ross.o: ci_files ross.h ross.C
 	$(CHARMC) $(OPTS) -c ross.C -o $@
 
-$(BUILD_DIR)/pe.o: ci_files pe.h pe.C
-	$(CHARMC) $(OPTS) -c pe.C -o $@
+#$(BUILD_DIR)/pe.o: ci_files pe.h pe.C
+#	$(CHARMC) $(OPTS) -c pe.C -o $@
+
+$(BUILD_DIR)/scheduler.o: ci_files scheduler.h scheduler.C
+	$(CHARMC) $(OPTS) -c scheduler.C -o $@
 
 $(BUILD_DIR)/lp.o: ci_files lp.h lp.C
 	$(CHARMC) $(OPTS) -c lp.C -o $@
