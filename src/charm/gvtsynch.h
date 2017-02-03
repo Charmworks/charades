@@ -39,7 +39,7 @@ class GvtSynch: public CBase_GvtSynch {
     
 
     //bool waiting_on_gvt;
-    bool gvt_started;
+    //bool gvt_started;
 };
 /*
 struct GVT {

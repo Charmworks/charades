@@ -58,7 +58,7 @@ void GVT_Manager::gvt_print(GVT* gvt_struct) {
 */
 
 /* GVT SYNCH FUNCTIONS */
-GvtSynch::GvtSynch(CProxy_Initialize srcProxy): gvt_started(false) {}
+GvtSynch::GvtSynch(CProxy_Initialize srcProxy) {}
 
 void GvtSynch::gvt_begin() {
 
@@ -78,11 +78,13 @@ void GvtSynch::gvt_contribute() {
   
   GVT gvt_struct;
   //Call Scheduler method to get these values.
+  gvt_struct.ts = pes.ckLocalBranch()->get_min_time();
+  gvt_struct.type = pes.ckLocalBranch()->get_gvt_type(); 
  // gvt_struct.ts = get_min_time();
  // gvt_struct.type = force_gvt;
 
 //  waiting_on_gvt = false;
-  gvt_started = false;
+  //gvt_started = false;
 
   //leash_start = get_min_time();
   

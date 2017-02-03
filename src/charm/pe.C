@@ -355,6 +355,7 @@ void PE::execute_opt() {
     } else {
      //CALL PROPER GVT METHOD 
       gvt_num++;
+      iter_cnt = 0;
       gvts.ckLocalBranch()->gvt_begin();
     }
   }
@@ -525,6 +526,10 @@ void PE::gvt_print(GVT* gvt_struct) {
     CkPrintf("(GVT = %.4f).\n", gvt_struct->ts);
   }
   PE_VALUE(percent_complete) += gvt_print_interval;
+}
+
+unsigned PE::get_gvt_type() {
+  return force_gvt;
 }
 
 void PE::load_balance_complete() {
