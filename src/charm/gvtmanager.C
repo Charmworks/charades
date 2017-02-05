@@ -31,44 +31,19 @@ CkReductionMsg *gvtReduction(int nMsg, CkReductionMsg **msgs) {
 }
 
 
-/* General GVT Functions */
-/*
-void GVT_Manager::gvt_print(GVT* gvt_struct) {
-  if (gvt_print_interval == 1.0) {
-    return;
-  }
-  if (PE_VALUE(percent_complete) == 0.0) {
-    PE_VALUE(percent_complete) = gvt_print_interval;
-    return;
-  }
-  CkPrintf("GVT #%d", gvt_num);
-  if (gvt_struct->type) {
-    CkPrintf(" (FORCED %d)", gvt_struct->type);
-  }
-  CkPrintf(": simulation %d%% complete ",
-      (int)fmin(100, floor(100 * (gvt_struct->ts/g_tw_ts_end))));
-  if (gvt_struct->ts == DBL_MAX) {
-    CkPrintf("(GVT = MAX).\n");
-  } else {
-    CkPrintf("(GVT = %.4f).\n", gvt_struct->ts);
-  }
-  PE_VALUE(percent_complete) += gvt_print_interval;
-}
+/* GvtManager FUNCTIONS */
+GvtManager::GvtManager() {}
+GvtManager::GvtManager(CProxy_Initialize srcProxy) {}
 
-*/
+void GvtManager::gvt_begin() {}
+
+
 
 /* GVT SYNCH FUNCTIONS */
 GvtSynch::GvtSynch(CProxy_Initialize srcProxy) {}
 
 void GvtSynch::gvt_begin() {
 
-/*  if(waiting_on_gvt) {
-    return;
-  }
-*/
-  //iter_cnt = 0;
-  //gvt_num++;
- // waiting_on_gvt = true;
   if(CkMyPe() == 0) {
     CkStartQD(CkCallback(CkIndex_GvtSynch::gvt_contribute(), thisProxy)); 
   }
@@ -79,15 +54,8 @@ void GvtSynch::gvt_contribute() {
   GVT gvt_struct;
   //Call Scheduler method to get these values.
   gvt_struct.ts = pes.ckLocalBranch()->get_min_time();
+  //TODO: Change this type??
   gvt_struct.type = 0;
-  //gvt_struct.type = pes.ckLocalBranch()->get_gvt_type(); 
- // gvt_struct.ts = get_min_time();
- // gvt_struct.type = force_gvt;
-
-//  waiting_on_gvt = false;
-  //gvt_started = false;
-
-  //leash_start = get_min_time();
   
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(GvtSynch,gvt_end),thisProxy)); 
@@ -100,9 +68,5 @@ void GvtSynch::gvt_end(CkReductionMsg* msg) {
   //Call Scheduler gvt_done
   pes.ckLocalBranch()->gvt_done(gvt_struct);
 }
-
-/*bool GVT_Synch::wait_on_gvt() {
-  return waiting_on_gvt;
-}*/
 
 #include "gvtmanager.def.h"
