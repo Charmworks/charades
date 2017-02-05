@@ -1,9 +1,9 @@
 include ../config.mk
 
-all: $(BUILD_DIR)/pe.o $(BUILD_DIR)/gvtsynch.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o $(BUILD_DIR)/lp_pup.o $(BUILD_DIR)/event_pup.o $(BUILD_DIR)/statistics.o
+all: $(BUILD_DIR)/pe.o $(BUILD_DIR)/gvtmanager.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o $(BUILD_DIR)/lp_pup.o $(BUILD_DIR)/event_pup.o $(BUILD_DIR)/statistics.o
 
-ci_files: ross.ci pe.ci lp.ci event.ci gvtsynch.ci
-	$(CHARMC) ross.ci pe.ci lp.ci event.ci gvtsynch.ci
+ci_files: ross.ci pe.ci lp.ci event.ci gvtmanager.ci
+	$(CHARMC) ross.ci pe.ci lp.ci event.ci gvtmanager.ci
 	touch ci_files
 
 $(BUILD_DIR)/ross.o: ci_files ross.h ross.C
@@ -12,8 +12,8 @@ $(BUILD_DIR)/ross.o: ci_files ross.h ross.C
 $(BUILD_DIR)/pe.o: ci_files pe.h pe.C
 	$(CHARMC) $(OPTS) -c pe.C -o $@
 
-$(BUILD_DIR)/gvtsynch.o: ci_files gvtsynch.h gvtsynch.C
-	$(CHARMC) $(OPTS) -c gvtsynch.C -o $@
+$(BUILD_DIR)/gvtmanager.o: ci_files gvtmanager.h gvtmanager.C
+	$(CHARMC) $(OPTS) -c gvtmanager.C -o $@
 
 $(BUILD_DIR)/lp.o: ci_files lp.h lp.C
 	$(CHARMC) $(OPTS) -c lp.C -o $@
