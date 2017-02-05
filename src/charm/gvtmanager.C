@@ -40,16 +40,16 @@ void GvtManager::gvt_begin() {}
 
 
 /* GVT SYNCH FUNCTIONS */
-GvtSynch::GvtSynch(CProxy_Initialize srcProxy) {}
+GvtSync::GvtSync(CProxy_Initialize srcProxy) {}
 
-void GvtSynch::gvt_begin() {
+void GvtSync::gvt_begin() {
 
   if(CkMyPe() == 0) {
-    CkStartQD(CkCallback(CkIndex_GvtSynch::gvt_contribute(), thisProxy)); 
+    CkStartQD(CkCallback(CkIndex_GvtSync::gvt_contribute(), thisProxy)); 
   }
 }
 
-void GvtSynch::gvt_contribute() {
+void GvtSync::gvt_contribute() {
   
   GVT gvt_struct;
   //Call Scheduler method to get these values.
@@ -58,10 +58,10 @@ void GvtSynch::gvt_contribute() {
   gvt_struct.type = 0;
   
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
-      CkCallback(CkReductionTarget(GvtSynch,gvt_end),thisProxy)); 
+      CkCallback(CkReductionTarget(GvtSync,gvt_end),thisProxy)); 
 }
 
-void GvtSynch::gvt_end(CkReductionMsg* msg) {
+void GvtSync::gvt_end(CkReductionMsg* msg) {
 
   GVT* gvt_struct = (GVT*)msg->getData();
   

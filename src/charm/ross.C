@@ -15,7 +15,7 @@ void charm_init(int argc, char** argv) {
 Initialize::Initialize(CkArgMsg *m) {
   mainProxy = thisProxy;
   pes = CProxy_PE::ckNew(thisProxy);
-  gvts = CProxy_GvtSynch::ckNew(thisProxy);
+  gvts = CProxy_GvtSync::ckNew(thisProxy);
   delete m;
 }
 

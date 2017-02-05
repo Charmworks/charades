@@ -12,7 +12,6 @@
 
 class LP;
 class LPToken;
-//class GvtSynch;
 struct tw_rng;
 
 using std::vector;
