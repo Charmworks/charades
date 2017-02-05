@@ -1,7 +1,7 @@
-#ifndef _GVTSYNCH_H
-#define _GVTSYNCH_H
+#ifndef _GVTMANAGER_H
+#define _GVTMANAGER_H
 
-#include "gvtsynch.decl.h"
+#include "gvtmanager.decl.h"
 #include "typedefs.h"
 #include "globals.h"
 #include "statistics.h"

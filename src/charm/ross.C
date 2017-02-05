@@ -1,9 +1,9 @@
 #include "ross.h"
 #include "pe.h"
-#include "gvtsynch.h"
+#include "gvtmanager.h"
 
 extern CProxy_PE pes;
-extern CProxy_GvtSynch gvts;
+extern CProxy_GvtManager gvts;
 CProxy_Initialize mainProxy;
 
 // Function that starts the charm library and results in the creation of the

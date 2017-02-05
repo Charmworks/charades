@@ -1,4 +1,4 @@
-#include "gvtsynch.h"
+#include "gvtmanager.h"
 #include "lp.h"
 #include "charm_functions.h"
 #include "pe.h"
@@ -8,7 +8,7 @@
 
 #include "mpi-interoperate.h"
 
-CProxy_GvtSynch gvts;
+CProxy_GvtManager gvts;
 extern CProxy_PE pes;
 CkReduction::reducerType gvtReductionType;
 
@@ -105,4 +105,4 @@ void GvtSynch::gvt_end(CkReductionMsg* msg) {
   return waiting_on_gvt;
 }*/
 
-#include "gvtsynch.def.h"
+#include "gvtmanager.def.h"

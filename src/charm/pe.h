@@ -8,7 +8,6 @@
 #include "statistics.h"
 #include "lp.h" // Included for LPToken definition
 
-//#include "gvtsynch.h"
 #include "pe_queue.h"
 
 class LP;

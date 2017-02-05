@@ -1,7 +1,7 @@
 #include "pe.h"
 #include "lp.h"
 #include "charm_functions.h"
-#include "gvtsynch.h"
+#include "gvtmanager.h"
 
 #include "ross_util.h"
 #include "ross_api.h"
@@ -40,7 +40,7 @@ unsigned      g_tw_max_remote_events_buffered;
 
 extern CProxy_Initialize mainProxy;
 CProxy_PE pes;
-extern CProxy_GvtSynch gvts;
+extern CProxy_GvtManager gvts;
 extern CProxy_LP lps;
 CkReduction::reducerType statsReductionType;
 

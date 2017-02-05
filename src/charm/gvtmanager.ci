@@ -1,10 +1,10 @@
-module gvtsynch {
+module gvtmanager {
   extern module ross;
   //extern module pe;
   include "typedefs.h";
   include "completion.h";
 
-  readonly CProxy_GvtSynch gvts;
+  readonly CProxy_GvtManager gvts;
   group GvtSynch {
     
     entry [notrace] GvtSynch(CProxy_Initialize);
