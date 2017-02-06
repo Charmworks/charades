@@ -36,19 +36,5 @@ class GvtSync : public CBase_GvtSync {
 
 };
 
-class GvtAsync : public CBase_GvtAsync {
-
-  public:
-    //void gvt_begin();
-    void gvt_contribute();
-    //void gvt_end(CkReductionMsg*);
-
-    GvtAsync(CProxy_Initialize);
-  private:
-    
-
-};
-
-
 #endif
 

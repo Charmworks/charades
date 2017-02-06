@@ -10,6 +10,7 @@
 
 CProxy_GvtManager gvts;
 extern CProxy_PE pes;
+extern unsigned g_tw_async_reduction;
 CkReduction::reducerType gvtReductionType;
 
 /* NON-MEMBER functions */
@@ -67,6 +68,10 @@ void GvtSync::gvt_contribute() {
   
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(GvtSync,gvt_end),thisProxy)); 
+
+  if(g_tw_async_reduction) {
+  //CALL CAN_CONTINUE FUNCTION
+  }
 }
 
 void GvtSync::gvt_end(CkReductionMsg* msg) {
@@ -82,17 +87,6 @@ void GvtSync::gvt_end(CkReductionMsg* msg) {
   
   //Call Scheduler gvt_done
   pes.ckLocalBranch()->gvt_done(gvt_struct);
-}
-
-/*GVT ASYNC FUNCTIONS */
-
-GvtAsync::GvtAsync(CProxy_Initialize) {}
-
-void GvtAsync::gvt_contribute() {
-  GvtSync::gvt_contribute();
-
-  //Check if load balancing needed or not
-
 }
 
 
