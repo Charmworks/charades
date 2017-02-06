@@ -39,10 +39,18 @@ void GvtManager::gvt_begin() {}
 
 
 
-/* GVT SYNCH FUNCTIONS */
+/* GVT SYNC FUNCTIONS */
+
+GvtSync::GvtSync() {}
 GvtSync::GvtSync(CProxy_Initialize srcProxy) {}
 
 void GvtSync::gvt_begin() {
+
+/*
+#ifdef CMK_TRACE_ENABLED
+  double gvt_start = CmiWallTimer();
+#endif
+*/
 
   if(CkMyPe() == 0) {
     CkStartQD(CkCallback(CkIndex_GvtSync::gvt_contribute(), thisProxy)); 
@@ -64,9 +72,31 @@ void GvtSync::gvt_contribute() {
 void GvtSync::gvt_end(CkReductionMsg* msg) {
 
   GVT* gvt_struct = (GVT*)msg->getData();
+
+/*
+#ifdef CMK_TRACE_ENABLED
+  double gvt_end = CmiWallTimer();
+  traceUserBracketEvent(USER_EVENT_GVT, gvt_start, gvt_end);
+#endif
+*/
   
   //Call Scheduler gvt_done
   pes.ckLocalBranch()->gvt_done(gvt_struct);
 }
+
+/*GVT ASYNC FUNCTIONS */
+
+GvtAsync::GvtAsync(CProxy_Initialize) {}
+
+void GvtAsync::gvt_contribute() {
+  GvtSync::gvt_contribute();
+
+  //Check if load balancing needed or not
+
+}
+
+
+
+
 
 #include "gvtmanager.def.h"

@@ -21,5 +21,14 @@ module gvtmanager {
 
   };
 
+  group GvtAsync : GvtSync {
+    
+    entry [notrace] GvtAsync(CProxy_Initialize);
+    // GVT methods
+    entry [notrace] void gvt_contribute(); /**< contribute to gvt reduction */
+    //entry [notrace,reductiontarget] void gvt_end(CkReductionMsg*); /**< end of gvt computation */
+
+  };
+
   initnode registerGVTReduction(void);
 }
