@@ -10,6 +10,7 @@
 
 CProxy_GvtManager gvts;
 extern CProxy_PE pes;
+extern unsigned g_tw_async_reduction;
 CkReduction::reducerType gvtReductionType;
 
 /* NON-MEMBER functions */
@@ -39,10 +40,18 @@ void GvtManager::gvt_begin() {}
 
 
 
-/* GVT SYNCH FUNCTIONS */
+/* GVT SYNC FUNCTIONS */
+
+GvtSync::GvtSync() {}
 GvtSync::GvtSync(CProxy_Initialize srcProxy) {}
 
 void GvtSync::gvt_begin() {
+
+/*
+#ifdef CMK_TRACE_ENABLED
+  double gvt_start = CmiWallTimer();
+#endif
+*/
 
   if(CkMyPe() == 0) {
     CkStartQD(CkCallback(CkIndex_GvtSync::gvt_contribute(), thisProxy)); 
@@ -59,14 +68,29 @@ void GvtSync::gvt_contribute() {
   
   contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
       CkCallback(CkReductionTarget(GvtSync,gvt_end),thisProxy)); 
+
+  if(g_tw_async_reduction) {
+  //CALL CAN_CONTINUE FUNCTION
+  }
 }
 
 void GvtSync::gvt_end(CkReductionMsg* msg) {
 
   GVT* gvt_struct = (GVT*)msg->getData();
+
+/*
+#ifdef CMK_TRACE_ENABLED
+  double gvt_end = CmiWallTimer();
+  traceUserBracketEvent(USER_EVENT_GVT, gvt_start, gvt_end);
+#endif
+*/
   
   //Call Scheduler gvt_done
   pes.ckLocalBranch()->gvt_done(gvt_struct);
 }
+
+
+
+
 
 #include "gvtmanager.def.h"
