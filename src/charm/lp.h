@@ -40,6 +40,7 @@ struct LPToken {
     friend class PEQueue;
     friend class PE;
     friend class Scheduler;
+    friend class OptimisticScheduler;
 };
 
 typedef std::vector<LPStruct> LPList;
