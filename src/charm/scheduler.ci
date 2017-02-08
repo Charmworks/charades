@@ -2,27 +2,27 @@ module scheduler {
   extern module ross;
 
   include "typedefs.h";
-  include "completion.h";
 
   readonly CProxy_Scheduler scheduler;
 
   group Scheduler {
-    entry [notrace] Scheduler(CProxy_Initialize);
-
+    entry [notrace] Scheduler();
     entry [notrace] void initialize_rand();
-
-    entry [notrace] void gvt_begin();
-    entry [notrace] void gvt_contribute();
-    entry [notrace,reductiontarget] void gvt_end(CkReductionMsg*);
     entry [notrace,reductiontarget] void end_simulation(CkReductionMsg*);
-
     entry [notrace] void execute();
   };
 
+  group SequentialScheduler : Scheduler {
+    entry [notrace] SequentialScheduler();
+  };
+
   group ConservativeScheduler : Scheduler {
-    entry [notrace] ConservativeScheduler(CProxy_Initialize);
+    entry [notrace] ConservativeScheduler();
+  };
+
+  group OptimisticScheduler : Scheduler {
+    entry [notrace] OptimisticScheduler();
   };
 
   initnode registerStatsReduction(void);
-  initnode registerGVTReduction(void);
 }

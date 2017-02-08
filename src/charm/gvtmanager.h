@@ -2,39 +2,34 @@
 #define _GVTMANAGER_H
 
 #include "gvtmanager.decl.h"
-//#include "typedefs.h"
-//#include "globals.h"
-//#include "statistics.h"
+#include <float.h>
 
-//#include "pe.h"
-//#include "pe_queue.h"
+extern CProxy_GvtManager gvts;
 
+struct GVT {
+  GVT() : ts(DBL_MAX), type(0) {}
+  Time ts;
+  unsigned type;
+};
 
 class GvtManager : public CBase_GvtManager {
+ protected:
+  Time gvt;
 
-  public:
-    GvtManager();
-    GvtManager(CProxy_Initialize);
+ public:
+  GvtManager();
 
-    virtual void gvt_begin();
-
-  private:
-
+  Time current_gvt() const { return gvt; }
+  virtual void gvt_begin() {}
 }; 
 
 class GvtSync : public CBase_GvtSync {
+ public:
+  GvtSync();
 
-  public:
-    void gvt_begin();
-    void gvt_contribute();
-    void gvt_end(CkReductionMsg*);
-
-    GvtSync();
-    GvtSync(CProxy_Initialize);
-  private:
-    
-
+  void gvt_begin();
+  void gvt_contribute();
+  void gvt_end(CkReductionMsg*);
 };
 
 #endif
-

@@ -6,6 +6,7 @@
 #include "typedefs.h"
 #include "globals.h"
 #include "statistics.h"
+#include "gvtmanager.h"
 #include "lp.h"
 
 #include "pe_queue.h"
@@ -14,22 +15,9 @@ class LP;
 class LPToken;
 struct tw_rng;
 
-
 using std::vector;
 
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs);
-CkReductionMsg *gvtReduction(int nMsg, CkReductionMsg **msgs);
-
-// Bit masks for GVT types
-#define MEM_FORCE 1
-#define END_FORCE 2
-#define EVENT_FORCE 4
-
-struct GVT {
-  GVT() : ts(DBL_MAX), type(0) {}
-  Time ts;
-  unsigned type;
-};
 
 struct MemUsage {
   unsigned long long max_memory;
@@ -37,30 +25,20 @@ struct MemUsage {
 
 };
 
+extern CProxy_Scheduler scheduler;
+
 class Scheduler : public CBase_Scheduler {
   protected:
     /** LP queue variables */
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
     PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
 
-    /** GVT variables */
-    Time gvt;           /**< current GVT */
-    int gvt_num;        /**< Current GVT number */
-    int iter_cnt;       /**< iteration count since last gvt */
-
     /** Load balancing variables */
-    int ldb_cnt;        /**< number of times we've called load balancing */
+    //int ldb_cnt;        /**< number of times we've called load balancing */
 
     /** Timer variables */
     double start_time;  /**< Start wall time for the simulation */
     double end_time;    /**< End wall time for the simulation */
-#ifdef CMK_TRACE_ENABLED
-    double gvt_start, ldb_start;
-#endif
-
-    /** Event cancellation variables */
-    Time min_cancel_time; /**< minumum event time in the cancel queue */
-    vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
 
     /** Misc variables */
     tw_rng * rng; /**< ROSS rng stream */
@@ -71,32 +49,24 @@ class Scheduler : public CBase_Scheduler {
     Statistics* cumulative_stats; /**< statistics for the whole run */
 
     Scheduler();
-    Scheduler(CProxy_Initialize);
     ~Scheduler() {
       delete globals;
       delete current_stats;
       delete cumulative_stats;
     }
 
+    void initialize();
     void initialize_rand();
 
     virtual void execute();
+    virtual void gvt_resume();
     virtual void gvt_done(Time gvt);
 
     bool schedule_next_lp(); /**< call execute_me on the next LP */
 
-    void collect_fossils();       /**< collect fossils */
-    void process_cancel_q();      /**< process the cancel_q */
-    void add_to_cancel_q(LP*);    /**< add an LP to the cancel_q */
-    void update_min_cancel(Time); /**< update min_cancel_time */
-
-    void gvt_begin(); /**< begin gvt computation */
-    void gvt_contribute(); /**< all sent messages received, contribute to GVT */
-    void gvt_end(CkReductionMsg*); /**< gvt done, either restart the scheduler or end */
-
     void end_simulation(CkReductionMsg *m);
 
-    Time get_min_time() const;
+    virtual Time get_min_time() const;
 
     void register_lp(LPToken* next_token, Time next_ts,
                      LPToken* oldest_token, Time oldest_ts) {
@@ -104,8 +74,9 @@ class Scheduler : public CBase_Scheduler {
       oldest_lps.insert(oldest_token, oldest_ts);
     }
 
+    // TODO: Make this work
     void unregister_lp(LPToken* next_token, LPToken* oldest_token) {
-      next_lps.remove(next_token);
+      /*next_lps.remove(next_token);
       oldest_lps.remove(oldest_token);
       vector<LP*>::iterator it = cancel_q.begin();
       while (it != cancel_q.end()) {
@@ -114,7 +85,7 @@ class Scheduler : public CBase_Scheduler {
           break;
         }
         it++;
-      }
+      }*/
     }
 
     void update_next(LPToken* token, Time ts) {
@@ -125,15 +96,39 @@ class Scheduler : public CBase_Scheduler {
       oldest_lps.update(token, ts);
     }
 
-    void produce(RemoteEvent* msg) {}
+    // TODO: What to do with these? Only needed for some sched/GVT
+    virtual void consume(RemoteEvent* e) {}
+    virtual void produce(RemoteEvent* e) {}
+    virtual void add_to_cancel_q(LP* lp) {}
+    virtual void update_min_cancel(Time ts) {}
+};
 
-    void consume(RemoteEvent* msg) {}
+class SequentialScheduler : public CBase_SequentialScheduler {
+  public:
+    SequentialScheduler();
+    void execute();
 };
 
 class ConservativeScheduler : public CBase_ConservativeScheduler {
   public:
-    ConservativeScheduler(CProxy_Initialize proxy);
+    ConservativeScheduler();
     void execute();
+};
+
+class OptimisticScheduler : public CBase_OptimisticScheduler {
+  private:
+    int iter_cnt;       /**< iteration count since last gvt */
+    Time min_cancel_time; /**< minumum event time in the cancel queue */
+    vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
+
+  public:
+    OptimisticScheduler();
+    void execute();
+    void collect_fossils();       /**< collect fossils */
+    void process_cancel_q();      /**< process the cancel_q */
+    void add_to_cancel_q(LP*);    /**< add an LP to the cancel_q */
+    void update_min_cancel(Time); /**< update min_cancel_time */
+    Time get_min_time() const;
 };
 
 #endif

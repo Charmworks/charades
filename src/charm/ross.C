@@ -14,8 +14,19 @@ void charm_init(int argc, char** argv) {
 
 Initialize::Initialize(CkArgMsg *m) {
   mainProxy = thisProxy;
-  scheduler = CProxy_ConservativeScheduler::ckNew(thisProxy);
-  gvts = CProxy_GvtSync::ckNew(thisProxy);
+  gvts = CProxy_GvtSync::ckNew();
+
+  // TODO: Hard-coded for now
+  g_tw_synchronization_protocol = 3;
+  if (g_tw_synchronization_protocol == 1) {
+    scheduler = CProxy_SequentialScheduler::ckNew();
+  } else if (g_tw_synchronization_protocol == 2) {
+    scheduler = CProxy_ConservativeScheduler::ckNew();
+  } else if (g_tw_synchronization_protocol == 3) {
+    scheduler = CProxy_OptimisticScheduler::ckNew();
+  } else {
+    CkAbort("Unknown synchronization protocol\n");
+  }
   delete m;
 }
 
