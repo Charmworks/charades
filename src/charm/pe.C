@@ -48,7 +48,7 @@ Globals* get_globals() {
 }
 
 Statistics* get_statistics() {
-  static Statistics* statistics = pe_manager_proxy.ckLocalBranch()->current_stats;
+  static Statistics* statistics = pe_manager_proxy.ckLocalBranch()->cumulative_stats;
   return statistics;
 }
 
@@ -101,7 +101,7 @@ void charm_run() {
 #define PE_VALUE(x) globals->x
 
 #undef PE_STATS
-#define PE_STATS(x) current_stats->x
+#define PE_STATS(x) cumulative_stats->x
 
 PEManager::PEManager() {
   DEBUG_PE("PEManager instantiated\n");
