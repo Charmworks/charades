@@ -17,8 +17,10 @@
 
 #include <vector>
 
+extern CProxy_LP lps;
+
 class RemoteEvent;
-class Scheduler;
+class PEManager;
 
 void operator|(PUP::er&, tw_rng_stream*);
 void operator|(PUP::er&, LPStruct&);
@@ -68,7 +70,8 @@ class LP : public CBase_LP {
     bool in_pe_queue;   // Whether or not this LP is in the PE cancel queue
 
     // A direct pointer to the PE where this LP chare resides
-    Scheduler* pe;
+    PEManager* pe;
+    Scheduler* scheduler;
 
     // Some control flow varies when we are in optimistic mode
     bool isOptimistic;

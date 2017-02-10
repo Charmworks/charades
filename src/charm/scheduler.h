@@ -4,28 +4,17 @@
 #include "scheduler.decl.h"
 
 #include "typedefs.h"
-#include "globals.h"
-#include "statistics.h"
-#include "gvtmanager.h"
-#include "lp.h"
-
 #include "pe_queue.h"
 
+extern CProxy_Scheduler scheduler_proxy;
+
+class RemoteEvent;
+class GVTManager;
 class LP;
 class LPToken;
-struct tw_rng;
+class PEManager;
 
 using std::vector;
-
-CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs);
-
-struct MemUsage {
-  unsigned long long max_memory;
-  double avg_memory;
-
-};
-
-extern CProxy_Scheduler scheduler;
 
 class Scheduler : public CBase_Scheduler {
   protected:
@@ -33,41 +22,39 @@ class Scheduler : public CBase_Scheduler {
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
     PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
 
-    /** Load balancing variables */
-    //int ldb_cnt;        /**< number of times we've called load balancing */
-
-    /** Timer variables */
-    double start_time;  /**< Start wall time for the simulation */
-    double end_time;    /**< End wall time for the simulation */
-
-    /** Misc variables */
-    tw_rng * rng; /**< ROSS rng stream */
+    /** Local pointers to other PE-level objects */
+    PEManager* pe_manager;
+    GVTManager* gvt_manager;
 
   public:
-    Globals* globals;             /**< "global" variables per PE */
-    Statistics* current_stats;    /**< statistics for the current GVT period */
-    Statistics* cumulative_stats; /**< statistics for the whole run */
-
     Scheduler();
-    ~Scheduler() {
-      delete globals;
-      delete current_stats;
-      delete cumulative_stats;
-    }
 
-    void initialize();
-    void initialize_rand();
-
+    /** Entry method for executing a scheduler iteration */
     virtual void execute();
+
+    /** Local method which allows the GVT manager to signify LP execution can
+     *  continue without messing up the GVT. The specific scheduler subclasses
+     *  will decide whether or not anything can be done at this point. */
     virtual void gvt_resume();
+    /** Local method which allows the GVT manager to signify that the GVT is
+     *  comleted with the passed in GVT being the result. */
     virtual void gvt_done(Time gvt);
 
-    bool schedule_next_lp(); /**< call execute_me on the next LP */
+    /** Called by the local PEManager after all groups have been initialized */
+    void set_local_pointers(PEManager* pem, GVTManager* gvtm) {
+      pe_manager = pem;
+      gvt_manager = gvtm;
+    }
 
-    void end_simulation(CkReductionMsg *m);
+    /** Calls execute_me() on the next LP in the queue */
+    virtual bool schedule_next_lp();
 
+    /** Local accessor for getting the minimum time for GVT computation. It may
+     *  vary based on the type of scheduler and potentially the type of GVT */
     virtual Time get_min_time() const;
 
+
+    /** TODO: Most of the following should be moved to PE manager? */
     void register_lp(LPToken* next_token, Time next_ts,
                      LPToken* oldest_token, Time oldest_ts) {
       next_lps.insert(next_token, next_ts);
@@ -87,16 +74,12 @@ class Scheduler : public CBase_Scheduler {
         it++;
       }*/
     }
-
     void update_next(LPToken* token, Time ts) {
       next_lps.update(token, ts);
     }
-
     void update_oldest(LPToken* token, Time ts) {
       oldest_lps.update(token, ts);
     }
-
-    // TODO: What to do with these? Only needed for some sched/GVT
     virtual void consume(RemoteEvent* e) {}
     virtual void produce(RemoteEvent* e) {}
     virtual void add_to_cancel_q(LP* lp) {}
@@ -117,7 +100,7 @@ class ConservativeScheduler : public CBase_ConservativeScheduler {
 
 class OptimisticScheduler : public CBase_OptimisticScheduler {
   private:
-    int iter_cnt;       /**< iteration count since last gvt */
+    int iter_cnt;         /**< iteration count since last gvt */
     Time min_cancel_time; /**< minumum event time in the cancel queue */
     vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
 
@@ -128,7 +111,7 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
     void process_cancel_q();      /**< process the cancel_q */
     void add_to_cancel_q(LP*);    /**< add an LP to the cancel_q */
     void update_min_cancel(Time); /**< update min_cancel_time */
-    Time get_min_time() const;
+    Time get_min_time() const;    /**< Override base method to include cancel q*/
 };
 
 #endif

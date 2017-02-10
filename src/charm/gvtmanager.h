@@ -4,7 +4,7 @@
 #include "gvtmanager.decl.h"
 #include <float.h>
 
-extern CProxy_GvtManager gvts;
+extern CProxy_GVTManager gvt_manager_proxy;
 
 struct GVT {
   GVT() : ts(DBL_MAX), type(0) {}
@@ -12,24 +12,46 @@ struct GVT {
   unsigned type;
 };
 
-class GvtManager : public CBase_GvtManager {
- protected:
-  Time gvt;
+class PEManager;
+class Scheduler;
 
- public:
-  GvtManager();
+class GVTManager : public CBase_GVTManager {
+  protected:
+    /** The current GVT */
+    Time gvt;
 
-  Time current_gvt() const { return gvt; }
-  virtual void gvt_begin() {}
+    /** Local pointers to other PE-level objects */
+    PEManager* pe_manager;
+    Scheduler* scheduler;
+
+  public:
+    GVTManager();
+
+    /** Every subclass needs to implement gvt_begin() */
+    virtual void gvt_begin() {
+      CkAbort("Need to instantiate a concrete GVT Manager\n");
+    }
+
+    /** Accessor for gvt */
+    Time current_gvt() const { return gvt; }
+
+    /** Called by the local PEManager after all groups have been initialized */
+    void set_local_pointers(PEManager* pem, Scheduler* sched) {
+      pe_manager = pem;
+      scheduler = sched;
+    }
 }; 
 
-class GvtSync : public CBase_GvtSync {
- public:
-  GvtSync();
+class SyncGVT : public CBase_SyncGVT {
+  public:
+    SyncGVT();
 
-  void gvt_begin();
-  void gvt_contribute();
-  void gvt_end(CkReductionMsg*);
+    /** Starts QD */
+    void gvt_begin();
+    /** Called after QD is detected to contribute min time to all reduce */
+    void gvt_contribute();
+    /** Called by the all reduce from gvt_contribute() with resulting gvt */
+    void gvt_end(Time);
 };
 
 #endif

@@ -1,31 +1,25 @@
 module pe {
   extern module ross;
 
-  include "typedefs.h";
-  include "completion.h";
+  readonly CProxy_PEManager pe_manager_proxy;
 
-  readonly CProxy_PE pes;
-
-  group PE {
-    entry [notrace] PE(CProxy_Initialize); /**< constructor called from the mainchare */
-    entry [notrace,reductiontarget] void load_balance_complete(); /**< Called after ldb */
-    entry [notrace,reductiontarget] void resume_scheduler(); /**< Called after ldb */
-    entry [notrace,reductiontarget] void end_simulation(CkReductionMsg*);
-    entry [notrace] void broadcast_detector_proxies(int num, CProxy_CompletionDetector proxies[num]);
-    entry [notrace] void initialize_detectors();
-    entry [notrace] void initialize_rand();
-
-    // GVT methods
-//    entry [notrace] void gvt_begin(); /**< begin gvt computation */
-//    entry [notrace] void greedy_gvt_begin(); /**< attempt to greedily force a GVT */
-//    entry [notrace] void gvt_contribute(); /**< contribute to gvt reduction */
-//    entry [notrace,reductiontarget] void gvt_end(CkReductionMsg*); /**< end of gvt computation */
-//      entry [notrace] void gvt_done(GVT*); /**< end of gvt computation */
-
-    // Scheduler methods
-    entry [notrace] void execute_seq(); /**< execute until the end of simulation */
-    entry [notrace] void execute_cons(); /**< move to the end of this epoch */
-    entry [notrace] void execute_opt(); /**< move one step further optimistically */
+  group PEManager {
+    entry [notrace] PEManager();
+    entry [notrace,reductiontarget] void gvtManagerReady();
+    entry [notrace,reductiontarget] void schedulerReady();
+    entry [notrace] void finalize(CkReductionMsg* msg);
+    entry [notrace] void initialize() {
+      // TODO: Figure out why this can't be inlined in c-tor
+      serial { initialize_rand(); }
+      when gvtManagerReady(), schedulerReady() serial {
+        gvt_manager = gvt_manager_proxy.ckLocalBranch();
+        scheduler = scheduler_proxy.ckLocalBranch();
+        gvt_manager->set_local_pointers(this, scheduler);
+        scheduler->set_local_pointers(this, gvt_manager);
+        DEBUG_PE("Initialization complete\n");
+        contribute(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
+      }
+    }
   };
 
   initnode registerStatsReduction(void);

@@ -1,13 +1,10 @@
 #include "gvtmanager.h"
-#include "scheduler.h"
+
 #include "charm_functions.h"
+#include "pe.h"
+#include "scheduler.h"
  
-#include "ross_util.h"
-#include "ross_api.h"
-
-#include "mpi-interoperate.h"
-
-CProxy_GvtManager gvts;
+CProxy_GVTManager gvt_manager_proxy;
 CkReduction::reducerType gvtReductionType;
 
 /* NON-MEMBER functions */
@@ -26,34 +23,35 @@ void registerGVTReduction(void) {
   gvtReductionType = CkReduction::addReducer(gvtReduction);
 }
 
-/* GvtManager FUNCTIONS */
-GvtManager::GvtManager() : gvt(0.0) {}
+/* GVTManager FUNCTIONS */
+GVTManager::GVTManager() : gvt(0.0) {
+  contribute(CkCallback(CkReductionTarget(PEManager, gvtManagerReady), pe_manager_proxy));
+}
 
 /* GVT SYNC FUNCTIONS */
-GvtSync::GvtSync() {}
+SyncGVT::SyncGVT() {}
 
-void GvtSync::gvt_begin() {
+void SyncGVT::gvt_begin() {
   if(CkMyPe() == 0) {
-    CkStartQD(CkCallback(CkIndex_GvtSync::gvt_contribute(), thisProxy)); 
+    CkStartQD(CkCallback(CkIndex_SyncGVT::gvt_contribute(), thisProxy));
   }
 }
 
-void GvtSync::gvt_contribute() {
-  GVT gvt_struct;
-  gvt_struct.ts = scheduler.ckLocalBranch()->get_min_time();
-  gvt_struct.type = 0;
-  CkAssert(gvt_struct.ts >= gvt);
+void SyncGVT::gvt_contribute() {
+  Time min_time = scheduler->get_min_time();
+  CkAssert(min_time >= gvt);
   
-  contribute(sizeof(GVT), &gvt_struct, gvtReductionType,
-      CkCallback(CkReductionTarget(GvtSync,gvt_end),thisProxy)); 
+  contribute(sizeof(Time), &min_time, CkReduction::min_double,
+      CkCallback(CkReductionTarget(SyncGVT,gvt_end),thisProxy));
 
-  if(g_tw_async_reduction) {}
+  if(g_tw_async_reduction) {
+    scheduler->gvt_resume();
+  }
 }
 
-void GvtSync::gvt_end(CkReductionMsg* msg) {
-  GVT* gvt_struct = (GVT*)msg->getData();
-  gvt = gvt_struct->ts;
-  scheduler.ckLocalBranch()->gvt_done(gvt);
+void SyncGVT::gvt_end(Time new_gvt) {
+  gvt = new_gvt;
+  scheduler->gvt_done(gvt);
 }
 
 #include "gvtmanager.def.h"

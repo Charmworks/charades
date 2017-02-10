@@ -56,7 +56,7 @@ void charm_free_event(Event* e) {
 // Fill an event's remote message and send it.
 // Returns 1 if the send was remote, 0 if it was local.
 int charm_event_send(unsigned dest_peid, Event * e) {
-  static Scheduler* pe = scheduler.ckLocalBranch();
+  static Scheduler* pe = scheduler_proxy.ckLocalBranch();
   LP* send_pe = (LP*)(e->send_pe);
   LP* dest_pe;
 
@@ -101,7 +101,7 @@ int charm_event_send(unsigned dest_peid, Event * e) {
 // An anti send will never be to a local chare, because locally sent events
 // will never have the owner set to TW_sent.
 void charm_anti_send(unsigned dest_peid, Event * e) {
-  static Scheduler* pe = scheduler.ckLocalBranch();
+  static Scheduler* pe = scheduler_proxy.ckLocalBranch();
   RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;
