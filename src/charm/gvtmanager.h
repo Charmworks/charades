@@ -12,6 +12,7 @@ struct GVT {
   unsigned type;
 };
 
+class RemoteEvent;
 class PEManager;
 class Scheduler;
 
@@ -40,6 +41,10 @@ class GVTManager : public CBase_GVTManager {
       pe_manager = pem;
       scheduler = sched;
     }
+
+    virtual void consume(RemoteEvent* e) {}
+    virtual void produce(RemoteEvent* e) {}
+ 
 }; 
 
 class SyncGVT : public CBase_SyncGVT {
