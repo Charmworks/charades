@@ -1,4 +1,5 @@
 #include "lp.h"
+#include "gvtmanager.h"
 #include "scheduler.h"
 #include "pe.h"
 #include "event.h"
@@ -68,6 +69,7 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
   // Cache the pointer to the local PE chare
   pe = pe_manager_proxy.ckLocalBranch();
   scheduler = scheduler_proxy.ckLocalBranch();
+  gvtmanager = gvt_manager_proxy.ckLocalBranch(); 
 
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
@@ -121,7 +123,7 @@ void LP::stop_scheduler() {
 // 2) Hash the event if optimistic.
 // 3) Pass control to the local receive method.
 void LP::recv_remote_event(RemoteEvent* event) {
-  scheduler->consume(event);
+  gvtmanager->consume(event);
   Event *e = charm_allocate_event(0);
   e->state.remote = 1;
 
@@ -167,7 +169,7 @@ void LP::recv_local_event(Event* e) {
 // 1) Create a key event based on the remote event.
 // 2) Use the key to find the real event and cancel it.
 void LP::recv_anti_event(RemoteEvent* event) {
-  scheduler->consume(event);
+  gvtmanager->consume(event);
   Event* key = charm_allocate_event(0);
   key->event_id = event->event_id;
   key->ts = event->ts;

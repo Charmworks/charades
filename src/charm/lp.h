@@ -42,6 +42,7 @@ struct LPToken {
     friend class PEQueue;
     friend class PE;
     friend class Scheduler;
+    friend class GVTManager;
     friend class OptimisticScheduler;
 };
 
@@ -72,6 +73,7 @@ class LP : public CBase_LP {
     // A direct pointer to the PE where this LP chare resides
     PEManager* pe;
     Scheduler* scheduler;
+    GVTManager* gvtmanager;
 
     // Some control flow varies when we are in optimistic mode
     bool isOptimistic;
