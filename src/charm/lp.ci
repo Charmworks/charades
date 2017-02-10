@@ -1,5 +1,6 @@
 module lp {
   extern module scheduler;
+  extern module gvtmanager;
   extern module event;
 
   array [1D] LP {
