@@ -1,14 +1,9 @@
 module scheduler {
-  extern module ross;
+  readonly CProxy_Scheduler scheduler_proxy;
 
-  include "typedefs.h";
-
-  readonly CProxy_Scheduler scheduler;
-
+  /** Base scheduler class. All subclasses must implement execute(). */
   group Scheduler {
     entry [notrace] Scheduler();
-    entry [notrace] void initialize_rand();
-    entry [notrace,reductiontarget] void end_simulation(CkReductionMsg*);
     entry [notrace] void execute();
   };
 
@@ -23,6 +18,4 @@ module scheduler {
   group OptimisticScheduler : Scheduler {
     entry [notrace] OptimisticScheduler();
   };
-
-  initnode registerStatsReduction(void);
 }

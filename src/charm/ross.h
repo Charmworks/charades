@@ -8,6 +8,8 @@
 #include "mpi-interoperate.h"
 #include "charm_functions.h"
 
+extern CProxy_Initialize mainProxy;
+
 class Initialize : public CBase_Initialize {
   public:
     Initialize(CkArgMsg *m);
@@ -15,6 +17,7 @@ class Initialize : public CBase_Initialize {
     Initialize(CkMigrateMessage* m) { }
 
     void Exit() {
+      CkPrintf("Exiting via mainchare\n");
       CkExit();
     }
 };

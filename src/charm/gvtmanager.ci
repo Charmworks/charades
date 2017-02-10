@@ -1,24 +1,18 @@
 module gvtmanager {
-  extern module ross;
- 
-  include "typedefs.h";
-  include "completion.h";
+  readonly CProxy_GVTManager gvt_manager_proxy;
 
-  readonly CProxy_GvtManager gvts;
+  include "typedefs.h"; // included for Time
 
-  group GvtManager {
-    entry [notrace] GvtManager();
-    entry [notrace] void gvt_begin(); /**< begin gvt computation */
-
+  /** Base group for all GVTManagers */
+  group GVTManager {
+    entry [notrace] GVTManager();
   };
 
-  group GvtSync : GvtManager {
-    
-    entry [notrace] GvtSync();
-    // GVT methods
-    entry [notrace] void gvt_contribute(); /**< contribute to gvt reduction */
-    entry [notrace,reductiontarget] void gvt_end(CkReductionMsg*); /**< end of gvt computation */
-
+  /** Basic Synchronous GVT */
+  group SyncGVT : GVTManager {
+    entry [notrace] SyncGVT();
+    entry [notrace] void gvt_contribute();
+    entry [notrace,reductiontarget] void gvt_end(Time);
   };
 
   initnode registerGVTReduction(void);

@@ -6,178 +6,47 @@
 #include "typedefs.h"
 #include "globals.h"
 #include "statistics.h"
-#include "lp.h" // Included for LPToken definition
 
-#include "pe_queue.h"
-
-class LP;
-class LPToken;
+extern CProxy_PEManager pe_manager_proxy;
 struct tw_rng;
 
-using std::vector;
-
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs);
-CkReductionMsg *gvtReduction(int nMsg, CkReductionMsg **msgs);
-
-// Bit masks for GVT types
-#define MEM_FORCE 1
-#define END_FORCE 2
-#define EVENT_FORCE 4
-
-struct GVT {
-  GVT() : ts(DBL_MAX), type(0) {}
-  Time ts;
-  unsigned type;
-};
+extern CkReduction::reducerType statsReductionType;
 
 struct MemUsage {
   unsigned long long max_memory;
   double avg_memory;
-
 };
-class PE: public CBase_PE {
+
+class PEManager : public CBase_PEManager {
+  PEManager_SDAG_CODE
   private:
-    /** LP queue variables */
-    PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
-    PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
-
-    /** GVT variables */
-    Time gvt;           /**< current GVT */
-    Time min_sent;      /**< minimum ts sent out during this phase */
-    Time leash_start;   /**< start of the current leash (usually == gvt) */
-    int gvt_num;        /**< Current GVT number */
-    int iter_cnt;       /**< iteration count since last gvt */
-    bool gvt_started;   /**< true if the GVT computation has begun */
-    bool waiting_on_gvt;/**< flag to make sure we don't overlap gvts */
-    unsigned force_gvt; /**< Bitmap used to determine if a gvt was forced */
-
-    /** Load balancing variables */
-    int ldb_cnt;        /**< number of times we've called load balancing */
-
+    GVTManager* gvt_manager;
+    Scheduler* scheduler;
     /** Timer variables */
     double start_time;  /**< Start wall time for the simulation */
     double end_time;    /**< End wall time for the simulation */
-#ifdef CMK_TRACE_ENABLED
-    double gvt_start, ldb_start;
-#endif
-
-    /** Event cancellation variables */
-    Time min_cancel_time; /**< minumum event time in the cancel queue */
-    vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
-
-    /** Asynchronous GVT variables */
-    unsigned current_phase, next_phase, max_phase;
-    bool* detector_ready;
-    CProxy_CompletionDetector* detector_proxies;
-    CompletionDetector** detector_pointers;
 
     /** Misc variables */
     tw_rng * rng; /**< ROSS rng stream */
 
-    bool gvt_ready() const;
   public:
     Globals* globals;             /**< "global" variables per PE */
     Statistics* current_stats;    /**< statistics for the current GVT period */
     Statistics* cumulative_stats; /**< statistics for the whole run */
 
-    PE(CProxy_Initialize);
-
-    ~PE() {
+    PEManager();
+    ~PEManager() {
       delete globals;
       delete current_stats;
       delete cumulative_stats;
     }
+    void finalize(CkReductionMsg *m);
 
-    /** \brief Called as a reduction by LPs when load balancing is complete */
-    void load_balance_complete();
-    void resume_scheduler();
-
-    /** \brief Initialize the completion detectors and CDs for this PE */
-    void broadcast_detector_proxies(int num, CProxy_CompletionDetector*);
-    void initialize_detectors();
+    void start_simulation();
+    void end_simulation();
     void initialize_rand();
-
-    /** \brief Print final stats and end the simulation */
-    void end_simulation(CkReductionMsg *m);
-
-    /** \brief Various schedulers
-        sequential: single PE, single chare, run to end
-        conservative: find next epoch, assume a lookahead, run to end of epoch
-        optimistic: execute events, rollback as needed, compute GVT periodically
-      */
-    void execute_seq();
-    void execute_cons();
-    void execute_opt();
     void log_stats();
-
-    bool schedule_next_lp(); /**< call execute_me on the next LP */
-
-    /** \brief Methods only used in optimistic mode */
-    void collect_fossils();       /**< collect fossils */
-    void process_cancel_q();      /**< process the cancel_q */
-    void add_to_cancel_q(LP*);    /**< add an LP to the cancel_q */
-    void update_min_cancel(Time); /**< update min_cancel_time */
-
-    /** \brief Methods for GVT computation
-        GVT is only used in conservative and optimistic
-        In conservative it is equivalent to finding the next epoch
-      */
-    void greedy_gvt_begin(); /**< attempt to greedily begin gvt computation */
-//    void gvt_begin(); /**< begin gvt computation */
-//    void gvt_contribute(); /**< all sent messages received, contribute to GVT */
-    void gvt_done(GVT *); /**< gvt done, either restart the scheduler or end */
-    unsigned get_gvt_type();
-    void gvt_print(GVT*);
-
-    /** \brief Get time stamp of the minium event */
-    Time get_min_time() const;
-
-    /** \brief Register the given LP to our queues */
-    void register_lp(LPToken* next_token, Time next_ts,
-                     LPToken* oldest_token, Time oldest_ts) {
-      next_lps.insert(next_token, next_ts);
-      oldest_lps.insert(oldest_token, oldest_ts);
-    }
-
-    /** \brief Unregister the given LP from our queues */
-    void unregister_lp(LPToken* next_token, LPToken* oldest_token) {
-      next_lps.remove(next_token);
-      oldest_lps.remove(oldest_token);
-      vector<LP*>::iterator it = cancel_q.begin();
-      while (it != cancel_q.end()) {
-        if (*it == next_token->lp) {
-          cancel_q.erase(it);
-          break;
-        }
-        it++;
-      }
-    }
-
-    /** \brief Update the entry for a given LP in the next_lps */
-    void update_next(LPToken* token, Time ts) {
-      next_lps.update(token, ts);
-    }
-
-    /** \brief Update the entry for a given LP in the oldest_lps */
-    void update_oldest(LPToken* token, Time ts) {
-      oldest_lps.update(token, ts);
-    }
-
-    void produce(RemoteEvent* msg) {
-      if (max_phase) {
-        if (msg->ts < min_sent) {
-          min_sent = msg->ts;
-        }
-        msg->phase = current_phase;
-        detector_pointers[current_phase]->produce();
-      }
-    }
-
-    void consume(RemoteEvent* msg) {
-      if (max_phase) {
-        detector_pointers[msg->phase]->consume();
-      }
-    }
 };
 
 #endif
