@@ -105,7 +105,8 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
   public:
     OptimisticScheduler();
     void execute();
-    void collect_fossils();       /**< collect fossils */
+    void gvt_done(Time gvt);
+    void collect_fossils(Time gvt);       /**< collect fossils */
     void process_cancel_q();      /**< process the cancel_q */
     void add_to_cancel_q(LP*);    /**< add an LP to the cancel_q */
     void update_min_cancel(Time); /**< update min_cancel_time */
