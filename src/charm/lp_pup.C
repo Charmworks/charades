@@ -4,8 +4,6 @@
 #include "globals.h"
 #include "pe.h"
 
-extern CProxy_Scheduler scheduler;
-
 // Pup function for tw_rng_stream in the LPStruct.
 void operator|(PUP::er& p, tw_rng_stream* s) {
   PUParray(p, s->Ig, 4);
@@ -36,8 +34,7 @@ LP::LP(CkMigrateMessage* m) : next_token(this), oldest_token(this),
                               cancel_q(NULL), min_cancel_q(DBL_MAX),
                               in_pe_queue(false), all_events(0),
                               current_time(0.0), current_event(NULL) {
-  pe = pe_manager_proxy.ckLocalBranch();
-  scheduler = scheduler_proxy.ckLocalBranch();
+  pe_manager = pe_manager_proxy.ckLocalBranch();
 }
 
 void LP::pup(PUP::er& p) {
@@ -45,9 +42,9 @@ void LP::pup(PUP::er& p) {
   // LPs must be unregistered from their current PE before they migrate, and
   // re-register with the new PE when they are being unpacked.
   if (p.isPacking()) {
-    scheduler->unregister_lp(&next_token, &oldest_token);
+    pe_manager->unregister_lp(&next_token, &oldest_token);
   } else if (p.isUnpacking()) {
-    scheduler->register_lp(&next_token, 0.0, &oldest_token, 0.0);
+    pe_manager->register_lp(&next_token, 0.0, &oldest_token, 0.0);
   }
 
   // Pup the basic fields
@@ -73,7 +70,7 @@ void LP::pup(PUP::er& p) {
     for (int i = 0; i < events.size(); i++) {
       reconstruct_pending_event(pending[i]);
     }
-    scheduler->update_next(&next_token, events.min());
+    pe_manager->update_next(&next_token, events.min());
   }
 
   if (isOptimistic) {
@@ -83,7 +80,7 @@ void LP::pup(PUP::er& p) {
       for (int i = 0; i < processed_events.size(); i++) {
         reconstruct_processed_event(processed[i], pending, processed);
       }
-      scheduler->update_oldest(&oldest_token, processed_events.min());
+      pe_manager->update_oldest(&oldest_token, processed_events.min());
       current_event = processed_events.front();
     }
   }

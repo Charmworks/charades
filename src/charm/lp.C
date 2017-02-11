@@ -1,6 +1,4 @@
 #include "lp.h"
-#include "gvtmanager.h"
-#include "scheduler.h"
 #include "pe.h"
 #include "event.h"
 
@@ -51,10 +49,10 @@ void set_current_event(tw_lp* lp, Event* event) {
 }
 
 #undef PE_VALUE
-#define PE_VALUE(x) pe->globals->x
+#define PE_VALUE(x) pe_manager->globals->x
 
 #undef PE_STATS
-#define PE_STATS(x) pe->cumulative_stats->x
+#define PE_STATS(x) pe_manager->cumulative_stats->x
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
 LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
@@ -67,13 +65,11 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
   usesAtSync = true;
 
   // Cache the pointer to the local PE chare
-  pe = pe_manager_proxy.ckLocalBranch();
-  scheduler = scheduler_proxy.ckLocalBranch();
-  gvtmanager = gvt_manager_proxy.ckLocalBranch(); 
+  pe_manager = pe_manager_proxy.ckLocalBranch();
 
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
-  scheduler->register_lp(&next_token, 0.0, &oldest_token, 0.0);
+  pe_manager->register_lp(&next_token, 0.0, &oldest_token, 0.0);
 
   isOptimistic = g_tw_synchronization_protocol == OPTIMISTIC;
 
@@ -123,7 +119,7 @@ void LP::stop_scheduler() {
 // 2) Hash the event if optimistic.
 // 3) Pass control to the local receive method.
 void LP::recv_remote_event(RemoteEvent* event) {
-  gvtmanager->consume(event);
+  pe_manager->consume(event);
   Event *e = charm_allocate_event(0);
   e->state.remote = 1;
 
@@ -156,7 +152,7 @@ void LP::recv_local_event(Event* e) {
   e->dest_lp = (tw_lpid)&lp_structs[g_local_map(e->dest_lp)];
 
   if (e->ts < events.min()) {
-    scheduler->update_next(&next_token, e->ts);
+    pe_manager->update_next(&next_token, e->ts);
   }
   if(isOptimistic && e->ts < current_time) {
     BRACKET_TRACE(rollback_me(e->ts);,USER_EVENT_RB)
@@ -169,7 +165,7 @@ void LP::recv_local_event(Event* e) {
 // 1) Create a key event based on the remote event.
 // 2) Use the key to find the real event and cancel it.
 void LP::recv_anti_event(RemoteEvent* event) {
-  gvtmanager->consume(event);
+  pe_manager->consume(event);
   Event* key = charm_allocate_event(0);
   key->event_id = event->event_id;
   key->ts = event->ts;
@@ -205,13 +201,13 @@ void* LP::execute_me() {
     // Enqueue or deallocate the event depending on sync mode
     if (isOptimistic) {
       if (processed_events.size() == 0) {
-        scheduler->update_oldest(&oldest_token, e->ts);
+        pe_manager->update_oldest(&oldest_token, e->ts);
       }
       processed_events.push_front(e);
     } else {
       tw_event_free(e,true);
     }
-    scheduler->update_next(&next_token, events.min());
+    pe_manager->update_next(&next_token, events.min());
     return (void*)true;
   }
   return (void*)false;
@@ -228,9 +224,9 @@ void LP::rollback_me(tw_stime ts) {
     events.push(e);
   }
 
-  scheduler->update_next(&next_token, events.min());
+  pe_manager->update_next(&next_token, events.min());
   if(processed_events.front() == NULL) {
-    scheduler->update_oldest(&oldest_token, DBL_MAX);
+    pe_manager->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
     current_time = PE_VALUE(g_last_gvt);
   } else {
@@ -255,9 +251,9 @@ void LP::rollback_me(Event *event) {
   tw_event_rollback(event);
 
   // Update the queues, and current variables.
-  scheduler->update_next(&next_token, events.min());
+  pe_manager->update_next(&next_token, events.min());
   if(processed_events.front() == NULL) {
-    scheduler->update_oldest(&oldest_token, DBL_MAX);
+    pe_manager->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
     current_time = PE_VALUE(g_last_gvt);
   } else {
@@ -277,9 +273,9 @@ void LP::fossil_me(tw_stime gvt) {
     tw_event_free(e,true);
   }
   if(processed_events.size()) {
-    scheduler->update_oldest(&oldest_token, processed_events.back()->ts);
+    pe_manager->update_oldest(&oldest_token, processed_events.back()->ts);
   } else {
-    scheduler->update_oldest(&oldest_token, DBL_MAX);
+    pe_manager->update_oldest(&oldest_token, DBL_MAX);
   }
 }
 
@@ -308,17 +304,17 @@ void LP::add_to_cancel_q(Event* e) {
   if (!in_pe_queue) {
     min_cancel_q = e->ts;
     in_pe_queue = true;
-    scheduler->add_to_cancel_q(this);
+    pe_manager->add_to_cancel_q(this);
   } else if (e->ts < min_cancel_q) {
     min_cancel_q = e->ts;
-    scheduler->update_min_cancel(min_cancel_q);
+    pe_manager->update_min_cancel(min_cancel_q);
   }
 }
 
 // Delete an event in our pending queue.
 void LP::delete_pending(Event *e) {
   events.erase(e);
-  scheduler->update_next(&next_token, events.min());
+  pe_manager->update_next(&next_token, events.min());
 }
 
 // Cancel all events in the cancel queue.

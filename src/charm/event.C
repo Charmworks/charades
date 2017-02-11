@@ -1,7 +1,6 @@
 #include "event.h"
 #include "lp.h"
-#include "scheduler.h"
-#include "gvtmanager.h"
+#include "pe.h"
 
 #include "typedefs.h"
 #include "globals.h"
@@ -58,7 +57,7 @@ void charm_free_event(Event* e) {
 // Returns 1 if the send was remote, 0 if it was local.
 int charm_event_send(unsigned dest_peid, Event * e) {
   //static Scheduler* pe = scheduler_proxy.ckLocalBranch();
-  static GVTManager* gvtmanager = gvt_manager_proxy.ckLocalBranch();
+  static PEManager* pe_manager = pe_manager_proxy.ckLocalBranch();
   LP* send_pe = (LP*)(e->send_pe);
   LP* dest_pe;
 
@@ -91,7 +90,7 @@ int charm_event_send(unsigned dest_peid, Event * e) {
     e->eventMsg->dest_lp = e->dest_lp;
     e->eventMsg->send_pe = e->send_pe;
 
-    gvtmanager->produce(e->eventMsg);
+    pe_manager->produce(e->eventMsg);
     lps(dest_peid).recv_remote_event(e->eventMsg);
     e->state.owner = TW_sent;
     e->eventMsg = NULL;
@@ -104,14 +103,14 @@ int charm_event_send(unsigned dest_peid, Event * e) {
 // will never have the owner set to TW_sent.
 void charm_anti_send(unsigned dest_peid, Event * e) {
   //static Scheduler* pe = scheduler_proxy.ckLocalBranch();
-  static GVTManager* gvtmanager = gvt_manager_proxy.ckLocalBranch();
+  static PEManager* pe_manager = pe_manager_proxy.ckLocalBranch();
   RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;
   eventMsg->dest_lp = e->dest_lp;
   eventMsg->send_pe = e->send_pe;
 
-  gvtmanager->produce(eventMsg);
+  pe_manager->produce(eventMsg);
   PE_STATS(anti_sends)++;
   lps(dest_peid).recv_anti_event(eventMsg);
 }

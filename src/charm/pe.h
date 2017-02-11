@@ -6,8 +6,11 @@
 #include "typedefs.h"
 #include "globals.h"
 #include "statistics.h"
+#include "scheduler.h" // Only temporary maybe
 
 extern CProxy_PEManager pe_manager_proxy;
+class LPToken;
+class LP;
 struct tw_rng;
 
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs);
@@ -47,6 +50,38 @@ class PEManager : public CBase_PEManager {
     void end_simulation();
     void initialize_rand();
     void log_stats();
+
+    /** TODO: Most of the following should be moved to PE manager? */
+    void register_lp(LPToken* next_token, Time next_ts,
+                     LPToken* oldest_token, Time oldest_ts) {
+      scheduler->register_lp(next_token, next_ts, oldest_token, oldest_ts);
+    }
+
+    // TODO: Make this work
+    void unregister_lp(LPToken* next_token, LPToken* oldest_token) {
+      scheduler->unregister_lp(next_token, oldest_token);
+      /*next_lps.remove(next_token);
+      oldest_lps.remove(oldest_token);
+      vector<LP*>::iterator it = cancel_q.begin();
+      while (it != cancel_q.end()) {
+        if (*it == next_token->lp) {
+          cancel_q.erase(it);
+          break;
+        }
+        it++;
+      }*/
+    }
+    void update_next(LPToken* token, Time ts) {
+      scheduler->update_next(token, ts);
+    }
+    void update_oldest(LPToken* token, Time ts) {
+      scheduler->update_oldest(token, ts);
+    }
+    void add_to_cancel_q(LP* lp) {}
+    void update_min_cancel(Time ts) {}
+
+    void consume(RemoteEvent* e) {}
+    void produce(RemoteEvent* e) {}
 };
 
 #endif

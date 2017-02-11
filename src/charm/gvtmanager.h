@@ -44,7 +44,6 @@ class GVTManager : public CBase_GVTManager {
 
     virtual void consume(RemoteEvent* e) {}
     virtual void produce(RemoteEvent* e) {}
- 
 }; 
 
 class SyncGVT : public CBase_SyncGVT {
