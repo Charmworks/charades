@@ -55,7 +55,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 #define PE_STATS(x) pe_manager->cumulative_stats->x
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
+LP::LP() : next_token(this), uniqID(0), cancel_q(NULL),
            min_cancel_q(DBL_MAX), in_pe_queue(false), current_time(0),
            all_events(0) {
   if(isLpSet == 0) {
@@ -69,7 +69,7 @@ LP::LP() : next_token(this), oldest_token(this), uniqID(0), cancel_q(NULL),
 
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
-  pe_manager->register_lp(&next_token, 0.0, &oldest_token, 0.0);
+  pe_manager->register_lp(&next_token, 0.0);
 
   isOptimistic = g_tw_synchronization_protocol == OPTIMISTIC;
 
@@ -200,9 +200,6 @@ void* LP::execute_me() {
 
     // Enqueue or deallocate the event depending on sync mode
     if (isOptimistic) {
-      if (processed_events.size() == 0) {
-        pe_manager->update_oldest(&oldest_token, e->ts);
-      }
       processed_events.push_front(e);
     } else {
       tw_event_free(e,true);
@@ -226,7 +223,6 @@ void LP::rollback_me(tw_stime ts) {
 
   pe_manager->update_next(&next_token, events.min());
   if(processed_events.front() == NULL) {
-    pe_manager->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
     current_time = PE_VALUE(g_last_gvt);
   } else {
@@ -253,7 +249,6 @@ void LP::rollback_me(Event *event) {
   // Update the queues, and current variables.
   pe_manager->update_next(&next_token, events.min());
   if(processed_events.front() == NULL) {
-    pe_manager->update_oldest(&oldest_token, DBL_MAX);
     current_event = NULL;
     current_time = PE_VALUE(g_last_gvt);
   } else {
@@ -271,11 +266,6 @@ void LP::fossil_me(tw_stime gvt) {
     PE_STATS(events_committed)++;
     e = processed_events.pop_back();
     tw_event_free(e,true);
-  }
-  if(processed_events.size()) {
-    pe_manager->update_oldest(&oldest_token, processed_events.back()->ts);
-  } else {
-    pe_manager->update_oldest(&oldest_token, DBL_MAX);
   }
 }
 

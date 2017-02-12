@@ -30,7 +30,7 @@ void operator|(PUP::er& p, LPStruct& lp) {
 }
 
 // Make sure we know our local pe, and construct the tokens.
-LP::LP(CkMigrateMessage* m) : next_token(this), oldest_token(this),
+LP::LP(CkMigrateMessage* m) : next_token(this),
                               cancel_q(NULL), min_cancel_q(DBL_MAX),
                               in_pe_queue(false), all_events(0),
                               current_time(0.0), current_event(NULL) {
@@ -42,9 +42,9 @@ void LP::pup(PUP::er& p) {
   // LPs must be unregistered from their current PE before they migrate, and
   // re-register with the new PE when they are being unpacked.
   if (p.isPacking()) {
-    pe_manager->unregister_lp(&next_token, &oldest_token);
+    pe_manager->unregister_lp(&next_token);
   } else if (p.isUnpacking()) {
-    pe_manager->register_lp(&next_token, 0.0, &oldest_token, 0.0);
+    pe_manager->register_lp(&next_token, 0.0);
   }
 
   // Pup the basic fields
@@ -80,7 +80,6 @@ void LP::pup(PUP::er& p) {
       for (int i = 0; i < processed_events.size(); i++) {
         reconstruct_processed_event(processed[i], pending, processed);
       }
-      pe_manager->update_oldest(&oldest_token, processed_events.min());
       current_event = processed_events.front();
     }
   }

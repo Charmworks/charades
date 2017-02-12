@@ -51,6 +51,10 @@ class PEQueue {
 
     // Updates the given token with a new timestamp, and repositions it.
     void update(LPToken*, Time);
+
+    // TODO: Temporary direct access for iteration purposes
+    int get_size() const { return size; }
+    LPToken** as_array() const { return heap; }
 };
 
 #endif
