@@ -114,11 +114,15 @@ void OptimisticScheduler::gvt_done(Time gvt) {
 /** Call fossil_me on all lps that have fossils older than the current gvt. The
  *  oldest_lps queue ensures we will only call fossil_me on lps that need it. */
 void OptimisticScheduler::collect_fossils(Time gvt) {
-  LPToken *min = oldest_lps.top();
+  /*LPToken *min = oldest_lps.top();
   while((min != NULL) && (min->ts < gvt)) {
     PE_STATS(fossil_collect_calls)++;
     min->lp->fossil_me(gvt);
     min = oldest_lps.top();
+  }*/
+  //iterate over all lps and fossil collect
+  for (int i = 0; i < next_lps.get_size(); i++) {
+    next_lps.as_array()[i]->lp->fossil_me(gvt);
   }
 }
 

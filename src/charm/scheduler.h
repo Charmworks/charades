@@ -5,6 +5,7 @@
 
 #include "typedefs.h"
 #include "pe_queue.h"
+#include "lp.h" // Temporary for LPToken
 
 extern CProxy_Scheduler scheduler_proxy;
 
@@ -20,7 +21,6 @@ class Scheduler : public CBase_Scheduler {
   protected:
     /** LP queue variables */
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
-    PEQueue oldest_lps; /**< queue storing LPTokens ordered by oldest fossil */
 
     /** Local pointers to other PE-level objects */
     PEManager* pe_manager;
@@ -55,30 +55,14 @@ class Scheduler : public CBase_Scheduler {
 
 
     /** TODO: Most of the following should be moved to PE manager? */
-    void register_lp(LPToken* next_token, Time next_ts,
-                     LPToken* oldest_token, Time oldest_ts) {
+    void register_lp(LPToken* next_token, Time next_ts) {
       next_lps.insert(next_token, next_ts);
-      oldest_lps.insert(oldest_token, oldest_ts);
     }
-
-    // TODO: Make this work
-    void unregister_lp(LPToken* next_token, LPToken* oldest_token) {
-      /*next_lps.remove(next_token);
-      oldest_lps.remove(oldest_token);
-      vector<LP*>::iterator it = cancel_q.begin();
-      while (it != cancel_q.end()) {
-        if (*it == next_token->lp) {
-          cancel_q.erase(it);
-          break;
-        }
-        it++;
-      }*/
+    void unregister_lp(LPToken* next_token) {
+      next_lps.remove(next_token);
     }
     void update_next(LPToken* token, Time ts) {
       next_lps.update(token, ts);
-    }
-    void update_oldest(LPToken* token, Time ts) {
-      oldest_lps.update(token, ts);
     }
     virtual void add_to_cancel_q(LP* lp) {}
     virtual void update_min_cancel(Time ts) {}
@@ -111,6 +95,20 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
     void add_to_cancel_q(LP*);    /**< add an LP to the cancel_q */
     void update_min_cancel(Time); /**< update min_cancel_time */
     Time get_min_time() const;    /**< Override base method to include cancel q*/
+
+    // TODO: What does it mean to remove from cancel queue if it's actually in
+    // the cancel queue?
+    void unregister_lp(LPToken* next_token) {
+      vector<LP*>::iterator it = cancel_q.begin();
+      while (it != cancel_q.end()) {
+        if (*it == next_token->lp) {
+          cancel_q.erase(it);
+          break;
+        }
+        it++;
+      }
+      Scheduler::unregister_lp(next_token);
+    }
 };
 
 #endif
