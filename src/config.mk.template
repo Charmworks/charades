@@ -1,24 +1,25 @@
 # Replace ROSS_SRC and CHARMC with your own absolute paths
-ROSS_SRC=/dcsdata/home/mikida2/ross/src
-CHARMC=/scratch/mikida2/charm_for_ross/bin/charmc
+ROSS_SRC  = <absolute path to this directory>
+CHARM_DIR = <absolute path to charm directory>
+BUILD_DIR = $(ROSS_SRC)/build
+CHARMC    = $(CHARM_DIR)/bin/charmc
 
-ifeq ($(ARCH), "bgq")
-  CC = bgxlC
-  OPTS = -O3 -qmaxmem=-1 -qipa=level=2
-else
-  CC = g++
-  OPTS = -O3
-endif
+# BASIC COMPILATION AND LINKING FLAGS
+CFLAGS = -O3
+LFLAGS = -module completion
 
-BUILD_DIR=$(ROSS_SRC)/build
+# BG/Q SPECIFIC FLAG SETUP
+#CC = bgxlC
+#CFLAGS += -qmaxmem=-1 -qipa=level=2
 
-MODULES=charm collections ross_setup ross_opts ross_util ross_rand ross_event ross_maps
+# SUB DIRECTORY COMPILATION SETUP
+SUB_DIRS = charm collections ross_setup ross_opts ross_util ross_rand ross_event ross_maps
+INCLUDES =$(addprefix -I$(ROSS_SRC)/, $(SUB_DIRS))
+CFLAGS  += $(INCLUDE)
 
-# Add each module to the include path, as well as the top level directory.
-OPTS+=$(addprefix -I$(ROSS_SRC)/, $(MODULES)) -I$(ROSS_SRC) -module completion
-
-# Conditional compilation options (Uncomment to turn them on)
+# OTHER COMPILATION OPTIONS FOR THE PREPROCESSOR
 #OPTS+=-DUSE_SPLAY       # Use splay tree instead of array-based heap
 #OPTS+=-DDEBUG_ON        # Turn on general debug prints
 #OPTS+=-DDEBUG_MASTER_ON # Turn on debug prints from PE 0
+#OPTS+=-DDEBUG_PE_ON     # Turn on PE specific debug prints
 #OPTS+=-DDEBUG_LP_ON     # Turn on LP specific debug prints

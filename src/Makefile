@@ -1,16 +1,36 @@
 include config.mk
 
-all: $(BUILD_DIR)/libross.a
+C_FILES=$(wildcard *.C)
+CI_FILES=$(wildcard *.ci)
+MODULES=$(CI_FILES:.ci=.decl.h)
+OBJS=$(addprefix $(BUILD_DIR)/, $(C_FILES:.C=.o))
 
-.PHONY : $(MODULES)
+default: all
+all: $(BUILD_DIR) $(BUILD_DIR)/libross.a
 
-$(BUILD_DIR)/libross.a: $(MODULES)
-	for dir in $(MODULES); do make -C $${dir}; done
-	$(CHARMC) -module RotateLB -o $@ $(BUILD_DIR)/*.o
-	
-$(MODULES):
+.PHONY : $(SUB_DIRS)
+
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
+
+$(BUILD_DIR)/libross.a: make_ci $(OBJS) $(SUB_DIRS)
+	$(CHARMC) $(LFLAGS) $(OBJS) $(BUILD_DIR)/*.o -o $@
+
+make_ci: $(MODULES)
+	for dir in $(SUB_DIRS); do make -C $${dir} make_ci; done
+
+$(SUB_DIRS):
 	make -C $@
 
+%.decl.h: %.ci
+	$(CHARMC) $<
+
+$(BUILD_DIR)/%.o: %.C %.h $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: %.C $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
+
 clean:
-	rm -rf build/*;
-	for dir in $(MODULES); do make -C $${dir} clean; done
+	rm -rf $(BUILD_DIR) *.decl.h *.def.h
+	for dir in $(SUB_DIRS); do make -C $${dir} clean; done

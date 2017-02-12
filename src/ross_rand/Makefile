@@ -1,10 +1,26 @@
 include ../config.mk
 
-all: $(BUILD_DIR)/ross_random.o $(BUILD_DIR)/ross_clcg4.o
+C_FILES=$(wildcard *.cpp)
+CI_FILES=$(wildcard *.ci)
+MODULES=$(CI_FILES:.ci=.decl.h)
+OBJS=$(addprefix $(BUILD_DIR)/, $(C_FILES:.cpp=.o))
 
-$(BUILD_DIR)/ross_random.o: ross_random.cpp ross_random.h
-	$(CHARMC) $(OPTS) -c ross_random.cpp -o $@
+default: all
+all: $(BUILD_DIR) $(OBJS)
 
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
 
-$(BUILD_DIR)/ross_clcg4.o: ross_clcg4.cpp ross_clcg4.h
-	$(CHARMC) $(OPTS) -c ross_clcg4.cpp -o $@
+make_ci: $(MODULES)
+
+%.decl.h: %.ci
+	$(CHARMC) $<
+
+$(BUILD_DIR)/%.o: %.cpp %.h $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: %.cpp $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf *.decl.h *.def.h

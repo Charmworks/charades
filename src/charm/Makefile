@@ -1,36 +1,26 @@
 include ../config.mk
 
-all: $(BUILD_DIR)/gvtmanager.o $(BUILD_DIR)/lp.o $(BUILD_DIR)/event.o $(BUILD_DIR)/ross.o $(BUILD_DIR)/lp_pup.o $(BUILD_DIR)/event_pup.o $(BUILD_DIR)/statistics.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/pe.o
+C_FILES=$(wildcard *.C)
+CI_FILES=$(wildcard *.ci)
+MODULES=$(CI_FILES:.ci=.decl.h)
+OBJS=$(addprefix $(BUILD_DIR)/, $(C_FILES:.C=.o))
 
-ci_files: ross.ci lp.ci event.ci gvtmanager.ci scheduler.ci pe.ci
-	$(CHARMC) ross.ci lp.ci event.ci gvtmanager.ci scheduler.ci pe.ci
+default: all
+all: $(BUILD_DIR) $(OBJS)
 
-$(BUILD_DIR)/ross.o: ci_files ross.h ross.C
-	$(CHARMC) $(OPTS) -c ross.C -o $@
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
 
-$(BUILD_DIR)/pe.o: ci_files pe.h pe.C
-	$(CHARMC) $(OPTS) -c pe.C -o $@
+make_ci: $(MODULES)
 
-$(BUILD_DIR)/scheduler.o: ci_files scheduler.h scheduler.C
-	$(CHARMC) $(OPTS) -c scheduler.C -o $@
+%.decl.h: %.ci
+	$(CHARMC) $<
 
-$(BUILD_DIR)/gvtmanager.o: ci_files gvtmanager.h gvtmanager.C
-	$(CHARMC) $(OPTS) -c gvtmanager.C -o $@
+$(BUILD_DIR)/%.o: %.C %.h $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/lp.o: ci_files lp.h lp.C
-	$(CHARMC) $(OPTS) -c lp.C -o $@
-
-$(BUILD_DIR)/lp_pup.o: ci_files lp.h lp_pup.C
-	$(CHARMC) $(OPTS) -c lp_pup.C -o $@
-
-$(BUILD_DIR)/event.o: ci_files event.h event.C
-	$(CHARMC) $(OPTS) -c event.C -o $@
-
-$(BUILD_DIR)/event_pup.o: ci_files event.h event_pup.C
-	$(CHARMC) $(OPTS) -c event_pup.C -o $@
-
-$(BUILD_DIR)/statistics.o: statistics.h statistics.C
-	$(CHARMC) $(OPTS) -c statistics.C -o $@
+$(BUILD_DIR)/%.o: %.C $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.decl.h *.def.h ci_files
+	rm -rf *.decl.h *.def.h

@@ -1,7 +1,5 @@
 include ../../src/config.mk
 
-CFLAGS  := -w -O3
-
 all: phold
 clean:
 	rm -f phold charmrun
@@ -10,4 +8,4 @@ clean:
 
 
 phold: phold.C phold.h $(BUILD_DIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs phold.C -o phold $(LDFLAGS) -L$(BUILD_DIR) -lross
+	$(CHARMC) $(CFLAGS) $(LFLAGS) phold.C -o phold -L$(BUILD_DIR) -lross
