@@ -1,12 +1,26 @@
 include ../config.mk
 
-all: $(BUILD_DIR)/avl_tree.o $(BUILD_DIR)/pe_queue.o
+C_FILES=$(wildcard *.C)
+CI_FILES=$(wildcard *.ci)
+MODULES=$(CI_FILES:.ci=.decl.h)
+OBJS=$(addprefix $(BUILD_DIR)/, $(C_FILES:.C=.o))
 
-$(BUILD_DIR)/avl_tree.o: avl_tree.C avl_tree.h
-	$(CHARMC) $(OPTS) -c $< -o $@
+default: all
+all: $(BUILD_DIR) $(OBJS)
 
-$(BUILD_DIR)/pe_queue.o: pe_queue.C pe_queue.h
-	$(CHARMC) $(OPTS) -c $< -o $@
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
+
+make_ci: $(MODULES)
+
+%.decl.h: %.ci
+	$(CHARMC) $<
+
+$(BUILD_DIR)/%.o: %.C %.h $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: %.C $(MODULES)
+	$(CHARMC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm $(BUILD_DIR)/avl_tree.o $(BUILD_DIR)/pe_queue.o
+	rm -rf *.decl.h *.def.h
