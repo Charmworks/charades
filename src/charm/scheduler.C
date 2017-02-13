@@ -18,6 +18,7 @@ Scheduler::Scheduler() {
 }
 
 /** Return the minimum LP time on this PE */
+// TODO: Keep a "current_time" var per PE and update it when update_next happens
 Time Scheduler::get_min_time() const {
   return next_lps.top() != NULL ? next_lps.top()->ts : DBL_MAX;
 }
@@ -76,7 +77,7 @@ void ConservativeScheduler::execute() {
 /******************************************************************************/
 /* Optimistic Scheduler                                                       */
 /******************************************************************************/
-OptimisticScheduler::OptimisticScheduler() : iter_cnt(0),
+OptimisticScheduler::OptimisticScheduler() : trigger(8),
                                              min_cancel_time(DBL_MAX) {
   cancel_q.resize(0);
 }
@@ -92,14 +93,14 @@ Time OptimisticScheduler::get_min_time() const {
 
 /** Execute events in batches until the trigger dictates it's GVT time */
 void OptimisticScheduler::execute() {
-  iter_cnt++;
   for (int num_executed = 0; num_executed < g_tw_mblock; num_executed++) {
     if (!schedule_next_lp()) {
       break;
     }
   }
   process_cancel_q();
-  if (iter_cnt > g_tw_gvt_interval) {
+  trigger.iteration_done();
+  if (trigger.is_ready(get_min_time())) {
     gvt_manager->gvt_begin();
   } else {
     thisProxy[CkMyPe()].execute();
@@ -107,6 +108,7 @@ void OptimisticScheduler::execute() {
 }
 
 void OptimisticScheduler::gvt_done(Time gvt) {
+  trigger.gvt_done(gvt);
   collect_fossils(gvt);
   Scheduler::gvt_done(gvt);
 }
