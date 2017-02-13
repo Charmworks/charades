@@ -2,6 +2,7 @@
 #include "scheduler.h"
 #include "gvtmanager.h"
 #include "pe.h"
+#include "ross_opts.h"
 
 CProxy_Initialize mainProxy;
 
@@ -17,8 +18,16 @@ Initialize::Initialize(CkArgMsg *m) {
   pe_manager_proxy = CProxy_PEManager::ckNew();
   gvt_manager_proxy = CProxy_SyncGVT::ckNew();
 
-  // TODO: Hard-coded for now
-  g_tw_synchronization_protocol = 3;
+  // This is temporary to allow selection of scheduler
+  static const tw_optdef temp_options[] = {
+    // TODO: Make sure all relevant constants can be set from the command line
+    TWOPT_GROUP("Temporary Init Opts"),
+    TWOPT_UINT("synch", g_tw_synchronization_protocol, "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
+    TWOPT_END()
+  };
+  tw_opt_add(temp_options);
+  tw_opt_parse(&m->argc, &m->argv);
+
   if (g_tw_synchronization_protocol == 1) {
     scheduler_proxy = CProxy_SequentialScheduler::ckNew();
   } else if (g_tw_synchronization_protocol == 2) {
