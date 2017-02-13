@@ -14,8 +14,8 @@ LFLAGS = -module completion
 
 # SUB DIRECTORY COMPILATION SETUP
 SUB_DIRS = charm collections ross_setup ross_opts ross_util ross_rand ross_event ross_maps
-INCLUDES =$(addprefix -I$(ROSS_SRC)/, $(SUB_DIRS))
-CFLAGS  += $(INCLUDE)
+INCLUDES = -I$(ROSS_SRC) $(addprefix -I$(ROSS_SRC)/, $(SUB_DIRS))
+CFLAGS  += $(INCLUDES)
 
 # OTHER COMPILATION OPTIONS FOR THE PREPROCESSOR
 #OPTS+=-DUSE_SPLAY       # Use splay tree instead of array-based heap

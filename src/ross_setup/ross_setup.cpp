@@ -106,7 +106,6 @@ void tw_init(int* argc, char*** argv) {
   }
 
   tw_opt_print();
-  /** Set up all the buffers for events */
 }
 
 void tw_define_lps(size_t msg_sz, tw_seed* seed) {
