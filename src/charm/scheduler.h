@@ -80,11 +80,61 @@ class ConservativeScheduler : public CBase_ConservativeScheduler {
     void execute();
 };
 
+// TODO: Change iteration_done to is_ready or something like that
+// TODO: Add gvt_done(gvt) method and maybe one for resume as well...since this
+// is the GVT trigger, signalling it when GVT completes and when iter completes
+// seems reasonable
+// TODO: Make scheduler templated on trigger type. Specialize constructors to
+// read in trigger config from file (along with everything else it needs to read
+// in). Common init can be refactored out of specialized c-tors to regular
+// method.
+// TODO: Leash can set current leash start to DBL max on returning true so async
+// red will allow even exec
+class GVTTrigger {
+  public:
+    virtual void iteration_done() = 0;
+    virtual void gvt_done(Time gvt) = 0;
+    virtual bool is_ready(Time next) const = 0;
+};
+
+class CountTrigger : public GVTTrigger {
+  private:
+    unsigned int iter_cnt, iter_max;
+  public:
+    CountTrigger(unsigned max) : iter_cnt(0), iter_max(max) {}
+    void iteration_done() { iter_cnt++; }
+    void gvt_done(Time gvt) {}
+    bool is_ready(Time next) const {
+      return (iter_cnt % iter_max == 0);
+    }
+};
+
+class LeashTrigger : public GVTTrigger {
+  private:
+    Time leash_start, leash_length;
+  public:
+    LeashTrigger(Time l) : leash_start(0.0), leash_length(l) {}
+    void iteration_done() {}
+    void gvt_done(Time gvt) { leash_start = gvt; }
+    bool is_ready(Time next) const {
+      return (leash_start + leash_length <= next);
+    }
+};
+
 class OptimisticScheduler : public CBase_OptimisticScheduler {
   private:
-    int iter_cnt;         /**< iteration count since last gvt */
     Time min_cancel_time; /**< minumum event time in the cancel queue */
+    // TODO: Don't use this...instead just do what FC does and call the method
+    // on ever LP on PE. This can use the PE level list of LPs. In fact, if we
+    // allow for some sort of visitor pattern we can do the same for cancel
+    // processing, LB control, and FC. Should maybe even be faster because we
+    // won't need to constantly mess with the vector of LPs.
     vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
+
+    // TODO: Maybe this could be a template instead
+    // TODO: For leash with async red or something like that the GVTMan needs a
+    // leash estimate (probably in just holding local min)
+    CountTrigger trigger;
 
   public:
     OptimisticScheduler();
