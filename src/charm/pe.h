@@ -63,8 +63,12 @@ class PEManager : public CBase_PEManager {
     void update_next(LPToken* token, Time ts) {
       scheduler->update_next(token, ts);
     }
-    void add_to_cancel_q(LP* lp) {}
-    void update_min_cancel(Time ts) {}
+    void add_to_cancel_q(LP* lp) {
+      scheduler->add_to_cancel_q(lp);
+    }
+    void update_min_cancel(Time ts) {
+      scheduler->update_min_cancel(ts);
+    }
 
     void consume(RemoteEvent* e) {}
     void produce(RemoteEvent* e) {}

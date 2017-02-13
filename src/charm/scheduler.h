@@ -55,13 +55,13 @@ class Scheduler : public CBase_Scheduler {
 
 
     /** TODO: Most of the following should be moved to PE manager? */
-    void register_lp(LPToken* next_token, Time next_ts) {
+    virtual void register_lp(LPToken* next_token, Time next_ts) {
       next_lps.insert(next_token, next_ts);
     }
-    void unregister_lp(LPToken* next_token) {
+    virtual void unregister_lp(LPToken* next_token) {
       next_lps.remove(next_token);
     }
-    void update_next(LPToken* token, Time ts) {
+    virtual void update_next(LPToken* token, Time ts) {
       next_lps.update(token, ts);
     }
     virtual void add_to_cancel_q(LP* lp) {}
