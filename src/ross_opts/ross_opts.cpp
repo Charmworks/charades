@@ -304,8 +304,8 @@ static void match_opt(const char *arg) {
     fprintf(stderr,
         "%s: option '%s' not recognized; see --help for details\n",
         program, arg);
-  tw_net_stop();
-  exit(1);
+  //tw_net_stop();
+  //exit(1);
 }
 
 static const tw_optdef basic[] = {
