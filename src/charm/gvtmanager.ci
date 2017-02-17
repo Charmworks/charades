@@ -2,6 +2,7 @@ module gvtmanager {
   readonly CProxy_GVTManager gvt_manager_proxy;
 
   include "typedefs.h"; // included for Time
+  include "completion.h"; //included for Phased GVT
 
   /** Base group for all GVTManagers */
   group GVTManager {
@@ -11,6 +12,13 @@ module gvtmanager {
   /** Basic Synchronous GVT */
   group SyncGVT : GVTManager {
     entry [notrace] SyncGVT();
+    entry [notrace] void gvt_contribute();
+    entry [notrace,reductiontarget] void gvt_end(Time);
+  };
+
+  group PhaseGVT : GVTManager {
+    entry [notrace] PhaseGVT();
+    entry [notrace] void broadcast_detector_proxies(int num, CProxy_CompletionDetector proxies[num]);
     entry [notrace] void gvt_contribute();
     entry [notrace,reductiontarget] void gvt_end(Time);
   };
