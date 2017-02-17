@@ -58,4 +58,32 @@ class SyncGVT : public CBase_SyncGVT {
     void gvt_end(Time);
 };
 
+class PhaseGVT : public CBase_PhaseGVT {
+  public:
+    PhaseGVT();
+
+    void gvt_begin();
+
+    void gvt_contribute();
+
+    void gvt_end(Time);
+
+    void initialize_detectors();
+    void broadcast_detector_proxies(int, CProxy_CompletionDetector*);
+
+    void consume(RemoteEvent* e);
+    void produce(RemoteEvent* e);
+
+  private:
+
+    unsigned max_phase, current_phase, next_phase;
+    bool* detector_ready;
+    CProxy_CompletionDetector* detector_proxies;
+    CompletionDetector** detector_pointers;
+
+    Time min_sent;
+
+
+};
+
 #endif

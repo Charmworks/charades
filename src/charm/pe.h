@@ -7,6 +7,7 @@
 #include "globals.h"
 #include "statistics.h"
 #include "scheduler.h" // Only temporary maybe
+#include "gvtmanager.h" //only temporary maybe
 
 extern CProxy_PEManager pe_manager_proxy;
 class LPToken;
@@ -70,8 +71,12 @@ class PEManager : public CBase_PEManager {
       scheduler->update_min_cancel(ts);
     }
 
-    void consume(RemoteEvent* e) {}
-    void produce(RemoteEvent* e) {}
+    void consume(RemoteEvent* e) {
+      gvt_manager->consume(e);
+    }
+    void produce(RemoteEvent* e) {
+      gvt_manager->produce(e);
+    }
 };
 
 #endif
