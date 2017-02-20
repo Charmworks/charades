@@ -18,8 +18,8 @@ INCLUDES = -I$(ROSS_SRC) $(addprefix -I$(ROSS_SRC)/, $(SUB_DIRS))
 CFLAGS  += $(INCLUDES)
 
 # OTHER COMPILATION OPTIONS FOR THE PREPROCESSOR
-#OPTS+=-DUSE_SPLAY       # Use splay tree instead of array-based heap
-#OPTS+=-DDEBUG_ON        # Turn on general debug prints
-#OPTS+=-DDEBUG_MASTER_ON # Turn on debug prints from PE 0
-#OPTS+=-DDEBUG_PE_ON     # Turn on PE specific debug prints
-#OPTS+=-DDEBUG_LP_ON     # Turn on LP specific debug prints
+#CFLAGS+=-DUSE_SPLAY       # Use splay tree instead of array-based heap
+#CFLAGS+=-DDEBUG_ON        # Turn on general debug prints
+#CFLAGS+=-DDEBUG_MASTER_ON # Turn on debug prints from PE 0
+#CFLAGS+=-DDEBUG_PE_ON     # Turn on PE specific debug prints
+#CFLAGS+=-DDEBUG_LP_ON     # Turn on LP specific debug prints
