@@ -8,6 +8,7 @@
 #include "charm_api.h"
 #include "globals.h"
 #include "avl_tree.h"
+#include "event_buffer.h"
 
 void tw_event_setup() {
   AvlTree avl_list;
@@ -20,15 +21,6 @@ void tw_event_setup() {
   PE_VALUE(avl_list_head) = &avl_list[0];
 
   DEBUG_MASTER("Created AVL tree with %d nodes\n", AVL_NODE_COUNT);
-
-  tw_out *output_head = (tw_out *)calloc(sizeof(struct tw_out), NUM_OUT_MESG);
-  for (int i = 0; i < NUM_OUT_MESG - 1; i++) {
-    output_head[i].next = &output_head[i + 1];
-  }
-  output_head[NUM_OUT_MESG - 1].next = NULL;
-  PE_VALUE(output) = output_head;
-
-  DEBUG_MASTER("Created %d output messages\n", NUM_OUT_MESG);
 
   PE_VALUE(event_buffer) = new EventBuffer(g_tw_max_events_buffered,
                                            g_tw_max_remote_events_buffered,
@@ -51,6 +43,7 @@ char **CopyArgs(char **argv)
 
 
 void tw_init(int* argc, char*** argv) {
+  clear_globals();
   char **charmArg = CopyArgs(*argv);
   charm_init(*argc, charmArg);
 
@@ -100,17 +93,12 @@ void tw_init(int* argc, char*** argv) {
   }
 
   tw_opt_parse(argc, argv);
-
-  if (tw_ismaster() && NULL == (PE_VALUE(g_tw_csv) = fopen("ross.csv", "a"))) {
-    tw_error(TW_LOC, "Unable to open: ross.csv\n");
-  }
-
   tw_opt_print();
 }
 
 void tw_define_lps(size_t msg_sz, tw_seed* seed) {
   g_tw_msg_sz = msg_sz;
-  PE_VALUE(g_tw_rng_seed) = seed;
+  g_tw_rng_seed = seed;
 
   tw_event_setup();
 

@@ -157,50 +157,6 @@ static void show_help(void) {
 }
 
 void tw_opt_print(void) {
-  FILE *f = PE_VALUE(g_tw_csv);
-  const tw_optdef **group = all_groups;
-
-  if(!tw_ismaster() || NULL == f)
-    return;
-
-  for (; *group; group++)
-  {
-    const tw_optdef *def = *group;
-    for (; def->type; def++)
-    {
-      if (def->type == TWOPTTYPE_GROUP || 
-          (def->name && 0 == strcmp(def->name, "help")))
-        continue;
-
-      if (def->value)
-      {
-        switch (def->type)
-        {
-          case TWOPTTYPE_ULONG:
-            fprintf(f, "%lu,", *((unsigned long*)def->value));
-            break;
-
-          case TWOPTTYPE_UINT:
-            fprintf(f, "%u,", *((unsigned int*)def->value));
-            break;
-
-          case TWOPTTYPE_STIME:
-            fprintf(f, "%.2f,", *((tw_stime*)def->value));
-            break;
-
-          case TWOPTTYPE_CHAR:
-            fprintf(f, "%s,", (char *)def->value);
-            break;
-
-          default:
-            break;
-        }
-      } else
-        fprintf(f, "undefined,");
-    }
-  }
-
-  //print_options(f);
 }
 
 static void need_argument(const tw_optdef *def) {

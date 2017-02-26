@@ -16,9 +16,8 @@ CProxy_Scheduler scheduler_proxy;
 /* Scheduler Base Class                                                       */
 /******************************************************************************/
 Scheduler::Scheduler() {
-  int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
-  err = posix_memalign((void**)&stats, 64, sizeof(Statistics));
-  clear_globals(globals);
+  globals = new Globals();
+  int err = posix_memalign((void**)&stats, 64, sizeof(Statistics));
   stats->clear();
 
   contribute(CkCallback(CkReductionTarget(Scheduler, schedulerReady), thisProxy));

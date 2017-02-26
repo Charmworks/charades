@@ -322,10 +322,10 @@ rng_init(int v, int w)
 	rng->a[2] = 138556;
 	rng->a[3] = 49689;
 
-	if(PE_VALUE(g_tw_rng_seed))
+	if(g_tw_rng_seed)
 	{
 		for(j = 0; j < 4; j++)
-			rng->seed[j] = *(PE_VALUE(g_tw_rng_seed))[j];
+			rng->seed[j] = *(g_tw_rng_seed)[j];
 	} else
 	{
 		rng->seed[0] = 11111111;
