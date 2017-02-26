@@ -5,6 +5,8 @@
 #include "lp.h"
 #include "pe.h"
 #include "ross.h"
+#include "globals.h"
+#include "ross_random.h"
 
 #include <float.h> // Included for DBL_MAX
 
@@ -14,7 +16,36 @@ CProxy_Scheduler scheduler_proxy;
 /* Scheduler Base Class                                                       */
 /******************************************************************************/
 Scheduler::Scheduler() {
-  contribute(CkCallback(CkReductionTarget(PEManager, schedulerReady), pe_manager_proxy));
+  int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
+  err = posix_memalign((void**)&stats, 64, sizeof(Statistics));
+  clear_globals(globals);
+  stats->clear();
+
+  contribute(CkCallback(CkReductionTarget(Scheduler, schedulerReady), thisProxy));
+  thisProxy[CkMyPe()].initialize();
+}
+
+void Scheduler::initialize_rand() {
+  DEBUG_PE("Random number generator initialized\n");
+  rng = tw_rand_init(31, 41);
+}
+
+void Scheduler::start_simulation() {
+  start_time = CmiWallTimer();
+  scheduler_proxy[CkMyPe()].execute();
+}
+
+void Scheduler::end_simulation() {
+  end_time = CmiWallTimer();
+  stats->total_time = end_time - start_time;
+  contribute(sizeof(Statistics), stats, statsReductionType,
+      CkCallback(CkIndex_Scheduler::finalize(NULL), thisProxy[0]));
+}
+
+void Scheduler::finalize(CkReductionMsg* msg) {
+  Statistics* final_stats = (Statistics*)msg->getData();
+  final_stats->print();
+  CkExit();
 }
 
 /** Return the minimum LP time on this PE */
@@ -44,7 +75,7 @@ void Scheduler::gvt_resume() {}
 
 void Scheduler::gvt_done(Time gvt) {
   if(gvt >= g_tw_ts_end) {
-    pe_manager->end_simulation();
+    end_simulation();
   } else {
     thisProxy[CkMyPe()].execute();
   }
@@ -105,6 +136,11 @@ void OptimisticScheduler::execute() {
   } else {
     thisProxy[CkMyPe()].execute();
   }
+}
+
+void OptimisticScheduler::gvt_resume() {
+  thisProxy[CkMyPe()].execute();
+  Scheduler::gvt_resume();
 }
 
 void OptimisticScheduler::gvt_done(Time gvt) {

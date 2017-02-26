@@ -13,7 +13,6 @@ struct GVT {
 };
 
 class RemoteEvent;
-class PEManager;
 class Scheduler;
 
 class GVTManager : public CBase_GVTManager {
@@ -22,7 +21,6 @@ class GVTManager : public CBase_GVTManager {
     Time gvt;
 
     /** Local pointers to other PE-level objects */
-    PEManager* pe_manager;
     Scheduler* scheduler;
 
   public:
@@ -37,10 +35,7 @@ class GVTManager : public CBase_GVTManager {
     Time current_gvt() const { return gvt; }
 
     /** Called by the local PEManager after all groups have been initialized */
-    void set_local_pointers(PEManager* pem, Scheduler* sched) {
-      pe_manager = pem;
-      scheduler = sched;
-    }
+    void set_local_pointers(Scheduler* sched) { scheduler = sched; }
 
     virtual void consume(RemoteEvent* e) {}
     virtual void produce(RemoteEvent* e) {}

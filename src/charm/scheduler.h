@@ -6,28 +6,51 @@
 #include "typedefs.h"
 #include "pe_queue.h"
 #include "lp.h" // Temporary for LPToken
+#include "charm_functions.h" // temporary for DEBUG_PE
+#include "gvtmanager.h" // temporary for produce/consume
 
 extern CProxy_Scheduler scheduler_proxy;
 
 class RemoteEvent;
-class GVTManager;
 class LP;
 class LPToken;
 class PEManager;
+class Globals;
+class Statistics;
 
 using std::vector;
 
 class Scheduler : public CBase_Scheduler {
+  Scheduler_SDAG_CODE
   protected:
     /** LP queue variables */
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
 
     /** Local pointers to other PE-level objects */
-    PEManager* pe_manager;
     GVTManager* gvt_manager;
 
+    /** Timer variables TODO: Just move to stats. */
+    double start_time;  /**< Start wall time for the simulation */
+    double end_time;    /**< End wall time for the simulation */
+
+    /** Misc variables */
+    tw_rng * rng; /**< ROSS rng stream */
+
+    std::string scheduler_name;
+
   public:
+    /** "Global" variables per PE */
+    Globals* globals;
+    /** Stats for the scheduler */
+    Statistics* stats;
+
     Scheduler();
+
+    void finalize(CkReductionMsg *m);
+    void start_simulation();
+    void end_simulation();
+
+    void initialize_rand();
 
     /** Entry method for executing a scheduler iteration */
     virtual void execute();
@@ -39,12 +62,6 @@ class Scheduler : public CBase_Scheduler {
     /** Local method which allows the GVT manager to signify that the GVT is
      *  comleted with the passed in GVT being the result. */
     virtual void gvt_done(Time gvt);
-
-    /** Called by the local PEManager after all groups have been initialized */
-    void set_local_pointers(PEManager* pem, GVTManager* gvtm) {
-      pe_manager = pem;
-      gvt_manager = gvtm;
-    }
 
     /** Calls execute_me() on the next LP in the queue */
     virtual bool schedule_next_lp();
@@ -63,6 +80,12 @@ class Scheduler : public CBase_Scheduler {
     }
     virtual void update_next(LPToken* token, Time ts) {
       next_lps.update(token, ts);
+    }
+    void consume(RemoteEvent* e) {
+      gvt_manager->consume(e);
+    }
+    void produce(RemoteEvent* e) {
+      gvt_manager->produce(e);
     }
     virtual void add_to_cancel_q(LP* lp) {}
     virtual void update_min_cancel(Time ts) {}
@@ -139,6 +162,7 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
   public:
     OptimisticScheduler();
     void execute();
+    void gvt_resume();
     void gvt_done(Time gvt);
     void collect_fossils(Time gvt);       /**< collect fossils */
     void process_cancel_q();      /**< process the cancel_q */

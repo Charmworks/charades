@@ -20,7 +20,7 @@
 extern CProxy_LP lps;
 
 class RemoteEvent;
-class PEManager;
+class Scheduler;
 
 void operator|(PUP::er&, tw_rng_stream*);
 void operator|(PUP::er&, LPStruct&);
@@ -71,7 +71,7 @@ class LP : public CBase_LP {
     bool in_pe_queue;   // Whether or not this LP is in the PE cancel queue
 
     // A direct pointer to the PE where this LP chare resides
-    PEManager* pe_manager;
+    Scheduler* scheduler;
     //Scheduler* scheduler;
     //GVTManager* gvtmanager;
 

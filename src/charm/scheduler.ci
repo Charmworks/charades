@@ -5,6 +5,23 @@ module scheduler {
   group Scheduler {
     entry [notrace] Scheduler();
     entry [notrace] void execute();
+    entry [notrace] void finalize(CkReductionMsg* msg);
+
+    /** Control flow methods to synchronize initialization */
+    entry [notrace,reductiontarget] void gvtManagerReady();
+    entry [notrace,reductiontarget] void schedulerReady();
+    entry [notrace] void initialize() {
+      // TODO: Figure out why this can't be inlined in c-tor
+      serial {
+        initialize_rand();
+      }
+      when schedulerReady(), gvtManagerReady() serial {
+        gvt_manager = gvt_manager_proxy.ckLocalBranch();
+        gvt_manager->set_local_pointers(this);
+        DEBUG_PE("Initialization complete\n");
+        contribute(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
+      }
+    }
   };
 
   group SequentialScheduler : Scheduler {
