@@ -21,12 +21,12 @@ void show_2f(const char *name, double v) {
 
 void show_1f(const char *name, double v) {
   printf("\t%-50s %11.1f\n", name, v);
-  fprintf(PE_VALUE(g_tw_csv), "%.2f,", v);
+  //fprintf(PE_VALUE(g_tw_csv), "%.2f,", v);
 }
 
 void show_4f(const char *name, double v) {
   printf("\t%-50s %11.4lf\n", name, v);
-  fprintf(PE_VALUE(g_tw_csv), "%.4lf,", v);
+  //fprintf(PE_VALUE(g_tw_csv), "%.4lf,", v);
 }
 
 /**

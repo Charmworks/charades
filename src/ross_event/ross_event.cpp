@@ -10,8 +10,6 @@
 #include <assert.h>
 
 static inline void free_output_buffer(tw_out *buffer) {
-  buffer->next = PE_VALUE(output);
-  PE_VALUE(output) = buffer;
 }
 
 // TODO: See if this is supposed to be part of the public API or not
@@ -131,10 +129,5 @@ void tw_event_rollback(tw_event * event) {
 // TODO: Is this supposed to be publicly exposed?
 tw_out* allocate_output_buffer() {
   tw_out* free_buf = NULL;
-  if(PE_VALUE(output)) {
-    free_buf = PE_VALUE(output);
-    PE_VALUE(output) = free_buf->next;
-    free_buf->next = NULL;
-  }
   return free_buf;
 }
