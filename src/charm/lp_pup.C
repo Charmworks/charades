@@ -34,7 +34,7 @@ LP::LP(CkMigrateMessage* m) : next_token(this),
                               cancel_q(NULL), min_cancel_q(DBL_MAX),
                               in_pe_queue(false), all_events(0),
                               current_time(0.0), current_event(NULL) {
-  pe_manager = pe_manager_proxy.ckLocalBranch();
+  scheduler = scheduler_proxy.ckLocalBranch();
 }
 
 void LP::pup(PUP::er& p) {
@@ -42,9 +42,9 @@ void LP::pup(PUP::er& p) {
   // LPs must be unregistered from their current PE before they migrate, and
   // re-register with the new PE when they are being unpacked.
   if (p.isPacking()) {
-    pe_manager->unregister_lp(&next_token);
+    scheduler->unregister_lp(&next_token);
   } else if (p.isUnpacking()) {
-    pe_manager->register_lp(&next_token, 0.0);
+    scheduler->register_lp(&next_token, 0.0);
   }
 
   // Pup the basic fields
@@ -70,7 +70,7 @@ void LP::pup(PUP::er& p) {
     for (int i = 0; i < events.size(); i++) {
       reconstruct_pending_event(pending[i]);
     }
-    pe_manager->update_next(&next_token, events.min());
+    scheduler->update_next(&next_token, events.min());
   }
 
   if (isOptimistic) {

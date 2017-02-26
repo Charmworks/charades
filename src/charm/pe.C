@@ -40,15 +40,13 @@ size_t        g_tw_msg_sz;
 unsigned      g_tw_max_events_buffered;
 unsigned      g_tw_max_remote_events_buffered;
 
-CProxy_PEManager pe_manager_proxy;
-
 Globals* get_globals() {
-  static Globals* globals = pe_manager_proxy.ckLocalBranch()->globals;
+  static Globals* globals = scheduler_proxy.ckLocalBranch()->globals;
   return globals;
 }
 
 Statistics* get_statistics() {
-  static Statistics* statistics = pe_manager_proxy.ckLocalBranch()->cumulative_stats;
+  static Statistics* statistics = scheduler_proxy.ckLocalBranch()->stats;
   return statistics;
 }
 
@@ -58,12 +56,12 @@ void registerStatsReduction(void) {
 }
 
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
-  Statistics *s = new Statistics();
+  Statistics* s = new Statistics();
 
   for (int i = 0; i < nMsg; i++) {
     CkAssert(msgs[i]->getSize() == sizeof(Statistics));
 
-    Statistics *c = (Statistics *)msgs[i]->getData();
+    Statistics* c = (Statistics*)msgs[i]->getData();
     s->reduce(c);
   }
 
@@ -92,7 +90,7 @@ void charm_exit() {
 
 // Starts the simulation by calling the scheduler on all pes
 void charm_run() {
-  pe_manager_proxy.ckLocalBranch()->start_simulation();
+  scheduler_proxy.ckLocalBranch()->start_simulation();
   StartCharmScheduler();
 }
 
@@ -102,54 +100,5 @@ void charm_run() {
 
 #undef PE_STATS
 #define PE_STATS(x) cumulative_stats->x
-
-PEManager::PEManager() {
-  DEBUG_PE("PEManager instantiated\n");
-  int err = posix_memalign((void **)&globals, 64, sizeof(Globals));
-  err = posix_memalign((void**)&current_stats, 64, sizeof(Statistics));
-  err = posix_memalign((void**)&cumulative_stats, 64, sizeof(Statistics));
-  clear_globals(globals);
-  current_stats->clear();
-  cumulative_stats->clear();
-
-#ifdef CMK_TRACE_ENABLED
-  if (CkMyPe() == 0) {
-    traceRegisterUserEvent("Forward Execution", USER_EVENT_FWD);
-    traceRegisterUserEvent("Rollback", USER_EVENT_RB);
-    traceRegisterUserEvent("Cancellation", USER_EVENT_CANCEL);
-    traceRegisterUserEvent("GVT", USER_EVENT_GVT);
-    traceRegisterUserEvent("LDB", USER_EVENT_LDB);
-  }
-  current_stats->init_tracing();
-#endif
-  thisProxy[CkMyPe()].initialize();
-}
-
-void PEManager::start_simulation() {
-  start_time = CmiWallTimer();
-  scheduler_proxy[CkMyPe()].execute();
-}
-
-void PEManager::end_simulation() {
-  end_time = CmiWallTimer();
-  cumulative_stats->total_time = end_time - start_time;
-  contribute(sizeof(Statistics), cumulative_stats, statsReductionType,
-      CkCallback(CkIndex_PEManager::finalize(NULL), thisProxy[0]));
-}
-
-void PEManager::finalize(CkReductionMsg* msg) {
-  Statistics* final_stats = (Statistics*)msg->getData();
-  final_stats->print();
-  CkExit();
-}
-
-/******************************************************************************/
-/* Initialization functions                                                   */
-/******************************************************************************/
-
-void PEManager::initialize_rand() {
-  DEBUG_PE("Random number generator initialized\n");
-  rng = tw_rand_init(31, 41);
-}
 
 #include "pe.def.h"

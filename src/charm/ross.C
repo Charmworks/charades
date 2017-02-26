@@ -3,6 +3,7 @@
 #include "gvtmanager.h"
 #include "pe.h"
 #include "ross_opts.h"
+#include "globals.h"
 
 CProxy_Initialize mainProxy;
 
@@ -14,9 +15,6 @@ void charm_init(int argc, char** argv) {
 
 Initialize::Initialize(CkArgMsg *m) {
   mainProxy = thisProxy;
-
-  pe_manager_proxy = CProxy_PEManager::ckNew();
-  gvt_manager_proxy = CProxy_SyncGVT::ckNew();
 
   // This is temporary to allow selection of scheduler
   static const tw_optdef temp_options[] = {
@@ -37,6 +35,7 @@ Initialize::Initialize(CkArgMsg *m) {
   } else {
     CkAbort("Unknown synchronization protocol\n");
   }
+  gvt_manager_proxy = CProxy_SyncGVT::ckNew();
   delete m;
 }
 

@@ -3,6 +3,7 @@
 #include "charm_functions.h"
 #include "pe.h"
 #include "scheduler.h"
+#include "globals.h"
  
 CProxy_GVTManager gvt_manager_proxy;
 CkReduction::reducerType gvtReductionType;
@@ -25,7 +26,7 @@ void registerGVTReduction(void) {
 
 /* GVTManager FUNCTIONS */
 GVTManager::GVTManager() : gvt(0.0) {
-  contribute(CkCallback(CkReductionTarget(PEManager, gvtManagerReady), pe_manager_proxy));
+  contribute(CkCallback(CkReductionTarget(Scheduler, gvtManagerReady), scheduler_proxy));
 }
 
 /* GVT SYNC FUNCTIONS */
