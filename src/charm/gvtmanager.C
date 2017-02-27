@@ -24,12 +24,14 @@ void registerGVTReduction(void) {
 }
 
 /* GVTManager FUNCTIONS */
-GVTManager::GVTManager() : gvt(0.0) {
+GVTManager::GVTManager() : curr_gvt(0.0), prev_gvt(0.0) {
   contribute(CkCallback(CkReductionTarget(Scheduler, gvtManagerReady), scheduler_proxy));
 }
 
 /* GVT SYNC FUNCTIONS */
-SyncGVT::SyncGVT() {}
+SyncGVT::SyncGVT() {
+  gvt_name = "Synchronous GVT";
+}
 
 void SyncGVT::gvt_begin() {
   if(CkMyPe() == 0) {
@@ -39,7 +41,7 @@ void SyncGVT::gvt_begin() {
 
 void SyncGVT::gvt_contribute() {
   Time min_time = scheduler->get_min_time();
-  CkAssert(min_time >= gvt);
+  CkAssert(min_time >= curr_gvt);
   
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(SyncGVT,gvt_end),thisProxy));
@@ -50,27 +52,21 @@ void SyncGVT::gvt_contribute() {
 }
 
 void SyncGVT::gvt_end(Time new_gvt) {
-  gvt = new_gvt;
-  scheduler->gvt_done(gvt);
+  prev_gvt = curr_gvt;
+  curr_gvt = new_gvt;
+  scheduler->gvt_done(curr_gvt);
 }
 
 /* Continuous GVT FUNCTIONS */
 
 PhaseGVT::PhaseGVT() {
+  gvt_name = "Two-Phase GVT";
   initialize_detectors();
-
 }
 
 void PhaseGVT::initialize_detectors() {
   //max_phase = g_tw_gvt_phases;
-    max_phase = 2;
-/*
-  if (max_phase > 1 && g_tw_synchronization_protocol == CONSERVATIVE) {
-    CkPrintf("WARNING: Cannot have multiple phases in conservative mode.\n");
-    CkPrintf("Setting number of phases to 1\n");
-    max_phase = 1;
-  }
-*/
+  max_phase = 2;
   current_phase = next_phase = 0;
   detector_ready = new bool[max_phase];
   detector_proxies = new CProxy_CompletionDetector[max_phase];
@@ -101,15 +97,9 @@ void PhaseGVT::broadcast_detector_proxies(int num, CProxy_CompletionDetector* pr
   }
   current_phase = 0;
   next_phase = (current_phase + 1) % max_phase;
-/*
-  // Start the timer and the scheduler
-  start_time = CmiWallTimer();
-  contribute(CkCallback(CkIndex_PE::resume_scheduler(), thisProxy));
-*/
 }
 
 void PhaseGVT::gvt_begin() {
-
   if(detector_ready[next_phase]) {
     min_sent = DBL_MAX;
     detector_pointers[current_phase]->done();
@@ -117,41 +107,29 @@ void PhaseGVT::gvt_begin() {
     current_phase = next_phase;
     next_phase = (current_phase+1)%max_phase;
   }
-  else {
-
-  }
   scheduler->gvt_resume(); 
-
 }
 
 void PhaseGVT::gvt_contribute() {
   Time min_time = scheduler->get_min_time();
-
   min_time = fmin(min_time, min_sent); 
-  CkAssert(min_time >= gvt);
+  CkAssert(min_time >= curr_gvt);
   
   if (CkMyPe() == 0) {
-      detector_proxies[next_phase].start_detection(CkNumPes(),
-          CkCallback(),
-          CkCallback(),
-          CkCallback(CkIndex_PhaseGVT::gvt_contribute(), thisProxy), 0);
-    } 
-
+    detector_proxies[next_phase].start_detection(CkNumPes(),
+        CkCallback(),
+        CkCallback(),
+        CkCallback(CkIndex_PhaseGVT::gvt_contribute(), thisProxy), 0);
+  }
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(PhaseGVT,gvt_end),thisProxy));
-
-
-/*
-  if(g_tw_async_reduction) {
-    scheduler->gvt_resume();
-  }
-*/
 }
 
 void PhaseGVT::gvt_end(Time new_gvt) {
-  gvt = new_gvt;
   detector_ready[next_phase] = true;
-  scheduler->gvt_done(gvt);
+  prev_gvt = curr_gvt;
+  curr_gvt = new_gvt;
+  scheduler->gvt_done(curr_gvt);
 }
 
 void PhaseGVT::consume(RemoteEvent* e) {
