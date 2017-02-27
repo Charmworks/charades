@@ -1,7 +1,6 @@
 #include "gvtmanager.h"
 
 #include "charm_functions.h"
-#include "pe.h"
 #include "scheduler.h"
 #include "globals.h"
  

@@ -2,14 +2,14 @@
 #define _CHARM_FUNCTIONS_H_
 
 void charm_init(int argc, char** argv);
-void charm_run();
 void charm_exit();
+void charm_run();
 
 int tw_ismaster();
 int tw_nnodes();
-
 int tw_mype();
-void tw_abort(const char*);
+
+void tw_abort(const char* error);
 
 #define USER_EVENT_FWD    1001
 #define USER_EVENT_RB     1002

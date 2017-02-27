@@ -1,17 +1,10 @@
 #include "ross.h"
 #include "scheduler.h"
 #include "gvtmanager.h"
-#include "pe.h"
 #include "ross_opts.h"
 #include "globals.h"
 
 CProxy_Initialize mainProxy;
-
-// Function that starts the charm library and results in the creation of the
-// PE group chares.
-void charm_init(int argc, char** argv) {
-  CharmInit(argc, argv);
-}
 
 Initialize::Initialize(CkArgMsg *m) {
   mainProxy = thisProxy;
@@ -37,6 +30,31 @@ Initialize::Initialize(CkArgMsg *m) {
   }
   gvt_manager_proxy = CProxy_SyncGVT::ckNew();
   delete m;
+}
+
+void charm_init(int argc, char** argv) {
+  CharmInit(argc, argv);
+}
+void charm_exit() {
+  CharmLibExit();
+}
+void charm_run() {
+  scheduler_proxy.ckLocalBranch()->start_simulation();
+  StartCharmScheduler();
+}
+
+int tw_ismaster() {
+  return (CkMyPe() == 0);
+}
+int tw_nnodes() {
+  return CkNumPes();
+}
+int tw_mype() {
+  return CkMyPe();
+}
+
+void tw_abort(const char* error) {
+  CkAbort(error);
 }
 
 #include "ross.def.h"

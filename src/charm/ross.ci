@@ -5,9 +5,11 @@ mainmodule ross {
     entry [notrace] Initialize(CkArgMsg *);
     entry [notrace,reductiontarget] void Exit();
   };
+
+  initnode registerStatsReduction();
+
   extern module gvtmanager;
   extern module scheduler;
-  extern module pe;
   extern module lp;
   extern module event;
 }

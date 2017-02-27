@@ -77,8 +77,10 @@ class Statistics {
 #endif
 };
 
-// Defined in pe.C
 Statistics* get_statistics();
+CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs);
+void registerStatsReduction();
+extern CkReduction::reducerType statsReductionType;
 
 #define PE_STATS(x) get_statistics()->x
 

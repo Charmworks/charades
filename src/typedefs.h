@@ -19,6 +19,10 @@ enum tw_synch_e {
     OPTIMISTIC,
 };
 
+struct MemUsage {
+  unsigned long long max_memory;
+  double avg_memory;
+};
 
 // Types used in the Charm++ backend of the framework
 typedef double Time;
