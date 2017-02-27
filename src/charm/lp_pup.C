@@ -2,7 +2,6 @@
 #include "scheduler.h"
 #include "avl_tree.h"
 #include "globals.h"
-#include "pe.h"
 
 // Pup function for tw_rng_stream in the LPStruct.
 void operator|(PUP::er& p, tw_rng_stream* s) {

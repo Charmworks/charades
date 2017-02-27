@@ -1,10 +1,33 @@
 #include "statistics.h"
 
+#include "scheduler.h"
+
 #include <stdio.h>  // Included for printf
 #include <float.h>  // Included for DBL_MAX
 #include <math.h>   // Included for fmax/fmin
 
-#include <charm++.h>
+Statistics* get_statistics() {
+  static Statistics* statistics = scheduler_proxy.ckLocalBranch()->stats;
+  return statistics;
+}
+
+CkReduction::reducerType statsReductionType;
+void registerStatsReduction() {
+  statsReductionType = CkReduction::addReducer(statsReduction);
+}
+
+CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
+  Statistics* s = new Statistics();
+
+  for (int i = 0; i < nMsg; i++) {
+    CkAssert(msgs[i]->getSize() == sizeof(Statistics));
+
+    Statistics* c = (Statistics*)msgs[i]->getData();
+    s->reduce(c);
+  }
+
+  return CkReductionMsg::buildNew(sizeof(Statistics), s);
+}
 
 Statistics::Statistics() {
   clear();

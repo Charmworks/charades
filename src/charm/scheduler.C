@@ -3,7 +3,6 @@
 #include "charm_functions.h"
 #include "gvtmanager.h"
 #include "lp.h"
-#include "pe.h"
 #include "ross.h"
 #include "globals.h"
 #include "ross_random.h"
@@ -17,8 +16,7 @@ CProxy_Scheduler scheduler_proxy;
 /******************************************************************************/
 Scheduler::Scheduler() {
   globals = new Globals();
-  int err = posix_memalign((void**)&stats, 64, sizeof(Statistics));
-  stats->clear();
+  stats = new Statistics();
 
   contribute(CkCallback(CkReductionTarget(Scheduler, schedulerReady), thisProxy));
   thisProxy[CkMyPe()].initialize();
