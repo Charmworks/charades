@@ -81,16 +81,20 @@ void Scheduler::gvt_done(Time gvt) {
 /******************************************************************************/
 /* Sequential Scheduler                                                       */
 /******************************************************************************/
-SequentialScheduler::SequentialScheduler() {}
+SequentialScheduler::SequentialScheduler() {
+  scheduler_name = "Sequential Scheduler";
+}
 
 void SequentialScheduler::execute() {
-  CkAbort("Sequential scheduler not yet implemented\n");
+  CkAbort("SequentialScheduler not yet implemented\n");
 }
 
 /******************************************************************************/
 /* Conservative Scheduler                                                     */
 /******************************************************************************/
-ConservativeScheduler::ConservativeScheduler() {}
+ConservativeScheduler::ConservativeScheduler() {
+  scheduler_name = "Conservative Scheduler";
+}
 
 /** Only execute events within 'lookahead' time of current GVT */
 void ConservativeScheduler::execute() {
@@ -107,6 +111,7 @@ void ConservativeScheduler::execute() {
 /******************************************************************************/
 OptimisticScheduler::OptimisticScheduler() : trigger(8),
                                              min_cancel_time(DBL_MAX) {
+  scheduler_name = "Optimisitic Scheduler";
   cancel_q.resize(0);
 }
 
