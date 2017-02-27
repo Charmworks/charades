@@ -6,6 +6,9 @@
 #include "ross.h"
 #include "globals.h"
 #include "ross_random.h"
+#include "avl_tree.h"
+#include "ross_setup.h" // tmp for AVL_NODE_COUNT
+#include "event_buffer.h"
 
 #include <float.h> // Included for DBL_MAX
 
@@ -15,6 +18,7 @@ CProxy_Scheduler scheduler_proxy;
 /* Scheduler Base Class                                                       */
 /******************************************************************************/
 Scheduler::Scheduler() {
+  scheduler_proxy = thisProxy;
   globals = new Globals();
   stats = new Statistics();
 
@@ -25,6 +29,15 @@ Scheduler::Scheduler() {
 void Scheduler::initialize_rand() {
   DEBUG_PE("Random number generator initialized\n");
   rng = tw_rand_init(31, 41);
+}
+
+void Scheduler::initialize_events() {
+  PE_VALUE(event_buffer) = new EventBuffer(g_tw_max_events_buffered,
+                                           g_tw_max_remote_events_buffered,
+                                           g_tw_msg_sz);
+  PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_abort_event();
+  DEBUG_PE("Created event buffer with %d events and %d msgs of size %d\n",
+      g_tw_max_events_buffered, g_tw_max_remote_events_buffered, g_tw_msg_sz);
 }
 
 void Scheduler::start_simulation() {
@@ -109,10 +122,25 @@ void ConservativeScheduler::execute() {
 /******************************************************************************/
 /* Optimistic Scheduler                                                       */
 /******************************************************************************/
-OptimisticScheduler::OptimisticScheduler() : trigger(8),
+OptimisticScheduler::OptimisticScheduler() : trigger(g_tw_gvt_interval),
                                              min_cancel_time(DBL_MAX) {
   scheduler_name = "Optimisitic Scheduler";
   cancel_q.resize(0);
+}
+
+void OptimisticScheduler::initialize_events() {
+  Scheduler::initialize_events();
+
+  AvlTree avl_list;
+  int err = posix_memalign((void **)&avl_list, 64, sizeof(struct avlNode) * AVL_NODE_COUNT);
+  memset(avl_list, 0, sizeof(struct avlNode) * AVL_NODE_COUNT);
+  for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
+    avl_list[i].next = &avl_list[i + 1];
+  }
+  avl_list[AVL_NODE_COUNT - 1].next = NULL;
+  PE_VALUE(avl_list_head) = &avl_list[0];
+
+  DEBUG_PE("Created AVL tree with %d nodes\n", AVL_NODE_COUNT);
 }
 
 /** Min time for optimistic schedulers must also take cancel q into account */

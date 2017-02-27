@@ -73,7 +73,7 @@ LP::LP() : next_token(this), uniqID(0), cancel_q(NULL),
 
   isOptimistic = g_tw_synchronization_protocol == OPTIMISTIC;
 
-  // Create array of LPStructs based on globals
+  // Create array of LPStructs based on globals and initialize RNG streams
   lp_structs.resize(g_numlp_map(thisIndex));
   for (int i = 0; i < lp_structs.size(); i++) {
     lp_structs[i].owner = this;
@@ -81,15 +81,12 @@ LP::LP() : next_token(this), uniqID(0), cancel_q(NULL),
     lp_structs[i].type  = g_type_map(lp_structs[i].gid);
     lp_structs[i].state = malloc(lp_structs[i].type->state_size);
 
-    // Initialize the RNG streams for each LP
     if (g_tw_rng_default == 1) {
       tw_rand_init_streams(&lp_structs[i], g_tw_nRNG_per_lp);
     }
   }
 
-  // Once all LP Chares have been created and set up, return control to the
-  // ROSS initialization.
-  contribute(CkCallback(CkIndex_LP::stop_scheduler(), thisProxy(0)));
+  contribute(CkCallback(CkReductionTarget(Scheduler,lpsReady), scheduler_proxy));
 }
 
 void LP::load_balance() {

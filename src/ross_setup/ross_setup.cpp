@@ -10,48 +10,26 @@
 #include "avl_tree.h"
 #include "event_buffer.h"
 
-void tw_event_setup() {
-  AvlTree avl_list;
-  int err = posix_memalign((void **)&avl_list, 64, sizeof(struct avlNode) * AVL_NODE_COUNT);
-  memset(avl_list, 0, sizeof(struct avlNode) * AVL_NODE_COUNT);
-  for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
-    avl_list[i].next = &avl_list[i + 1];
-  }
-  avl_list[AVL_NODE_COUNT - 1].next = NULL;
-  PE_VALUE(avl_list_head) = &avl_list[0];
+#include "scheduler.h" // tmp
+#include "mpi-interoperate.h" // tmp
 
-  DEBUG_MASTER("Created AVL tree with %d nodes\n", AVL_NODE_COUNT);
-
-  PE_VALUE(event_buffer) = new EventBuffer(g_tw_max_events_buffered,
-                                           g_tw_max_remote_events_buffered,
-                                           g_tw_msg_sz);
-  PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_abort_event();
-
-  DEBUG_MASTER("Created event buffer with %d events and %d msgs of size %d\n",
-      g_tw_max_events_buffered, g_tw_max_remote_events_buffered, g_tw_msg_sz);
-}
-
-char **CopyArgs(char **argv)
-{
-  int argc=CmiGetArgc(argv);
-  char **ret=(char **)malloc(sizeof(char *)*(argc+1));
-  int i;
-  for (i=0;i<=argc;i++)
-    ret[i]=argv[i];
+char** CopyArgs(int argc, char** argv) {
+  char** ret = new char*[argc];
+  for (int i = 0; i < argc; i++) ret[i]=argv[i];
   return ret;
 }
 
-
-void tw_init(int* argc, char*** argv) {
+void tw_init(int argc, char** tmp_argv) {
   clear_globals();
-  char **charmArg = CopyArgs(*argv);
-  charm_init(*argc, charmArg);
+  charm_init(argc, tmp_argv);
+  char** argv = CopyArgs(argc, tmp_argv);
 
   /** Add all of the command line options before parsing them **/
   static const tw_optdef kernel_options[] = {
     // TODO: Make sure all relevant constants can be set from the command line
     TWOPT_GROUP("ROSS Kernel"),
     TWOPT_UINT("synch", g_tw_synchronization_protocol, "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
+    TWOPT_UINT("gvt", g_tw_gvt_scheme, "GVT Algorithm: SYNC=1, PHASED=2"),
     TWOPT_UINT("expected-events", g_tw_expected_events, "Expected number of net events, tested at the end of a simulation"),
     TWOPT_STIME("end", g_tw_ts_end, "Simulation end timestamp"),
     TWOPT_STIME("lookahead", g_tw_lookahead, "Lookahead for events"),
@@ -74,33 +52,13 @@ void tw_init(int* argc, char*** argv) {
   };
 
   tw_opt_add(kernel_options);
-
-  // Print out command line, version, and time.
-  if (tw_ismaster()) {
-    for (int i = 0; i < *argc; i++) {
-      printf("%s ", (*argv)[i]);
-    }
-    printf("\n\n");
-
-#ifdef ROSS_VERSION
-#if HAVE_CTIME
-    time_t raw_time;
-    time(&raw_time);
-    printf("%s\n", ctime(&raw_time));
-#endif
-    printf("ROSS Revision: %s\n\n", ROSS_VERSION);
-#endif
-  }
-
-  tw_opt_parse(argc, argv);
-  tw_opt_print();
+  tw_opt_parse(&argc, &argv);
+  delete [] argv;
 }
 
 void tw_define_lps(size_t msg_sz, tw_seed* seed) {
   g_tw_msg_sz = msg_sz;
   g_tw_rng_seed = seed;
-
-  tw_event_setup();
 
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
@@ -172,9 +130,8 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
     }
   }
 
-
-  // Print ROSS configuration information
-  if(tw_ismaster()) {
+  // Print out configuration info and create the chares
+  if (tw_ismaster()) {
     printf("========================================\n");
     printf("ROSS Configuration.....................\n");
     printf("   Synch Protocol.........%u\n", g_tw_synchronization_protocol);
@@ -191,10 +148,21 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
     }
     printf("   Buffer size............%u\n", g_tw_max_events_buffered);
     printf("========================================\n\n");
+    switch(g_tw_synchronization_protocol) {
+      case 1:
+        CProxy_SequentialScheduler::ckNew();
+        break;
+      case 2:
+        CProxy_ConservativeScheduler::ckNew();
+        break;
+      case 3:
+        CProxy_OptimisticScheduler::ckNew();
+        break;
+      default:
+        CkAbort("Unknown synchronization protocol\n");
+    }
   }
-
-  // Create the lp chare array and store it in the readonly
-  create_lps();
+  StartCharmScheduler();
 }
 
 void tw_run() {
