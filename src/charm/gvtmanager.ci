@@ -1,6 +1,4 @@
 module gvtmanager {
-  readonly CProxy_GVTManager gvt_manager_proxy;
-
   include "typedefs.h"; // included for Time
   include "completion.h"; //included for Phased GVT
 

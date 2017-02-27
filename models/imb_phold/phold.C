@@ -122,7 +122,7 @@ const tw_optdef app_opt[] =
 int main(int argc, char **argv, char **env) {
   // Add the model specific options, then initialize ROSS and Charm++
   tw_opt_add(app_opt);
-  tw_init(&argc, &argv);
+  tw_init(argc, argv);
 
   // Check for a valid configuration
   if (g_tw_lookahead > 1.0) {

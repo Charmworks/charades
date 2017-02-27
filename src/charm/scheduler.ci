@@ -1,6 +1,4 @@
 module scheduler {
-  readonly CProxy_Scheduler scheduler_proxy;
-
   /** Base scheduler class. All subclasses must implement execute(). */
   group Scheduler {
     entry [notrace] Scheduler();
@@ -10,15 +8,40 @@ module scheduler {
     /** Control flow methods to synchronize initialization */
     entry [notrace,reductiontarget] void gvtManagerReady();
     entry [notrace,reductiontarget] void schedulerReady();
+    entry [notrace,reductiontarget] void lpsReady();
     entry [notrace] void initialize() {
       // TODO: Figure out why this can't be inlined in c-tor
       serial {
         initialize_rand();
+        initialize_events();
       }
-      when schedulerReady(), gvtManagerReady() serial {
-        gvt_manager = gvt_manager_proxy.ckLocalBranch();
-        gvt_manager->set_local_pointers(this);
-        DEBUG_PE("Initialization complete\n");
+      when schedulerReady() serial {
+        DEBUG_MASTER("%s created\n", scheduler_name.c_str());
+        if (CkMyPe() == 0) {
+          switch (g_tw_gvt_scheme) {
+            case 1:
+              CProxy_SyncGVT::ckNew();
+              break;
+            case 2:
+              CProxy_PhaseGVT::ckNew();
+              break;
+            default:
+              CkAbort("Unknown gvt scheme\n");
+          }
+          CProxy_LP::ckNew(g_num_chares);
+        }
+      }
+      overlap {
+        when gvtManagerReady() serial {
+          DEBUG_MASTER("GVT Manager created\n");
+          gvt_manager = gvt_manager_proxy.ckLocalBranch();
+          gvt_manager->set_local_pointers(this);
+        }
+        when lpsReady() serial {
+          DEBUG_MASTER("LPs created\n");
+        }
+      }
+      serial {
         contribute(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
       }
     }

@@ -51,6 +51,7 @@ class Scheduler : public CBase_Scheduler {
     void end_simulation();
 
     void initialize_rand();
+    virtual void initialize_events();
 
     /** Entry method for executing a scheduler iteration */
     virtual void execute();
@@ -161,6 +162,7 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
 
   public:
     OptimisticScheduler();
+    void initialize_events();
     void execute();
     void gvt_resume();
     void gvt_done(Time gvt);

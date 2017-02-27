@@ -25,6 +25,7 @@ void registerGVTReduction(void) {
 
 /* GVTManager FUNCTIONS */
 GVTManager::GVTManager() : curr_gvt(0.0), prev_gvt(0.0) {
+  gvt_manager_proxy = thisProxy;
   contribute(CkCallback(CkReductionTarget(Scheduler, gvtManagerReady), scheduler_proxy));
 }
 
