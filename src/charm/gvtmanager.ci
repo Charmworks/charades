@@ -14,10 +14,16 @@ module gvtmanager {
     entry [notrace,reductiontarget] void gvt_end(Time);
   };
 
-  group PhaseGVT : GVTManager {
-    entry [notrace] PhaseGVT();
+  group CdGVT : GVTManager {
+    entry [notrace] CdGVT();
     entry [notrace] void broadcast_detector_proxies(int num, CProxy_CompletionDetector proxies[num]);
     entry [notrace] void gvt_contribute();
+    entry [notrace,reductiontarget] void gvt_end(Time);
+  };
+
+  group PhaseGVT : GVTManager {
+    entry [notrace] PhaseGVT();
+    entry [notrace, reductiontarget] void check_counts(int, int);
     entry [notrace,reductiontarget] void gvt_end(Time);
   };
 

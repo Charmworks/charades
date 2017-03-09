@@ -57,9 +57,9 @@ class SyncGVT : public CBase_SyncGVT {
     void gvt_end(Time);
 };
 
-class PhaseGVT : public CBase_PhaseGVT {
+class CdGVT : public CBase_CdGVT {
   public:
-    PhaseGVT();
+    CdGVT();
 
     void gvt_begin();
 
@@ -81,6 +81,34 @@ class PhaseGVT : public CBase_PhaseGVT {
     CompletionDetector** detector_pointers;
 
     Time min_sent;
+};
+
+class PhaseGVT : public CBase_PhaseGVT {
+  public:
+    PhaseGVT();
+
+    void gvt_begin();
+
+    void check_counts(int, int);
+
+    void gvt_end(Time);
+
+    void initialize_detectors();
+    //void broadcast_detector_proxies(int, CProxy_CompletionDetector*);
+
+    void consume(RemoteEvent* e);
+    void produce(RemoteEvent* e);
+
+  private:
+
+    unsigned max_phase, producing_phase, next_phase;
+    int gvt_phase_begin, gvt_phase_end;
+    bool* detector_ready;
+    int * sent;
+    int * received;
+    Time*  min_sent;
+
+
 };
 
 #endif
