@@ -148,20 +148,15 @@ void CdGVT::produce(RemoteEvent* e) {
 /* Continuous GVT FUNCTIONS */
 
 PhaseGVT::PhaseGVT() {
+  gvt_name = "Multi-Phase GVT";
   initialize_detectors();
 
 }
 
 void PhaseGVT::initialize_detectors() {
   //max_phase = g_tw_gvt_phases;
-    max_phase = 2;
-/*
-  if (max_phase > 1 && g_tw_synchronization_protocol == CONSERVATIVE) {
-    CkPrintf("WARNING: Cannot have multiple phases in conservative mode.\n");
-    CkPrintf("Setting number of phases to 1\n");
-    max_phase = 1;
-  }
-*/
+  max_phase = 2;
+
   producing_phase = 0;
   next_phase = (producing_phase + 1) % max_phase;
   gvt_phase_begin = -1;
@@ -183,7 +178,6 @@ void PhaseGVT::gvt_begin() {
 
   if(detector_ready[next_phase]) {
 
-    //DEBUG_PE("GVT Switching phases\n");
     min_sent[producing_phase] = DBL_MAX;
     detector_ready[producing_phase] = false;
     if(gvt_phase_begin == -1) {
@@ -206,8 +200,8 @@ void PhaseGVT::gvt_begin() {
       CkCallback(CkReductionTarget(PhaseGVT,check_counts),thisProxy));  
   }
   else {
+  //TODO Add code here for forcing gvts or handling too many gvts?
 
-  //DEBUG_PE("GVT_BEGIN: Next phase not ready\n");
   }
   scheduler->gvt_resume(); 
 
@@ -215,10 +209,8 @@ void PhaseGVT::gvt_begin() {
 
 void PhaseGVT::check_counts(int s, int r) {
 
-  ///DEBUG_PE("CheckCounts reached\n");
   if(s == r) {
 
-  //DEBUG_PE("Sent == Received\n");
     Time min_time = scheduler->get_min_time();
 
     min_time = fmin(min_time, min_sent[gvt_phase_end]); 
@@ -246,7 +238,6 @@ void PhaseGVT::check_counts(int s, int r) {
 
 void PhaseGVT::gvt_end(Time new_gvt) {
 
-  //DEBUG_PE("GVT END\n");
   prev_gvt = curr_gvt;
   curr_gvt = new_gvt;;
   for(int i = gvt_phase_begin; i!= gvt_phase_end; i = (i+1)%max_phase) {
