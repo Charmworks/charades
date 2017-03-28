@@ -20,7 +20,6 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
 
   public:
     OptimisticScheduler();
-    void initialize_events();
     void execute();
     void gvt_resume();
     void gvt_done(Time gvt);
