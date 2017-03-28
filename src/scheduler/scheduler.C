@@ -97,7 +97,8 @@ SequentialScheduler::SequentialScheduler() {
 }
 
 void SequentialScheduler::execute() {
-  CkAbort("SequentialScheduler not yet implemented\n");
+  while (schedule_next_lp());
+  end_simulation();
 }
 
 
