@@ -14,6 +14,7 @@ module gvtmanager {
     entry [notrace,reductiontarget] void gvt_end(Time);
   };
 
+  /** Continuous GVT using Completion Detectors */
   group CdGVT : GVTManager {
     entry [notrace] CdGVT();
     entry [notrace] void broadcast_detector_proxies(int num, CProxy_CompletionDetector proxies[num]);
@@ -21,6 +22,7 @@ module gvtmanager {
     entry [notrace,reductiontarget] void gvt_end(Time);
   };
 
+  /** Continuous GVT without Completion Detectors */
   group PhaseGVT : GVTManager {
     entry [notrace] PhaseGVT();
     entry [notrace, reductiontarget] void check_counts(int, int);
