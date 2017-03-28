@@ -12,10 +12,8 @@ Initialize::Initialize(CkArgMsg *m) {
   CkExit();
 }
 
-char** CopyArgs(int argc, char** argv);
 void charm_init(int argc, char** argv) {
-  char** argv_copy = CopyArgs(argc,argv);
-  CharmInit(argc, argv_copy);
+  CharmInit(argc, argv);
 }
 void charm_exit() {
   CharmLibExit();
