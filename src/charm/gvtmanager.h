@@ -14,7 +14,7 @@ struct GVT {
 };
 
 class RemoteEvent;
-class Scheduler;
+class DistributedScheduler;
 
 class GVTManager : public CBase_GVTManager {
   protected:
@@ -22,7 +22,7 @@ class GVTManager : public CBase_GVTManager {
     Time curr_gvt, prev_gvt;
 
     /** Local pointers to other PE-level objects */
-    Scheduler* scheduler;
+    DistributedScheduler* scheduler;
 
     /** GVT name for output purposes */
     std::string gvt_name;
@@ -38,7 +38,7 @@ class GVTManager : public CBase_GVTManager {
     Time previous_gvt() const { return prev_gvt; }
 
     /** Called by the local PEManager after all groups have been initialized */
-    void set_local_pointers(Scheduler* sched) { scheduler = sched; }
+    virtual void groups_created();
 
     /** Methods for producing and consuming events for GVTs that need to know */
     virtual void consume(RemoteEvent* e) {}

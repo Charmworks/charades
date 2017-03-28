@@ -85,8 +85,6 @@ LP::LP() : next_token(this), uniqID(0), cancel_q(NULL),
       tw_rand_init_streams(&lp_structs[i], g_tw_nRNG_per_lp);
     }
   }
-
-  contribute(CkCallback(CkReductionTarget(Scheduler,lpsReady), scheduler_proxy));
 }
 
 void LP::load_balance() {

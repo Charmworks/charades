@@ -1,11 +1,14 @@
 #include "optimistic.h"
 
 #include "globals.h"
+#include "trigger.h"
 #include "avl_tree.h" // Temporary, should be moved to LP
 #include "ross_setup.h" // Temporary for AVL_NODE_COUNT
 
-OptimisticScheduler::OptimisticScheduler() : trigger(g_tw_gvt_interval) {
+OptimisticScheduler::OptimisticScheduler() {
   scheduler_name = "Optimisitic Scheduler";
+
+  gvt_trigger.reset(new CountTrigger(g_tw_gvt_interval));
 
   // Initialize the cancel queue
   min_cancel_time = DBL_MAX;
@@ -40,23 +43,16 @@ void OptimisticScheduler::execute() {
     }
   }
   process_cancel_q();
-  trigger.iteration_done();
-  if (trigger.ready()) {
-    gvt_manager->gvt_begin();
-  } else {
-    thisProxy[CkMyPe()].execute();
-  }
+  iteration_done();
 }
 
 void OptimisticScheduler::gvt_resume() {
-  thisProxy[CkMyPe()].execute();
-  Scheduler::gvt_resume();
+  next_iteration();
 }
 
 void OptimisticScheduler::gvt_done(Time gvt) {
-  trigger.reset();
   collect_fossils(gvt);
-  Scheduler::gvt_done(gvt);
+  DistributedScheduler::gvt_done(gvt);
 }
 
 /** Call fossil_me on all lps that have fossils older than the current gvt. The
