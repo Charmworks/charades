@@ -13,7 +13,8 @@
 #include "scheduler.h" // tmp
 #include "mpi-interoperate.h" // tmp
 
-char** CopyArgs(int argc, char** argv) {
+char** CopyArgs(int& argc, char** argv) {
+  argc = CmiGetArgc(argv);
   char** ret = new char*[argc];
   for (int i = 0; i < argc; i++) ret[i]=argv[i];
   return ret;
