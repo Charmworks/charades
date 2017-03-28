@@ -17,6 +17,7 @@ class LPToken;
 class PEManager;
 class Globals;
 class Statistics;
+class Trigger;
 
 using std::vector;
 
@@ -26,15 +27,13 @@ class Scheduler : public CBase_Scheduler {
     /** LP queue variables */
     PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
 
-    /** Local pointers to other PE-level objects */
-    GVTManager* gvt_manager;
-
     /** Timer variables TODO: Just move to stats. */
     double start_time;  /**< Start wall time for the simulation */
     double end_time;    /**< End wall time for the simulation */
 
     /** Misc variables */
     tw_rng * rng; /**< ROSS rng stream */
+    bool running; /**< execute() messages are current in-flight or running */
 
     std::string scheduler_name;
 
@@ -46,21 +45,14 @@ class Scheduler : public CBase_Scheduler {
 
     Scheduler();
 
+    virtual void groups_created();
+
     void finalize(CkReductionMsg *m);
     void start_simulation();
     void end_simulation();
 
-
     /** Entry method for executing a scheduler iteration */
     virtual void execute();
-
-    /** Local method which allows the GVT manager to signify LP execution can
-     *  continue without messing up the GVT. The specific scheduler subclasses
-     *  will decide whether or not anything can be done at this point. */
-    virtual void gvt_resume();
-    /** Local method which allows the GVT manager to signify that the GVT is
-     *  comleted with the passed in GVT being the result. */
-    virtual void gvt_done(Time gvt);
 
     /** Calls execute_me() on the next LP in the queue */
     virtual bool schedule_next_lp();
@@ -68,7 +60,6 @@ class Scheduler : public CBase_Scheduler {
     /** Local accessor for getting the minimum time for GVT computation. It may
      *  vary based on the type of scheduler and potentially the type of GVT */
     virtual Time get_min_time() const;
-
 
     /** TODO: Most of the following should be moved to PE manager? */
     virtual void register_lp(LPToken* next_token, Time next_ts) {
@@ -80,12 +71,9 @@ class Scheduler : public CBase_Scheduler {
     virtual void update_next(LPToken* token, Time ts) {
       next_lps.update(token, ts);
     }
-    void consume(RemoteEvent* e) {
-      gvt_manager->consume(e);
-    }
-    void produce(RemoteEvent* e) {
-      gvt_manager->produce(e);
-    }
+
+    virtual void consume(RemoteEvent* e) {}
+    virtual void produce(RemoteEvent* e) {}
     virtual void add_to_cancel_q(LP* lp) {}
     virtual void update_min_cancel(Time ts) {}
 };
@@ -94,6 +82,40 @@ class SequentialScheduler : public CBase_SequentialScheduler {
   public:
     SequentialScheduler();
     void execute();
+};
+
+class DistributedScheduler : public CBase_DistributedScheduler {
+  protected:
+    GVTManager* gvt_manager;  /**< Direct pointer to our local GVT Manager */
+    std::unique_ptr<Trigger> gvt_trigger; /**< Determines when to compute GVT */
+
+    // TODO: This is temporary for GVT printouts
+    double next_threshold;
+
+  public:
+    DistributedScheduler();
+
+    /** Called after all group chares are created */
+    void groups_created();
+
+    /** Local methods for iteration control flow */
+    void iteration_done();
+    void next_iteration();
+
+    /** Local method which allows the GVT manager to signify LP execution can
+     *  continue without messing up the GVT. The specific scheduler subclasses
+     *  will decide whether or not anything can be done at this point. */
+    virtual void gvt_resume();
+    /** Local method which allows the GVT manager to signify that the GVT is
+     *  comleted with the passed in GVT being the result. */
+    virtual void gvt_done(Time gvt);
+
+    void consume(RemoteEvent* e) {
+      gvt_manager->consume(e);
+    }
+    void produce(RemoteEvent* e) {
+      gvt_manager->produce(e);
+    }
 };
 
 #endif

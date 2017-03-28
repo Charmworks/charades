@@ -3,7 +3,7 @@
 
 #include "scheduler.h"
 
-#include "trigger.h"
+#include "lp.h" // Included for LPToken
 
 class OptimisticScheduler : public CBase_OptimisticScheduler {
   private:
@@ -14,11 +14,6 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
     // processing, LB control, and FC. Should maybe even be faster because we
     // won't need to constantly mess with the vector of LPs.
     vector<LP*> cancel_q; /**< list of LPs with events for cancellation */
-
-    // TODO: Maybe this could be a template instead
-    // TODO: For leash with async red or something like that the GVTMan needs a
-    // leash estimate (probably in just holding local min)
-    CountTrigger trigger;
 
   public:
     OptimisticScheduler();

@@ -1,9 +1,11 @@
 #include "conservative.h"
 
 #include "globals.h"
+#include "trigger.h"
 
 ConservativeScheduler::ConservativeScheduler() {
   scheduler_name = "Conservative Scheduler";
+  gvt_trigger.reset(new ConstTrigger(true));
 }
 
 /** Only execute events within 'lookahead' time of current GVT */
@@ -13,6 +15,6 @@ void ConservativeScheduler::execute() {
       break;
     }
   }
-  gvt_manager->gvt_begin();
+  iteration_done();
 }
 
