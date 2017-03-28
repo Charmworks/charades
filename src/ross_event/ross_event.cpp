@@ -63,6 +63,7 @@ void tw_event_free(tw_event *e, bool commit) {
     LPStruct * lp; 
     lp = (LPStruct*)e->dest_lp;
     lp->type->commit(lp->state, &e->cv, tw_event_data(e), lp);
+    PE_STATS(events_committed)++;
   }
   tw_free_output_messages(e, 0);
   charm_free_event(e);

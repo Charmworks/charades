@@ -260,7 +260,6 @@ void LP::rollback_me(Event *event) {
 void LP::fossil_me(tw_stime gvt) {
   Event* e;
   while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
-    PE_STATS(events_committed)++;
     e = processed_events.pop_back();
     tw_event_free(e,true);
   }
