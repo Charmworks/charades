@@ -96,45 +96,4 @@ class SequentialScheduler : public CBase_SequentialScheduler {
     void execute();
 };
 
-// TODO: Change iteration_done to is_ready or something like that
-// TODO: Add gvt_done(gvt) method and maybe one for resume as well...since this
-// is the GVT trigger, signalling it when GVT completes and when iter completes
-// seems reasonable
-// TODO: Make scheduler templated on trigger type. Specialize constructors to
-// read in trigger config from file (along with everything else it needs to read
-// in). Common init can be refactored out of specialized c-tors to regular
-// method.
-// TODO: Leash can set current leash start to DBL max on returning true so async
-// red will allow even exec
-class GVTTrigger {
-  public:
-    virtual void iteration_done() = 0;
-    virtual void gvt_done(Time gvt) = 0;
-    virtual bool is_ready(Time next) const = 0;
-};
-
-class CountTrigger : public GVTTrigger {
-  private:
-    unsigned int iter_cnt, iter_max;
-  public:
-    CountTrigger(unsigned max) : iter_cnt(0), iter_max(max) {}
-    void iteration_done() { iter_cnt++; }
-    void gvt_done(Time gvt) {}
-    bool is_ready(Time next) const {
-      return (iter_cnt % iter_max == 0);
-    }
-};
-
-class LeashTrigger : public GVTTrigger {
-  private:
-    Time leash_start, leash_length;
-  public:
-    LeashTrigger(Time l) : leash_start(0.0), leash_length(l) {}
-    void iteration_done() {}
-    void gvt_done(Time gvt) { leash_start = gvt; }
-    bool is_ready(Time next) const {
-      return (leash_start + leash_length <= next);
-    }
-};
-
 #endif

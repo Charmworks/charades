@@ -4,8 +4,7 @@
 #include "avl_tree.h" // Temporary, should be moved to LP
 #include "ross_setup.h" // Temporary for AVL_NODE_COUNT
 
-OptimisticScheduler::OptimisticScheduler() : trigger(g_tw_gvt_interval),
-                                             min_cancel_time(DBL_MAX) {
+OptimisticScheduler::OptimisticScheduler() : trigger(g_tw_gvt_interval) {
   scheduler_name = "Optimisitic Scheduler";
 
   // Initialize the cancel queue
@@ -42,7 +41,7 @@ void OptimisticScheduler::execute() {
   }
   process_cancel_q();
   trigger.iteration_done();
-  if (trigger.is_ready(get_min_time())) {
+  if (trigger.ready()) {
     gvt_manager->gvt_begin();
   } else {
     thisProxy[CkMyPe()].execute();
@@ -55,7 +54,7 @@ void OptimisticScheduler::gvt_resume() {
 }
 
 void OptimisticScheduler::gvt_done(Time gvt) {
-  trigger.gvt_done(gvt);
+  trigger.reset();
   collect_fossils(gvt);
   Scheduler::gvt_done(gvt);
 }

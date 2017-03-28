@@ -3,6 +3,8 @@
 
 #include "scheduler.h"
 
+#include "trigger.h"
+
 class OptimisticScheduler : public CBase_OptimisticScheduler {
   private:
     Time min_cancel_time; /**< minumum event time in the cancel queue */
