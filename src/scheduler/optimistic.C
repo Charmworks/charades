@@ -7,12 +7,12 @@
 OptimisticScheduler::OptimisticScheduler() : trigger(g_tw_gvt_interval),
                                              min_cancel_time(DBL_MAX) {
   scheduler_name = "Optimisitic Scheduler";
+
+  // Initialize the cancel queue
+  min_cancel_time = DBL_MAX;
   cancel_q.resize(0);
-}
 
-void OptimisticScheduler::initialize_events() {
-  Scheduler::initialize_events();
-
+  // Allocate AVL tree space // TODO: Move this to LPs
   AvlTree avl_list;
   int err = posix_memalign((void **)&avl_list, 64, sizeof(struct avlNode) * AVL_NODE_COUNT);
   memset(avl_list, 0, sizeof(struct avlNode) * AVL_NODE_COUNT);
@@ -21,7 +21,6 @@ void OptimisticScheduler::initialize_events() {
   }
   avl_list[AVL_NODE_COUNT - 1].next = NULL;
   PE_VALUE(avl_list_head) = &avl_list[0];
-
   DEBUG_PE("Created AVL tree with %d nodes\n", AVL_NODE_COUNT);
 }
 

@@ -10,11 +10,6 @@ module scheduler {
     entry [notrace,reductiontarget] void schedulerReady();
     entry [notrace,reductiontarget] void lpsReady();
     entry [notrace] void initialize() {
-      // TODO: Figure out why this can't be inlined in c-tor
-      serial {
-        initialize_rand();
-        initialize_events();
-      }
       when schedulerReady() serial {
         DEBUG_MASTER("%s created\n", scheduler_name.c_str());
         if (CkMyPe() == 0) {

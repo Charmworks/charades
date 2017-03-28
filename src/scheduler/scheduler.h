@@ -50,8 +50,6 @@ class Scheduler : public CBase_Scheduler {
     void start_simulation();
     void end_simulation();
 
-    void initialize_rand();
-    virtual void initialize_events();
 
     /** Entry method for executing a scheduler iteration */
     virtual void execute();

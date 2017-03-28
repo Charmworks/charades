@@ -22,22 +22,20 @@ Scheduler::Scheduler() {
   globals = new Globals();
   stats = new Statistics();
 
-  contribute(CkCallback(CkReductionTarget(Scheduler, schedulerReady), thisProxy));
-  thisProxy[CkMyPe()].initialize();
-}
-
-void Scheduler::initialize_rand() {
-  DEBUG_PE("Random number generator initialized\n");
+  // Initialize rng
   rng = tw_rand_init(31, 41);
-}
 
-void Scheduler::initialize_events() {
+  // Initialize event buffers
   PE_VALUE(event_buffer) = new EventBuffer(g_tw_max_events_buffered,
                                            g_tw_max_remote_events_buffered,
                                            g_tw_msg_sz);
   PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_abort_event();
   DEBUG_PE("Created event buffer with %d events and %d msgs of size %d\n",
       g_tw_max_events_buffered, g_tw_max_remote_events_buffered, g_tw_msg_sz);
+
+  // Contribute to a reduction saying all scheduler instances have been created
+  contribute(CkCallback(CkReductionTarget(Scheduler, schedulerReady), thisProxy));
+  thisProxy[CkMyPe()].initialize();
 }
 
 void Scheduler::start_simulation() {
