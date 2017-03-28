@@ -82,6 +82,7 @@ void Scheduler::execute() {
 void Scheduler::gvt_resume() {}
 
 void Scheduler::gvt_done(Time gvt) {
+  PE_STATS(total_gvts)++;
   if(gvt >= g_tw_ts_end) {
     end_simulation();
   } else {
