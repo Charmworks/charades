@@ -11,13 +11,13 @@
 
 #include <float.h> // Included for DBL_MAX
 
-CProxy_Scheduler scheduler_proxy;
+CkGroupID scheduler_id;
 
 /******************************************************************************/
 /* Scheduler Base Class                                                       */
 /******************************************************************************/
 Scheduler::Scheduler() {
-  scheduler_proxy = thisProxy;
+  scheduler_id = thisgroup;
   globals = new Globals();
   stats = new Statistics();
 
@@ -50,7 +50,7 @@ void Scheduler::groups_created() {
 void Scheduler::start_simulation() {
   start_time = CmiWallTimer();
   running = true;
-  scheduler_proxy[CkMyPe()].execute();
+  thisProxy[CkMyPe()].execute();
 }
 
 void Scheduler::end_simulation() {

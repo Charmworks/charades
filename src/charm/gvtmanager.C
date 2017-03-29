@@ -29,7 +29,7 @@ GVTManager::GVTManager() : curr_gvt(0.0), prev_gvt(0.0) {
 }
 
 void GVTManager::groups_created() {
-  scheduler = (DistributedScheduler*)scheduler_proxy.ckLocalBranch();
+  scheduler = (DistributedScheduler*)CkLocalBranch(scheduler_id);
 }
 
 /* GVT SYNC FUNCTIONS */

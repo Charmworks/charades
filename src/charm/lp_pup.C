@@ -33,7 +33,7 @@ LP::LP(CkMigrateMessage* m) : next_token(this),
                               cancel_q(NULL), min_cancel_q(DBL_MAX),
                               in_pe_queue(false), all_events(0),
                               current_time(0.0), current_event(NULL) {
-  scheduler = scheduler_proxy.ckLocalBranch();
+  scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
 }
 
 void LP::pup(PUP::er& p) {

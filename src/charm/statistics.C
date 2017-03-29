@@ -7,7 +7,7 @@
 #include <math.h>   // Included for fmax/fmin
 
 Statistics* get_statistics() {
-  static Statistics* statistics = scheduler_proxy.ckLocalBranch()->stats;
+  static Statistics* statistics = ((Scheduler*)CkLocalBranch(scheduler_id))->stats;
   return statistics;
 }
 
