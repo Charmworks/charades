@@ -3,39 +3,37 @@
 
 #include "scheduler.decl.h"
 
-#include "typedefs.h"
+#include "gvtmanager.h" // Temporary for produce/consume
 #include "pe_queue.h"
-#include "lp.h" // Temporary for LPToken
-#include "charm_functions.h" // temporary for DEBUG_PE
-#include "gvtmanager.h" // temporary for produce/consume
+#include "typedefs.h"
 
 extern CkGroupID scheduler_id;
 
-class RemoteEvent;
+class Globals;
 class LP;
 class LPToken;
-class PEManager;
-class Globals;
+class RemoteEvent;
 class Statistics;
 class Trigger;
+class tw_rng;
 
-using std::vector;
+using std::string;
 
+/**
+ * Base class defining basic scheduler functionality. This requires keeping a
+ * heap of LPs ordered by next event, methods for updating this heap, the
+ * ability to execute events on these LPs, and basic statistics and global
+ * variable management.
+ */
 class Scheduler : public CBase_Scheduler {
-  Scheduler_SDAG_CODE
   protected:
-    /** LP queue variables */
-    PEQueue next_lps;   /**< queue storing LPTokens ordered by next execution */
+    string scheduler_name;  /**< Name of scheduler for print outs */
+    bool   running;         /**< True if there are active execute() messages */
+    double start_time;      /**< Start wall time for the simulation */
+    double end_time;        /**< End wall time for the simulation */
 
-    /** Timer variables TODO: Just move to stats. */
-    double start_time;  /**< Start wall time for the simulation */
-    double end_time;    /**< End wall time for the simulation */
-
-    /** Misc variables */
-    tw_rng * rng; /**< ROSS rng stream */
-    bool running; /**< execute() messages are current in-flight or running */
-
-    std::string scheduler_name;
+    PEQueue next_lps; /**< queue storing LPTokens ordered by next event ts */
+    tw_rng * rng;     /**< ROSS rng stream */
 
   public:
     // TODO: Globals may not be needed once event handling is moved to scheduler
@@ -45,23 +43,24 @@ class Scheduler : public CBase_Scheduler {
 
     Scheduler();
 
+    /** Entry method triggered by QD when all group chares are created */
     virtual void groups_created();
 
-    void finalize(CkReductionMsg *m);
-    void start_simulation();
-    void end_simulation();
+    /** Methods for starting and stopping the entire simulation */
+    void start_simulation();  /**< Sets initial state and calls execute() */
+    void end_simulation();    /**< Starts stats reduction */
+    void finalize(CkReductionMsg *m); /**< Receives stats reduction and exits */
+
+    /** Calls execute_me() on the next LP in the queue */
+    bool schedule_next_lp();
+
+    /** Get the minimum time of any event on this PE */
+    virtual Time get_min_time() const;
 
     /** Entry method for executing a scheduler iteration */
     virtual void execute();
 
-    /** Calls execute_me() on the next LP in the queue */
-    virtual bool schedule_next_lp();
-
-    /** Local accessor for getting the minimum time for GVT computation. It may
-     *  vary based on the type of scheduler and potentially the type of GVT */
-    virtual Time get_min_time() const;
-
-    /** TODO: Most of the following should be moved to PE manager? */
+    /** Update the queue of LPs that are local to this PE */
     virtual void register_lp(LPToken* next_token, Time next_ts) {
       next_lps.insert(next_token, next_ts);
     }
@@ -72,18 +71,31 @@ class Scheduler : public CBase_Scheduler {
       next_lps.update(token, ts);
     }
 
+    // TODO: Move to distributed/optimistic
     virtual void consume(RemoteEvent* e) {}
     virtual void produce(RemoteEvent* e) {}
     virtual void add_to_cancel_q(LP* lp) {}
     virtual void update_min_cancel(Time ts) {}
 };
 
+/**
+ * Concrete type for sequential schedulers. Only can be run for one PE, executes
+ * the entire simulation in a single iteration, and doesn't need to worry about
+ * GVT, migration, rollback, or cancellation.
+ */
 class SequentialScheduler : public CBase_SequentialScheduler {
   public:
     SequentialScheduler();
     void execute();
 };
 
+/**
+ * Concrete base class for distributed schedulers. Unlike a sequential scheduler
+ * distributed schedulers need to worry about GVTs, and load balancing. Because
+ * of this, execution is broken up into iterations. Each iteration is a call to
+ * execute() and we need to ensure that no more than one execute() message is
+ * ever in flight.
+ */
 class DistributedScheduler : public CBase_DistributedScheduler {
   protected:
     GVTManager* gvt_manager;  /**< Direct pointer to our local GVT Manager */
@@ -108,14 +120,11 @@ class DistributedScheduler : public CBase_DistributedScheduler {
     void start_balancing();
     void balancing_complete();
 
-    /** Local method which allows the GVT manager to signify LP execution can
-     *  continue without messing up the GVT. The specific scheduler subclasses
-     *  will decide whether or not anything can be done at this point. */
-    virtual void gvt_resume();
-    /** Local method which allows the GVT manager to signify that the GVT is
-     *  comleted with the passed in GVT being the result. */
-    virtual void gvt_done(Time gvt);
+    /** Methods called by the GVT Manager signifying the scheduler may resume */
+    virtual void gvt_resume();        /**< Called when LPs can unblock */
+    virtual void gvt_done(Time gvt);  /**< Called when GVT is complete */
 
+    /** Methods informing the GVT Manager about incoming/outgoing events */
     void consume(RemoteEvent* e) {
       gvt_manager->consume(e);
     }

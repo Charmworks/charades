@@ -1,12 +1,12 @@
 #include "scheduler.h"
 
 #include "charm_functions.h"
+#include "event_buffer.h"
+#include "globals.h"
 #include "gvtmanager.h"
 #include "lp.h"
 #include "ross.h"
-#include "globals.h"
 #include "ross_random.h"
-#include "event_buffer.h"
 #include "trigger.h"
 
 #include <float.h> // Included for DBL_MAX
@@ -27,7 +27,7 @@ Scheduler::Scheduler() {
   // Initialize rng
   rng = tw_rand_init(31, 41);
 
-  // Initialize event buffers
+  // Initialize event buffer
   PE_VALUE(event_buffer) = new EventBuffer(g_tw_max_events_buffered,
                                            g_tw_max_remote_events_buffered,
                                            g_tw_msg_sz);
@@ -67,7 +67,7 @@ void Scheduler::finalize(CkReductionMsg* msg) {
   CkExit();
 }
 
-/** Pull the next LP from the queue and have it execute an event */
+/** Attempt to execute the next LPs next event, returning false if it fails */
 bool Scheduler::schedule_next_lp() {
   LPToken *min = next_lps.top();
   if(min == NULL) return false;
@@ -79,8 +79,8 @@ bool Scheduler::schedule_next_lp() {
   }
 }
 
-/** Return the minimum LP time on this PE */
-// TODO: Keep a "current_time" var per PE and update it when update_next happens
+// TODO: Could this be stored in a member variable and updated consistenly?
+/** Return the time of the minimum unexecuted event on this PE */
 Time Scheduler::get_min_time() const {
   return next_lps.top() != NULL ? next_lps.top()->ts : DBL_MAX;
 }
@@ -106,15 +106,7 @@ void SequentialScheduler::execute() {
 /* Distributed Scheduler                                                      */
 /******************************************************************************/
 DistributedScheduler::DistributedScheduler() {
-#if CMK_TRACE_ENABLED
-  if (g_tw_stat_interval > 0) {
-    cumulative_stats = new Statistics();
-    stats->init_tracing();
-    stat_trigger.reset(new CountTrigger(g_tw_stat_interval));
-  } else {
-    stat_trigger.reset(new ConstTrigger(false));
-  }
-#endif
+  // Create the correct GVT Manager, which will be created before QD triggers
   if (CkMyPe() == 0) {
     switch (g_tw_gvt_scheme) {
       case 1:
@@ -127,6 +119,8 @@ DistributedScheduler::DistributedScheduler() {
         CkAbort("Unknown gvt scheme\n");
     }
   }
+
+  // Set up the load balancing trigger
   if (g_tw_ldb_interval > 0) {
     lb_trigger.reset(new CountTrigger(g_tw_ldb_interval));
     if (g_tw_max_ldb > 0) {
@@ -135,16 +129,31 @@ DistributedScheduler::DistributedScheduler() {
   } else {
     lb_trigger.reset(new ConstTrigger(false));
   }
+
+  // Set up the statistics logging trigger
+#if CMK_TRACE_ENABLED
+  if (g_tw_stat_interval > 0) {
+    cumulative_stats = new Statistics();
+    stats->init_tracing();
+    stat_trigger.reset(new CountTrigger(g_tw_stat_interval));
+  } else {
+    stat_trigger.reset(new ConstTrigger(false));
+  }
+#endif
 }
 
+/** Called by QD, which now also includes GVT Manager creation */
 void DistributedScheduler::groups_created() {
-  // Grab local pointers to GVT manager, and inform the manager that groups are
-  // created, then do call the super class method.
   gvt_manager = gvt_manager_proxy.ckLocalBranch();
   gvt_manager->groups_created();
   Scheduler::groups_created();
 }
 
+/**
+ * Helper method that should be called at the end of every scheduler iteration.
+ * It checks the GVT trigger to see if we need to compute a GVT, and continues
+ * the scheduler otherwise.
+ */
 void DistributedScheduler::iteration_done() {
   running = false;
   gvt_trigger->iteration_done();
@@ -157,6 +166,11 @@ void DistributedScheduler::iteration_done() {
   }
 }
 
+/**
+ * Helper method for starting the next scheduler iteration. It ensures that an
+ * iteration will not start if an iteration is already running or if we are
+ * going to do load balancing this iteration after the current iteration.
+ */
 void DistributedScheduler::next_iteration() {
   if (!running && !lb_trigger->ready()) {
     running = true;
@@ -164,8 +178,16 @@ void DistributedScheduler::next_iteration() {
   }
 }
 
+/** By default, don't allow LP execution to overlap with GVT computation */
 void DistributedScheduler::gvt_resume() {}
 
+/**
+ * After a GVT completes there are a number of things to check:
+ * The stat_trigger determines if we should log stats
+ * The lb_trigger determines if we should load balance before the next iteration
+ * The computed GVT determines if we are past the end time and the sim is over
+ * If none of the above are true, then just start the next iteration
+ */
 void DistributedScheduler::gvt_done(Time gvt) {
   PE_STATS(total_gvts)++;
   PE_VALUE(g_last_gvt) = gvt;
@@ -189,6 +211,7 @@ void DistributedScheduler::gvt_done(Time gvt) {
   }
 }
 
+/** Tell every local LP to start load balancing */
 void DistributedScheduler::start_balancing() {
   if (running) CkAbort("Can't balance while runnning\n");
   DEBUG_PE("Starting to load balancing\n");
@@ -197,6 +220,7 @@ void DistributedScheduler::start_balancing() {
   }
 }
 
+/** After load balancing completes we can do the next scheduler iteration */
 void DistributedScheduler::balancing_complete() {
   DEBUG_PE("Load balancing complete\n");
   lb_trigger->reset();
