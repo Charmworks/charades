@@ -20,6 +20,7 @@ Scheduler::Scheduler() {
   scheduler_id = thisgroup;
   globals = new Globals();
   stats = new Statistics();
+  cumulative_stats = stats;
 
   running = false;
 
@@ -55,8 +56,8 @@ void Scheduler::start_simulation() {
 
 void Scheduler::end_simulation() {
   end_time = CmiWallTimer();
-  stats->total_time = end_time - start_time;
-  contribute(sizeof(Statistics), stats, statsReductionType,
+  cumulative_stats->total_time = end_time - start_time;
+  contribute(sizeof(Statistics), cumulative_stats, statsReductionType,
       CkCallback(CkIndex_Scheduler::finalize(NULL), thisProxy[0]));
 }
 
@@ -105,6 +106,15 @@ void SequentialScheduler::execute() {
 /* Distributed Scheduler                                                      */
 /******************************************************************************/
 DistributedScheduler::DistributedScheduler() {
+#if CMK_TRACE_ENABLED
+  if (g_tw_stat_interval > 0) {
+    cumulative_stats = new Statistics();
+    stats->init_tracing();
+    stat_trigger.reset(new CountTrigger(g_tw_stat_interval));
+  } else {
+    stat_trigger.reset(new ConstTrigger(false));
+  }
+#endif
   if (CkMyPe() == 0) {
     switch (g_tw_gvt_scheme) {
       case 1:
@@ -159,6 +169,17 @@ void DistributedScheduler::gvt_resume() {}
 void DistributedScheduler::gvt_done(Time gvt) {
   PE_STATS(total_gvts)++;
   PE_VALUE(g_last_gvt) = gvt;
+#if CMK_TRACE_ENABLED
+  stat_trigger->iteration_done();
+  // TODO: Should the gvt >= check be done here? or should we just update cumulative in end_sched
+  if (stat_trigger->ready() || (g_tw_stat_interval && gvt >= g_tw_ts_end)) {
+    cumulative_stats->add(stats);
+    stats->log_tracing(cumulative_stats->total_gvts);
+    stats->clear();
+    stat_trigger->reset();
+  }
+#endif
+
   if(gvt >= g_tw_ts_end) {
     end_simulation();
   } else if (lb_trigger->ready()) {

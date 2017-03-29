@@ -193,7 +193,7 @@ void Statistics::print() const {
   print_int("Fossil Collect Calls", fossil_collect_calls);
 }
 
-#ifdef CMK_TRACE_ENABLED
+#if CMK_TRACE_ENABLED
 void Statistics::init_tracing() {
     EVENTS_EXECUTED = traceRegisterUserStat("Events executed", -1);
     EVENTS_COMMITTED = traceRegisterUserStat("Events committed", -1);
