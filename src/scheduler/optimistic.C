@@ -1,13 +1,14 @@
 #include "optimistic.h"
 
+#include "avl_tree.h"   // Temporary, should be moved to LP
 #include "globals.h"
-#include "trigger.h"
-#include "avl_tree.h" // Temporary, should be moved to LP
 #include "ross_setup.h" // Temporary for AVL_NODE_COUNT
+#include "trigger.h"
 
 OptimisticScheduler::OptimisticScheduler() {
   scheduler_name = "Optimisitic Scheduler";
 
+  // Set up the appropriate GVT trigger
   if (g_tw_gvt_trigger == 1) {
     gvt_trigger.reset(new CountTrigger(g_tw_gvt_interval));
   } else if (g_tw_gvt_trigger == 2) {
@@ -61,16 +62,7 @@ void OptimisticScheduler::gvt_done(Time gvt) {
   DistributedScheduler::gvt_done(gvt);
 }
 
-/** Call fossil_me on all lps that have fossils older than the current gvt. The
- *  oldest_lps queue ensures we will only call fossil_me on lps that need it. */
 void OptimisticScheduler::collect_fossils(Time gvt) {
-  /*LPToken *min = oldest_lps.top();
-  while((min != NULL) && (min->ts < gvt)) {
-    PE_STATS(fossil_collect_calls)++;
-    min->lp->fossil_me(gvt);
-    min = oldest_lps.top();
-  }*/
-  //iterate over all lps and fossil collect
   for (int i = 0; i < next_lps.get_size(); i++) {
     next_lps.as_array()[i]->lp->fossil_me(gvt);
   }
