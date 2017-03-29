@@ -43,4 +43,18 @@ class CountTrigger : public Trigger {
     bool ready() const { return iter_cnt == iter_max; }
 };
 
+// TODO: What do to on resume before GVT is computed?
+class LeashTrigger : public Trigger {
+  private:
+    Scheduler* scheduler;
+    Time leash;
+  public:
+    LeashTrigger(Scheduler* sched, Time l) : scheduler(sched), leash(l) {}
+    void iteration_done() {}
+    void reset() {}
+    bool ready() const {
+      return scheduler->get_min_time() > scheduler->globals->g_last_gvt + leash;
+    }
+};
+
 #endif
