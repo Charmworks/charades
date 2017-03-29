@@ -65,7 +65,7 @@ LP::LP() : next_token(this), uniqID(0), cancel_q(NULL),
   usesAtSync = true;
 
   // Cache the pointer to the local PE chare
-  scheduler = scheduler_proxy.ckLocalBranch();
+  scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
 
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.

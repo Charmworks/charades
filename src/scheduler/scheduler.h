@@ -9,7 +9,7 @@
 #include "charm_functions.h" // temporary for DEBUG_PE
 #include "gvtmanager.h" // temporary for produce/consume
 
-extern CProxy_Scheduler scheduler_proxy;
+extern CkGroupID scheduler_id;
 
 class RemoteEvent;
 class LP;

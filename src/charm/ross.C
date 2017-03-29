@@ -19,7 +19,7 @@ void charm_exit() {
   CharmLibExit();
 }
 void charm_run() {
-  scheduler_proxy.ckLocalBranch()->start_simulation();
+  ((Scheduler*)CkLocalBranch(scheduler_id))->start_simulation();
   StartCharmScheduler();
 }
 

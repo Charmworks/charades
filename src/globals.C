@@ -73,6 +73,6 @@ void clear_globals() {
 }
 
 Globals* get_globals() {
-  static Globals* globals = scheduler_proxy.ckLocalBranch()->globals;
+  static Globals* globals = ((Scheduler*)CkLocalBranch(scheduler_id))->globals;
   return globals;
 }
