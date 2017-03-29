@@ -8,7 +8,13 @@
 OptimisticScheduler::OptimisticScheduler() {
   scheduler_name = "Optimisitic Scheduler";
 
-  gvt_trigger.reset(new CountTrigger(g_tw_gvt_interval));
+  if (g_tw_gvt_trigger == 1) {
+    gvt_trigger.reset(new CountTrigger(g_tw_gvt_interval));
+  } else if (g_tw_gvt_trigger == 2) {
+    gvt_trigger.reset(new LeashTrigger(this, g_tw_gvt_interval));
+  } else {
+    CkAbort("Bad trigger value\n");
+  }
 
   // Initialize the cancel queue
   min_cancel_time = DBL_MAX;

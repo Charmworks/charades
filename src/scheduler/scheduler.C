@@ -149,6 +149,7 @@ void DistributedScheduler::gvt_resume() {}
 
 void DistributedScheduler::gvt_done(Time gvt) {
   PE_STATS(total_gvts)++;
+  PE_VALUE(g_last_gvt) = gvt;
   if(gvt >= g_tw_ts_end) {
     end_simulation();
   } else {

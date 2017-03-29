@@ -15,14 +15,13 @@ extern unsigned g_tw_expected_events;
 extern tw_stime g_tw_ts_end;       // end time of simulation
 extern unsigned g_tw_mblock;       // number of events per gvt interval
 extern unsigned g_tw_gvt_interval; // number of intervals per gvt
+extern unsigned g_tw_gvt_trigger;  // GVT trigger type
 extern unsigned g_tw_gvt_phases;   // number of phases in the gvt
-extern unsigned g_tw_greedy_start; // whether or not we greedily start the gvt
 extern unsigned g_tw_async_reduction; // allow GVT rdn and event exec overlap
 extern unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 extern unsigned g_tw_max_ldb;      // number of intervals to wait before ldb
 extern unsigned g_tw_stat_interval;// number of gvts between logging stats
 extern tw_stime g_tw_lookahead;    // event lookahead for conservative
-extern tw_stime g_tw_leash;        // GVT leash for optimistic
 extern double   gvt_print_interval; // determines frequency of progress print outs
 extern tw_seed* g_tw_rng_seed;
 extern size_t   g_tw_rng_max;
@@ -40,17 +39,13 @@ class EventBuffer;
 // struct will be held by each PE group chare.
 class Globals {
   public:
-    // Not read onlies
-    tw_stime g_last_gvt;        // used for rollback purposes // TODO: Store in GVT or optimistic?
-    double  percent_complete;   // current progress through simulation
-
+    Time g_last_gvt;            // TODO: Needed for rollbacks, but should be moved
     // Differs by PE
     tw_event*     abort_event;  // TODO: Can this just be part of event buffer? Do we need this at all even?
     EventBuffer*  event_buffer; // TODO: Move to scheduler
     AvlTree       avl_list_head;      // TODO: Move to optimistic scheduler or maybe even LP, experiment with unordered_map
 
-    Globals() : g_last_gvt(0.0), percent_complete(0.0),
-                abort_event(NULL), event_buffer(NULL), avl_list_head(NULL) {}
+    Globals() : abort_event(NULL), event_buffer(NULL), avl_list_head(NULL) {}
 };
 
 void clear_globals();
