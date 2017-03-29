@@ -22,7 +22,7 @@ void tw_abort(const char* error);
 #define USER_STAT_ROLLED_BACK 1009
 #define USER_STAT_EXECUTED 1010
 
-#ifdef CMK_TRACE_ENABLED
+#if CMK_TRACE_ENABLED
 #define BRACKET_TRACE(code,event) \
 double start = CmiWallTimer(), end; \
 code \

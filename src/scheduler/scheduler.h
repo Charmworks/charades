@@ -38,10 +38,10 @@ class Scheduler : public CBase_Scheduler {
     std::string scheduler_name;
 
   public:
-    /** "Global" variables per PE */
-    Globals* globals;
-    /** Stats for the scheduler */
-    Statistics* stats;
+    // TODO: Globals may not be needed once event handling is moved to scheduler
+    Globals* globals;             /**< Global variables per PE */
+    Statistics* stats;            /**< Statistics for current stat interval */
+    Statistics* cumulative_stats; /**< Cumulative stats over all intervals */
 
     Scheduler();
 
@@ -90,9 +90,9 @@ class DistributedScheduler : public CBase_DistributedScheduler {
 
     std::unique_ptr<Trigger> gvt_trigger; /**< Determines when to compute GVT */
     std::unique_ptr<Trigger> lb_trigger;  /**< Determines when to do LB */
-
-    // TODO: This is temporary for GVT printouts
-    double next_threshold;
+#if CMK_TRACE_ENABLED
+    std::unique_ptr<Trigger> stat_trigger;  /**< Determines when to log stats */
+#endif
 
   public:
     DistributedScheduler();

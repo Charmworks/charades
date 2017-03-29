@@ -5,6 +5,22 @@
 
 #include <charm++.h>
 
+// TODO plan for Statistics:
+// Make modular statistics:
+// - A composite statistics class for adding multiple stats modules
+// - Stats modules for relvant bits (ie: GVT specific, scheduler specific, etc)
+// - Where are the top level stats kept?
+//
+// Make loggable stats:
+// - Move the idea of cumulative stats and regular stats to within this class
+// - If tracing enabled, have a private cumulative stats
+// - When logging is called, log, dump to cumulative, and clear
+// - Perhaps add a finalize or some way to use cumulative stats at the end
+//  - This might actually copy the stats over
+//  - It may also return a pointer (either this, or cumulative depending)
+//
+//  More stats, and more stats logging
+
 // A struct for holding PE level statistics
 // Two instances of this will be on each PE, one for stats for the current GVT
 // period, and one for the accumulated stats for the whole run.
@@ -56,7 +72,7 @@ class Statistics {
   void print_double(const char*, double) const;
   void print() const;
 
-#ifdef CMK_TRACE_ENABLED
+#if CMK_TRACE_ENABLED
   int EVENTS_EXECUTED;
   int EVENTS_COMMITTED;
   int EVENTS_ROLLED_BACK;
