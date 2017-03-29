@@ -117,6 +117,14 @@ DistributedScheduler::DistributedScheduler() {
         CkAbort("Unknown gvt scheme\n");
     }
   }
+  if (g_tw_ldb_interval > 0) {
+    lb_trigger.reset(new CountTrigger(g_tw_ldb_interval));
+    if (g_tw_max_ldb > 0) {
+      lb_trigger.reset(new BoundedTrigger(lb_trigger.release(), g_tw_max_ldb));
+    }
+  } else {
+    lb_trigger.reset(new ConstTrigger(false));
+  }
 }
 
 void DistributedScheduler::groups_created() {
@@ -133,13 +141,14 @@ void DistributedScheduler::iteration_done() {
   if (gvt_trigger->ready()) {
     gvt_manager->gvt_begin();
     gvt_trigger->reset();
+    lb_trigger->iteration_done();
   } else {
     next_iteration();
   }
 }
 
 void DistributedScheduler::next_iteration() {
-  if (!running) {
+  if (!running && !lb_trigger->ready()) {
     running = true;
     thisProxy[CkMyPe()].execute();
   }
@@ -152,9 +161,25 @@ void DistributedScheduler::gvt_done(Time gvt) {
   PE_VALUE(g_last_gvt) = gvt;
   if(gvt >= g_tw_ts_end) {
     end_simulation();
+  } else if (lb_trigger->ready()) {
+    start_balancing();
   } else {
     next_iteration();
   }
+}
+
+void DistributedScheduler::start_balancing() {
+  if (running) CkAbort("Can't balance while runnning\n");
+  DEBUG_PE("Starting to load balancing\n");
+  for (int i = 0; i < next_lps.get_size(); i++) {
+    next_lps.as_array()[i]->lp->load_balance();
+  }
+}
+
+void DistributedScheduler::balancing_complete() {
+  DEBUG_PE("Load balancing complete\n");
+  lb_trigger->reset();
+  next_iteration();
 }
 
 #include "conservative.h"

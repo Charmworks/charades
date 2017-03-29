@@ -42,7 +42,7 @@ struct LPToken {
     friend class PEQueue;
     friend class PE;
     friend class Scheduler;
-    friend class GVTManager;
+    friend class DistributedScheduler;
     friend class OptimisticScheduler;
 };
 
