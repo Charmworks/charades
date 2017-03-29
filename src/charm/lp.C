@@ -92,8 +92,9 @@ void LP::load_balance() {
 }
 
 void LP::ResumeFromSync() {
-  // TODO: This doens't have to be a broadcast
-  //contribute(CkCallback(CkReductionTarget(PE, load_balance_complete), scheduler));
+  contribute(
+      CkCallback(CkReductionTarget(DistributedScheduler, balancing_complete),
+                 CProxy_DistributedScheduler(scheduler_id)));
 }
 
 // Call init on all LPs then stop the charm scheduler.

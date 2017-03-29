@@ -87,7 +87,9 @@ class SequentialScheduler : public CBase_SequentialScheduler {
 class DistributedScheduler : public CBase_DistributedScheduler {
   protected:
     GVTManager* gvt_manager;  /**< Direct pointer to our local GVT Manager */
+
     std::unique_ptr<Trigger> gvt_trigger; /**< Determines when to compute GVT */
+    std::unique_ptr<Trigger> lb_trigger;  /**< Determines when to do LB */
 
     // TODO: This is temporary for GVT printouts
     double next_threshold;
@@ -101,6 +103,10 @@ class DistributedScheduler : public CBase_DistributedScheduler {
     /** Local methods for iteration control flow */
     void iteration_done();
     void next_iteration();
+
+    /** Methods for load balancing synchronization */
+    void start_balancing();
+    void balancing_complete();
 
     /** Local method which allows the GVT manager to signify LP execution can
      *  continue without messing up the GVT. The specific scheduler subclasses

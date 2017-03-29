@@ -13,6 +13,7 @@ module scheduler {
 
   group DistributedScheduler : Scheduler {
     entry [notrace] DistributedScheduler();
+    entry [notrace,reductiontarget] void balancing_complete();
   };
 
   group ConservativeScheduler : DistributedScheduler {
