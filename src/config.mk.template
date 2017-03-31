@@ -13,7 +13,7 @@ LFLAGS = -module completion
 #CFLAGS += -qmaxmem=-1 -qipa=level=2
 
 # SUB DIRECTORY COMPILATION SETUP
-SUB_DIRS = charm collections ross_setup ross_opts ross_util ross_rand ross_event ross_maps
+SUB_DIRS = charm collections scheduler ross_setup ross_opts ross_util ross_rand ross_event ross_maps
 INCLUDES = -I$(ROSS_SRC) $(addprefix -I$(ROSS_SRC)/, $(SUB_DIRS))
 CFLAGS  += $(INCLUDES)
 

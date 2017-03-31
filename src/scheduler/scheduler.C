@@ -115,6 +115,10 @@ DistributedScheduler::DistributedScheduler() {
       case 2:
         CProxy_PhaseGVT::ckNew();
         break;
+      case 3:
+        CProxy_BucketGVT::ckNew();
+        break;
+
       default:
         CkAbort("Unknown gvt scheme\n");
     }
