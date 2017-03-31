@@ -5,6 +5,8 @@
 
 #include "lp.h" // Included for LPToken
 
+using std::vector;
+
 class OptimisticScheduler : public CBase_OptimisticScheduler {
   private:
     // TODO: Do we need a separate cancel queue, or can we treat it like FC?
