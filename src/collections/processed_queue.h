@@ -1,9 +1,9 @@
 #ifndef PROCESSED_QUEUE
 #define PROCESSED_QUEUE
 
-#include "typedefs.h"
 #include "event.h"
-#include "ross_util.h"
+//#include "ross_util.h"
+#include "typedefs.h"
 
 #include <float.h>  // Included for DBL_MAX
 

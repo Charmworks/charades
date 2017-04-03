@@ -1,9 +1,12 @@
-#include "typedefs.h"
 #include "event.h"
+#include "typedefs.h"
 
 /* Copied and modified from http://pine.cs.yale.edu/pinewiki/C/AvlTree google cache */
-
 /* implementation of an AVL tree with explicit heights */
+
+#ifndef AVL_NODE_COUNT
+#define AVL_NODE_COUNT 262144
+#endif
 
 struct avlNode {
   struct avlNode *child[2];    /* left and right */

@@ -3,10 +3,6 @@
 
 #include "typedefs.h"
 
-#ifndef AVL_NODE_COUNT
-#define AVL_NODE_COUNT 262144
-#endif
-
 #ifndef NUM_OUT_MESG
 #define NUM_OUT_MESG 2000
 #endif

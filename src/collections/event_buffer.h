@@ -1,10 +1,10 @@
 #ifndef EVENT_BUFFER_H
 #define EVENT_BUFFER_H
 
-#include "ross_util.h"
 #include "event.h"
+#include "ross_util.h"  // Included for tw_error
 
-#include <stdio.h> // Included for size_t
+#include <stdio.h>      // Included for size_t
 #include <assert.h>
 
 struct MemoryStats {
