@@ -1,4 +1,4 @@
-mainmodule ross {
+mainmodule charm_setup {
   readonly CProxy_Initialize mainProxy;
   /** \brief Main chare that initializes pes */
   mainchare Initialize {

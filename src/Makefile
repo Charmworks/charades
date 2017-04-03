@@ -32,5 +32,5 @@ $(BUILD_DIR)/%.o: %.C $(MODULES)
 	$(CHARMC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR) *.decl.h *.def.h
+	rm -rf *.decl.h *.def.h $(OBJS) $(BUILD_DIR)/libross.a
 	for dir in $(SUB_DIRS); do make -C $${dir} clean; done

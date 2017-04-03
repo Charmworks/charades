@@ -1,4 +1,4 @@
-#include "ross.h"
+#include "charm_setup.h"
 #include "scheduler.h"
 #include "gvtmanager.h"
 #include "ross_opts.h"
@@ -37,4 +37,4 @@ void tw_abort(const char* error) {
   CkAbort(error);
 }
 
-#include "ross.def.h"
+#include "charm_setup.def.h"
