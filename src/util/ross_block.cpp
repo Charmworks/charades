@@ -1,4 +1,5 @@
 #include "ross_block.h"
+
 #include "globals.h"
 
 // TODO: Map verification code

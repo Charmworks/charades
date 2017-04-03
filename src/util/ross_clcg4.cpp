@@ -1,8 +1,8 @@
 #include "ross_clcg4.h"
-#include "ross_util.h"
 
 #include "globals.h"
 #include "lp.h"
+#include "ross_util.h"
 
 #include <stdlib.h> // Included for calloc
 

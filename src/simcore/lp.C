@@ -1,20 +1,18 @@
 #include "lp.h"
-#include "scheduler.h"
+
+#include "avl_tree.h"
+#include "charm_functions.h"
 #include "event.h"
-
 #include "globals.h"
-#include "ross_api.h"   // TODO: Why do we need this
-
+#include "mpi-interoperate.h"
+#include "scheduler.h"
+#include "statistics.h"
 #include "ross_util.h"
 #include "ross_random.h"
 #include "ross_clcg4.h"
 
-#include "avl_tree.h"
-
-#include "mpi-interoperate.h"
-
-#include <float.h>
 #include <assert.h>
+#include <float.h>
 
 CProxy_LP lps;
 int isLpSet = 0;

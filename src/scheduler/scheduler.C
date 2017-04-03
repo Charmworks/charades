@@ -7,6 +7,7 @@
 #include "gvtmanager.h"
 #include "lp.h"
 #include "ross_random.h"
+#include "statistics.h"
 #include "trigger.h"
 
 #include <float.h> // Included for DBL_MAX
