@@ -1,7 +1,6 @@
 #ifndef EVENT_BUFFER_H
 #define EVENT_BUFFER_H
 
-#include "ross_event.h"
 #include "ross_util.h"
 #include "event.h"
 

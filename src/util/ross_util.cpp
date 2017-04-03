@@ -1,8 +1,7 @@
 #include "ross_util.h"
-#include "ross_event.h"
+#include "event.h"
 
 #include "charm_functions.h"
-#include "charm_api.h"
 #include "globals.h"
 
 // Included for va_start etc.
@@ -164,6 +163,7 @@ void tw_stats(Statistics *s) {
  */
 int tw_output(tw_lp *lp, const char *fmt, ...) {
   int ret = 0;
+#if 0
   va_list ap;
   tw_event *cev;
   tw_out *temp;
@@ -198,6 +198,7 @@ int tw_output(tw_lp *lp, const char *fmt, ...) {
   } else {
     tw_printf(TW_LOC, "Message may be too large?");
   }
+#endif
 
   return ret;
 }

@@ -5,7 +5,7 @@
 #include "ross_util.h"
 
 #include "charm_functions.h"
-#include "charm_api.h"
+#include "lp.h"
 #include "globals.h"
 #include "avl_tree.h"
 #include "event_buffer.h"

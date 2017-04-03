@@ -25,8 +25,6 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "charm_api.h"
-
 // Macros for tree manipulation
 #define UP(t)   ((t)->up)
 #define UPUP(t)   ((t)->up->up)
@@ -44,7 +42,6 @@
 
 #include "pending_queue.h"
 
-#include "ross_event.h"
 #include "ross_util.h"
 
 #include "event.h"

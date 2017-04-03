@@ -11,9 +11,7 @@
 
 #include "pending_queue.h"
 #include "typedefs.h"
-#include "ross_event.h"
 #include "event.h"
-#include "charm_api.h"
 #include "ross_util.h"
 
 #include <float.h>

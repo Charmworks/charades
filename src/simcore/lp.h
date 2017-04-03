@@ -3,17 +3,9 @@
 
 #include "lp.decl.h"
 
-#include "typedefs.h"
-#include "lp_struct.h"
-#include "ross_clcg4.h"
-
-#include "processed_queue.h"
-
-#ifdef USE_SPLAY
-#include "pending_splay.h"
-#else
 #include "pending_heap.h"
-#endif
+#include "processed_queue.h"
+#include "typedefs.h"
 
 #include <vector>
 
@@ -21,10 +13,12 @@ extern CProxy_LP lps;
 
 class RemoteEvent;
 class Scheduler;
+struct tw_rng_stream;
 
-void operator|(PUP::er&, tw_rng_stream*);
-void operator|(PUP::er&, LPStruct&);
+using std::vector;
 
+// TODO: Why do it like this? Why not have the tokens defined as nodes of the
+// queue instead?
 // Tokens owned by LP chares that are used by the PE queues that control
 // scheduling and fossil collection. Each token has a direct pointer to its LP,
 // the timestamp associated with the token, and the index of its location in the
@@ -40,13 +34,30 @@ struct LPToken {
     LPToken() {}
 
     friend class PEQueue;
-    friend class PE;
     friend class Scheduler;
     friend class DistributedScheduler;
     friend class OptimisticScheduler;
 };
 
-typedef std::vector<LPStruct> LPList;
+// The LPType contains function pointers for handling/reversing events as well
+// as maps on how to locate LP structs based on their global ids.
+struct LPType {
+  init_f init;
+  event_f execute;
+  revent_f reverse;
+  final_f finalize;
+  commit_f commit;
+  size_t state_size;
+};
+
+// Right now, an LPStruct is an LPType, as well as its state.
+struct LPStruct {
+  LP* owner;
+  unsigned gid;
+  void* state;
+  LPType* type;
+  tw_rng_stream* rng;
+};
 
 class LP : public CBase_LP {
   private:
@@ -55,14 +66,10 @@ class LP : public CBase_LP {
     LPToken oldest_token;
 
     // All lps managed by this chare
-    LPList lp_structs;
+    vector<LPStruct> lp_structs;
 
     // Queues for storing events
-#ifdef USE_SPLAY
-    PendingSplay events;
-#else
     PendingHeap events;
-#endif
     ProcessedQueue processed_events;
 
     // Cancel queue management
@@ -72,8 +79,6 @@ class LP : public CBase_LP {
 
     // A direct pointer to the PE where this LP chare resides
     Scheduler* scheduler;
-    //Scheduler* scheduler;
-    //GVTManager* gvtmanager;
 
     // Some control flow varies when we are in optimistic mode
     bool isOptimistic;
@@ -136,5 +141,12 @@ class LP : public CBase_LP {
       return min_cancel_q;
     }
 };
+
+// TODO: Shouldn't need this anymore
+// API for ROSS code to interact with LPs.
+void init_lps();
+void set_current_event(tw_lp*, tw_event*);
+tw_event* current_event(tw_lp*);
+tw_stime tw_now(tw_lp*);
 
 #endif

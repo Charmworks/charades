@@ -2,10 +2,8 @@
 #define PROCESSED_QUEUE
 
 #include "typedefs.h"
-#include "ross_event.h"
 #include "event.h"
 #include "ross_util.h"
-#include "charm_api.h"
 
 #include <float.h>  // Included for DBL_MAX
 
