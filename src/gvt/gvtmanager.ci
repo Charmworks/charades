@@ -1,6 +1,6 @@
 module gvtmanager {
-  include "typedefs.h"; // included for Time
-  include "completion.h"; //included for Phased GVT
+  extern module completion;
+  include "typedefs.h";
 
   /** Base group for all GVTManagers */
   group GVTManager {
@@ -37,6 +37,4 @@ module gvtmanager {
     entry [notrace, reductiontarget] void check_counts(int, int, int);
     entry [notrace,reductiontarget] void gvt_end(Time, double);
   };
-
-  initnode registerGVTReduction(void);
 }

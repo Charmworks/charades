@@ -2,16 +2,8 @@
 #define _GVTMANAGER_H
 
 #include "gvtmanager.decl.h"
-#include "charm_functions.h" // Temp for DEBUG_PE
-#include <float.h>
 
 extern CProxy_GVTManager gvt_manager_proxy;
-
-struct GVT {
-  GVT() : ts(DBL_MAX), type(0) {}
-  Time ts;
-  unsigned type;
-};
 
 class RemoteEvent;
 class DistributedScheduler;
@@ -43,110 +35,6 @@ class GVTManager : public CBase_GVTManager {
     /** Methods for producing and consuming events for GVTs that need to know */
     virtual void consume(RemoteEvent* e) {}
     virtual void produce(RemoteEvent* e) {}
-}; 
-
-class SyncGVT : public CBase_SyncGVT {
-  public:
-    SyncGVT();
-
-    /** Starts QD */
-    void gvt_begin();
-    /** Called after QD is detected to contribute min time to all reduce */
-    void gvt_contribute();
-    /** Called by the all reduce from gvt_contribute() with resulting gvt */
-    void gvt_end(Time);
-};
-
-class CdGVT : public CBase_CdGVT {
-  public:
-    CdGVT();
-
-    void gvt_begin();
-
-    void gvt_contribute();
-
-    void gvt_end(Time);
-
-    void initialize_detectors();
-    void broadcast_detector_proxies(int, CProxy_CompletionDetector*);
-
-    void consume(RemoteEvent* e);
-    void produce(RemoteEvent* e);
-
-  private:
-
-    unsigned max_phase, current_phase, next_phase;
-    bool* detector_ready;
-    CProxy_CompletionDetector* detector_proxies;
-    CompletionDetector** detector_pointers;
-
-    Time min_sent;
-};
-
-class PhaseGVT : public CBase_PhaseGVT {
-  public:
-
-    PhaseGVT();
-    /** Switch phases if next phase ready and start GVT process for current phase**/
-    void gvt_begin();
-    /**Check if phase has completed detection, if so contribute min time to all reduce**/
-    void check_counts(int, int);
-    /** Called by the all reduce from check_counts() with resulting gvt**/
-    void gvt_end(Time);
-
-    /** initialize arrays and phases for detection **/
-    void initialize_detectors();
-
-    /**Increment received count for the phase of the event **/
-    void consume(RemoteEvent* e);
-    /**Increment sent count for producing phase and recalculate min_sent**/
-    void produce(RemoteEvent* e);
-
-  private:
-
-    unsigned max_phase, producing_phase, next_phase;
-    /**start and end phase of the gvt**/
-    int gvt_phase_begin, gvt_phase_end;
-    bool* detector_ready;
-    int * sent;
-    int * received;
-    Time*  min_sent;
-
-
-};
-
-class BucketGVT : public CBase_BucketGVT {
-  public:
-
-    BucketGVT();
-    /** Switch phases if next phase ready and start GVT process for current phase**/
-    void gvt_begin();
-    /**Check if phase has completed detection, if so contribute min time to all reduce**/
-    void check_counts(int, int, int);
-
-    void bucket_ready();
-    /** Called by the all reduce from check_counts() with resulting gvt**/
-    void gvt_end(Time, double);
-
-    /** initialize arrays and phases for detection **/
-    void initialize_buckets();
-
-    /**Increment received count for the phase of the event **/
-    void consume(RemoteEvent* e);
-    /**Increment sent count for producing phase and recalculate min_sent**/
-    void produce(RemoteEvent* e);
-
-  private:
-
-    /**start and end phase of the gvt**/
-    unsigned bucket_size, cur_bucket;
-    bool doing_reduction;
-    int * rollback_flags;
-    int * sent;
-    int * received;
-    Time*  min_sent;
-
-
 };
 
 #endif
