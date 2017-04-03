@@ -1,17 +1,12 @@
 #include "ross_setup.h"
 
+#include "charm_functions.h"
+#include "globals.h"
+#include "lp.h"
+#include "mpi-interoperate.h"
 #include "ross_block.h"
 #include "ross_opts.h"
 #include "ross_util.h"
-
-#include "charm_functions.h"
-#include "lp.h"
-#include "globals.h"
-#include "avl_tree.h"
-#include "event_buffer.h"
-
-#include "scheduler.h" // tmp
-#include "mpi-interoperate.h" // tmp
 
 char** CopyArgs(int& argc, char** argv) {
   argc = CmiGetArgc(argv);

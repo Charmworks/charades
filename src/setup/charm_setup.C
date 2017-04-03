@@ -1,8 +1,7 @@
 #include "charm_setup.h"
+
 #include "scheduler.h"
-#include "gvtmanager.h"
-#include "ross_opts.h"
-#include "globals.h"
+#include "statistics.h"
 
 CProxy_Initialize mainProxy;
 

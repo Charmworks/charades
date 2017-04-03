@@ -1,6 +1,5 @@
 mainmodule charm_setup {
   readonly CProxy_Initialize mainProxy;
-  /** \brief Main chare that initializes pes */
   mainchare Initialize {
     entry [notrace] Initialize(CkArgMsg *);
     entry [notrace,reductiontarget] void Exit();
@@ -8,8 +7,8 @@ mainmodule charm_setup {
 
   initnode registerStatsReduction();
 
-  extern module gvtmanager;
-  extern module scheduler;
-  extern module lp;
   extern module event;
+  extern module gvtmanager;
+  extern module lp;
+  extern module scheduler;
 }
