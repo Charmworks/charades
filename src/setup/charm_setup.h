@@ -1,12 +1,12 @@
-#ifndef _ROSS_H
-#define _ROSS_H
-// Main header to be included by those using the library
+#ifndef _CHARM_SETUP_H
+#define _CHARM_SETUP_H
 
-#include "lp.h"
-#include "event.h"
 #include "charm_setup.decl.h"
-#include "mpi-interoperate.h"
+
 #include "charm_functions.h"
+#include "event.h"
+#include "lp.h"
+#include "mpi-interoperate.h" // This has to be included here
 
 extern CProxy_Initialize mainProxy;
 

@@ -1,22 +1,17 @@
 #include "ross_opts.h"
-#include "ross_util.h"
 
 #include "charm_functions.h"
-
-#include "typedefs.h"
 #include "globals.h"
+#include "ross_util.h"
+#include "typedefs.h"
 
 #include <ctype.h>
-
-//TODO: fix this
-void tw_net_stop() { }
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) ( sizeof((a)) / sizeof((a)[0]) )
 #endif
 
 // These globals are probably OK since they are just used at initialization.
-//static const char ross_options[] = ROSS_OPTION_LIST;
 static const char ross_options[] = { "" };
 static const char *program;
 static const tw_optdef *all_groups[10];
@@ -164,7 +159,6 @@ static void need_argument(const tw_optdef *def) {
     fprintf(stderr,
         "%s: option --%s requires a valid argument\n",
         program, def->name);
-  tw_net_stop();
   exit(1);
 }
 
@@ -223,7 +217,6 @@ static void apply_opt(const tw_optdef *def, const char *value) {
     case TWOPTTYPE_SHOWHELP:
       if (tw_ismaster())
         show_help();
-      tw_net_stop();
       exit(0);
       break;
 
@@ -260,8 +253,6 @@ static void match_opt(const char *arg) {
     fprintf(stderr,
         "%s: option '%s' not recognized; see --help for details\n",
         program, arg);
-  //tw_net_stop();
-  //exit(1);
 }
 
 static const tw_optdef basic[] = {
