@@ -4,7 +4,7 @@
 
 #include "lp.h"
 #include "event.h"
-#include "ross.decl.h"
+#include "charm_setup.decl.h"
 #include "mpi-interoperate.h"
 #include "charm_functions.h"
 

@@ -1,11 +1,11 @@
 #include "scheduler.h"
 
 #include "charm_functions.h"
+#include "charm_setup.h"
 #include "event_buffer.h"
 #include "globals.h"
 #include "gvtmanager.h"
 #include "lp.h"
-#include "ross.h"
 #include "ross_random.h"
 #include "trigger.h"
 

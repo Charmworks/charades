@@ -1,6 +1,7 @@
 #include "optimistic.h"
 
 #include "avl_tree.h"   // Temporary, should be moved to LP
+#include "charm_functions.h"
 #include "globals.h"
 #include "ross_setup.h" // Temporary for AVL_NODE_COUNT
 #include "trigger.h"
