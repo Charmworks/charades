@@ -9,8 +9,6 @@ int tw_ismaster();
 int tw_nnodes();
 int tw_mype();
 
-void tw_abort(const char* error);
-
 #define USER_EVENT_FWD    1001
 #define USER_EVENT_RB     1002
 #define USER_EVENT_CANCEL 1003

@@ -32,8 +32,4 @@ int tw_mype() {
   return CkMyPe();
 }
 
-void tw_abort(const char* error) {
-  CkAbort(error);
-}
-
 #include "charm_setup.def.h"

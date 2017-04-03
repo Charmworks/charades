@@ -1,8 +1,8 @@
 #ifndef ROSS_RANDOM_H_
 #define	ROSS_RANDOM_H_
 
-#include "typedefs.h"
 #include "ross_clcg4.h"
+#include "typedefs.h"
 
 #define tw_opi 6.28318530718
 #define tw_rand_unif(G)			rng_gen_val(G)

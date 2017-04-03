@@ -5,6 +5,7 @@
 #include "globals.h"
 #include "lp.h"
 #include "scheduler.h"
+#include "statistics.h"
 #include "typedefs.h"
 
 extern CProxy_LP lps;

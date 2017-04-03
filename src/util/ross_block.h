@@ -1,5 +1,6 @@
 #ifndef ROSS_BLOCK_H_
 #define ROSS_BLOCK_H_
+
 #include "typedefs.h"
 
 tw_lpid init_block_map(unsigned chare, tw_lpid local_id);
