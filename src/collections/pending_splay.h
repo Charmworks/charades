@@ -25,6 +25,16 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifndef _PENDING_SPLAY_H_
+#define _PENDING_SPLAY_H_
+
+#include "pending_queue.h"
+
+#include "event.h"
+#include "ross_util.h"
+
+#include <float.h>
+
 // Macros for tree manipulation
 #define UP(t)   ((t)->up)
 #define UPUP(t)   ((t)->up->up)
@@ -39,14 +49,6 @@
 #define ROTATE_L(n,p,g) \
   if((RIGHT(p) = LEFT(n))) UP(LEFT(n)) = p;  LEFT(n) = p; \
   UP(n) = g;  UP(p) = n;
-
-#include "pending_queue.h"
-
-#include "ross_util.h"
-
-#include "event.h"
-
-#include <float.h>
 
 class PendingSplay : public PendingQueue {
   private:
@@ -369,3 +371,5 @@ class PendingSplay : public PendingQueue {
       return nitems;
     }
 };
+
+#endif

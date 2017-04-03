@@ -6,18 +6,20 @@
  *   by Kalyan for Ga Tech Time Warp
  **********************************************************************/
 
-#ifndef _PENDING_QUEUE_
-#define _PENDING_QUEUE_
+#ifndef _PENDING_HEAP_
+#define _PENDING_HEAP_
 
 #include "pending_queue.h"
-#include "typedefs.h"
+
 #include "event.h"
 #include "ross_util.h"
+#include "typedefs.h"
 
 #include <float.h>
 
 #define HEAP_INCREMENT 128
 
+// TODO: Just make this templated?
 typedef Event *ELEMENT_TYPE;
 typedef double KEY_TYPE;
 
@@ -27,12 +29,12 @@ typedef double KEY_TYPE;
 #define PARENT(i) (((i-1)/2))
 
 #define SWAP(x,y,t) { \
-    t = elems[x]; \
-    elems[x] = elems[y]; \
-    elems[y] = t; \
-    elems[x]->index = x; \
-    elems[y]->index = y; \
-    }
+  t = elems[x]; \
+  elems[x] = elems[y]; \
+  elems[y] = t; \
+  elems[x]->index = x; \
+  elems[y]->index = y; \
+}
 
 class PendingHeap : public PendingQueue {
   private:
@@ -117,7 +119,7 @@ class PendingHeap : public PendingQueue {
     void delete_temp_event_buffer() {
     }
 
-    tw_stime min() const {
+    Time min() const {
       return (nelems <= 0) ? DBL_MAX : elems[0]->ts;
     }
 
