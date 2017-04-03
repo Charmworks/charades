@@ -1,15 +1,4 @@
-Clean up file structure
-- Definetly want to split up Charm++ stuff from non-Charm++. i.e. anything dealing with underlying structs shouldn't need to be able to find charm++.h
-- Want to split up event files into a charm backend portion and a new ross_event module
-- Want to make a ross_lp module
-
-Haven't really looked into LP state yet really. Right now it is a void pointer. Seems weird to have it heap allocated like that.
-
-Make actual naming conventions. Right now there's a weird mix of our own names and ROSS (tw_*) names.
-Obviously the public API needs to have ROSS names, but to avoid confusion, all the charm stuff should probaby be as separate as possible.
-A very thin layer of typedefs with the public API would probably suffice.
-There is also next to no naming consistency even in our own code.
-
-The extreme decoupling of LP state and type is still weird. Not sure if it is necessary or even more efficient.
-
-Down the road: If an lpid is mapped to the sending proxy, there is no need to do any sending
+1) Unify charm/ross events
+2) Unify charm/ross setup
+3) Add error handling routines
+4) An actual API to expose to the models
