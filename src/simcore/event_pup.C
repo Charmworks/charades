@@ -1,12 +1,8 @@
 #include "event.h"
-#include "lp.h"
 
 #include "globals.h"
+#include "lp.h"
 #include "typedefs.h"
-#include "lp_struct.h"
-
-#include "ross_event.h"
-#include "ross_util.h"
 
 // PUP method for remote events. Called from pup_pending_event() and
 // pup_processed_event().
@@ -173,7 +169,7 @@ void pup_causality(PUP::er& p, Event* e) {
     delete[] e->pending_indices;
     delete[] e->processed_indices;
   }
-  
+
   // Finally, pup the sent events in the causality list
   Event* tmp = e->caused_by_me;
   for (int i = 0; i < e->sent_count; i++) {
