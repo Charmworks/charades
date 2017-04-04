@@ -9,11 +9,7 @@
 
 BucketGVT::BucketGVT() {
   gvt_name = "Bucket GVT";
-  initialize_buckets();
 
-}
-
-void BucketGVT::initialize_buckets() {
   //TODO: Make this input argument
   bucket_size = 8;
 
@@ -30,11 +26,9 @@ void BucketGVT::initialize_buckets() {
     received[i] = 0;
     min_sent[i] = DBL_MAX;
   }
-
 }
 
 void BucketGVT::gvt_begin() {
-   DEBUG_PE("Gvt Begin\n");
 
   if (scheduler->get_min_time() >= (1 + cur_bucket) * bucket_size && !doing_reduction) {
     rollback_flags[cur_bucket] = 0;
@@ -47,7 +41,6 @@ void BucketGVT::gvt_begin() {
 
 void BucketGVT::bucket_ready() {
 
-   DEBUG_PE("bucket ready for %d \n", cur_bucket);
   int data[3] = {sent[cur_bucket], received[cur_bucket], rollback_flags[cur_bucket]};
 
   contribute(3 * sizeof(int), data, CkReduction::sum_int,
@@ -57,10 +50,8 @@ void BucketGVT::bucket_ready() {
 
 void BucketGVT::check_counts(int sent, int recvd, int flag ) {
 
-  DEBUG_PE("Checking Counts\n");
   if(flag != 0) {
 
-   DEBUG_PE("rollback detected\n");
     doing_reduction = false;
     if (scheduler->get_min_time() >= (1 + cur_bucket) * bucket_size) {
       rollback_flags[cur_bucket] = 0;
@@ -70,7 +61,6 @@ void BucketGVT::check_counts(int sent, int recvd, int flag ) {
   }
   else if (sent != recvd) {
 
-   DEBUG_PE("Counts don't match\n");
     bucket_ready();
   }
   else {
@@ -78,8 +68,7 @@ void BucketGVT::check_counts(int sent, int recvd, int flag ) {
     Time min_time = scheduler->get_min_time();
     min_time = fmin(min_time, min_sent[cur_bucket]);
     CkAssert(min_time >= curr_gvt);
-    double flag = 1;
-    if (rollback_flags[cur_bucket]) flag = 0;
+    double flag = ((rollback_flags[cur_bucket]) ? 0 : 1);
 
     double data[2] = {min_time, flag};
 
@@ -89,9 +78,7 @@ void BucketGVT::check_counts(int sent, int recvd, int flag ) {
 }
 
 void BucketGVT::gvt_end(Time new_gvt, double flag) {
-DEBUG_PE("GVT_END\n");
   if (flag == 0) {
-DEBUG_PE("END: rollback detected\n");
     doing_reduction = false;
     if(scheduler->get_min_time() > (cur_bucket + 1)  * bucket_size) {
       rollback_flags[cur_bucket] = 0;
@@ -102,7 +89,6 @@ DEBUG_PE("END: rollback detected\n");
   else {
     prev_gvt = curr_gvt;
     curr_gvt = new_gvt;
-    DEBUG_PE("Gvt End for %d \n", cur_bucket);
     cur_bucket++;
     doing_reduction = false;
     scheduler->gvt_done(curr_gvt);
@@ -124,18 +110,15 @@ void BucketGVT::consume(RemoteEvent* e) {
 
 void BucketGVT::produce(RemoteEvent* e) {
 
-  //CHECK MIN_SENT
-
   e->phase = e->ts / bucket_size;
   sent[e->phase]++;
 
+  //TODO: Check if min_sent is even needed for this config 
   if( e->phase > cur_bucket) {
     if(e->ts < min_sent[cur_bucket]) {
       min_sent[cur_bucket] = e->ts;
     }
   }
-
-
   if (scheduler->get_min_time() >= (1 + cur_bucket) * bucket_size && !doing_reduction) {
     rollback_flags[cur_bucket] = 0;
     doing_reduction = true;

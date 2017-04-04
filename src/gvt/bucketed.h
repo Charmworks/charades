@@ -7,27 +7,24 @@ class BucketGVT : public CBase_BucketGVT {
   public:
 
     BucketGVT();
-    /** Switch phases if next phase ready and start GVT process for current phase**/
+    /** Check if program has crossed bucket boundary**/
     void gvt_begin();
-    /**Check if phase has completed detection, if so contribute min time to all reduce**/
+    /**Check if sent = recieved for bucket and that no bucket rolled back**/
     void check_counts(int, int, int);
-
+    /**Serves as checkpoint to ensure all PES cross boundary before we start reducing counts **/
     void bucket_ready();
     /** Called by the all reduce from check_counts() with resulting gvt**/
     void gvt_end(Time, double);
-
-    /** initialize arrays and phases for detection **/
-    void initialize_buckets();
-
-    /**Increment received count for the phase of the event **/
+    /**Increment received count for the proper bucket of the event, check boundaries **/
     void consume(RemoteEvent* e);
-    /**Increment sent count for producing phase and recalculate min_sent**/
+    /**Increment sent count for proper bucket and recalculate min_sent, check boundaries**/
     void produce(RemoteEvent* e);
 
   private:
 
     /**start and end phase of the gvt**/
     unsigned bucket_size, cur_bucket;
+    /** indicates if cur bucket is doing reductions **/
     bool doing_reduction;
     int * rollback_flags;
     int * sent;
