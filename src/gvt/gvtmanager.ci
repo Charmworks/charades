@@ -30,7 +30,6 @@ module gvtmanager {
   };
 
   /** Bucket-based GVT */
-
   group BucketGVT : GVTManager {
     entry [notrace] BucketGVT();
     entry [notrace, reductiontarget] void bucket_ready();

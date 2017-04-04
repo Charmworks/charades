@@ -13,10 +13,6 @@ class PhaseGVT : public CBase_PhaseGVT {
     void check_counts(int, int);
     /** Called by the all reduce from check_counts() with resulting gvt**/
     void gvt_end(Time);
-
-    /** initialize arrays and phases for detection **/
-    void initialize_detectors();
-
     /**Increment received count for the phase of the event **/
     void consume(RemoteEvent* e);
     /**Increment sent count for producing phase and recalculate min_sent**/

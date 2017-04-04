@@ -8,14 +8,8 @@
 
 PhaseGVT::PhaseGVT() {
   gvt_name = "Multi-Phase GVT";
-  initialize_detectors();
-
-}
-
-// TODO: This stuff can just go in the constructor
-void PhaseGVT::initialize_detectors() {
+  
   // TODO: Make this a configuration option
-  //max_phase = g_tw_gvt_phases;
   max_phase = 2;
 
   producing_phase = 0;
