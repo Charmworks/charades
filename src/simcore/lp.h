@@ -72,6 +72,9 @@ class LP : public CBase_LP {
     PendingHeap events;
     ProcessedQueue processed_events;
 
+    // Used for certain LB metrics
+    int committed_events;
+
     // Cancel queue management
     Event *cancel_q;    // Queue of events this LP needs to cancel
     Time min_cancel_q;  // Minimum time in this LPs cancel queue
@@ -103,7 +106,8 @@ class LP : public CBase_LP {
     void reconstruct_processed_event(Event*, Event**, Event**);
     virtual void pup(PUP::er &p);
     void load_balance();
-    virtual void ResumeFromSync();
+    void ResumeFromSync();
+    void UserSetLBLoad();
 
     // After initializing lps, we stop the charm scheduler and return control
     // to ROSS until we are ready to start the simulation.
