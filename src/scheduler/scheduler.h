@@ -102,6 +102,7 @@ class DistributedScheduler : public CBase_DistributedScheduler {
 
     std::unique_ptr<Trigger> gvt_trigger; /**< Determines when to compute GVT */
     std::unique_ptr<Trigger> lb_trigger;  /**< Determines when to do LB */
+    std::unique_ptr<Trigger> print_trigger; /**< Determines when to print */
 #if CMK_TRACE_ENABLED
     std::unique_ptr<Trigger> stat_trigger;  /**< Determines when to log stats */
 #endif

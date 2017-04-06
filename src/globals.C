@@ -25,7 +25,7 @@ unsigned g_tw_ldb_metric;    // Metric used to measure LP load
 unsigned g_tw_stat_interval;// number of intervals between stat logging
 tw_stime g_tw_lookahead;    // event lookahead for conservative
 tw_stime g_tw_leash;        // gvt leash for optimistic
-double   gvt_print_interval; // determines frequency of progress print outs
+unsigned gvt_print_interval; // determines frequency of progress print outs
 tw_seed* g_tw_rng_seed;
 size_t   g_tw_rng_max;
 unsigned g_tw_nRNG_per_lp;
@@ -52,7 +52,7 @@ void clear_globals() {
   g_tw_max_ldb       = 0;
   g_tw_ldb_metric     = 0;
   g_tw_lookahead     = 0.005;
-  gvt_print_interval = 1.0;
+  gvt_print_interval = 64;
 
   g_tw_rng_seed    = NULL;
   g_tw_rng_max     = 1;
