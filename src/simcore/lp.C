@@ -52,7 +52,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 #define PE_STATS(x) scheduler->stats->x
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), uniqID(0), cancel_q(NULL),
+LP::LP() : next_token(this), uniqID(0), cancel_q(NULL), committed_events(0),
            min_cancel_q(DBL_MAX), in_pe_queue(false), current_time(0),
            all_events(0) {
   if(isLpSet == 0) {
@@ -60,6 +60,8 @@ LP::LP() : next_token(this), uniqID(0), cancel_q(NULL),
     isLpSet = 1;
   }
   usesAtSync = true;
+
+  if (g_tw_ldb_metric != 0) usesAutoMeasure = false;
 
   // Cache the pointer to the local PE chare
   scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
@@ -92,6 +94,30 @@ void LP::ResumeFromSync() {
   contribute(
       CkCallback(CkReductionTarget(DistributedScheduler, balancing_complete),
                  CProxy_DistributedScheduler(scheduler_id)));
+}
+
+void LP::UserSetLBLoad() {
+  double metric;
+  switch (g_tw_ldb_metric) {
+    case 1:
+      metric = committed_events;
+      committed_events = 0;
+      break;
+    case 2:
+      metric = g_tw_ts_end - current_time;
+      break;
+    case 3:
+      metric = current_time;
+      break;
+    case 4:
+      metric = events.size();
+      break;
+    default:
+      CkAbort("Invalid load balancing metric\n");
+      break;
+  };
+  DEBUG_LP("Weight: %0.2f\n", metric);
+  setObjTime(metric);
 }
 
 // Call init on all LPs then stop the charm scheduler.
@@ -196,6 +222,7 @@ void* LP::execute_me() {
       processed_events.push_front(e);
     } else {
       tw_event_free(e,true);
+      committed_events++;
     }
     scheduler->update_next(&next_token, events.min());
     return (void*)true;
@@ -258,6 +285,7 @@ void LP::fossil_me(tw_stime gvt) {
   while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
     e = processed_events.pop_back();
     tw_event_free(e,true);
+    committed_events++;
   }
 }
 

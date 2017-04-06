@@ -36,6 +36,7 @@ void tw_init(int argc, char** tmp_argv) {
     TWOPT_UINT("async-reduction", g_tw_async_reduction, "0=sync red, 1=async red"),
     TWOPT_UINT("ldb-interval", g_tw_ldb_interval, "Load Balancing Interval"),
     TWOPT_UINT("max-ldb", g_tw_max_ldb, "Max number of load balancing calls"),
+    TWOPT_UINT("ldb-metric", g_tw_ldb_metric, "Metric for measuring LB load: CPUTime (automeasure)=0, CommittedEvents=1, End-CurrentTime=2, CurrentTime=3, EventsPending=4"),
     TWOPT_UINT("stat-interval", g_tw_stat_interval, "Stat Interval"),
     TWOPT_UINT("num-lps", g_total_lps, "Number of total LPs"),
     TWOPT_UINT("num-chares", g_num_chares, "Number of chares"),

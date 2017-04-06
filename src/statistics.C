@@ -160,7 +160,7 @@ void Statistics::print() const {
   print_int("Total Events Processed", events_executed);
   print_int("Events Committed", events_committed);
   print_int("Events Rolled Back", events_rolled_back);
-  print_double("Efficiency", 100.0 * (1.0 - ((double) events_rolled_back / (double) events_committed)));
+  print_double("Efficiency", 100.0 * ((double) events_committed / (double) events_executed));
 
   print_section("COMMUNICATION STATISTICS");
   // TODO: Improve these stats to include remote % and also to track the sent
