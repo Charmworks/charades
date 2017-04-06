@@ -43,7 +43,7 @@ void tw_init(int argc, char** tmp_argv) {
     TWOPT_UINT("lps-per-chare", g_lps_per_chare, "LPs per chare"),
     TWOPT_UINT("buffer-size", g_tw_max_events_buffered, "Number of events buffered"),
     TWOPT_UINT("msg-buffer-size", g_tw_max_remote_events_buffered, "Number of events buffered"),
-    TWOPT_STIME("report-interval", gvt_print_interval, "percent of runtime to print GVT"),
+    TWOPT_UINT("report-interval", gvt_print_interval, "percent of runtime to print GVT"),
     TWOPT_END()
   };
 

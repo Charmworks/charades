@@ -135,6 +135,9 @@ DistributedScheduler::DistributedScheduler() {
     lb_trigger.reset(new ConstTrigger(false));
   }
 
+  // Set up the print trigger
+  print_trigger.reset(new CountTrigger(gvt_print_interval));
+
   // Set up the statistics logging trigger
 #if CMK_TRACE_ENABLED
   if (g_tw_stat_interval > 0) {
@@ -206,6 +209,18 @@ void DistributedScheduler::gvt_done(Time gvt) {
     stat_trigger->reset();
   }
 #endif
+
+  if (CkMyPe() == 0) {
+    print_trigger->iteration_done();
+    if (print_trigger->ready()) {
+      if (gvt >= g_tw_ts_end) {
+        CkPrintf("GVT %6i: %8.2f (%%100.00)\n", cumulative_stats->total_gvts, g_tw_ts_end);
+      } else {
+        CkPrintf("GVT %6i: %8.2f (%%%6.2f)\n", cumulative_stats->total_gvts, gvt, 100*gvt/g_tw_ts_end);
+      }
+      print_trigger->reset();
+    }
+  }
 
   if(gvt >= g_tw_ts_end) {
     end_simulation();
