@@ -42,6 +42,7 @@ Scheduler::Scheduler() {
 }
 
 void Scheduler::groups_created() {
+  DEBUG_PE("%s created!\n", scheduler_name.c_str());
   // After groups are created, create LP array, and exit upon quiescence
   if (CkMyPe() == 0) {
     CkStartQD(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
@@ -121,9 +122,12 @@ DistributedScheduler::DistributedScheduler() {
         CProxy_SyncGVT::ckNew();
         break;
       case 2:
-        CProxy_PhaseGVT::ckNew();
+        CProxy_CdGVT::ckNew();
         break;
       case 3:
+        CProxy_PhaseGVT::ckNew();
+        break;
+      case 4:
         CProxy_BucketGVT::ckNew();
         break;
 

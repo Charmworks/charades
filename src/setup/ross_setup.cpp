@@ -25,7 +25,7 @@ void tw_init(int argc, char** tmp_argv) {
     // TODO: Make sure all relevant constants can be set from the command line
     TWOPT_GROUP("ROSS Kernel"),
     TWOPT_UINT("synch", g_tw_synchronization_protocol, "Sychronization Protocol: SEQUENTIAL=1, CONSERVATIVE=2, OPTIMISTIC=3, OPTIMISTIC_DEBUG=4"),
-    TWOPT_UINT("gvt", g_tw_gvt_scheme, "GVT Algorithm: SYNC=1, PHASED=2"),
+    TWOPT_UINT("gvt", g_tw_gvt_scheme, "GVT Algorithm: SYNC=1, CD=2, PHASED=3, BUCKETED=4"),
     TWOPT_UINT("expected-events", g_tw_expected_events, "Expected number of net events, tested at the end of a simulation"),
     TWOPT_STIME("end", g_tw_ts_end, "Simulation end timestamp"),
     TWOPT_STIME("lookahead", g_tw_lookahead, "Lookahead for events"),
