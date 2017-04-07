@@ -1,0 +1,25 @@
+#!/bin/bash
+
+exe=$1
+shift
+
+num_nodes=$COBALT_JOBSIZE
+num_procs=$(($num_nodes * 64))
+
+args=""
+
+for var in "$@"
+do
+  if [ -f $var ]
+  then
+    args="$args`awk '/^--/ { s = s $1 " " } END { print s }' $var` "
+  else
+    args="$args$var "
+  fi
+done
+
+command="runjob -n $num_procs -p 64 --block $COBALT_PARTNAME : $exe $args"
+
+echo "Running command: $command"
+
+eval $command
