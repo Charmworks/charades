@@ -1,7 +1,7 @@
 --synch=3
 --gvt-trigger=2
 --gvt-interval=4
---print-interval=64
+--report-interval=64
 --ldb-interval=64
 --max-ldb=1
 --ldb-metric=1

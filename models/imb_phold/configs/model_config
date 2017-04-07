@@ -2,5 +2,6 @@
 --start-events=16
 --end=1024
 --lookahead=0.1
---buffer-size=65536
+--buffer-size=4096
+--msg-buffer-size=1024
 --expected-events=2098983
