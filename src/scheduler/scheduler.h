@@ -19,6 +19,12 @@ class tw_rng;
 
 using std::string;
 
+#if CMK_USING_XLC
+typedef std::auto_ptr<Trigger> TriggerPtr;
+#else
+typedef std::unique_ptr<Trigger> TriggerPtr;
+#endif
+
 /**
  * Base class defining basic scheduler functionality. This requires keeping a
  * heap of LPs ordered by next event, methods for updating this heap, the
@@ -100,11 +106,11 @@ class DistributedScheduler : public CBase_DistributedScheduler {
   protected:
     GVTManager* gvt_manager;  /**< Direct pointer to our local GVT Manager */
 
-    std::unique_ptr<Trigger> gvt_trigger; /**< Determines when to compute GVT */
-    std::unique_ptr<Trigger> lb_trigger;  /**< Determines when to do LB */
-    std::unique_ptr<Trigger> print_trigger; /**< Determines when to print */
+    TriggerPtr gvt_trigger;   /**< Determines when to compute GVT */
+    TriggerPtr lb_trigger;    /**< Determines when to do LB */
+    TriggerPtr print_trigger; /**< Determines when to print progress */
 #if CMK_TRACE_ENABLED
-    std::unique_ptr<Trigger> stat_trigger;  /**< Determines when to log stats */
+    TriggerPtr stat_trigger;  /**< Determines when to log stats */
 #endif
 
   public:

@@ -14,7 +14,7 @@ class Trigger {
 
 class BoundedTrigger : public Trigger {
   private:
-    std::unique_ptr<Trigger> trigger;
+    TriggerPtr trigger;
     unsigned triggers_left;
   public:
     BoundedTrigger(Trigger* t, unsigned triggers) : trigger(t), triggers_left(triggers) {}
