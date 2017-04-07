@@ -55,14 +55,8 @@ void Statistics::clear() {
 
   // GVT stats
   total_gvts = 0;
-  total_forced_gvts = 0;
-  mem_forced_gvts = 0;
-  end_forced_gvts = 0;
-  event_forced_gvts = 0;
-  fossil_collect_calls = 0;
 
   // Memory stats
-  max_memory_used = 0;
   max_events_used = 0;
   new_event_calls = 0;
   del_event_calls = 0;
@@ -89,14 +83,8 @@ void Statistics::add(const Statistics* other) {
 
   // GVT stats
   total_gvts += other->total_gvts;
-  total_forced_gvts += other->total_forced_gvts;
-  mem_forced_gvts += other->mem_forced_gvts;
-  end_forced_gvts += other->end_forced_gvts;
-  event_forced_gvts += other->event_forced_gvts;
-  fossil_collect_calls += other->fossil_collect_calls;
 
   // Memory stats
-  max_memory_used = fmax(max_memory_used, other->max_memory_used);
   max_events_used = fmax(max_events_used, other->max_events_used);
   new_event_calls += other->new_event_calls;
   del_event_calls += other->del_event_calls;
@@ -123,15 +111,8 @@ void Statistics::reduce(const Statistics* other) {
 
   // GVT stats
   total_gvts = other->total_gvts;
-  total_forced_gvts = other->total_forced_gvts;
-  mem_forced_gvts = other->mem_forced_gvts;
-  end_forced_gvts = other->end_forced_gvts;
-  event_forced_gvts = other->event_forced_gvts;
-  fossil_collect_calls += other->fossil_collect_calls;
-
 
   // Memory stats
-  max_memory_used = fmax(max_memory_used, other->max_memory_used);
   max_events_used = fmax(max_events_used, other->max_events_used);
   new_event_calls += other->new_event_calls;
   del_event_calls += other->del_event_calls;
@@ -162,7 +143,10 @@ void Statistics::print() const {
   print_int("Events Rolled Back", events_rolled_back);
   print_double("Efficiency", 100.0 * ((double) events_committed / (double) events_executed));
 
-  print_section("COMMUNICATION STATISTICS");
+  print_section("GVT STATISTICS");
+  print_int("Total GVT Computations", total_gvts);
+
+  print_section("SEND STATISTICS");
   // TODO: Improve these stats to include remote % and also to track the sent
   // events that were committed vs those sent and cancelled
   print_int("Self Sends", self_sends);
@@ -176,21 +160,10 @@ void Statistics::print() const {
   print_int("Timestamp Rollback Calls ", ts_rollback_calls);
   print_int("Event Rollback Calls ", event_rollback_calls);
 
-  print_section("GVT STATISTICS");
-  print_int("Total GVT Computations", total_gvts);
-  print_int("Total Forced GVT Computations", total_forced_gvts);
-  print_int("Memory Forced GVT Computations", mem_forced_gvts);
-  print_int("End Time Forced GVT Computations", end_forced_gvts);
-  print_int("Event Forced GVT Computations", event_forced_gvts);
-
   print_section("MEMORY STATISTICS");
-  print_int("Max Memory Allocated Events on a PE (MB)", max_memory_used / (1024 * 1024));
   print_int("Max Events Allocated on a PE", max_events_used);
   print_int("Remote Event Allocations", new_event_calls);
   print_int("Remote Event Dealloactions", del_event_calls);
-
-  print_section("MISC STATISTICS");
-  print_int("Fossil Collect Calls", fossil_collect_calls);
 }
 
 #if CMK_TRACE_ENABLED
