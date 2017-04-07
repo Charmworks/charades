@@ -51,6 +51,9 @@ void Scheduler::groups_created() {
 }
 
 void Scheduler::start_simulation() {
+  if (CkMyPe() == 0) {
+    CkPrintf("Simulation Starting: %.2f MB\n", CmiMemoryUsage()/(1024.0*1024.0));
+  }
   start_time = CmiWallTimer();
   running = true;
   thisProxy[CkMyPe()].execute();
@@ -224,11 +227,10 @@ void DistributedScheduler::gvt_done(Time gvt) {
   if (CkMyPe() == 0) {
     print_trigger->iteration_done();
     if (print_trigger->ready()) {
-      if (gvt >= g_tw_ts_end) {
-        CkPrintf("GVT %6i: %8.2f (%%100.00)\n", cumulative_stats->total_gvts, g_tw_ts_end);
-      } else {
-        CkPrintf("GVT %6i: %8.2f (%%%6.2f)\n", cumulative_stats->total_gvts, gvt, 100*gvt/g_tw_ts_end);
-      }
+      double mb = CmiMemoryUsage()/(1024.0*1024.0);
+      double percent = fmin(100*gvt/g_tw_ts_end,100.00);
+      CkPrintf("GVT %6i: %8.2f (%6.2f%%), %.2f MB\n",
+          cumulative_stats->total_gvts, gvt, percent, mb);
       print_trigger->reset();
     }
   }
