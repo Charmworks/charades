@@ -49,14 +49,8 @@ class Statistics {
     // GVT stats
     // TODO: Move these to the standalone GVT controller once it exists
     tw_stat total_gvts;           // Total number of GVT calculations
-    tw_stat total_forced_gvts;    // Number of times we force a GVT calculation
-    tw_stat mem_forced_gvts;      // GVTs forced by low event memory
-    tw_stat end_forced_gvts;      // GVTs forced by end time
-    tw_stat event_forced_gvts;    // GVTs forced by empty event queues
-    tw_stat fossil_collect_calls; // Number of fossil collection calls
 
     // Memory stats
-    tw_stat max_memory_used;  // Max memory allocated at any GVT
     tw_stat max_events_used;	// Max number of events allocated from buffer
     tw_stat new_event_calls;  // Number of events allocated for an empty buffer
     tw_stat del_event_calls;  // Number of events deleted for a full buffer
