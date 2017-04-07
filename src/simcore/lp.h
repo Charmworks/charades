@@ -78,7 +78,6 @@ class LP : public CBase_LP {
     // Cancel queue management
     Event *cancel_q;    // Queue of events this LP needs to cancel
     Time min_cancel_q;  // Minimum time in this LPs cancel queue
-    bool in_pe_queue;   // Whether or not this LP is in the PE cancel queue
 
     // A direct pointer to the PE where this LP chare resides
     Scheduler* scheduler;

@@ -80,7 +80,6 @@ class Scheduler : public CBase_Scheduler {
     // TODO: Move to distributed/optimistic
     virtual void consume(RemoteEvent* e) {}
     virtual void produce(RemoteEvent* e) {}
-    virtual void add_to_cancel_q(LP* lp) {}
     virtual void update_min_cancel(Time ts) {}
 };
 

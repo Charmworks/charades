@@ -19,7 +19,6 @@ OptimisticScheduler::OptimisticScheduler() {
 
   // Initialize the cancel queue
   min_cancel_time = DBL_MAX;
-  cancel_q.resize(0);
 
   // Allocate AVL tree space // TODO: Move this to LPs
   AvlTree avl_list;
@@ -69,22 +68,11 @@ void OptimisticScheduler::collect_fossils(Time gvt) {
   }
 }
 
-/** Call process_cancel_q on every LP chare in our PE level cancel_q */
+/** Call process_cancel_q on every LP chare on our PE */
 void OptimisticScheduler::process_cancel_q() {
-  vector<LP*> temp_q;
-  temp_q.swap(cancel_q);
   min_cancel_time = DBL_MAX;
-
-  for(int i = 0; i < temp_q.size(); i++) {
-    temp_q[i]->process_cancel_q();
-  }
-}
-
-/** Add an lp to the cancel queue and check for a new min time */
-void OptimisticScheduler::add_to_cancel_q(LP* lp) {
-  cancel_q.push_back(lp);
-  if (lp->min_cancel_time() < min_cancel_time) {
-    min_cancel_time = lp->min_cancel_time();
+  for (int i = 0; i < next_lps.get_size(); i++) {
+    next_lps.as_array()[i]->lp->process_cancel_q();
   }
 }
 
