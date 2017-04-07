@@ -23,14 +23,15 @@ OptimisticScheduler::OptimisticScheduler() {
 
   // Allocate AVL tree space // TODO: Move this to LPs
   AvlTree avl_list;
-  int err = posix_memalign((void **)&avl_list, 64, sizeof(struct avlNode) * AVL_NODE_COUNT);
-  memset(avl_list, 0, sizeof(struct avlNode) * AVL_NODE_COUNT);
-  for (int i = 0; i < AVL_NODE_COUNT - 1; i++) {
+  int err = posix_memalign((void **)&avl_list, 64,
+      sizeof(struct avlNode) * g_tw_max_events_buffered);
+  memset(avl_list, 0, sizeof(struct avlNode) * g_tw_max_events_buffered);
+  for (int i = 0; i < g_tw_max_events_buffered - 1; i++) {
     avl_list[i].next = &avl_list[i + 1];
   }
-  avl_list[AVL_NODE_COUNT - 1].next = NULL;
+  avl_list[g_tw_max_events_buffered - 1].next = NULL;
   PE_VALUE(avl_list_head) = &avl_list[0];
-  DEBUG_PE("Created AVL tree with %d nodes\n", AVL_NODE_COUNT);
+  DEBUG_PE("Created AVL tree with %d nodes\n", g_tw_max_events_buffered);
 }
 
 /** Min time for optimistic schedulers must also take cancel q into account */
