@@ -1,0 +1,25 @@
+#!/bin/bash
+
+exe=$1
+shift
+
+pes=$1
+shift
+
+args=""
+
+for var in "$@"
+do
+  if [ -f $var ]
+  then
+    args="$args`awk '/^--/ { s = s $1 " " } END { print s }' $var` "
+  else
+    args="$args$var "
+  fi
+done
+
+command="./charmrun +p$pes $exe $args"
+
+echo "Running command: $command"
+
+eval $command

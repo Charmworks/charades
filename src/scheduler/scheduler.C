@@ -65,7 +65,14 @@ void Scheduler::end_simulation() {
 void Scheduler::finalize(CkReductionMsg* msg) {
   Statistics* final_stats = (Statistics*)msg->getData();
   final_stats->print();
-  CkExit();
+  if (g_tw_expected_events >= 0 && g_tw_expected_events != final_stats->events_committed) {
+    CkPrintf("Expected %i events to be committed, but instead got %i\n",
+        g_tw_expected_events, final_stats->events_committed);
+    CkAbort("Failed Simulation Expectations!\n");
+  } else {
+    CkPrintf("Simulation Executed Successfully!\n");
+    CkExit();
+  }
 }
 
 /** Attempt to execute the next LPs next event, returning false if it fails */
