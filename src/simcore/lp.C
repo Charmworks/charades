@@ -53,8 +53,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
 LP::LP() : next_token(this), uniqID(0), cancel_q(NULL), committed_events(0),
-           min_cancel_q(DBL_MAX), in_pe_queue(false), current_time(0),
-           all_events(0) {
+           min_cancel_q(DBL_MAX), current_time(0), all_events(0) {
   if(isLpSet == 0) {
     lps = thisProxy;
     isLpSet = 1;
@@ -311,11 +310,7 @@ void LP::add_to_cancel_q(Event* e) {
   e->state.cancel_q = 1;
   e->cancel_next = cancel_q;
   cancel_q = e;
-  if (!in_pe_queue) {
-    min_cancel_q = e->ts;
-    in_pe_queue = true;
-    scheduler->add_to_cancel_q(this);
-  } else if (e->ts < min_cancel_q) {
+  if (e->ts < min_cancel_q) {
     min_cancel_q = e->ts;
     scheduler->update_min_cancel(min_cancel_q);
   }
@@ -333,12 +328,11 @@ void LP::delete_pending(Event *e) {
 // chare queue.
 void LP::process_cancel_q() {
   Event *curr, *next;
-  curr = cancel_q;
 
   while (cancel_q) {
+    curr = cancel_q;
     cancel_q = NULL;
     min_cancel_q = DBL_MAX;
-    in_pe_queue = false;
 
     while(curr) {
       next = curr->cancel_next;
