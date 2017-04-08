@@ -79,6 +79,16 @@ void Scheduler::finalize(CkReductionMsg* msg) {
   }
 }
 
+void Scheduler::print_progress(Time ts) {
+  if (CkMyPe() != 0) return;
+  double time = fmin(ts, g_tw_ts_end);
+  double percent = fmin(100*ts/g_tw_ts_end,100.00);
+  double mb = CmiMemoryUsage()/(1024.0*1024.0);
+  int gvt_num = cumulative_stats->total_gvts;
+  if (cumulative_stats != stats) gvt_num += stats->total_gvts;
+  CkPrintf("GVT %6i: %8.2f (%6.2f%%), %.2f MB\n", gvt_num, time, percent, mb);
+}
+
 /** Attempt to execute the next LPs next event, returning false if it fails */
 bool Scheduler::schedule_next_lp() {
   LPToken *min = next_lps.top();
@@ -224,22 +234,18 @@ void DistributedScheduler::gvt_done(Time gvt) {
   }
 #endif
 
-  if (CkMyPe() == 0) {
-    print_trigger->iteration_done();
-    if (print_trigger->ready()) {
-      double mb = CmiMemoryUsage()/(1024.0*1024.0);
-      double percent = fmin(100*gvt/g_tw_ts_end,100.00);
-      CkPrintf("GVT %6i: %8.2f (%6.2f%%), %.2f MB\n",
-          cumulative_stats->total_gvts, gvt, percent, mb);
-      print_trigger->reset();
-    }
-  }
-
+  print_trigger->iteration_done();
   if(gvt >= g_tw_ts_end) {
+    print_progress(gvt);
     end_simulation();
   } else if (lb_trigger->ready()) {
+    print_progress(gvt);
     start_balancing();
   } else {
+    if (print_trigger->ready()) {
+      print_progress(gvt);
+      print_trigger->reset();
+    }
     next_iteration();
   }
 }
