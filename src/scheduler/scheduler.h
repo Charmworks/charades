@@ -57,6 +57,9 @@ class Scheduler : public CBase_Scheduler {
     void end_simulation();    /**< Starts stats reduction */
     void finalize(CkReductionMsg *m); /**< Receives stats reduction and exits */
 
+    /** Method for printing out basic info about the current progress */
+    void print_progress(Time ts);
+
     /** Calls execute_me() on the next LP in the queue */
     bool schedule_next_lp();
 
@@ -67,13 +70,13 @@ class Scheduler : public CBase_Scheduler {
     virtual void execute();
 
     /** Update the queue of LPs that are local to this PE */
-    virtual void register_lp(LPToken* next_token, Time next_ts) {
+    void register_lp(LPToken* next_token, Time next_ts) {
       next_lps.insert(next_token, next_ts);
     }
-    virtual void unregister_lp(LPToken* next_token) {
+    void unregister_lp(LPToken* next_token) {
       next_lps.remove(next_token);
     }
-    virtual void update_next(LPToken* token, Time ts) {
+    void update_next(LPToken* token, Time ts) {
       next_lps.update(token, ts);
     }
 
