@@ -12,7 +12,7 @@ for var in "$@"
 do
   if [ -f $var ]
   then
-    args="$args`awk '/^--/ { s = s $1 " " } END { print s }' $var` "
+    args="$args`awk '/^--/ || /^+/ { s = s $0 " " } END { print s }' $var` "
   else
     args="$args$var "
   fi

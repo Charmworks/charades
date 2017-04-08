@@ -1,0 +1,9 @@
+--ldb-interval=64
+--max-ldb=1
+--ldb-metric=0
+
++balancer GreedyRefineLB
++LBDebug 1
++LBCommOff
++LBObjOnly
++LBSyncResume
