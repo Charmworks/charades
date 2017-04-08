@@ -223,6 +223,8 @@ void DistributedScheduler::gvt_resume() {}
 void DistributedScheduler::gvt_done(Time gvt) {
   PE_STATS(total_gvts)++;
   PE_VALUE(g_last_gvt) = gvt;
+
+  // TODO: Make stats trigger work like print trigger does below.
 #if CMK_TRACE_ENABLED
   stat_trigger->iteration_done();
   // TODO: Should the gvt >= check be done here? or should we just update cumulative in end_sched
@@ -244,9 +246,15 @@ void DistributedScheduler::gvt_done(Time gvt) {
   } else {
     if (print_trigger->ready()) {
       print_progress(gvt);
-      print_trigger->reset();
     }
     next_iteration();
+  }
+
+  // If printing is ready, it would have been handled in one of the if branches
+  // so just check to reset the trigger. This can't happen in the else branch
+  // for cases where lb happens in the same iteration as the trigger is ready.
+  if (print_trigger->ready()) {
+    print_trigger->reset();
   }
 }
 
