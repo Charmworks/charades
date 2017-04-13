@@ -73,7 +73,8 @@ class LP : public CBase_LP {
     ProcessedQueue processed_events;
 
     // Used for certain LB metrics
-    int committed_events;
+    int committed_events, rolled_back_events;
+    int committed_time;
 
     // Cancel queue management
     Event *cancel_q;    // Queue of events this LP needs to cancel

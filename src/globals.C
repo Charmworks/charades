@@ -22,6 +22,8 @@ unsigned g_tw_async_reduction; // allow GVT reduction and event exec to overlap
 unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 unsigned g_tw_max_ldb;      // max number of times we will load balance
 unsigned g_tw_ldb_metric;    // Metric used to measure LP load
+unsigned g_tw_metric_ts_abs;// Use absolute time or not
+unsigned g_tw_metric_invert;// Whether or not to invert metric
 unsigned g_tw_stat_interval;// number of intervals between stat logging
 tw_stime g_tw_lookahead;    // event lookahead for conservative
 tw_stime g_tw_leash;        // gvt leash for optimistic
@@ -50,7 +52,9 @@ void clear_globals() {
   g_tw_ldb_interval  = 0;
   g_tw_stat_interval = 16;
   g_tw_max_ldb       = 0;
-  g_tw_ldb_metric     = 0;
+  g_tw_ldb_metric    = 0;
+  g_tw_metric_ts_abs = 0;
+  g_tw_metric_invert = 0;
   g_tw_lookahead     = 0.005;
   gvt_print_interval = 64;
 
