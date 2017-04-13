@@ -20,10 +20,12 @@ extern unsigned g_tw_gvt_phases;   // number of phases in the gvt
 extern unsigned g_tw_async_reduction; // allow GVT rdn and event exec overlap
 extern unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 extern unsigned g_tw_max_ldb;      // number of intervals to wait before ldb
-extern unsigned g_tw_ldb_metric;    // Metric used to measure LP load
+extern unsigned g_tw_ldb_metric;   // Metric used to measure LP load
+extern unsigned g_tw_metric_ts_abs;// Use absolute time or not
+extern unsigned g_tw_metric_invert;// Whether or not to invert metric
 extern unsigned g_tw_stat_interval;// number of gvts between logging stats
 extern tw_stime g_tw_lookahead;    // event lookahead for conservative
-extern unsigned gvt_print_interval; // determines frequency of progress print outs
+extern unsigned gvt_print_interval;// determines frequency of progress print outs
 extern tw_seed* g_tw_rng_seed;
 extern size_t   g_tw_rng_max;
 extern unsigned g_tw_nRNG_per_lp;

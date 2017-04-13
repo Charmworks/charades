@@ -52,8 +52,9 @@ void set_current_event(tw_lp* lp, Event* event) {
 #define PE_STATS(x) scheduler->stats->x
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), uniqID(0), cancel_q(NULL), committed_events(0),
-           min_cancel_q(DBL_MAX), current_time(0), all_events(0) {
+LP::LP() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(DBL_MAX),
+           current_time(0), all_events(0), committed_events(0),
+           rolled_back_events(0), committed_time(0.0) {
   if(isLpSet == 0) {
     lps = thisProxy;
     isLpSet = 1;
@@ -90,32 +91,89 @@ void LP::load_balance() {
 }
 
 void LP::ResumeFromSync() {
+  DEBUG_LP("Now on PE %i\n", CkMyPe());
   contribute(
       CkCallback(CkReductionTarget(DistributedScheduler, balancing_complete),
                  CProxy_DistributedScheduler(scheduler_id)));
 }
 
+// Helper function for metric determination
+double tsPercent(Time ts) {
+  double weight = fmin(ts / g_tw_ts_end,1.0);
+  if (g_tw_metric_invert) return 1.0 - weight;
+  else return weight;
+}
+double tsAbs(Time ts) {
+  double weight = fmin(ts, g_tw_ts_end);
+  if (g_tw_metric_invert) return g_tw_ts_end - weight;
+  else return weight;
+}
+double timeToWeight(Time ts) {
+  if (g_tw_metric_ts_abs) {
+    return tsAbs(ts);
+  } else {
+    return tsPercent(ts);
+  }
+}
+
 void LP::UserSetLBLoad() {
   double metric;
-  switch (g_tw_ldb_metric) {
+  switch(g_tw_ldb_metric) {
     case 1:
-      metric = committed_events;
-      committed_events = 0;
+      if (thisIndex == 0) CkPrintf("Metric: Current Time\n");
+      metric = timeToWeight(current_time);
       break;
     case 2:
-      metric = g_tw_ts_end - current_time;
+      if (thisIndex == 0) CkPrintf("Metric: Next Event Time\n");
+      metric = timeToWeight(events.min());
       break;
     case 3:
-      metric = current_time;
+      if (thisIndex == 0) CkPrintf("Metric: Latest Commit Time\n");
+      metric = timeToWeight(committed_time);
       break;
     case 4:
+      if (thisIndex == 0) CkPrintf("Metric: Oldest Event Time\n");
+      metric = timeToWeight(processed_events.min());
+      break;
+    case 5:
+      if (thisIndex == 0) CkPrintf("Metric: Weighted Pending Events\n");
+      for (int i = 0; i < events.size(); i++) {
+        metric += timeToWeight(events.get_temp_event_buffer()[i]->ts);
+      }
+      break;
+    case 6:
+      if (thisIndex == 0) CkPrintf("Metric: Committed Events\n");
+      metric = committed_events;
+      break;
+    case 7:
+      if (thisIndex == 0) CkPrintf("Metric: Rolled Back Events\n");
+      metric = rolled_back_events;
+      break;
+    case 8:
+      if (thisIndex == 0) CkPrintf("Metric: Processed Events\n");
+      metric = processed_events.size();
+      break;
+    case 9:
+      if (thisIndex == 0) CkPrintf("Metric: Potential Committed Events\n");
+      metric = processed_events.size() + committed_events;
+      break;
+    case 10:
+      if (thisIndex == 0) CkPrintf("Metric: All Executed Events\n");
+      metric = processed_events.size() + committed_events + rolled_back_events;
+      break;
+    case 11:
+      if (thisIndex == 0) CkPrintf("Metric: Pending Events\n");
       metric = events.size();
+      break;
+    case 12:
+      if (thisIndex == 0) CkPrintf("Metric: Active Events\n");
+      metric = events.size() + processed_events.size();
       break;
     default:
       CkAbort("Invalid load balancing metric\n");
       break;
-  };
-  DEBUG_LP("Weight: %0.2f\n", metric);
+  }
+  DEBUG_LP("On PE %i, Weight: %0.2f\n", CkMyPe(), metric);
   setObjTime(metric);
 }
 
@@ -222,6 +280,7 @@ void* LP::execute_me() {
     } else {
       tw_event_free(e,true);
       committed_events++;
+      committed_time = e->ts;
     }
     scheduler->update_next(&next_token, events.min());
     return (void*)true;
@@ -237,6 +296,7 @@ void LP::rollback_me(tw_stime ts) {
   while(processed_events.size() && processed_events.front()->ts > ts) {
     e = processed_events.pop_front();
     tw_event_rollback(e);
+    rolled_back_events++;
     events.push(e);
   }
 
@@ -257,6 +317,7 @@ void LP::rollback_me(Event *event) {
   Event* e = processed_events.pop_front();
   while (e != event) {
     tw_event_rollback(e);
+    rolled_back_events++;
     events.push(e);
     e = processed_events.pop_front();
   }
@@ -264,6 +325,7 @@ void LP::rollback_me(Event *event) {
   // The caller will correctly handle what else to do with the event.
   assert(e == event);
   tw_event_rollback(event);
+  rolled_back_events++;
 
   // Update the queues, and current variables.
   scheduler->update_next(&next_token, events.min());
@@ -285,6 +347,7 @@ void LP::fossil_me(tw_stime gvt) {
     e = processed_events.pop_back();
     tw_event_free(e,true);
     committed_events++;
+    committed_time = e->ts;
   }
 }
 
