@@ -3,15 +3,13 @@
 #include "charm_functions.h"
 #include "event.h"
 #include "scheduler.h"
-
+#include "globals.h"
 #include <float.h>
 
 PhaseGVT::PhaseGVT() {
   gvt_name = "Multi-Phase GVT";
   
-  // TODO: Make this a configuration option
-  max_phase = 2;
-
+  max_phase = g_tw_gvt_phases;
   producing_phase = 0;
   next_phase = (producing_phase + 1) % max_phase;
   gvt_phase_begin = -1;

@@ -17,6 +17,7 @@ unsigned g_tw_mblock;       // number of events per gvt interval
 unsigned g_tw_gvt_interval; // number of intervals per gvt
 unsigned g_tw_gvt_trigger ; // GVT trigger type
 unsigned g_tw_gvt_phases;   // number of phases of the gvt
+unsigned g_tw_gvt_bucket_size; // size of each bucket for bucketed gvt
 unsigned g_tw_greedy_start; // whether we allow a greedy start or not
 unsigned g_tw_async_reduction; // allow GVT reduction and event exec to overlap
 unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
@@ -47,7 +48,8 @@ void clear_globals() {
   g_tw_mblock        = 16;
   g_tw_gvt_interval  = 16;
   g_tw_gvt_trigger   = 1;
-  g_tw_gvt_phases    = 0;
+  g_tw_gvt_phases    = 2;
+  g_tw_gvt_bucket_size    = 8;
   g_tw_async_reduction = 0;
   g_tw_ldb_interval  = 0;
   g_tw_stat_interval = 16;

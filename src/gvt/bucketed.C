@@ -10,8 +10,7 @@
 BucketGVT::BucketGVT() {
   gvt_name = "Bucket GVT";
 
-  //TODO: Make this input argument
-  bucket_size = 8;
+  bucket_size = g_tw_gvt_bucket_size;
 
   int num_buckets = ceil(g_tw_ts_end / (double) bucket_size);
   cur_bucket = 0;
