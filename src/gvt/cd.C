@@ -3,7 +3,7 @@
 #include "completion.h"
 #include "event.h"
 #include "scheduler.h"
-
+#include "globals.h"
 #include <float.h>
 
 CdGVT::CdGVT() {
@@ -12,9 +12,7 @@ CdGVT::CdGVT() {
 }
 
 void CdGVT::initialize_detectors() {
-  // TODO: Make this a configuration option
-  //max_phase = g_tw_gvt_phases;
-  max_phase = 5;
+  max_phase = g_tw_gvt_phases;
   current_phase = next_phase = 0;
   detector_ready = new bool[max_phase];
   detector_proxies = new CProxy_CompletionDetector[max_phase];

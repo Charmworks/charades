@@ -17,6 +17,7 @@ extern unsigned g_tw_mblock;       // number of events per gvt interval
 extern unsigned g_tw_gvt_interval; // number of intervals per gvt
 extern unsigned g_tw_gvt_trigger;  // GVT trigger type
 extern unsigned g_tw_gvt_phases;   // number of phases in the gvt
+extern unsigned g_tw_gvt_bucket_size;   // size of each bucket for bucketed gvt
 extern unsigned g_tw_async_reduction; // allow GVT rdn and event exec overlap
 extern unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
 extern unsigned g_tw_max_ldb;      // number of intervals to wait before ldb
