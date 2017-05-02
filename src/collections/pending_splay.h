@@ -310,17 +310,10 @@ class PendingSplay : public PendingQueue {
     }
 
     void erase(Event* r) {
+      TW_ASSERT(nitems > 0, "Attempting to delete from empty queue\n");
+      TW_ASSERT(r->state.owner == TW_chare_q, "Bad event owner\n");
       tw_event       *n, *p;
       tw_event       *tmp;
-
-      if (r->state.owner != TW_chare_q) {
-        tw_error(TW_LOC,
-          "Attempt to delete event with owner: %d\n", r->state.owner);
-      }
-      if (nitems == 0) {
-        tw_error(TW_LOC,
-            "Attempt to delete from empty queue\n");
-      }
 
       if (r == least) {
         pop();

@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "statistics.h"
 #include "typedefs.h"
+#include "util.h"
 
 extern CProxy_LP lps;
 extern CProxy_Scheduler scheduler;
@@ -44,23 +45,16 @@ void tw_event_free(tw_event *e, bool commit) {
 }
 
 void tw_event_send(tw_event * e) {
-  tw_lp* src_lp = (tw_lp*)e->src_lp;
-  int dest_peid;
-
   if (e == PE_VALUE(abort_event)) {
-    if (e->ts < g_tw_ts_end) {
-      tw_error(TW_LOC,
-          "Attempting to send an abort event before simulation end");
-    }
+    TW_ASSERT(e->ts > g_tw_ts_end, "Can't send abort event before end\n");
     return;
   }
+  TW_ASSERT(g_tw_synchronization_protocol != CONSERVATIVE ||
+            e->ts - tw_now((tw_lp*)e->src_lp) >= g_tw_lookahead,
+            "Lookahead violation: try decreasing the lookahead value");
 
-  //Trap lookahead violations in debug mode
-  if (g_tw_synchronization_protocol == CONSERVATIVE) {
-    assert(e->ts - tw_now(src_lp) >= g_tw_lookahead &&
-        "Lookahead violation: try decreasing the lookahead value");
-  }
-
+  int dest_peid;
+  tw_lp* src_lp = (tw_lp*)e->src_lp;
   link_causality(e, current_event(src_lp));
   dest_peid = g_chare_map(e->dest_lp);
 
@@ -96,9 +90,6 @@ void tw_event_rollback(tw_event * event) {
 Event* charm_allocate_event(int needMsg) {
   Event* e;
   e = PE_VALUE(event_buffer)->get_event();
-  if (e == PE_VALUE(abort_event)) {
-    tw_error(TW_LOC, "We are all out of events to allocate!\n");
-  }
   if (needMsg) {
     e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
     e->userData = e->eventMsg->userData;

@@ -12,8 +12,8 @@
 #include "pending_queue.h"
 
 #include "event.h"
-#include "ross_util.h"
 #include "typedefs.h"
+#include "util.h"
 
 #include <float.h>
 
@@ -163,29 +163,27 @@ class PendingHeap : public PendingQueue {
     }
 
     void erase(Event* victim) {
-      if (nelems == 0) {
-        tw_error(TW_LOC, "Can't erase an event from an empty heap\n");
-      }
+      TW_ASSERT(nelems > 0, "Can't erase from an empty heap\n");
+      TW_ASSERT(victim->index >= 0 && victim->index < nelems,
+          "Invalid heap index in erase\n");
+      TW_ASSERT(elems[victim->index]->index == victim->index,
+          "Mismatch in heap indices during erase\n");
+
       int i = victim->index;
+      nelems--;
 
-      if(i < 0 || i >= nelems || elems[i]->index != i) {
-        tw_error(TW_LOC, "ERROR: Can't erase event from pending heap\n");
-      } else {
-        nelems--;
+      if (i == nelems) {
+        elems[nelems] = NULL;
+        return;
+      } else if (elems > 0) {
+        elems[i] = elems[nelems];
+        elems[i]->index = i;
+        elems[nelems] = NULL;
 
-        if (i == nelems) {
-          elems[nelems] = NULL;
-          return;
-        } else if (elems > 0) {
-          elems[i] = elems[nelems];
-          elems[i]->index = i;
-          elems[nelems] = NULL;
-
-          if (elems[i]->ts <= victim->ts) {
-            percolate_up(i);
-          } else {
-            sift_down(i);
-          }
+        if (elems[i]->ts <= victim->ts) {
+          percolate_up(i);
+        } else {
+          sift_down(i);
         }
       }
     }

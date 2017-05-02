@@ -2,7 +2,6 @@
 
 #include "globals.h"
 #include "lp.h"
-#include "ross_util.h"
 
 #include <stdlib.h> // Included for calloc
 
@@ -287,14 +286,10 @@ tw_rand_initial_seed(tw_rng_stream * g, tw_lpid id)
 void
 tw_rand_init_streams(tw_lp * lp, unsigned int nstreams)
 {
+  TW_ASSERT(nstreams <= g_tw_rng_max, "RNG Max Streams Exceeded: %i > %i\n",
+      nstreams, g_tw_rng_max);
 	int	 i;
-
-	//lp->rng = (tw_rng*)tw_calloc(TW_LOC, "LP RNG Streams", sizeof(*lp->rng), nstreams);
 	lp->rng = (tw_rng_stream*)calloc(sizeof(*lp->rng), nstreams);
-
-	if(nstreams > g_tw_rng_max)
-		tw_error(TW_LOC, "RNG max streams exceeded: %d > %d\n",
-			 nstreams, g_tw_rng_max);
 
 	for(i = 0; i < nstreams; i++)
 		tw_rand_initial_seed((tw_rng_stream*)(&lp->rng[i]), (lp->gid * g_tw_rng_max) + i);
@@ -422,10 +417,9 @@ rng_gen_reverse_val(tw_rng_stream * g)
   int32_t s;
   double u;
 
-  u = 0.0;
+  TW_ASSERT(b[0], "b values not calculated\n");
 
-  if(b[0] == 0)
-    tw_error(TW_LOC, "b values not calculated \n");
+  u = 0.0;
 
   s = g->Cg[0];
   s =(b[0] * s) % m[0];

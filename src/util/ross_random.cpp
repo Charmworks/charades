@@ -1,7 +1,6 @@
 #include "ross_random.h"
 
-#include "ross_util.h"
-
+#include <charm++.h> // Temporary for CkAbort
 #include <math.h>
 
 /*
@@ -149,7 +148,7 @@ double
 tw_rand_normal01(tw_rng_stream * g, unsigned int *rng_calls)
 {
 #ifndef RAND_NORMAL
-	tw_error(TW_LOC, "Please compile using -DRAND_NORMAL!");
+	CkAbort("Please compile using -DRAND_NORMAL!");
   return -1.0;
 #endif
 

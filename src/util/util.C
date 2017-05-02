@@ -1,6 +1,6 @@
-#include "ross_util.h"
+#include "util.h"
 
-#include "charm_functions.h"
+/*#include "charm_functions.h"
 
 #include <charm++.h>  // Included for CkAbort
 #include <stdarg.h> // Included for variable length args
@@ -32,4 +32,4 @@ void tw_error(const char *file, int line, const char *fmt, ...) {
   va_end(ap);
 
   tw_abort("Abort called\n");
-}
+}*/

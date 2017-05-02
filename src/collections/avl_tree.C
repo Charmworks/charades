@@ -1,9 +1,7 @@
 #include "avl_tree.h"
 
 #include "globals.h"
-#include "ross_util.h"
-
-#include <assert.h>
+#include "util.h"
 
 /* Copied and modified from http://pine.cs.yale.edu/pinewiki/C/AvlTree google cache */
 /* implementation of an AVL tree with explicit heights */
@@ -70,15 +68,16 @@ void avlSanityCheck(AvlTree root)
       avlSanityCheck(root->child[i]);
     }
 
-    assert(root->height == 1 + Max(avlGetHeight(root->child[0]), avlGetHeight(root->child[1])));
+    TW_ASSERT(root->height == 1 +
+        Max(avlGetHeight(root->child[0]), avlGetHeight(root->child[1])),
+        "AVL Sanity Check Failed\n");
   }
 }
 
 /* recompute height of a node */
 static void avlFixHeight(AvlTree t)
 {
-  assert(t != AVL_EMPTY);
-
+  TW_ASSERT(t != AVL_EMPTY, "Empty tree in avlFixHeight()\n");
   t->height = 1 + Max(avlGetHeight(t->child[0]), avlGetHeight(t->child[1]));
 }
 
@@ -154,10 +153,6 @@ void avlInsert(AvlTree *t, Event *key)
   if (*t == AVL_EMPTY) {
     /* new t */
     *t = avl_alloc();
-    if (*t == NULL) {
-      tw_error(TW_LOC, "Out of AVL tree nodes!");
-    }
-
     (*t)->child[0] = AVL_EMPTY;
     (*t)->child[1] = AVL_EMPTY;
 
@@ -175,7 +170,7 @@ void avlInsert(AvlTree *t, Event *key)
       // We have a event ID tie, check the send_pe
       if (key->send_pe == (*t)->key->send_pe) {
         // This shouldn't happen but we'll allow it
-        tw_printf(TW_LOC, "The events are identical!!!\n");
+        CkPrintf("Warning: identical events in AVL tree!\n");
       }
       avlInsert(&(*t)->child[key->send_pe > (*t)->key->send_pe], key);
       avlRebalance(t);
@@ -198,7 +193,7 @@ void avlPrintKeys(AvlTree t)
 {
   if (t != AVL_EMPTY) {
     avlPrintKeys(t->child[0]);
-    //printf("%f\n", t->key->ts);
+    CkPrintf("%f\n", t->key->ts);
     avlPrintKeys(t->child[1]);
   }
 }
@@ -207,10 +202,9 @@ void avlPrintKeys(AvlTree t)
 /* delete and return minimum value in a tree */
 Event * avlDeleteMin(AvlTree *t)
 {
+  TW_ASSERT(t != AVL_EMPTY, "Can't delete from an empty AVL tree\n");
   AvlTree oldroot;
   Event *event_with_lowest_ts = NULL;
-
-  assert(t != AVL_EMPTY);
 
   if ((*t)->child[0] == AVL_EMPTY) {
     /* root is min value */
@@ -231,13 +225,9 @@ Event * avlDeleteMin(AvlTree *t)
 /* delete the given value */
 Event * avlDelete(AvlTree *t, Event *key)
 {
+  TW_ASSERT(t != AVL_EMPTY, "Can't delete from an empty AVL tree\n");
   Event *target = NULL;
   AvlTree oldroot;
-
-  if (*t == AVL_EMPTY) {
-    tw_error(TW_LOC, "We never look for non-existent events : %d %d !", key->send_pe, key->event_id);
-    return target;
-  }
 
   if (key->ts == (*t)->key->ts) {
     // We have a timestamp tie, check the event ID
@@ -313,13 +303,10 @@ Event * avlInsertOrDelete(AvlTree *t, Event *key)
 
 AvlTree avl_alloc(void)
 {
+  TW_ASSERT(PE_VALUE(avl_list_head) != NULL, "Out of AVL nodes\n");
+
   AvlTree head = PE_VALUE(avl_list_head);
   PE_VALUE(avl_list_head) = head->next;
-
-  if (PE_VALUE(avl_list_head) == NULL) {
-    tw_error(TW_LOC, "avl_list_head is invalid!");
-  }
-
   head->next = NULL;
 
   return head;

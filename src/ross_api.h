@@ -1,16 +1,15 @@
 #ifndef _ROSS_API_H
 #define _ROSS_API_H
 
-#include "charm_functions.h"
 #include "event.h"
 #include "globals.h"
 #include "lp.h"
 #include "ross_random.h"
 #include "ross_clcg4.h"
 #include "ross_opts.h"
-#include "ross_util.h"
 #include "ross_setup.h"
 #include "ross_block.h"
+#include "util.h"
 
 #include <charm++.h>
 #define g_tw_mynode CkMyPe()

@@ -3,7 +3,6 @@
 
 #include "charm_setup.decl.h"
 
-#include "charm_functions.h"
 #include "event.h"
 #include "lp.h"
 #include "mpi-interoperate.h" // This has to be included here
@@ -21,5 +20,9 @@ class Initialize : public CBase_Initialize {
       CkExit();
     }
 };
+
+void charm_init(int argc, char** argv);
+void charm_exit();
+void charm_run();
 
 #endif

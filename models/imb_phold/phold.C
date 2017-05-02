@@ -125,13 +125,8 @@ int main(int argc, char **argv, char **env) {
   tw_init(argc, argv);
 
   // Check for a valid configuration
-  if (g_tw_lookahead > 1.0) {
-    tw_error(TW_LOC, "Lookahead > 1.0 .. needs to be less\n");
-  }
-
-  if (region_size > g_total_lps) {
-    tw_error(TW_LOC, "Region size is larger than total lps");
-  }
+  TW_ASSERT(g_tw_lookahead <= 1.0, "Bad lookahead value\n");
+  TW_ASSERT(region_size <= g_total_lps, "Region size invalid\n");
 
   if (region_size == 0) {
     region_size = g_total_lps;
@@ -149,7 +144,7 @@ int main(int argc, char **argv, char **env) {
       lp_load_map = &linear_lp_load;
       break;
     default:
-      tw_error(TW_LOC, "Bad map type specified\n");
+      CkAbort("Bad load map type specified\n");
   }
 
   // Adjust means based on lookahead and set delay map for lps
@@ -168,7 +163,7 @@ int main(int argc, char **argv, char **env) {
       lp_delay_map = inverse_blocked_lp_delay;
       break;
     default:
-      tw_error(TW_LOC, "Bad map type specified\n");
+      CkAbort("Bad delay map type specified\n");
   }
 
   // Set the remote map for lps
@@ -183,7 +178,7 @@ int main(int argc, char **argv, char **env) {
       lp_remote_map = &inverse_blocked_lp_remote;
       break;
     default:
-      tw_error(TW_LOC, "Bad map type specified\n");
+      CkAbort("Bad remote map type specified\n");
   }
 
   // Type map must be set before tw_define_lps, all other maps will be default

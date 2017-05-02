@@ -2,8 +2,8 @@
 #define PROCESSED_QUEUE
 
 #include "event.h"
-//#include "ross_util.h"
 #include "typedefs.h"
+#include "util.h"
 
 #include <float.h>  // Included for DBL_MAX
 
@@ -84,13 +84,11 @@ class ProcessedQueue {
   }
 
   Event * pop_front() {
-    if (length <= 0) {
-      tw_error(TW_LOC, "Popping an empty queue from the front\n");
-    }
-    length--;
+    TW_ASSERT(length > 0, "Popping an empty queue from the front\n");
 
     Event *e = head;
     head = e->next;
+    length--;
     if(head == NULL) {
       tail = NULL;
     } else {
@@ -124,13 +122,11 @@ class ProcessedQueue {
   }
 
   Event * pop_back() {
-    if (length <= 0) {
-      tw_error(TW_LOC, "Popping an empty queue from the back\n");
-    }
-    length--;
+    TW_ASSERT(length > 0, "Popping an empty queue from the back\n");
 
     Event * e = tail;
     tail = e->prev;
+    length--;
     if(tail != NULL) {
       tail->next = NULL;
     } else {
@@ -141,18 +137,11 @@ class ProcessedQueue {
   }
 
   void erase(Event *e) {
-    if (e->state.owner != TW_rollback_q) {
-      tw_error(TW_LOC,
-          "Attempt to erase event with owner %d\n", e->state.owner);
-    }
+    TW_ASSERT(length > 0, "Attempting to erase from an empty queue\n");
+    TW_ASSERT(e->state.owner == TW_rollback_q, "Erasing event we don't own\n");
+
     e->state.owner = 0;
-
-    if (length <= 0) {
-      tw_error(TW_LOC,
-          "Attempt to erase an event from an empty queue\n");
-    }
     length--;
-
     if(e->prev != NULL) {
       e->prev->next = e->next;
     } else {
