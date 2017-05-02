@@ -1,6 +1,5 @@
 #include "scheduler.h"
 
-#include "charm_functions.h"
 #include "charm_setup.h"
 #include "event_buffer.h"
 #include "globals.h"
@@ -9,6 +8,7 @@
 #include "ross_random.h"
 #include "statistics.h"
 #include "trigger.h"
+#include "util.h"
 
 #include <float.h> // Included for DBL_MAX
 
@@ -221,6 +221,7 @@ void DistributedScheduler::gvt_resume() {}
  * If none of the above are true, then just start the next iteration
  */
 void DistributedScheduler::gvt_done(Time gvt) {
+  TW_ASSERT(gvt >= PE_VALUE(g_last_gvt), "GVT Causality Violation\n");
   PE_STATS(total_gvts)++;
   PE_VALUE(g_last_gvt) = gvt;
 
@@ -260,7 +261,7 @@ void DistributedScheduler::gvt_done(Time gvt) {
 
 /** Tell every local LP to start load balancing */
 void DistributedScheduler::start_balancing() {
-  if (running) CkAbort("Can't balance while runnning\n");
+  TW_ASSERT(!running, "Can't balance while scheduler is running\n");
   DEBUG_PE("Starting to load balancing\n");
   for (int i = 0; i < next_lps.get_size(); i++) {
     next_lps.as_array()[i]->lp->load_balance();

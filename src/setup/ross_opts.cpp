@@ -1,9 +1,9 @@
 #include "ross_opts.h"
 
-#include "charm_functions.h"
+#include "charm++.h" // Temporary for CkAbort
 #include "globals.h"
-#include "ross_util.h"
 #include "typedefs.h"
+#include "util.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -188,7 +188,8 @@ static void apply_opt(const tw_optdef *def, const char *value) {
             *((unsigned int*)def->value) = (unsigned int)v;
             break;
           default:
-            tw_error(TW_LOC, "Option type not supported here.");
+            CkAbort("Option type not supported here.\n");
+            break;
         }
         break;
       }
@@ -224,7 +225,8 @@ static void apply_opt(const tw_optdef *def, const char *value) {
       break;
 
     default:
-      tw_error(TW_LOC, "Option type not supported here.");
+      CkAbort("Option type not supported here.\n");
+      break;
   }
 }
 
@@ -288,7 +290,7 @@ void tw_opt_parse(int *argc_p, char ***argv_p) {
     if (!(opt_groups[i])->type || is_empty(opt_groups[i]))
       continue;
     if (i >= ARRAY_SIZE(all_groups))
-      tw_error(TW_LOC, "Too many tw_optdef arrays.");
+      CkAbort("Too many tw_optdef arrays.\n");
     all_groups[i] = opt_groups[i];
   }
   all_groups[i++] = basic;

@@ -1,15 +1,14 @@
 #include "lp.h"
 
 #include "avl_tree.h"
-#include "charm_functions.h"
 #include "event.h"
 #include "globals.h"
 #include "mpi-interoperate.h"
 #include "scheduler.h"
 #include "statistics.h"
-#include "ross_util.h"
 #include "ross_random.h"
 #include "ross_clcg4.h"
+#include "util.h"
 
 #include <assert.h>
 #include <float.h>
@@ -364,7 +363,7 @@ void LP::cancel_event(Event* e) {
       add_to_cancel_q(e);
       return;
     default:
-      tw_error(TW_LOC, "Unknown owner in LP::cancel_event: %d", e->state.owner);
+      CkAbort("Unknown owner in LP::cancel_event\n");
       return;
   }
 }
@@ -411,9 +410,7 @@ void LP::process_cancel_q() {
           break;
 
         default:
-          tw_error(TW_LOC,
-              "Unknown event owner in cancel_q: %d %d %d %f",
-              curr->state.owner, curr->send_pe, curr->event_id, curr->ts);
+          CkAbort("Unknown event owner in cancel_q\n");
           break;
       }
       curr = next;

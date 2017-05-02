@@ -108,7 +108,7 @@ void pup_causality(PUP::er& p, Event* e) {
       } else if (tmp->state.owner == TW_sent) {
         e->sent_count++;
       } else {
-        tw_error(TW_LOC, "Bad owner in causality list: %d\n", tmp->state.owner);
+        CkAbort("Bad owner in causality list\n");
       }
       tmp = tmp->cause_next;
     }
@@ -140,13 +140,13 @@ void pup_causality(PUP::er& p, Event* e) {
         e->pending_indices[pending_idx++] = tmp->index;
         unlink = true;
         if (pending_idx > e->pending_count) {
-          tw_error(TW_LOC, "Mismatched number of pending events!\n");
+          CkAbort("Mismatched number of pending events!\n");
         }
       } else if (tmp->state.owner == TW_rollback_q) {
         e->processed_indices[processed_idx++] = tmp->index;
         unlink = true;
         if (processed_idx > e->processed_count) {
-          tw_error(TW_LOC, "Mismatched number of processed event!\n");
+          CkAbort("Mismatched number of processed event!\n");
         }
       }
       if (unlink) {

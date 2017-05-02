@@ -1,9 +1,10 @@
 #include "phased.h"
 
-#include "charm_functions.h"
 #include "event.h"
 #include "scheduler.h"
 #include "globals.h"
+#include "util.h"
+
 #include <float.h>
 
 PhaseGVT::PhaseGVT() {

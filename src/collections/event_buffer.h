@@ -2,11 +2,10 @@
 #define EVENT_BUFFER_H
 
 #include "event.h"
-#include "ross_util.h"  // Included for tw_error
 #include "statistics.h"
+#include "util.h"
 
 #include <stdio.h>      // Included for size_t
-#include <assert.h>
 
 class Event;
 class RemoteEvent;
@@ -39,8 +38,7 @@ class EventBuffer {
       err = posix_memalign((void **)&temp_buf, 64, stack_pointer*buf_size);
 
       if (buf_size < sizeof(Event)) {
-        tw_error(TW_LOC, "ERROR: Per-event buffer size %d, event size %d\n",
-            buf_size, sizeof(Event));
+        CkAbort("ERROR: Per-event buffer size broken\n");
       }
 
       for (int i = 0; i < max; i++) {
@@ -57,17 +55,14 @@ class EventBuffer {
     }
 
     Event* get_event() {
-      if (stack_pointer > 0) {
-        buffer[--stack_pointer]->clear();
-        if(max_events - stack_pointer > PE_STATS(max_events_used))
-          PE_STATS(max_events_used) = max_events - stack_pointer;
-        return buffer[stack_pointer];
-      } else {
-        return abort_event;
-      }
+      TW_ASSERT(stack_pointer > 0, "Out of events to allocate!\n");
+      buffer[--stack_pointer]->clear();
+      if(max_events - stack_pointer > PE_STATS(max_events_used))
+        PE_STATS(max_events_used) = max_events - stack_pointer;
+      return buffer[stack_pointer];
     }
     void free_event(Event* e) {
-      assert(stack_pointer < max_events);
+      TW_ASSERT(stack_pointer < max_events, "Freeing event to full buffer\n");
       if (e->eventMsg) {
         free_remote_event(e->eventMsg);
       }

@@ -1,6 +1,5 @@
 #include "bucketed.h"
 
-#include "charm_functions.h"
 #include "event.h"
 #include "globals.h"
 #include "scheduler.h"

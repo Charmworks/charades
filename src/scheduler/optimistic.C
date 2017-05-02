@@ -1,9 +1,9 @@
 #include "optimistic.h"
 
 #include "avl_tree.h"   // Temporary, should be moved to LP
-#include "charm_functions.h"
 #include "globals.h"
 #include "trigger.h"
+#include "util.h"
 
 OptimisticScheduler::OptimisticScheduler() {
   scheduler_name = "Optimisitic Scheduler";

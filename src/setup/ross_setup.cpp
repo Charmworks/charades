@@ -1,12 +1,11 @@
 #include "ross_setup.h"
 
-#include "charm_functions.h"
+#include "charm_setup.h"
 #include "globals.h"
 #include "lp.h"
 #include "mpi-interoperate.h"
 #include "ross_block.h"
 #include "ross_opts.h"
-#include "ross_util.h"
 
 char** CopyArgs(int& argc, char** argv) {
   argc = CmiGetArgc(argv);
@@ -98,7 +97,7 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
 
     // Check for consitency
     if (g_total_lps != g_num_chares * g_lps_per_chare) {
-      tw_error(TW_LOC, "Inconsistent values for g_total_lps, g_num_chares, and g_lps_per_chare\n");
+      CkAbort("Inconsistent values for g_total_lps, g_num_chares, and g_lps_per_chare\n");
     }
   } else {
     if (g_total_lps == 1) {
@@ -120,7 +119,7 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
       sum += g_numlp_map(i);
     }
     if (sum != g_total_lps) {
-      tw_error(TW_LOC, "Inconsistent values for g_total_lps and g_num_chares when using a non-constant numlps per chare\n");
+      CkAbort("Inconsistent values for g_total_lps and g_num_chares when using a non-constant numlps per chare\n");
     }
     if (tw_ismaster()) {
       printf("Creating %d chares and a total of %d lps, with a variable number of lps per chare.\n",

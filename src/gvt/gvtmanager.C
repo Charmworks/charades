@@ -1,7 +1,7 @@
 #include "gvtmanager.h"
 
-#include "charm_functions.h"
 #include "scheduler.h"
+#include "util.h"
 
 CProxy_GVTManager gvt_manager_proxy;
 
