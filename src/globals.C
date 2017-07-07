@@ -1,46 +1,82 @@
+/** \file globals.C
+ *  Definitions for global variables and associated functions.
+ *
+ *  \todo Many of these variables really belong to specific modules, and can
+ *  also be made non-global.
+ */
+
 #include "globals.h"
 
 #include "ross_block.h"
 #include "scheduler.h"
 
-numlp_map_f g_numlp_map;  // chare -> numlps on that chare
-init_map_f  g_init_map;   // (chare x lid) -> gid
-type_map_f  g_type_map;   // gid -> type
-local_map_f g_local_map;  // gid -> lid
-chare_map_f g_chare_map;  // gid -> chare
+/** \name LP Configuration
+ */
+///@{
+unsigned g_total_lps;
+unsigned g_num_chares;
+unsigned g_lps_per_chare;
 
+numlp_map_f g_numlp_map;
+init_map_f  g_init_map;
+type_map_f  g_type_map;
+local_map_f g_local_map;
+chare_map_f g_chare_map;
+///@}
+
+/** \name Event Configuration */
+///@{
+tw_stime g_tw_lookahead;
+size_t   g_tw_msg_sz;
+unsigned g_tw_max_events_buffered;
+unsigned g_tw_max_remote_events_buffered;
+///@}
+
+/** \name Scheduler Configuration */
+///@{
 unsigned g_tw_synchronization_protocol;
+unsigned g_tw_mblock;
+tw_stime g_tw_ts_end;
+///@}
+
+/** \name GVT Configuration */
+///@{
 unsigned g_tw_gvt_scheme;
-unsigned g_tw_expected_events;
-tw_stime g_tw_ts_end;       // end time of simulation
-unsigned g_tw_mblock;       // number of events per gvt interval
-unsigned g_tw_gvt_interval; // number of intervals per gvt
-unsigned g_tw_gvt_trigger ; // GVT trigger type
-unsigned g_tw_gvt_phases;   // number of phases of the gvt
-unsigned g_tw_gvt_bucket_size; // size of each bucket for bucketed gvt
-unsigned g_tw_greedy_start; // whether we allow a greedy start or not
-unsigned g_tw_async_reduction; // allow GVT reduction and event exec to overlap
-unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
-unsigned g_tw_max_ldb;      // max number of times we will load balance
-unsigned g_tw_ldb_metric;    // Metric used to measure LP load
-unsigned g_tw_metric_ts_abs;// Use absolute time or not
-unsigned g_tw_metric_invert;// Whether or not to invert metric
-unsigned g_tw_stat_interval;// number of intervals between stat logging
-tw_stime g_tw_lookahead;    // event lookahead for conservative
-tw_stime g_tw_leash;        // gvt leash for optimistic
-unsigned gvt_print_interval; // determines frequency of progress print outs
+unsigned g_tw_gvt_interval;
+unsigned g_tw_gvt_trigger;
+unsigned g_tw_gvt_phases;
+unsigned g_tw_gvt_bucket_size;
+unsigned g_tw_async_reduction;
+///@}
+
+/** \name LB Configuration */
+///@{
+unsigned g_tw_ldb_interval;
+unsigned g_tw_max_ldb;
+unsigned g_tw_ldb_metric;
+unsigned g_tw_metric_ts_abs;
+unsigned g_tw_metric_invert;
+///@}
+
+/** \name RNG Configuration */
+///@{
 tw_seed* g_tw_rng_seed;
 size_t   g_tw_rng_max;
 unsigned g_tw_nRNG_per_lp;
 unsigned g_tw_rng_default;
-unsigned g_num_chares;    // number of chares
-unsigned g_lps_per_chare; // number of LPs per chare (if constant)
-unsigned g_total_lps;     // number of LPs in the simulation
-size_t   g_tw_msg_sz;
-unsigned g_tw_max_events_buffered;
-unsigned g_tw_max_remote_events_buffered;
+///@}
 
-// Function for setting default/initial values
+/** \name Misc Configuration */
+///@{
+unsigned gvt_print_interval;
+unsigned g_tw_stat_interval;
+unsigned g_tw_expected_events;
+///@}
+
+/**
+ * \todo Can these just be initialized at declaration? Especially if they are
+ * all moved to more appropriate modules.
+ */
 void clear_globals() {
   g_tw_synchronization_protocol = CONSERVATIVE;
   g_tw_gvt_scheme    = 1;
@@ -81,6 +117,7 @@ void clear_globals() {
 }
 
 Globals* get_globals() {
+  /** Store the pointer in a static variable for faster lookup */
   static Globals* globals = ((Scheduler*)CkLocalBranch(scheduler_id))->globals;
   return globals;
 }
