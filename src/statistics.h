@@ -1,3 +1,32 @@
+/** \file statistics.h
+ *  Declaration of the Statistics class and associated methods/variables.
+ *
+ *  Currently, each PE maintains a single instance of a Statistics object, and
+ *  at the end of the simulation, a reduction is done to compute total
+ *  statistics. Some of the PE level statistics may also be logged for
+ *  projections intermittently if tracing is turned on, which requires an
+ *  additional instance a Statistics object on each PE.
+ *
+ *  \todo More modular statistics
+ *    - A top level composite statistics class
+ *    - Smaller stats modules for things like scheduler, GVT, etc.
+ *    - Modules register with the top level class
+ *
+ *  \todo LP level statistics/tracing
+ *    - Related to above, could be a module, however there would be one per LP
+ *    - Tracing would require some added functionality to Projections
+ *
+ *  \todo Better stats tracing
+ *    - Probably subclass or composite pattern to make logging self-contained
+ *    - Calling log() would dump current stats to file, and accumulate
+ *    - Final reduction only needs aggregate stats
+ *    - Maybe have a separate type for stats that is a pair when tracing is
+ *      enabled, which will make all stats traceable more easily
+ *
+ *  \todo Model specific stats and logging
+ *    - May be entirely taken care of by modular and lp level above
+ */
+
 #ifndef STATISTICS_H_
 #define STATISTICS_H_
 
@@ -5,107 +34,130 @@
 
 #include <charm++.h>
 
-// TODO plan for Statistics:
-// Make modular statistics:
-// - A composite statistics class for adding multiple stats modules
-// - Stats modules for relvant bits (ie: GVT specific, scheduler specific, etc)
-// - Where are the top level stats kept?
-//
-// Make loggable stats:
-// - Move the idea of cumulative stats and regular stats to within this class
-// - If tracing enabled, have a private cumulative stats
-// - When logging is called, log, dump to cumulative, and clear
-// - Perhaps add a finalize or some way to use cumulative stats at the end
-//  - This might actually copy the stats over
-//  - It may also return a pointer (either this, or cumulative depending)
-//
-//  More stats, and more stats logging
+/** MACRO to more easily access PE local statistics */
+#define PE_STATS(x) get_statistics()->x
 
-// A struct for holding PE level statistics
-// Two instances of this will be on each PE, one for stats for the current GVT
-// period, and one for the accumulated stats for the whole run.
-
+/**
+ * Class for holding a single stat, and computing its min, max, and sum (across
+ * PEs) when doing the final stat reduction.
+ */
 template <typename T>
 class Stat {
 public:
-  T total;
-  T minimum;
-  T maximum;
+  T total;    ///< Total (across PEs), also the current value during the sim
+  T minimum;  ///< Maximum value across PEs
+  T maximum;  ///< Minimum value across PEs
 
-  Stat() { clear(); }
+  Stat() { clear(); } ///< Calls clear()
 
+  /** Clears stat to "0" */
   void clear() {
     total = 0;
     minimum = 0;
     maximum = 0;
   }
+  /** Sets min and max to total (call right before the reduction) */
   void finalize() {
     minimum = maximum = total;
   }
+  /** Adds the totals */
   void add(const Stat<T>& other) {
     total += other.total;
   }
+  /** Adds totals, mins the minumum, and maxes the maximum */
   void reduce(const Stat<T>& other) {
     total += other.total;
     minimum = std::min(minimum, other.minimum);
     maximum = std::max(maximum, other.maximum);
   }
+  /** Adds the passed in value to t */
   void operator+=(const T& t) { total += t; }
 };
 
+/**
+ * Class for holding all PE level statistics for a given simulation run.
+ *
+ * Stats are incremented within the simulation code as needed. If stats tracing
+ * is turned on, then one instance of the Statistics class holds data for the
+ * most recent interval, and another instance holds accumulated stats for the
+ * entire run. Stats need to be aggregatable (for tracing) and reducible (for
+ * end of run reduction).
+ */
 class Statistics {
   public:
-    // Timing stats
-    Stat<double> total_time;
+    /** \name Timing stats *////@{
+    Stat<double> total_time;    ///< Total execution time
 #ifdef DETAILED_TIMING
-    Stat<double> execute_time;
-    Stat<double> gvt_time;
-    Stat<double> gvt_delay;
-    Stat<double> lb_time;
+    Stat<double> execute_time;  ///< Time in Scheduler::execute (just events)
+    Stat<double> gvt_time;      ///< Time from starting GVT to gvt_done()
+    Stat<double> gvt_delay;     ///< Time blocking on the GVT computation
+    Stat<double> lb_time;       ///< Time spent load balancing
 #endif
+    ///@}
 
-    // Event stats
-    tw_stat events_executed;    // Total number of events executed
-    tw_stat events_committed;   // Number of committed events
-    tw_stat events_rolled_back; // Number of rolled back events
+    /** \name Event stats *////@{
+    tw_stat events_executed;    ///< total number of events executed
+    tw_stat events_committed;   ///< number of committed events
+    tw_stat events_rolled_back; ///< number of rolled back events
+    ///@}
 
-    // Rollback stats
-    tw_stat total_rollback_calls; // Total number of times a rollback is called
-    tw_stat ts_rollback_calls;    // Number of rollbacks to a certain timestamp
-    tw_stat event_rollback_calls; // Number of rollbacks to a specific event
+    /** \name Rollback stats *////@{
+    tw_stat total_rollback_calls; ///< total number of times a rollback is called
+    tw_stat ts_rollback_calls;    ///< number of rollbacks to a certain timestamp
+    tw_stat event_rollback_calls; ///< number of rollbacks to a specific event
+    ///@}
 
-    // Send stats
-    tw_stat self_sends;   // Events sent to ourselves
-    tw_stat local_sends;  // Events sent to different LPs in the same chare
-    tw_stat remote_sends; // Events sent to different chares
-    tw_stat anti_sends;   // Anti events sent
+    /** \name Send stats *////@{
+    tw_stat self_sends;   ///< events sent to ourselves
+    tw_stat local_sends;  ///< events sent to different LPs in the same chare
+    tw_stat remote_sends; ///< events sent to different chares
+    tw_stat anti_sends;   ///< anti events sent
+    ///@}
 
-    // GVT stats
-    // TODO: Move these to the standalone GVT controller once it exists
-    tw_stat total_gvts;           // Total number of GVT calculations
+    /** \name GVT stats
+     *  \todo Move these to the GVT controllers and add more
+     *////@{
+    tw_stat total_gvts; ///< total number of GVT calculations
+    ///@}
 
-    // LB stats
+    /** \name LB stats
+     *  \todo Can we get more from LB framework? ie max/avg rations, num migs
+     *////@{
     tw_stat total_lbs;
+    ///@}
 
-    // Memory stats
-    tw_stat max_events_used;	// Max number of events allocated from buffer
-    tw_stat new_event_calls;  // Number of events allocated for an empty buffer
-    tw_stat del_event_calls;  // Number of events deleted for a full buffer
+    /** \name Memory stats *////@{
+    tw_stat max_events_used;	///< max number of events allocated from buffer
+    tw_stat new_event_calls;  ///< number of events allocated for an empty buffer
+    tw_stat del_event_calls;  ///< number of events deleted for a full buffer
+    ///@}
 
+  /** Calls clear() to 0 out stats on creation */
   Statistics();
 
+  /** Sets all stats to their "0" values */
   void clear();
+  /** Finalizes stats (primarily used to set min/max in Stat objects) */
   void finalize();
+  /** Adds the passed in statistics object to this one */
   void add(const Statistics*);
+  /** Reduces the passed in statistics object with this one */
   void reduce(const Statistics*);
 
+  /** \name Print Utility functions
+   *  Utility functions for nicely printing out stats data
+   *////@{
   void print_section(const char*) const;
   void print_int(const char*, tw_stat) const;
   void print_double(const char*, double) const;
   void print_stat_double(const char*, const Stat<double>&) const;
   void print() const;
+  ///@}
 
 #if CMK_TRACE_ENABLED
+  /** \name Tracing Tags
+   *  Enums for tracing each associated stat value used by projections
+   *////@{
   int EVENTS_EXECUTED;
   int EVENTS_COMMITTED;
   int EVENTS_ROLLED_BACK;
@@ -123,14 +175,17 @@ class Statistics {
 
   void init_tracing();
   void log_tracing(int) const;
+  ///@}
 #endif
 };
 
+/** Helper function for accessing the local Statistics object */
 Statistics* get_statistics();
+/** Reducer function used by the Charm++ runtime when doing a stats reduction */
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs);
+/** Called during node init to register the stats reduction type */
 void registerStatsReduction();
+/** The type of the stats reduction used by the Charm++ runtime */
 extern CkReduction::reducerType statsReductionType;
-
-#define PE_STATS(x) get_statistics()->x
 
 #endif
