@@ -29,6 +29,5 @@
 
 int tw_ismaster();        ///< returns true if we are rank 0
 int tw_nnodes();          ///< returns the number of nodes in the job
-tw_stime tw_now(tw_lp*);  ///< returns the current time of the given lp
 
 #endif
