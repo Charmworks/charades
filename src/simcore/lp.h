@@ -95,12 +95,6 @@ class LP : public CBase_LP {
     LPToken next_token;
 
     /**
-     * LPToken whose key is the oldest processed event we still have stored.
-     * \deprecated Fossil collection currently calls FC on all chares now?
-     */
-    LPToken oldest_token;
-
-    /**
      * All future events received for any of our LPs. The next_token LPToken
      * gets its timestamp from the top of this heap.
      */
@@ -267,13 +261,6 @@ class LP : public CBase_LP {
     void add_to_cancel_q(Event* e);
     /** Process and cancel each event in the cancel queue */
     void process_cancel_q();
-    /**
-     * \returns the minimum timestamp in the cancel queue
-     * \deprecated maybe?
-     */ 
-    Time min_cancel_time() const {
-      return min_cancel_q;
-    }
     ///@}
 };
 
