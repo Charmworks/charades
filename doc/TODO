@@ -1,0 +1,11 @@
+Clean up style:
+- brief, params, returns in header
+- details in .C
+- pre/post probably in .C
+- in general, only stuff in header should be stuff that is tied to decl only
+- Initial capitalizaion?
+- When to end with a period?
+
+Go back and add more \pre, \post, and \invariant notations where required
+
+Re-order in documentation?
