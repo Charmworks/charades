@@ -1,3 +1,7 @@
+/**
+ * \file lp.h
+ * Declarations for classes/variables/methods related to LPs
+ */
 #ifndef _LP_H
 #define _LP_H
 
@@ -17,21 +21,25 @@ struct tw_rng_stream;
 
 using std::vector;
 
-// TODO: Why do it like this? Why not have the tokens defined as nodes of the
-// queue instead?
-// Tokens owned by LP chares that are used by the PE queues that control
-// scheduling and fossil collection. Each token has a direct pointer to its LP,
-// the timestamp associated with the token, and the index of its location in the
-// queue.
+/**
+ * A token representing a handle to an LP chare inside the scheduler queues.
+ * \todo Shouldn't this just be defined as a node in the data structure?
+ */
 struct LPToken {
   private:
-    LP* lp;
-    Time ts;
-    unsigned index;
+    LP* lp;         ///< Direct pointer to the LP chare this token represents
+    Time ts;        ///< A timestamp associated with the LP to be used as a key
+    unsigned index; ///< The index of this token within the queue/heap
 
   public:
-    LPToken(LP* lp) : lp(lp) {}
+    /** Default constructor \todo should this be disabled? */
     LPToken() {}
+
+    /**
+     * Constructor called from the LP chare that sets lp at initialization
+     * \param lp a pointer to the LP chare this token represents
+     */
+    LPToken(LP* lp) : lp(lp) {}
 
     friend class PEQueue;
     friend class Scheduler;
@@ -39,118 +47,245 @@ struct LPToken {
     friend class OptimisticScheduler;
 };
 
-// The LPType contains function pointers for handling/reversing events as well
-// as maps on how to locate LP structs based on their global ids.
+/**
+ * Defines a set of handlers as an LP type used by model LPs.
+ * \todo Converting LPStruct to use class inheritance would deprecate this
+ */
 struct LPType {
-  init_f init;
-  event_f execute;
-  revent_f reverse;
-  final_f finalize;
-  commit_f commit;
-  size_t state_size;
+  init_f init;        ///< Initialization handler for this LP type
+  event_f execute;    ///< Forward event handler for this LP type
+  revent_f reverse;   ///< Reverse event handler for this LP type
+  final_f finalize;   ///< Finalization handler for this LP type
+  commit_f commit;    ///< Commit event handler for this LP type
+  size_t state_size;  ///< The size of the model state required for this LP type
 };
 
-// Right now, an LPStruct is an LPType, as well as its state.
+/**
+ * Model defined LP structure which encapsulates a type and state.
+ * \todo convert to a C++ class inheriting from a base type? How easy would it
+ * be to maintain backwards compatibility in that case?
+ */
 struct LPStruct {
-  LP* owner;
-  unsigned gid;
-  void* state;
-  LPType* type;
-  tw_rng_stream* rng;
+  LP* owner;          ///< Pointer to the LP chare this LPStruct belongs to
+  unsigned gid;       ///< Global LP ID
+  void* state;        ///< Pointer to model specific state (size set in LPType)
+  LPType* type;       ///< Type of this LP
+  tw_rng_stream* rng; ///< Array of RNGs for this LP
 };
 
+/**
+ * A chare that encapsulates a set of LPStructs and their events.
+ * Everything the contained LPs need for execution should be contained in here
+ * to make migration work correctly. At the moment, this is true except for the
+ * PE level AVL tree.
+ *
+ * \todo See if moving the AVL tree from the scheduler to here would be feasible
+ * and not mess up performance.
+ *
+ * \todo Converting AVL tree to an STL type or an array based structure would
+ * make migration way simpler.
+ */
 class LP : public CBase_LP {
   private:
-    // LP Tokens for pending events and fossils
+    /**
+     * LPToken whose key is the timestamp of the next event this chare will
+     * execute. It is updated when events are received, executed, or rolled
+     * back
+     */
     LPToken next_token;
+
+    /**
+     * LPToken whose key is the oldest processed event we still have stored.
+     * \deprecated Fossil collection currently calls FC on all chares now?
+     */
     LPToken oldest_token;
 
-    // All lps managed by this chare
-    vector<LPStruct> lp_structs;
-
-    // Queues for storing events
+    /**
+     * All future events received for any of our LPs. The next_token LPToken
+     * gets its timestamp from the top of this heap.
+     */
     PendingHeap events;
+
+    /**
+     * A flat queue of all events previously processed by our LPs that haven't
+     * yet been committed or rolled back. The oldest_token LPToken gets its
+     * timestamp from the back of this queue.
+     */
     ProcessedQueue processed_events;
 
-    // Used for certain LB metrics
-    int committed_events, rolled_back_events;
-    int committed_time;
+    /**
+     * A list of all LPs owned by this chare.
+     * Initialized in the constructor based on maps set by the model.
+     */
+    vector<LPStruct> lp_structs;
 
-    // Cancel queue management
-    Event *cancel_q;    // Queue of events this LP needs to cancel
-    Time min_cancel_q;  // Minimum time in this LPs cancel queue
-
-    // A direct pointer to the PE where this LP chare resides
+    /**
+     * A direct pointer to the scheduler managing this LP chare. The scheduler
+     * map be sequential, optimistic, or conservative.
+     * \todo Should the LP class be specialized based on sync protocol as well?
+     */
     Scheduler* scheduler;
 
-    // Some control flow varies when we are in optimistic mode
+    /**
+     * Set to true if this LP is an optimistic LP
+     * \todo Should the LP class be specialised based on sync protocol as well?
+     */
     bool isOptimistic;
-  public:
-    // Used to give a unique EventID to every message sent
-    EventID uniqID;
 
-    // AvlTree storing all events associated with this LP. Essentially a hash
-    // used for cancellation purposes.
+    /**
+     * \name LB metrics
+     * Variables used to define load for custom load balancing metrics
+     *////@{
+    int committed_events;   ///< Number of events committed since last LB
+    int rolled_back_events; ///< Number of events rolled back since last LB
+    int committed_time;     ///< Timestamp of most recent committed event
+    ///@}
+
+    /**
+     * \name Cancellation Queue Variables
+     * These variables manage the events that need to be cancelled in this LP.
+     * Cancellation management has been simplified since the scheduler now
+     * calls cancellation methods on all of its LPs.
+     *///@{
+    Event *cancel_q;    ///< Queue of events this LP needs to cancel
+    Time min_cancel_q;  ///< Minimum time in this LPs cancel queue
+    ///@}
+
+  public:
+    EventID uniqID; ///< Used to give a unique ID to every event sent from here
+
+    /**
+     * A pointer to the PE level AVL tree for hashing remote events.
+     * \todo should this be move to the LP level?
+     */
     AvlTree all_events;
 
-    // Current state of this LP chare. Accessed through a C-style API by ROSS.
-    Time current_time;
-    Event *current_event;
+    Time current_time;    ///< Time of most recently executed event
+    Event *current_event; ///< Most recently executed event
 
+    /** Default constructor */
     LP();
+    /** Migration constructor */
     LP(CkMigrateMessage* m);
 
-    // Methods used for migration
-    void reconstruct_causality(Event*, Event**, Event**);
-    void reconstruct_pending_event(Event*);
-    void reconstruct_processed_event(Event*, Event**, Event**);
-    virtual void pup(PUP::er &p);
-    void load_balance();
-    void ResumeFromSync();
-    void UserSetLBLoad();
-
-    // After initializing lps, we stop the charm scheduler and return control
-    // to ROSS until we are ready to start the simulation.
-    void init();
+    /** Stops the Charm++ scheduler and returns control to main */
     void stop_scheduler();
 
-    // Methods for receiving events and anti events.
-    void recv_remote_event(RemoteEvent*);
-    void recv_anti_event(RemoteEvent*);
-    void recv_local_event(Event*);
-
-    // Execute a single event from the pending queue. If optimistic, we also
-    // push the event onto the processed queue.
+    /**
+     * \name Scheduler Calls
+     * These are regular methods called by the scheduler at various points
+     * throughout simulation execution.
+     */ 
+    /** Called at the start of a simulation to run LP init handlers */
+    void init();
+    /**
+     * Called during execution to execute the next event owned by this LP
+     * \returns false if no events are able to be executed
+     */
     void* execute_me();
+    /**
+     * Called after GVT computation to commit old events
+     * \param gvt the current Global Virtual Time
+     */
+    void fossil_me(Time gvt);
+    ///@}
 
-    // Rollback and fossil collection only occur in optimistic mode.
-    // When detecting a rollback upon receiving an event, we rollback to that
-    // timestamp. When cancelling and event that would cause a rollback, we
-    // rollback to that event before deleting it.
-    // Fossil collection is called by the PE after GVT computation.
-    void rollback_me(Time);
-    void rollback_me(Event*);
-    void fossil_me(Time);
+    /**
+     * \name Migration methods
+     * These methods are used to enable migration for things like LB and
+     * potentially checkpoint/restart.
+     * \todo Some changes to events should be made to simplify/unify pupping
+     *////@{
+    /** Correctly rebuild causality chains when unpacking */
+    void reconstruct_causality(Event*, Event**, Event**);
+    /** Correclty rebuild pending events when unpacking */
+    void reconstruct_pending_event(Event*);
+    /** Correctly rebuild processed events when unpacking */
+    void reconstruct_processed_event(Event*, Event**, Event**);
+    /** Pack/unpack this LP chare */
+    virtual void pup(PUP::er &p);
+    /** Tell this chare that we are going to do load balancing */
+    void load_balance();
+    /** Called by the runtime system to tell this chare we can resume */
+    void ResumeFromSync();
+    /** Called by the runtime system to get the load of this chare */
+    void UserSetLBLoad();
+    ///@}
 
-    // Event cancellation events (only in optimistic)
-    // When cancelling an event, we either delete it from our pending event
-    // queue, or put it in the cancel_q for later if it would cause a rollback.
-    // The PE will periodically call process_cancel_q() on LPs.
-    void cancel_event(Event*);
-    void delete_pending(Event*);
-    void add_to_cancel_q(Event*);
+    /**
+     * \name Event Receive Methods
+     * Methods for receiving different types of events. Remote and Anti events
+     * come from other chares so they require entry methods.
+     *////@{
+    /**
+     * Entry method for receiving a remote event from another chare
+     * \param event an event sent from a different chare to an LP on this chare
+     */
+    void recv_remote_event(RemoteEvent* event);
+    /**
+     * Entry method for receiving and processing an anti event
+     * \param event an anti event sent from another chare
+     */
+    void recv_anti_event(RemoteEvent* event);
+    /**
+     * Regular method for common processing on locally allocated events
+     * \param e a locally allocated Event sent by an LP on our chare or created
+     * and filled in recv_remote_event
+     */
+    void recv_local_event(Event* e);
+    ///@}
+
+    /**
+     * \name Rollback/Cancellation Methods
+     * The purpose of these methods is recovery from causality violations so
+     * therefore they are only used in optimistic mode.
+     *////@{
+    /**
+     * Do a primary rollback to a given virtual timestamp
+     * \param ts the virtual timestamp to rollback to
+     */
+    void rollback_me(Time ts);
+    /**
+     * Do a secondary rollback to a particular event
+     * \param event the event to rollback to
+     */
+    void rollback_me(Event* event);
+    /**
+     * Cancel an event that should have never been received
+     * \param e the event to be cancelled
+     */
+    void cancel_event(Event* event);
+    /**
+     * Cancel an event from the pending queue by simply removing it
+     * \param e the event to delete from the pending queue
+     */
+    void delete_pending(Event* event);
+    /**
+     * Add an event to the queue of events to be cancelled later
+     * \param e the event to add to the cancel queue
+     */
+    void add_to_cancel_q(Event* e);
+    /** Process and cancel each event in the cancel queue */
     void process_cancel_q();
-
+    /**
+     * \returns the minimum timestamp in the cancel queue
+     * \deprecated maybe?
+     */ 
     Time min_cancel_time() const {
       return min_cancel_q;
     }
+    ///@}
 };
 
-// TODO: Shouldn't need this anymore
-// API for ROSS code to interact with LPs.
+/**
+ * \name API for ROSS
+ * Allows old ROSS code to interact with LPs.
+ * \todo A lot of this should be removed
+ *////@{
 void init_lps();
 void set_current_event(tw_lp*, tw_event*);
 tw_event* current_event(tw_lp*);
 tw_stime tw_now(tw_lp*);
+///@}
 
 #endif
