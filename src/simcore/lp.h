@@ -262,13 +262,6 @@ class LP : public CBase_LP {
     void add_to_cancel_q(Event* e);
     /** Process and cancel each event in the cancel queue */
     void process_cancel_q();
-    /**
-     * \returns the minimum timestamp in the cancel queue
-     * \deprecated maybe?
-     */
-    Time min_cancel_time() const {
-      return min_cancel_q;
-    }
     ///@}
 };
 
