@@ -55,8 +55,8 @@ struct LPType {
   init_f init;        ///< Initialization handler for this LP type
   event_f execute;    ///< Forward event handler for this LP type
   revent_f reverse;   ///< Reverse event handler for this LP type
-  final_f finalize;   ///< Finalization handler for this LP type
   commit_f commit;    ///< Commit event handler for this LP type
+  final_f finalize;   ///< Finalization handler for this LP type
   size_t state_size;  ///< The size of the model state required for this LP type
 };
 
