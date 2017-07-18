@@ -1,4 +1,4 @@
-include ../../src/config.mk
+include ../../../src/config.mk
 
 all: phold
 clean:
