@@ -94,12 +94,12 @@ tw_lpid traffic_local_map( tw_lpid lpid)
 
 tw_lptype mylps[] = {
 	{
-            (init_f) Intersection_StartUp,
-			(event_f) Intersection_EventHandler,
-			(revent_f) Intersection_RC_EventHandler,
-			(final_f) Intersection_Statistics_CollectStats,
-                        (commit_f) Intersection_Commit_Handler,
-			sizeof(Intersection_State)
+      (init_f) Intersection_StartUp,
+      (event_f) Intersection_EventHandler,
+      (revent_f) Intersection_RC_EventHandler,
+      (commit_f) Intersection_Commit_Handler,
+      (final_f) Intersection_Statistics_CollectStats,
+      sizeof(Intersection_State)
 	},
 	{ 0 },
 };

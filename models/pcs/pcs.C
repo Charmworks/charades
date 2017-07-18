@@ -776,8 +776,8 @@ tw_lptype       mylps[] =
     (init_f) Cell_StartUp,
     (event_f) Cell_EventHandler,
     (revent_f) RC_Cell_EventHandler,
-    (final_f) CellStatistics_CollectStats,
     (commit_f) Cell_CommitHandler,
+    (final_f) CellStatistics_CollectStats,
     sizeof(struct State)
   },
   {0},
