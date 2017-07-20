@@ -5,11 +5,11 @@ LIBDIR := ../../src/build/
 
 all: dragonfly
 
-dragonfly.o: dragonfly.C $(LIBDIR)/libross.a
+dragonfly.o: dragonfly.C $(LIBDIR)/libcharades.a
 	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) dragonfly.C -c -o dragonfly.o
 
-dragonfly: dragonfly.o $(LIBDIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) dragonfly.o -o $@ $(LDFLAGS) -L$(LIBDIR) -lross
+dragonfly: dragonfly.o $(LIBDIR)/libcharades.a
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) dragonfly.o -o $@ $(LDFLAGS) -L$(LIBDIR) -lcharades
 
 clean:
 	rm -f dragonfly

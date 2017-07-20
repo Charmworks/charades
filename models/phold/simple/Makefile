@@ -7,5 +7,5 @@ clean:
 	rm -f output ross.csv
 
 
-phold: phold.C phold.h $(BUILD_DIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs phold.C -o phold $(LDFLAGS) -L$(BUILD_DIR) -lross
+phold: phold.C phold.h $(BUILD_DIR)/libcharades.a
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs phold.C -o phold $(LDFLAGS) -L$(BUILD_DIR) -lcharades
