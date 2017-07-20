@@ -1,0 +1,16 @@
+/**
+\page api Public API
+
+This page lists the available functions for interacting with the simulation
+engine before, during, and after a simulation.
+
+\section setup_api Simulation Setup
+- \ref tw_addopts()
+- \ref tw_init()
+- \ref tw_define_lps()
+- \ref tw_run()
+
+\section event_api Event API
+- \ref tw_create_event()
+- \ref tw_send_event()
+*/

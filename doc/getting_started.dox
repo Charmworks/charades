@@ -1,0 +1,116 @@
+/**
+\page getting_started Getting Started
+
+\section build Building Charades
+The source code for the Charades simulation engine is all located in `src/`. In
+order to build Charades paths to Charades and Charm++ need to be configured
+correctly.
+
+1. Copy the configuration template (`config.mk.template`) to `config.mk`. All
+submodules and models will include this config file to compile correctly.
+
+2. Update paths in `config.mk` to point to your Charm++ build and Charades path.
+Charm++ must already be built. Currently, support only exists for non-smp Charm
+builds.
+
+3. Run make from with the `src/` directory. Alternatively, individual modules
+can be compiled from within their respective subdirectories.
+
+After the build completes, all object files and `charades.a` can be found in
+`src/build/`. Models need to be linked to this library in order to work.
+
+\section model Writing Models
+There are three basic steps for writing models in Charades. First, the LP
+behavior needs to be defined by writing special function we will refer to as
+LP handlers. They take care of setup, teardown, and processing events. Secondly,
+the LP mapping must be set up. This entails writing functions that define how
+many (and which) LPs are assigned to a single work unit (chare), and a map that
+designates the type of each LP in the simulation. There are default maps
+provided for everything but the type map. Finally, the main function must be
+written to set up the simulation configuration, and start the simulation.
+
+These three steps are described below, and also explained in detail in the
+example model provided.
+
+\subsection handlers Writing LP Handlers
+To define an LP, you need 5 different handlers: initialize, forward, reverse,
+commit, and finalize. Not all of these handlers need to have non-empty bodies
+depending on the functionality your simulation requires.
+
+Initialize and forward always need code, and make up the core of an LP
+defintion:
+- Intialize is called before the simulation begins, and is used to
+  set up the initial LP state and send out initial messages. Without initial
+  messages the simulation wouldn't have anything to run and would immediately
+  end.
+- Forward is called to handle every event sent to the passed in LP.
+
+Reverse and commit handlers are only used if you need to run your simulation
+with optimistic synchronization.
+- Reverse is required, and called to reverse the effects of the passed in
+  event on the passed in LP. In order to do so, it is often the case that
+  the bitfield is set in forward save information about branches and loops.
+- Commit is optional, and is called after GVT on each event that is ready to
+  be committed. Any non-reverisble side effects such as I/O should be done
+  in this function. If there are no such side-effects, the function can still
+  be left empty.
+
+The finalize handler is called after the simulation, and can be used for
+things like statistics collection and logging, but can be left empty if
+needed.
+
+\see init_f
+\see event_f
+\see revent_f
+\see commit_f
+\see final_f
+
+\subsection mapping Writing LP Maps
+There are 5 types of LP maps that can be defined, although only one is required.
+The 4 optional maps affect LP placement, and are not described in this guide
+because for most basic models the default mappings will suffice. To see an
+example of placement maps being used, see the dragonfly model in the `models/`
+directory.
+
+The only required map is the type map, which maps a global LP ID to a pointer to
+an LPType. See type_map_f for the method signature. Once you have defined the LP
+handlers, you can use them to create LPType objects which define the behavior of
+LPs. The type map simply takes a global ID and returns a pointer to one of these
+type objects.
+
+\see LPType
+\see type_map_f
+\see init_map_f
+\see chare_map_f
+\see local_map_f
+\see numlp_map_f
+
+\subsection main Writing the Main Function
+The purpose of the main() function is to set a few global variables used for
+simulation configuration, and make a few API calls that hook into the engine
+before starting the simulation.
+
+Many of the globals for configuration can be set using the command line as well
+and running the model with `--help` will show the available options, so in this
+guide we will mostly focus on other requirements of the main function.
+
+The first (or second thing) you main function should do is call \ref tw_init()
+and pass in the command line arguments. This sets up the simulator and parses
+configuration options from the command line. The only thing that should be done
+before this is adding model specific command line options to be parsed via
+\ref tw_optadd().
+
+After tw_init is called, the global variables for LP mapping must be set. As
+described above, the only required map is the type map, which is held in
+g_type_map. For more information on mapping variables see globals.h.
+
+Once the LP mapping is set up, tw_define_lps() creates and configures the LP
+chare array. Once tw_define_lps() is called, the simulation can be run with
+tw_run(), which runs the simulation to completion and returns control after.
+The last thing to do is call tw_end().
+
+\section mbuild Building Models
+
+\section running Running Models
+
+*/
