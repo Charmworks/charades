@@ -1,0 +1,10 @@
+/**
+\page global_config Global Configuration
+
+This page lists a number of global variables that can be used to set up the
+simulation engine. They should be set before the simulation is run. Once the
+simulation begins they should be treated as readonly.
+
+\ref g_total_lps
+
+*/

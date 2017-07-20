@@ -1,0 +1,26 @@
+/**
+\mainpage Charades
+
+Welcome to Charades, an adaptive parallel discrete event simulator built on top
+of the Charm++ runtime system.
+
+Charades is a highly scalable PDES engine based on the original TimeWarp
+protocol from Virginia Tech (link) and the Renssaelaer Optimistic Simulation
+System (ROSS) from RPI. It has since evolved to incorporate more of the adaptive
+features offered by the Charm++ runtime system such as dynamic load balancing.
+
+For more information on how to use Charades, see the pages below:
+
+\ref getting_started
+
+\ref api
+
+\ref global_config
+
+Things to Remember
+
+Model Conversion
+
+FAQ
+
+*/

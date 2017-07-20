@@ -9,3 +9,5 @@ Clean up style:
 Go back and add more \pre, \post, and \invariant notations where required
 
 Re-order in documentation?
+
+xrefitems for things like public API, important globals, etc
