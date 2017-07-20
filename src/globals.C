@@ -70,7 +70,7 @@ unsigned g_tw_rng_default;
 ///@{
 unsigned gvt_print_interval;
 unsigned g_tw_stat_interval;
-unsigned g_tw_expected_events;
+long int g_tw_expected_events;
 ///@}
 
 /**
@@ -95,6 +95,7 @@ void clear_globals() {
   g_tw_metric_invert = 0;
   g_tw_lookahead     = 0.005;
   gvt_print_interval = 64;
+  g_tw_expected_events = -1;
 
   g_tw_rng_seed    = NULL;
   g_tw_rng_max     = 1;
