@@ -63,7 +63,7 @@ extern unsigned g_tw_rng_default; ///< \todo documentation needed
 ///@}
 
 /** \name Misc Configuration *////@{
-extern int      g_tw_expected_events; ///< expected number of committed events
+extern long int g_tw_expected_events; ///< expected number of committed events
 extern unsigned gvt_print_interval;   ///< frequency of progress print outs
 extern unsigned g_tw_stat_interval;   ///< frequency of logging stats (in GVTs)
 ///@}

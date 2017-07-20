@@ -69,7 +69,7 @@ unsigned g_tw_rng_default;
 
 /** \name Misc Configuration */
 ///@{
-int      g_tw_expected_events;
+long int g_tw_expected_events;
 unsigned gvt_print_interval;
 unsigned g_tw_stat_interval;
 ///@}
