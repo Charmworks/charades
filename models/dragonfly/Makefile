@@ -1,10 +1,8 @@
 include ../../src/config.mk
 
-CFLAGS += -O3
-
 all: dragonfly
 
-dragonfly: dragonfly.C $(BUILD_DIR)/libross.a
+dragonfly: dragonfly.C dragonfly.h $(BUILD_DIR)/libcharades.a
 	$(CHARMC) $(CFLAGS) dragonfly.C -o dragonfly $(LFLAGS) -L$(BUILD_DIR) -lross
 
 clean:

@@ -1,7 +1,7 @@
-# Replace ROSS_SRC and CHARMC with your own absolute paths
-ROSS_SRC  = <absolute path to this directory>
+# Replace CHARADES_SRC and CHARMC with your own absolute paths
+CHARADES_SRC  = <absolute path to this directory>
 CHARM_DIR = <absolute path to charm directory>
-BUILD_DIR = $(ROSS_SRC)/build
+BUILD_DIR = $(CHARADES_SRC)/build
 CHARMC    = $(CHARM_DIR)/bin/charmc
 
 # BASIC COMPILATION AND LINKING FLAGS
@@ -14,7 +14,7 @@ LFLAGS = -module completion
 
 # SUB DIRECTORY COMPILATION SETUP
 SUB_DIRS = simcore scheduler gvt setup util collections
-INCLUDES = -I$(ROSS_SRC) $(addprefix -I$(ROSS_SRC)/, $(SUB_DIRS))
+INCLUDES = -I$(CHARADES_SRC) $(addprefix -I$(CHARADES_SRC)/, $(SUB_DIRS))
 CFLAGS  += $(INCLUDES)
 
 # OTHER COMPILATION OPTIONS FOR THE PREPROCESSOR
