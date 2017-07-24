@@ -11,6 +11,18 @@ engine before, during, and after a simulation.
 - \ref tw_run()
 
 \section event_api Event API
-- \ref tw_create_event()
-- \ref tw_send_event()
+- \ref tw_event_new(): Allocates a new event for a target LP. The virtual time
+offset (from the sending LPs current virtual time) and the sending LP is also
+passed in at construction and should not be changed afterwards.
+
+- \ref tw_event_data(): Accessor function to get a pointer to an event's model
+specific data.
+
+- \ref tw_event_send(): Send an event to its destination LP, scheduled at the
+virtual time specified at even construction.
+
+\section rand Random Number Generation
+- \ref tw_rand_exponential
+- \ref tw_rand_reverse_unif
+\see ross_random.h
 */
