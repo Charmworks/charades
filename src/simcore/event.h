@@ -1,3 +1,7 @@
+/**
+ * \file event.h
+ */
+
 #ifndef EVENT_H_
 #define EVENT_H_
 
@@ -175,11 +179,27 @@ static inline void link_causality (tw_event *nev, tw_event *cev) {
 }
 
 // Public API for models to use for managing events
+/**
+ * Allocates an event for the model to send.
+ * \param dest_gid the global ID of the destination LP
+ * \param offset_ts the offset in virtual time from the senders current time
+ * \param sender a pointer to the sending LP
+ * \returns a pointer to a new event
+ */
 tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
-void tw_event_free(tw_event *e, bool commit);
+/**
+ * Send a previously allocated event.
+ * \param event the event to send
+ */
 void tw_event_send(tw_event * event);
+void tw_event_free(tw_event *e, bool commit);
 void tw_event_rollback(tw_event * event);
 
+/**
+ * Macro for getting the model specific data from the event.
+ * \param e the event to extract the data from
+ * \returns a pointer to the user data
+ */
 #define tw_event_data(e) (e->userData)
 
 // TODO: After unifying events this won't be needed
