@@ -110,7 +110,20 @@ tw_run(), which runs the simulation to completion and returns control after.
 The last thing to do is call tw_end().
 
 \section mbuild Building Models
+When building a model, include the same `config.mk` as was created while
+building the Charades library so that the paths are correct. The other thing
+that must be included is the Charades library during the linker step. For a
+basic example, see the Makefile in the example model. Compiling will create a
+model executable and a charmrun launch script (depending on the current Charm++
+build you used).
 
 \section running Running Models
+Run the model using the `charmrun` launch script created able, using the +p
+option to specify the number of processors.
+
+`charmrun +pN ./model <model-args>`
+
+More information on launching Charm applications can be found in the Charm++
+manual.
 
 */
