@@ -9,12 +9,12 @@
 #include "typedefs.h"
 #include "util.h"
 
-extern CProxy_LP lps;
+extern CProxy_LPChare lps;
 extern CProxy_Scheduler scheduler;
 
 // Public functions exposed to the user for allocating, sending, freeing, and
 // rolling back events.
-tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
+tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, LPBase * sender) {
   tw_event	*e;
   tw_stime	recv_ts;
 
@@ -36,9 +36,9 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender) {
 
 void tw_event_free(tw_event *e, bool commit) {
   if(commit == true) {
-    LPStruct * lp;
-    lp = (LPStruct*)e->dest_lp;
-    lp->type->commit(lp->state, &e->cv, tw_event_data(e), lp);
+    LPBase* lp;
+    lp = (LPBase*)e->dest_lp;
+    lp->commit(tw_event_data(e), &e->cv);
     PE_STATS(events_committed)++;
   }
   charm_free_event(e);
@@ -50,11 +50,11 @@ void tw_event_send(tw_event * e) {
     return;
   }
   TW_ASSERT(g_tw_synchronization_protocol != CONSERVATIVE ||
-            e->ts - tw_now((tw_lp*)e->src_lp) >= g_tw_lookahead,
+            e->ts - tw_now((LPBase*)e->src_lp) >= g_tw_lookahead,
             "Lookahead violation: try decreasing the lookahead value");
 
   int dest_peid;
-  tw_lp* src_lp = (tw_lp*)e->src_lp;
+  LPBase* src_lp = (LPBase*)e->src_lp;
   link_causality(e, current_event(src_lp));
   dest_peid = g_chare_map(e->dest_lp);
 
@@ -69,10 +69,10 @@ void tw_event_send(tw_event * e) {
 
 void tw_event_rollback(tw_event * event) {
   tw_event  *e = event->caused_by_me;
-  tw_lp     *dest_lp = (tw_lp*)event->dest_lp;
+  LPBase     *dest_lp = (LPBase*)event->dest_lp;
 
   set_current_event(dest_lp, event);
-  dest_lp->type->reverse(dest_lp->state, &event->cv, tw_event_data(event), dest_lp);
+  dest_lp->reverse(tw_event_data(event), &event->cv);
 
   while (e) {
     tw_event *n = e->cause_next;
@@ -102,7 +102,7 @@ void charm_free_event(Event* e) {
   // as well as freeing any events caused by it.
   if (g_tw_synchronization_protocol == OPTIMISTIC) {
     if(e->state.avl_tree == 1) {
-      avlDelete(&((LPStruct*)e->dest_lp)->owner->all_events, e);
+      avlDelete(&((LPBase*)e->dest_lp)->owner->all_events, e);
     }
 
     Event* event = e->caused_by_me;
@@ -124,11 +124,11 @@ void charm_free_event(Event* e) {
 // Returns 1 if the send was remote, 0 if it was local.
 int charm_event_send(unsigned dest_peid, Event * e) {
   static Scheduler* scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
-  LP* send_pe = (LP*)(e->send_pe);
-  LP* dest_pe;
+  LPChare* send_pe = (LPChare*)(e->send_pe);
+  LPChare* dest_pe;
 
   // When e is passed in, src_lp and send_pe are pointers, dest_lp is a gid.
-  e->src_lp = ((LPStruct*)e->src_lp)->gid;
+  e->src_lp = ((LPBase*)e->src_lp)->gid;
   e->send_pe = send_pe->thisIndex;
 
   // Check to see if this is a local send or not.
@@ -198,7 +198,7 @@ void charm_event_cancel(Event * e) {
   }
 
   // If is local, then the LP can cancel it
-  LP *dest_pe = ((tw_lp*)e->dest_lp)->owner;
+  LPChare *dest_pe = ((LPBase*)e->dest_lp)->owner;
   dest_pe->cancel_event(e);
 }
 

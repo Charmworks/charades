@@ -36,7 +36,7 @@ void pup_pending_event(PUP::er& p, Event* e) {
   tw_lpid dest_lp;
   if (p.isPacking()) {
     dest_lp = e->dest_lp;
-    e->dest_lp = ((tw_lp*)e->dest_lp)->gid;
+    e->dest_lp = ((LPBase*)e->dest_lp)->gid;
   }
   basic_event_pup(p, e);
   if (p.isPacking()) {
@@ -61,7 +61,7 @@ void pup_processed_event(PUP::er& p, Event* e) {
   tw_lpid dest_lp;
   if (p.isPacking()) {
     dest_lp = e->dest_lp;
-    e->dest_lp = ((tw_lp*)e->dest_lp)->gid;
+    e->dest_lp = ((LPBase*)e->dest_lp)->gid;
   }
   basic_event_pup(p, e);
   if (p.isPacking()) {

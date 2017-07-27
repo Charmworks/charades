@@ -9,6 +9,8 @@
 
 #include "typedefs.h"
 
+class LPBase;
+
 struct RemoteEvent : public CMessage_RemoteEvent {
   public:
     RemoteEvent() {
@@ -186,7 +188,7 @@ static inline void link_causality (tw_event *nev, tw_event *cev) {
  * \param sender a pointer to the sending LP
  * \returns a pointer to a new event
  */
-tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, tw_lp * sender);
+tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, LPBase* sender);
 /**
  * Send a previously allocated event.
  * \param event the event to send

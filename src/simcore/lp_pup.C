@@ -19,7 +19,7 @@ void operator|(PUP::er& p, tw_rng_stream* s) {
 
 // When the LP chare is unpacking lp_structs, it will handle the owner field.
 // The LPStruct pup just needs to handle the gid, state, type, and rng stream.
-void operator|(PUP::er& p, LPStruct& lp) {
+/*void operator|(PUP::er& p, LPStruct& lp) {
   p | lp.gid;
   if (p.isUnpacking()) {
     lp.type = g_type_map(lp.gid);
@@ -28,18 +28,18 @@ void operator|(PUP::er& p, LPStruct& lp) {
   }
   p((char*)lp.state, lp.type->state_size);
   p | lp.rng;
-}
+}*/
 
 // Make sure we know our local pe, and construct the tokens.
-LP::LP(CkMigrateMessage* m) : next_token(this),
+LPChare::LPChare(CkMigrateMessage* m) : next_token(this),
                               cancel_q(NULL), min_cancel_q(DBL_MAX),
                               all_events(0), current_time(0.0),
                               current_event(NULL) {
   scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
 }
 
-void LP::pup(PUP::er& p) {
-  CBase_LP::pup(p);
+void LPChare::pup(PUP::er& p) {
+  CBase_LPChare::pup(p);
   // LPs must be unregistered from their current PE before they migrate, and
   // re-register with the new PE when they are being unpacked.
   if (p.isPacking()) {
@@ -54,10 +54,10 @@ void LP::pup(PUP::er& p) {
   p | current_time;
 
   // LP Struct Pupping (reassign owner upon unpacking)
-  p | lp_structs;
+  //p | lp_structs;
   if (p.isUnpacking()) {
     for (int i = 0; i < lp_structs.size(); i++) {
-      lp_structs[i].owner = this;
+      lp_structs[i]->owner = this;
     }
   }
 
@@ -95,7 +95,7 @@ void LP::pup(PUP::er& p) {
 
 // Pending events need to have pointers to LPs reset, and may need to be added
 // to the cancel_q and/or avl_tree.
-void LP::reconstruct_pending_event(Event* e) {
+void LPChare::reconstruct_pending_event(Event* e) {
   // Reconstruct pointers
   e->dest_lp = (tw_lpid)(&lp_structs[g_local_map(e->dest_lp)]);
 
@@ -112,7 +112,7 @@ void LP::reconstruct_pending_event(Event* e) {
 
 // Reset pointer fields in events, and re-add events into the avl tree/cancel_q
 // if necessary.
-void LP::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
+void LPChare::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
   // Reconstruct pointers
   e->dest_lp = (tw_lpid)(&lp_structs[g_local_map(e->dest_lp)]);
   reconstruct_causality(e, pending, processed);
@@ -129,7 +129,7 @@ void LP::reconstruct_processed_event(Event* e, Event** pending, Event** processe
 }
 
 // Relink causality for event pointers to the pending and processed queues.
-void LP::reconstruct_causality(Event* e, Event** pending, Event** processed) {
+void LPChare::reconstruct_causality(Event* e, Event** pending, Event** processed) {
   for (int i = 0; i < e->processed_count; i++) {
     Event* tmp = processed[e->processed_indices[i]];
     tmp->cause_next = e->caused_by_me;

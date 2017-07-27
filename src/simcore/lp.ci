@@ -3,12 +3,12 @@ module lp {
   extern module gvtmanager;
   extern module event;
 
-  array [1D] LP {
-    entry [notrace] LP(); /**< constructor */
+  array [1D] LPChare {
+    entry [notrace] LPChare(); /**< constructor */
     entry [notrace] void init(); /**< call the init handler on all lps on all lp chares */
     entry [notrace,reductiontarget] void stop_scheduler(); /**< stops charm scheduler */
-    entry [notrace,expedited] void recv_remote_event(RemoteEvent*); /**< receive an event for this LP */
-    entry [notrace,expedited] void recv_anti_event(RemoteEvent*);   /**< receive an anti event for this LP */
+    entry [notrace,expedited] void recv_remote_event(RemoteEvent*); /**< receive an event for this LPChare */
+    entry [notrace,expedited] void recv_anti_event(RemoteEvent*);   /**< receive an anti event for this LPChare */
     entry [notrace,local] void* execute_me();
 
     entry [notrace,reductiontarget] void load_balance(); /**< PE calls this when ready to load balance */

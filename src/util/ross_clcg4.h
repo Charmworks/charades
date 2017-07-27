@@ -50,6 +50,6 @@ extern void     rng_get_state(tw_rng_stream * g, uint32_t * s);
 extern void     rng_write_state(tw_rng_stream * g, FILE *f);
 extern double   rng_gen_val(tw_rng_stream * g);
 extern double   rng_gen_reverse_val(tw_rng_stream * g);
-extern void     tw_rand_init_streams(tw_lp*, unsigned); 
+extern void     tw_rand_init_streams(LPBase*, unsigned);
 
 #endif

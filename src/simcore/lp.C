@@ -22,7 +22,7 @@
  * A readonly declaration for a global lp proxy
  * \todo Re-evaluate need for global/readonly proxies with the new arch
  */
-CProxy_LP lps;
+CProxy_LPChare lps;
 /**
  * A flag determining whether the lps global proxy is valid. It is needed
  * due to the fact that the array isn't created in a mainchare, so the readonly
@@ -36,7 +36,7 @@ int isLpSet = 0;
  */
 void create_lps() {
   if (tw_ismaster()) {
-    CProxy_LP::ckNew(g_num_chares);
+    CProxy_LPChare::ckNew(g_num_chares);
   }
   StartCharmScheduler();
 }
@@ -57,7 +57,7 @@ void init_lps() {
  * \param lp the LPStruct being queried
  * \returns the current virtual time of the passed in LP
  */
-Time tw_now(tw_lp* lp) {
+Time tw_now(LPBase* lp) {
   return lp->owner->current_time;
 }
 
@@ -68,7 +68,7 @@ Time tw_now(tw_lp* lp) {
  * \param lp the LPStruct being queried
  * \returns a pointer to the Event most recently executed on the owning chare
  */
-Event* current_event(tw_lp* lp) {
+Event* current_event(LPBase* lp) {
   return lp->owner->current_event;
 }
 
@@ -79,7 +79,7 @@ Event* current_event(tw_lp* lp) {
  * \param lp the LPStruct we are setting the current event for
  * \param event the Event pointer to the new current event
  */
-void set_current_event(tw_lp* lp, Event* event) {
+void set_current_event(LPBase* lp, Event* event) {
   lp->owner->current_event = event;
   lp->owner->current_time = event->ts;
 }
@@ -91,7 +91,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 #define PE_STATS(x) scheduler->stats->x
 
 /** Initializes all member variables for this LP chare */
-LP::LP() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(DBL_MAX),
+LPChare::LPChare() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(DBL_MAX),
            current_time(0), all_events(0), committed_events(0),
            rolled_back_events(0), committed_time(0.0) {
   /**
@@ -122,23 +122,22 @@ LP::LP() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(DBL_MAX),
    */
   lp_structs.resize(g_numlp_map(thisIndex));
   for (int i = 0; i < lp_structs.size(); i++) {
-    lp_structs[i].owner = this;
-    lp_structs[i].gid   = g_init_map(thisIndex, i);
-    lp_structs[i].type  = g_type_map(lp_structs[i].gid);
-    lp_structs[i].state = malloc(lp_structs[i].type->state_size);
+    lp_structs[i] = g_type_map(g_init_map(thisIndex, i));
+    lp_structs[i]->owner = this;
+    lp_structs[i]->gid   = g_init_map(thisIndex, i);
 
     if (g_tw_rng_default == 1) {
-      tw_rand_init_streams(&lp_structs[i], g_tw_nRNG_per_lp);
+      tw_rand_init_streams(lp_structs[i], g_tw_nRNG_per_lp);
     }
   }
 }
 
-void LP::load_balance() {
+void LPChare::load_balance() {
   /** Just call AtSync to trigger automatic load balancing */
   AtSync();
 }
 
-void LP::ResumeFromSync() {
+void LPChare::ResumeFromSync() {
   DEBUG_LP("Now on PE %i\n", CkMyPe());
   /** Do a reduction to inform the scheduler that balancing is complete */
   contribute(
@@ -190,7 +189,7 @@ double timeToWeight(Time ts) {
  * \see g_tw_metric_ts_abs
  * \see g_tw_metric_invert
  */
-void LP::UserSetLBLoad() {
+void LPChare::UserSetLBLoad() {
   double metric;
   switch(g_tw_ldb_metric) {
     case 1:
@@ -251,19 +250,19 @@ void LP::UserSetLBLoad() {
   setObjTime(metric);
 }
 
-void LP::init() {
+void LPChare::init() {
   /**
    * Call the init handler on every LP struct owned by this chare, then do a
    * reduction to stop the charm scheduler.
    */
   current_event = PE_VALUE(abort_event);
   for (int i = 0 ; i < lp_structs.size(); i++) {
-    lp_structs[i].type->init(lp_structs[i].state, &lp_structs[i]);
+    lp_structs[i]->initialize();
   }
-  contribute(CkCallback(CkIndex_LP::stop_scheduler(), thisProxy(0)));
+  contribute(CkCallback(CkIndex_LPChare::stop_scheduler(), thisProxy(0)));
 }
 
-void LP::stop_scheduler() {
+void LPChare::stop_scheduler() {
   /**
    * Just call CkExit(), which stops the Charm++ scheduler and returns control
    * to the user defined main function.
@@ -275,7 +274,7 @@ void LP::stop_scheduler() {
   CkExit();
 }
 
-void LP::recv_remote_event(RemoteEvent* event) {
+void LPChare::recv_remote_event(RemoteEvent* event) {
   /**
    * Inform the scheduler that the remote event was received (which may affect
    * the GVT computation)
@@ -314,9 +313,9 @@ void LP::recv_remote_event(RemoteEvent* event) {
   recv_local_event(e);
 }
 
-void LP::recv_local_event(Event* e) {
+void LPChare::recv_local_event(Event* e) {
   /** Use g_local_map to look up the specific LPStruct pointer for this event */
-  e->dest_lp = (tw_lpid)&lp_structs[g_local_map(e->dest_lp)];
+  e->dest_lp = (tw_lpid)lp_structs[g_local_map(e->dest_lp)];
 
   /**
    * If this event is now the earliest event we know about, update the
@@ -339,7 +338,7 @@ void LP::recv_local_event(Event* e) {
   events.push(e);
 }
 
-void LP::recv_anti_event(RemoteEvent* event) {
+void LPChare::recv_anti_event(RemoteEvent* event) {
   /**
    * Inform the scheduler that the anti event was received (which may affect
    * the GVT computation)
@@ -368,7 +367,7 @@ void LP::recv_anti_event(RemoteEvent* event) {
   delete event;
 }
 
-void* LP::execute_me() {
+void* LPChare::execute_me() {
   if (events.size()) {
     /** Pull off the top event for execution and set the current event and ts */
     Event* e = events.pop();
@@ -378,8 +377,8 @@ void* LP::execute_me() {
       reset_bitfields(e);
     }
     /** Execute the event on the target LPStruct */
-    LPStruct* lp = (LPStruct*)e->dest_lp;
-    BRACKET_TRACE(lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);, USER_EVENT_FWD)
+    LPBase* lp = (LPBase*)e->dest_lp;
+    BRACKET_TRACE(lp->forward(tw_event_data(e), &e->cv);, USER_EVENT_FWD)
 
     /**
      * Move the event to the processed queue if we are optimistic, otherwise
@@ -400,7 +399,7 @@ void* LP::execute_me() {
   return (void*)false;
 }
 
-void LP::rollback_me(tw_stime ts) {
+void LPChare::rollback_me(tw_stime ts) {
   Event* e;
   PE_STATS(total_rollback_calls)++;
   PE_STATS(ts_rollback_calls)++;
@@ -431,7 +430,7 @@ void LP::rollback_me(tw_stime ts) {
   }
 }
 
-void LP::rollback_me(Event* event) {
+void LPChare::rollback_me(Event* event) {
   PE_STATS(total_rollback_calls)++;
   PE_STATS(event_rollback_calls)++;
 
@@ -472,7 +471,7 @@ void LP::rollback_me(Event* event) {
   }
 }
 
-void LP::fossil_me(tw_stime gvt) {
+void LPChare::fossil_me(tw_stime gvt) {
   /**
    * Pop off events from the BACK of the processed queue and commit/free them
    * until the oldest timestamp in the processed queue is greater than or equal
@@ -487,7 +486,7 @@ void LP::fossil_me(tw_stime gvt) {
   }
 }
 
-void LP::cancel_event(Event* e) {
+void LPChare::cancel_event(Event* e) {
   /** \pre the event e exists in either the pending heap or processed queue */
   /** Call a different method based on where e currently exists */
   switch (e->state.owner) {
@@ -502,12 +501,12 @@ void LP::cancel_event(Event* e) {
       return;
     /** If the event exists somewhere else, this is an error */
     default:
-      CkAbort("Unknown owner in LP::cancel_event\n");
+      CkAbort("Unknown owner in LPChare::cancel_event\n");
       return;
   }
 }
 
-void LP::add_to_cancel_q(Event* e) {
+void LPChare::add_to_cancel_q(Event* e) {
   /** Put the event at the head of the cancel queue */
   e->state.cancel_q = 1;
   e->cancel_next = cancel_q;
@@ -519,13 +518,13 @@ void LP::add_to_cancel_q(Event* e) {
   }
 }
 
-void LP::delete_pending(Event *e) {
+void LPChare::delete_pending(Event *e) {
   /** Must also update the min time of this LP chare in the scheduler */
   events.erase(e);
   scheduler->update_next(&next_token, events.min());
 }
 
-void LP::process_cancel_q() {
+void LPChare::process_cancel_q() {
   /**
    * Iterate through cancel queue and cancel every event based on where it
    * currently exists.

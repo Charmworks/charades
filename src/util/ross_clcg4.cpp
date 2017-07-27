@@ -284,7 +284,7 @@ tw_rand_initial_seed(tw_rng_stream * g, tw_lpid id)
 }
 
 void
-tw_rand_init_streams(tw_lp * lp, unsigned int nstreams)
+tw_rand_init_streams(LPBase* lp, unsigned int nstreams)
 {
   TW_ASSERT(nstreams <= g_tw_rng_max, "RNG Max Streams Exceeded: %i > %i\n",
       nstreams, g_tw_rng_max);

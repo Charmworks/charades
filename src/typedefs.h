@@ -62,9 +62,7 @@ typedef int32_t* tw_seed;           ///< Type of the RNG seed use by all RNGs
  * \todo Can time be model defined? How easy is it to switch to an int/long?
  * */
 typedef double Time;
-class LPStruct;
-class LPType;
-class LP;
+class LPBase;
 class Event;
 class ProcessedQueue;
 class PendingQueue;
@@ -77,24 +75,7 @@ class PendingQueue;
 typedef Time tw_stime;      ///< Alias for virtual time type
 typedef EventID tw_eventid; ///< \deprecated Alias for event IDs
 typedef Event tw_event;     ///< Alies for event structure
-typedef LPStruct tw_lp;     ///< Alias for the model defined LP objects
-typedef LPType tw_lptype;   ///< Alias for the LP type structure
-typedef LP tw_pe;           ///< \deprecated Treats LP chares as old ROSS pes
 ///@}
-
-/** \name Function Pointers
- *  These are typedefs for functions that make up LPType and map LPs.
- *////@{
-/** Called at simulation start for LP initialization */
-typedef void (*init_f) (void*,LPStruct*);
-/** Forward event handler */
-typedef void (*event_f) (void*, tw_bf*, char*, LPStruct*);
-/** Reverse event handler */
-typedef void (*revent_f) (void*, tw_bf*, char*, LPStruct*);
-/** Commit event handler */
-typedef void (*commit_f) (void*, tw_bf*, char*, LPStruct*);
-/** Called at simulation end for finalization */
-typedef void (*final_f) (void*, LPStruct*);
 
 /** Map that takes an LP chare index and local LP id and returns a global id */
 typedef tw_lpid (*init_map_f) (unsigned, tw_lpid);
@@ -106,7 +87,7 @@ typedef tw_lpid (*local_map_f) (tw_lpid);
 typedef unsigned (*numlp_map_f) (unsigned);
 
 /** Map that takes a global LP id and returns a pointer to the LP type */
-typedef LPType* (*type_map_f) (tw_lpid);
+typedef LPBase* (*type_map_f) (tw_lpid);
 ///@}
 
 /** Macro for debug printing \todo should be removed or moved elsewhere */

@@ -13,7 +13,7 @@
 
 #include <vector>
 
-extern CProxy_LP lps;
+extern CProxy_LPChare lps;
 
 class RemoteEvent;
 class Scheduler;
@@ -27,7 +27,7 @@ using std::vector;
  */
 struct LPToken {
   private:
-    LP* lp;         ///< Direct pointer to the LP chare this token represents
+    LPChare* lp;         ///< Direct pointer to the LP chare this token represents
     Time ts;        ///< A timestamp associated with the LP to be used as a key
     unsigned index; ///< The index of this token within the queue/heap
 
@@ -39,7 +39,7 @@ struct LPToken {
      * Constructor called from the LP chare that sets lp at initialization
      * \param lp a pointer to the LP chare this token represents
      */
-    LPToken(LP* lp) : lp(lp) {}
+    LPToken(LPChare* lp) : lp(lp) {}
 
     friend class PEQueue;
     friend class Scheduler;
@@ -47,30 +47,32 @@ struct LPToken {
     friend class OptimisticScheduler;
 };
 
-/**
- * Defines a set of handlers as an LP type used by model LPs.
- * \todo Converting LPStruct to use class inheritance would deprecate this
- */
-struct LPType {
-  init_f init;        ///< Initialization handler for this LP type
-  event_f execute;    ///< Forward event handler for this LP type
-  revent_f reverse;   ///< Reverse event handler for this LP type
-  commit_f commit;    ///< Commit event handler for this LP type
-  final_f finalize;   ///< Finalization handler for this LP type
-  size_t state_size;  ///< The size of the model state required for this LP type
+class LPBase {
+  public:
+    LPChare* owner;
+    unsigned gid;
+    tw_rng_stream* rng;
+
+    virtual void initialize() {}
+    virtual void forward(void* msg, tw_bf* bf) {}
+    virtual void reverse(void* msg, tw_bf* bf) {}
+    virtual void commit(void* msg, tw_bf* bf) {}
+    virtual void finalize() {}
+    virtual void pup(PUP::er& p) {}
 };
 
-/**
- * Model defined LP structure which encapsulates a type and state.
- * \todo convert to a C++ class inheriting from a base type? How easy would it
- * be to maintain backwards compatibility in that case?
- */
-struct LPStruct {
-  LP* owner;          ///< Pointer to the LP chare this LPStruct belongs to
-  unsigned gid;       ///< Global LP ID
-  void* state;        ///< Pointer to model specific state (size set in LPType)
-  LPType* type;       ///< Type of this LP
-  tw_rng_stream* rng; ///< Array of RNGs for this LP
+template <typename Derived, typename Message>
+class LP : public LPBase {
+  public:
+    void forward(void* msg, tw_bf* bf) {
+      static_cast<Derived*>(this)->forward(static_cast<Message*>(msg), bf);
+    }
+    void reverse(void* msg, tw_bf* bf) {
+      static_cast<Derived*>(this)->reverse(static_cast<Message*>(msg), bf);
+    }
+    void commit(void* msg, tw_bf* bf) {
+      static_cast<Derived*>(this)->commit(static_cast<Message*>(msg), bf);
+    }
 };
 
 /**
@@ -85,7 +87,7 @@ struct LPStruct {
  * \todo Converting AVL tree to an STL type or an array based structure would
  * make migration way simpler.
  */
-class LP : public CBase_LP {
+class LPChare : public CBase_LPChare {
   private:
     /**
      * LPToken whose key is the timestamp of the next event this chare will
@@ -111,7 +113,7 @@ class LP : public CBase_LP {
      * A list of all LPs owned by this chare.
      * Initialized in the constructor based on maps set by the model.
      */
-    vector<LPStruct> lp_structs;
+    vector<LPBase*> lp_structs;
 
     /**
      * A direct pointer to the scheduler managing this LP chare. The scheduler
@@ -158,9 +160,9 @@ class LP : public CBase_LP {
     Event *current_event; ///< Most recently executed event
 
     /** Default constructor */
-    LP();
+    LPChare();
     /** Migration constructor */
-    LP(CkMigrateMessage* m);
+    LPChare(CkMigrateMessage* m);
 
     /** Stops the Charm++ scheduler and returns control to main */
     void stop_scheduler();
@@ -270,9 +272,9 @@ class LP : public CBase_LP {
  * \todo A lot of this should be removed
  *////@{
 void init_lps();
-void set_current_event(tw_lp*, tw_event*);
-tw_event* current_event(tw_lp*);
-tw_stime tw_now(tw_lp*);
+void set_current_event(LPBase*, tw_event*);
+tw_event* current_event(LPBase*);
+tw_stime tw_now(LPBase*);
 ///@}
 
 #endif

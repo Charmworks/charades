@@ -3,7 +3,7 @@
 
 #include "typedefs.h"
 
-class LP;
+class LPChare;
 struct LPToken;
 
 // Priority queue of LPToken pointers weighted by timestamp. The heap is

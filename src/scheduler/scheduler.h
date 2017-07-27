@@ -10,7 +10,7 @@
 extern CkGroupID scheduler_id;
 
 class Globals;
-class LP;
+class LPChare;
 class LPToken;
 class RemoteEvent;
 class Statistics;

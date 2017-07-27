@@ -46,7 +46,7 @@ void Scheduler::groups_created() {
   // After groups are created, create LP array, and exit upon quiescence
   if (CkMyPe() == 0) {
     CkStartQD(CkCallback(CkIndex_Initialize::Exit(), mainProxy));
-    CProxy_LP::ckNew(g_num_chares);
+    CProxy_LPChare::ckNew(g_num_chares);
   }
 }
 
