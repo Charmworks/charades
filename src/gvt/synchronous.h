@@ -4,6 +4,8 @@
 #include "gvtmanager.h"
 
 class SyncGVT : public CBase_SyncGVT {
+  private:
+    double gvt_start;
   public:
     SyncGVT();
 

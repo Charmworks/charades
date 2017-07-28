@@ -13,6 +13,12 @@ Initialize::Initialize(CkArgMsg *m) {
 
 void charm_init(int argc, char** argv) {
   CharmInit(argc, argv);
+  traceRegisterUserEvent("Forward Execution", USER_EVENT_FWD);
+  traceRegisterUserEvent("Rollback", USER_EVENT_RB);
+  traceRegisterUserEvent("Cancellation", USER_EVENT_CANCEL);
+  traceRegisterUserEvent("GVT", USER_EVENT_GVT);
+  traceRegisterUserEvent("LB", USER_EVENT_LDB);
+  traceRegisterUserEvent("Fossil Collection", USER_EVENT_FC);
 }
 void charm_exit() {
   CharmLibExit();

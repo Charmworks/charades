@@ -48,10 +48,13 @@ LPBase* example_type_map(tw_lpid gid) {
 int main(int argc, char** argv) {
   tw_init(argc, argv);
 
+
   g_tw_lookahead = 0.1;
-  g_tw_ts_end = 1024.0;
+  g_tw_ts_end = 64.0;
+  g_tw_max_events_buffered = 8192;
   g_total_lps = 16;
   g_lps_per_chare = 1;
+
 
   g_initial_events = 4;
   g_mean_delay = 1.0;
