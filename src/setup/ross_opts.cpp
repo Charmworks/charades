@@ -134,7 +134,7 @@ static void show_help(void) {
             break;
 
           case TWOPTTYPE_STIME:
-            fprintf(stderr, " (default %.2f)", *((tw_stime*)def->value));
+            fprintf(stderr, " (default %.2f)", *((Time*)def->value));
             break;
 
           case TWOPTTYPE_CHAR:
@@ -196,7 +196,7 @@ static void apply_opt(const tw_optdef *def, const char *value) {
 
     case TWOPTTYPE_STIME:
       {
-        tw_stime v;
+        Time v;
         char *end;
 
         if (!value)
@@ -204,7 +204,7 @@ static void apply_opt(const tw_optdef *def, const char *value) {
         v = strtod(value, &end);
         if (*end)
           need_argument(def);
-        *((tw_stime*)def->value) = v;
+        *((Time*)def->value) = v;
         break;
       }
 

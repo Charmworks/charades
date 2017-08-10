@@ -53,34 +53,34 @@ class Statistics {
     ///@}
 
     /** \name Event stats *////@{
-    tw_stat events_executed;    ///< total number of events executed
-    tw_stat events_committed;   ///< number of committed events
-    tw_stat events_rolled_back; ///< number of rolled back events
+    uint64_t events_executed;    ///< total number of events executed
+    uint64_t events_committed;   ///< number of committed events
+    uint64_t events_rolled_back; ///< number of rolled back events
     ///@}
 
     /** \name Rollback stats *////@{
-    tw_stat total_rollback_calls; ///< total number of times a rollback is called
-    tw_stat ts_rollback_calls;    ///< number of rollbacks to a certain timestamp
-    tw_stat event_rollback_calls; ///< number of rollbacks to a specific event
+    uint64_t total_rollback_calls; ///< total number of times a rollback is called
+    uint64_t ts_rollback_calls;    ///< number of rollbacks to a certain timestamp
+    uint64_t event_rollback_calls; ///< number of rollbacks to a specific event
     ///@}
 
     /** \name Send stats *////@{
-    tw_stat self_sends;   ///< events sent to ourselves
-    tw_stat local_sends;  ///< events sent to different LPs in the same chare
-    tw_stat remote_sends; ///< events sent to different chares
-    tw_stat anti_sends;   ///< anti events sent
+    uint64_t self_sends;   ///< events sent to ourselves
+    uint64_t local_sends;  ///< events sent to different LPs in the same chare
+    uint64_t remote_sends; ///< events sent to different chares
+    uint64_t anti_sends;   ///< anti events sent
     ///@}
 
     /** \name GVT stats
      *  \todo Move these to the GVT controllers and add more
      *////@{
-    tw_stat total_gvts; ///< total number of GVT calculations
+    uint64_t total_gvts; ///< total number of GVT calculations
     ///@}
 
     /** \name Memory stats *////@{
-    tw_stat max_events_used;	///< max number of events allocated from buffer
-    tw_stat new_event_calls;  ///< number of events allocated for an empty buffer
-    tw_stat del_event_calls;  ///< number of events deleted for a full buffer
+    uint64_t max_events_used;	///< max number of events allocated from buffer
+    uint64_t new_event_calls;  ///< number of events allocated for an empty buffer
+    uint64_t del_event_calls;  ///< number of events deleted for a full buffer
     ///@}
 
   /** Calls clear() to 0 out stats on creation */
@@ -97,7 +97,7 @@ class Statistics {
    *  Utility functions for nicely printing out stats data
    *////@{
   void print_section(const char*) const;
-  void print_int(const char*, tw_stat) const;
+  void print_int(const char*, uint64_t) const;
   void print_double(const char*, double) const;
   void print() const;
   ///@}

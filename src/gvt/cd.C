@@ -47,7 +47,7 @@ void CdGVT::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxi
 
 void CdGVT::gvt_begin() {
   if(detector_ready[next_phase]) {
-    min_sent = DBL_MAX;
+    min_sent = TIME_MAX;
     detector_pointers[current_phase]->done();
     detector_ready[current_phase] = false;
     current_phase = next_phase;
@@ -58,7 +58,7 @@ void CdGVT::gvt_begin() {
 
 void CdGVT::gvt_contribute() {
   Time min_time = scheduler->get_min_time();
-  min_time = fmin(min_time, min_sent);
+  min_time = std::min(min_time, min_sent);
   CkAssert(min_time >= curr_gvt);
 
   // TODO: Can we just call start_detection directly?
@@ -68,7 +68,7 @@ void CdGVT::gvt_contribute() {
         CkCallback(),
         CkCallback(CkIndex_CdGVT::gvt_contribute(), thisProxy), 0);
   }
-  contribute(sizeof(Time), &min_time, CkReduction::min_double,
+  contribute(sizeof(Time), &min_time, CkReduction::min_ulong_long,
       CkCallback(CkReductionTarget(CdGVT,gvt_end),thisProxy));
 }
 

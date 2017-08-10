@@ -6,7 +6,7 @@
 CProxy_GVTManager gvt_manager_proxy;
 
 /* GVTManager FUNCTIONS */
-GVTManager::GVTManager() : curr_gvt(0.0), prev_gvt(0.0) {
+GVTManager::GVTManager() : curr_gvt(0), prev_gvt(0) {
   gvt_manager_proxy = thisProxy;
 }
 

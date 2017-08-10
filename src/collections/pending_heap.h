@@ -20,8 +20,8 @@
 #define HEAP_INCREMENT 128
 
 // TODO: Just make this templated?
-typedef Event *ELEMENT_TYPE;
-typedef double KEY_TYPE;
+typedef Event* ELEMENT_TYPE;
+typedef Time   KEY_TYPE;
 
 #define KEY(i) (elems[i]->ts)
 #define LEFT(i)   (2*i+1)
@@ -120,7 +120,7 @@ class PendingHeap : public PendingQueue {
     }
 
     Time min() const {
-      return (nelems <= 0) ? DBL_MAX : elems[0]->ts;
+      return (nelems <= 0) ? TIME_MAX : elems[0]->ts;
     }
 
     size_t size() const {

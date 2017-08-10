@@ -272,9 +272,9 @@ class LPChare : public CBase_LPChare {
  * \todo A lot of this should be removed
  *////@{
 void init_lps();
-void set_current_event(LPBase*, tw_event*);
-tw_event* current_event(LPBase*);
-tw_stime tw_now(LPBase*);
+void set_current_event(LPBase*, Event*);
+Event* current_event(LPBase*);
+Time tw_now(LPBase*);
 ///@}
 
 #endif

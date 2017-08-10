@@ -60,8 +60,8 @@ class PendingSplay : public PendingQueue {
     Event** temp_event_buffer;
 
     void splay(Event* node) {
-      register tw_event *n = node, *g, *p;
-      register tw_event *x, *z;
+      register Event *n = node, *g, *p;
+      register Event *x, *z;
 
       for (; (p = UP(n));) {
         if (n == LEFT(p)) {
@@ -230,7 +230,7 @@ class PendingSplay : public PendingQueue {
     }
     
     void push(Event* e) {
-      tw_event* n = root;
+      Event* n = root;
 
       e->state.owner = TW_chare_q;
       nitems++;
@@ -272,11 +272,11 @@ class PendingSplay : public PendingQueue {
     }
 
     Event* pop() {
-      tw_event       *r = least;
-      tw_event       *tmp, *p;
+      Event       *r = least;
+      Event       *tmp, *p;
 
       if (nitems == 0)
-        return (tw_event *) NULL;
+        return (Event *) NULL;
 
 
       nitems--;
@@ -312,8 +312,8 @@ class PendingSplay : public PendingQueue {
     void erase(Event* r) {
       TW_ASSERT(nitems > 0, "Attempting to delete from empty queue\n");
       TW_ASSERT(r->state.owner == TW_chare_q, "Bad event owner\n");
-      tw_event       *n, *p;
-      tw_event       *tmp;
+      Event       *n, *p;
+      Event       *tmp;
 
       if (r == least) {
         pop();
@@ -353,12 +353,12 @@ class PendingSplay : public PendingQueue {
       UP(r) = NULL;
     }
 
-    tw_event* top() const {
+    Event* top() const {
       return least;
     }
 
-    tw_stime min() const {
-      return (least ? least->ts : DBL_MAX);
+    Time min() const {
+      return (least ? least->ts : TIME_MAX);
     }
     size_t size() const {
       return nitems;

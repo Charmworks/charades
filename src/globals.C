@@ -26,7 +26,7 @@ chare_map_f g_chare_map;
 
 /** \name Event Configuration */
 ///@{
-tw_stime g_tw_lookahead;
+Time g_tw_lookahead;
 size_t   g_tw_msg_sz;
 unsigned g_tw_max_events_buffered;
 unsigned g_tw_max_remote_events_buffered;
@@ -36,7 +36,7 @@ unsigned g_tw_max_remote_events_buffered;
 ///@{
 unsigned g_tw_synchronization_protocol;
 unsigned g_tw_mblock;
-tw_stime g_tw_ts_end;
+Time g_tw_ts_end;
 ///@}
 
 /** \name GVT Configuration */
@@ -80,7 +80,7 @@ long int g_tw_expected_events;
 void clear_globals() {
   g_tw_synchronization_protocol = CONSERVATIVE;
   g_tw_gvt_scheme    = 1;
-  g_tw_ts_end        = 100000.0;
+  g_tw_ts_end        = 1024000;
   g_tw_mblock        = 16;
   g_tw_gvt_interval  = 16;
   g_tw_gvt_trigger   = 1;
@@ -93,7 +93,7 @@ void clear_globals() {
   g_tw_ldb_metric    = 0;
   g_tw_metric_ts_abs = 0;
   g_tw_metric_invert = 0;
-  g_tw_lookahead     = 0.005;
+  g_tw_lookahead     = 5;
   gvt_print_interval = 64;
   g_tw_expected_events = -1;
 

@@ -133,8 +133,8 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
     printf("========================================\n");
     printf("ROSS Configuration.....................\n");
     printf("   Synch Protocol.........%u\n", g_tw_synchronization_protocol);
-    printf("   End time...............%lf\n", g_tw_ts_end);
-    printf("   Lookahead..............%lf\n", g_tw_lookahead);
+    printf("   End time...............%llu\n", g_tw_ts_end);
+    printf("   Lookahead..............%llu\n", g_tw_lookahead);
     printf("   Batch Size.............%u\n", g_tw_mblock);
     printf("   GVT Interval...........%u\n", g_tw_gvt_interval);
     printf("   Total LPs..............%u\n", g_total_lps);

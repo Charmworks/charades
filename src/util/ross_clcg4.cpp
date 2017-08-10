@@ -233,16 +233,16 @@ rng_init_generator(tw_rng_stream * g, SeedType Where)
  * rng_set_initial_seed
  */
 void
-tw_rand_initial_seed(tw_rng_stream * g, tw_lpid id)
+tw_rand_initial_seed(tw_rng_stream * g, LPID id)
 {
-	tw_lpid mask_bit = 1;
+	LPID mask_bit = 1;
 
 	uint32_t Ig_t[4];
 	uint32_t avw_t[4];
 
 	int i;
 	int j;
-	int positions = ((sizeof(tw_lpid)) * 8) - 1;
+	int positions = ((sizeof(LPID)) * 8) - 1;
 
 	//seed for zero
 	for(j = 0; j < 4; j++)

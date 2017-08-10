@@ -25,7 +25,7 @@ extern chare_map_f g_chare_map;  ///< map from global lp id to chare id
 ///@}
 
 /** \name Event Configuration *////@{
-extern tw_stime g_tw_lookahead;                   ///< event lookahead (conservative)
+extern Time g_tw_lookahead;                   ///< event lookahead (conservative)
 extern size_t   g_tw_msg_sz;                      ///< user msg size
 extern unsigned g_tw_max_events_buffered;         ///< event buffer size
 extern unsigned g_tw_max_remote_events_buffered;  ///< remote event buffer size
@@ -34,7 +34,7 @@ extern unsigned g_tw_max_remote_events_buffered;  ///< remote event buffer size
 /** \name Scheduler Configuration *////@{
 extern unsigned g_tw_synchronization_protocol;    ///< scheduler type
 extern unsigned g_tw_mblock;                      ///< batch size for event execution
-extern tw_stime g_tw_ts_end;                      ///< end time of simulation
+extern Time g_tw_ts_end;                      ///< end time of simulation
 ///@}
 
 /** \name GVT Configuration *////@{
@@ -83,7 +83,7 @@ class Globals {
      * Sentinel event signifying some kind of error.
      * \todo Is this the best place to store this?
      */
-    tw_event* abort_event;
+    Event* abort_event;
     /**
      * Buffer of pre-allocated events for entire simulation.
      * \todo Can probably be moved to scheduler, which will handle event

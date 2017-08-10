@@ -23,7 +23,7 @@ PhaseGVT::PhaseGVT() {
     detector_ready[i] = true;
     sent[i] = 0;
     received[i] = 0;
-    min_sent[i] = DBL_MAX;
+    min_sent[i] = TIME_MAX;
   }
 }
 
@@ -31,7 +31,7 @@ void PhaseGVT::gvt_begin() {
 
   if(detector_ready[next_phase]) {
 
-    min_sent[producing_phase] = DBL_MAX;
+    min_sent[producing_phase] = TIME_MAX;
     detector_ready[producing_phase] = false;
     if(gvt_phase_begin == -1) {
       gvt_phase_begin = producing_phase;
@@ -66,10 +66,10 @@ void PhaseGVT::check_counts(int s, int r) {
 
     Time min_time = scheduler->get_min_time();
 
-    min_time = fmin(min_time, min_sent[gvt_phase_end]);
+    min_time = std::min(min_time, min_sent[gvt_phase_end]);
     CkAssert(min_time >= curr_gvt);
 
-    contribute(sizeof(Time), &min_time, CkReduction::min_double,
+    contribute(sizeof(Time), &min_time, CkReduction::min_ulong_long,
       CkCallback(CkReductionTarget(PhaseGVT,gvt_end),thisProxy));
   }
 

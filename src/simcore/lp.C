@@ -91,7 +91,7 @@ void set_current_event(LPBase* lp, Event* event) {
 #define PE_STATS(x) scheduler->stats->x
 
 /** Initializes all member variables for this LP chare */
-LPChare::LPChare() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(DBL_MAX),
+LPChare::LPChare() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(TIME_MAX),
            current_time(0), all_events(0), committed_events(0),
            rolled_back_events(0), committed_time(0.0) {
   /**
@@ -156,7 +156,7 @@ void LPChare::ResumeFromSync() {
  * \returns how close the timestamp is to the simulation end time, as a percent
  */
 double tsPercent(Time ts) {
-  double weight = fmin(ts / g_tw_ts_end,1.0);
+  double weight = std::min((double)ts / g_tw_ts_end, 1.0);
   if (g_tw_metric_invert) return 1.0 - weight;
   else return weight;
 }
@@ -165,7 +165,7 @@ double tsPercent(Time ts) {
  * \returns the timestamp bounded by end time, and inverted if required
  */
 double tsAbs(Time ts) {
-  double weight = fmin(ts, g_tw_ts_end);
+  double weight = std::min(ts, g_tw_ts_end);
   if (g_tw_metric_invert) return g_tw_ts_end - weight;
   else return weight;
 }
@@ -315,7 +315,7 @@ void LPChare::recv_remote_event(RemoteEvent* event) {
 
 void LPChare::recv_local_event(Event* e) {
   /** Use g_local_map to look up the specific LPStruct pointer for this event */
-  e->dest_lp = (tw_lpid)lp_structs[g_local_map(e->dest_lp)];
+  e->dest_lp = (LPID)lp_structs[g_local_map(e->dest_lp)];
 
   /**
    * If this event is now the earliest event we know about, update the
@@ -330,7 +330,7 @@ void LPChare::recv_local_event(Event* e) {
    * \todo Locally sent events can't cause violations so this should be moved
    * to the remote handler.
    */
-  if(isOptimistic && e->ts < current_time) {
+  if(isOptimistic && e->ts <= current_time) {
     BRACKET_TRACE(rollback_me(e->ts);,USER_EVENT_RB)
   }
 
@@ -399,7 +399,7 @@ void* LPChare::execute_me() {
   return (void*)false;
 }
 
-void LPChare::rollback_me(tw_stime ts) {
+void LPChare::rollback_me(Time ts) {
   Event* e;
   PE_STATS(total_rollback_calls)++;
   PE_STATS(ts_rollback_calls)++;
@@ -471,7 +471,7 @@ void LPChare::rollback_me(Event* event) {
   }
 }
 
-void LPChare::fossil_me(tw_stime gvt) {
+void LPChare::fossil_me(Time gvt) {
   /**
    * Pop off events from the BACK of the processed queue and commit/free them
    * until the oldest timestamp in the processed queue is greater than or equal
@@ -540,7 +540,7 @@ void LPChare::process_cancel_q() {
   while (cancel_q) {
     curr = cancel_q;
     cancel_q = NULL;
-    min_cancel_q = DBL_MAX;
+    min_cancel_q = TIME_MAX;
 
     /**
      * For each event in the queue, cancel it based on it's current location.

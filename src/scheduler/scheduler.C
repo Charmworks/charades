@@ -10,8 +10,6 @@
 #include "trigger.h"
 #include "util.h"
 
-#include <float.h> // Included for DBL_MAX
-
 CkGroupID scheduler_id;
 
 /******************************************************************************/
@@ -81,12 +79,12 @@ void Scheduler::finalize(CkReductionMsg* msg) {
 
 void Scheduler::print_progress(Time ts) {
   if (CkMyPe() != 0) return;
-  double time = fmin(ts, g_tw_ts_end);
-  double percent = fmin(100*ts/g_tw_ts_end,100.00);
+  Time time = std::min(ts, g_tw_ts_end);
+  double percent = std::min(100.00 * ((double)ts / g_tw_ts_end), 100.00);
   double mb = CmiMemoryUsage()/(1024.0*1024.0);
   int gvt_num = cumulative_stats->total_gvts;
   if (cumulative_stats != stats) gvt_num += stats->total_gvts;
-  CkPrintf("GVT %6i: %8.2f (%6.2f%%), %.2f MB\n", gvt_num, time, percent, mb);
+  CkPrintf("GVT %6i: %10i (%6.2f%%), %.2f MB\n", gvt_num, time, percent, mb);
 }
 
 /** Attempt to execute the next LPs next event, returning false if it fails */
@@ -104,7 +102,7 @@ bool Scheduler::schedule_next_lp() {
 // TODO: Could this be stored in a member variable and updated consistenly?
 /** Return the time of the minimum unexecuted event on this PE */
 Time Scheduler::get_min_time() const {
-  return next_lps.top() != NULL ? next_lps.top()->ts : DBL_MAX;
+  return next_lps.top() != NULL ? next_lps.top()->ts : TIME_MAX;
 }
 
 /** Needs to be overridden by each base class to define a scheduler iteration */

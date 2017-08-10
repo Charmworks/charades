@@ -21,7 +21,7 @@ void SyncGVT::gvt_contribute() {
   Time min_time = scheduler->get_min_time();
   CkAssert(min_time >= curr_gvt);
 
-  contribute(sizeof(Time), &min_time, CkReduction::min_double,
+  contribute(sizeof(Time), &min_time, CkReduction::min_ulong_long,
       CkCallback(CkReductionTarget(SyncGVT,gvt_end),thisProxy));
 
   if(g_tw_async_reduction) {

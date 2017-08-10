@@ -14,11 +14,9 @@ extern CProxy_Scheduler scheduler;
 
 // Public functions exposed to the user for allocating, sending, freeing, and
 // rolling back events.
-tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, LPBase * sender) {
-  tw_event	*e;
-  tw_stime	recv_ts;
-
-  recv_ts = tw_now(sender) + offset_ts;
+Event* tw_event_new(LPID dest_gid, Time offset_ts, LPBase * sender) {
+  Event* e;
+  Time recv_ts = tw_now(sender) + offset_ts;
 
   if (recv_ts >= g_tw_ts_end) {
     e = PE_VALUE(abort_event);
@@ -27,14 +25,14 @@ tw_event * tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, LPBase * sender) {
   }
 
   e->dest_lp = dest_gid;
-  e->src_lp = (tw_lpid)sender;
+  e->src_lp = (LPID)sender;
   e->ts = recv_ts;
-  e->send_pe = (tw_peid)(sender->owner);
+  e->send_pe = (uint64_t)(sender->owner);
 
   return e;
 }
 
-void tw_event_free(tw_event *e, bool commit) {
+void tw_event_free(Event *e, bool commit) {
   if(commit == true) {
     LPBase* lp;
     lp = (LPBase*)e->dest_lp;
@@ -44,9 +42,9 @@ void tw_event_free(tw_event *e, bool commit) {
   charm_free_event(e);
 }
 
-void tw_event_send(tw_event * e) {
+void tw_event_send(Event * e) {
   if (e == PE_VALUE(abort_event)) {
-    TW_ASSERT(e->ts > g_tw_ts_end, "Can't send abort event before end\n");
+    TW_ASSERT(e->ts >= g_tw_ts_end, "Can't send abort event before end\n");
     return;
   }
   TW_ASSERT(g_tw_synchronization_protocol != CONSERVATIVE ||
@@ -67,15 +65,15 @@ void tw_event_send(tw_event * e) {
   }
 }
 
-void tw_event_rollback(tw_event * event) {
-  tw_event  *e = event->caused_by_me;
+void tw_event_rollback(Event * event) {
+  Event  *e = event->caused_by_me;
   LPBase     *dest_lp = (LPBase*)event->dest_lp;
 
   set_current_event(dest_lp, event);
   dest_lp->reverse(tw_event_data(event), &event->cv);
 
   while (e) {
-    tw_event *n = e->cause_next;
+    Event *n = e->cause_next;
     e->cause_next = NULL;
 
     charm_event_cancel(e);

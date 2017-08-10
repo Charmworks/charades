@@ -7,8 +7,6 @@
 #include "scheduler.h"
 
 #include <stdio.h>  // Included for printf
-#include <float.h>  // Included for DBL_MAX
-#include <math.h>   // Included for fmax/fmin
 
 Statistics* get_statistics() {
   /** Cache the pointer in a local variable for quicker lookup */
@@ -146,7 +144,7 @@ void Statistics::print_section(const char* name) const {
 }
 
 /** Print a formatted and labeled integer value */
-void Statistics::print_int(const char* name, tw_stat v) const {
+void Statistics::print_int(const char* name, uint64_t v) const {
   CkPrintf("\t%-50s %11lld\n", name, v);
 }
 
@@ -217,7 +215,7 @@ void Statistics::log_tracing(int gvt_num) const {
   updateStatPair(EVENTS_COMMITTED, events_committed, gvt_num);
   updateStatPair(EVENTS_ROLLED_BACK, events_rolled_back, gvt_num);
 
-  updateStatPair(EFFICIENCY, 100.0 * (1.0 - ((double) events_rolled_back / (double) events_committed)), gvt_num);
+  updateStatPair(EFFICIENCY, 100.0 * ((double) events_committed / (double) events_executed), gvt_num);
 
   updateStatPair(SELF_SENDS, self_sends, gvt_num);
   updateStatPair(LOCAL_SENDS, local_sends, gvt_num);

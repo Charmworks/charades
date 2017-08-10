@@ -31,10 +31,10 @@ struct RemoteEvent : public CMessage_RemoteEvent {
     // These three fields make up the unique key for identifying events
     EventID event_id;
     Time ts;
-    tw_peid send_pe;
+    uint64_t send_pe;
 
     // The global id of the destination lp
-    tw_lpid dest_lp;
+    LPID dest_lp;
 
     virtual void pup(PUP::er& p);
 };
@@ -126,7 +126,7 @@ public:
 
   // Basic event info, used as a key for unique event identification
   EventID event_id; // Unique increasing id per LP chare.
-  tw_peid send_pe;  // Cast as a pointer to LP chare before sent.
+  uint64_t send_pe;  // Cast as a pointer to LP chare before sent.
   Time ts;
 
   // Fields used to enable time warp mechanism to do rollbacks
@@ -134,8 +134,8 @@ public:
   tw_event_state state; // State keeps track of who owns the event
 
   // Source and dest LP may either be pointers or gids
-  tw_lpid dest_lp;  // GID on sender side, pointer at destination
-  tw_lpid src_lp;   // Pointer on sender side, not needed at destination
+  LPID dest_lp;  // GID on sender side, pointer at destination
+  LPID src_lp;   // Pointer on sender side, not needed at destination
 
   // Fields storing msg data
   RemoteEvent * eventMsg;
@@ -175,7 +175,7 @@ static inline void reset_bitfields(Event* revent) {
 
 // This function is also used during unpacking after migration, which is why
 // it is included in the header instead of the cpp file.
-static inline void link_causality (tw_event *nev, tw_event *cev) {
+static inline void link_causality (Event* nev, Event* cev) {
   nev->cause_next = cev->caused_by_me;
   cev->caused_by_me = nev;
 }
@@ -188,14 +188,14 @@ static inline void link_causality (tw_event *nev, tw_event *cev) {
  * \param sender a pointer to the sending LP
  * \returns a pointer to a new event
  */
-tw_event* tw_event_new(tw_lpid dest_gid, tw_stime offset_ts, LPBase* sender);
+Event* tw_event_new(LPID dest_gid, Time offset_ts, LPBase* sender);
 /**
  * Send a previously allocated event.
  * \param event the event to send
  */
-void tw_event_send(tw_event * event);
-void tw_event_free(tw_event *e, bool commit);
-void tw_event_rollback(tw_event * event);
+void tw_event_send(Event* event);
+void tw_event_free(Event* e, bool commit);
+void tw_event_rollback(Event* event);
 
 /**
  * Macro for getting the model specific data from the event.

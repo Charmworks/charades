@@ -32,7 +32,7 @@ void operator|(PUP::er& p, tw_rng_stream* s) {
 
 // Make sure we know our local pe, and construct the tokens.
 LPChare::LPChare(CkMigrateMessage* m) : next_token(this),
-                              cancel_q(NULL), min_cancel_q(DBL_MAX),
+                              cancel_q(NULL), min_cancel_q(TIME_MAX),
                               all_events(0), current_time(0.0),
                               current_event(NULL) {
   scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
@@ -97,7 +97,7 @@ void LPChare::pup(PUP::er& p) {
 // to the cancel_q and/or avl_tree.
 void LPChare::reconstruct_pending_event(Event* e) {
   // Reconstruct pointers
-  e->dest_lp = (tw_lpid)(&lp_structs[g_local_map(e->dest_lp)]);
+  e->dest_lp = (LPID)(&lp_structs[g_local_map(e->dest_lp)]);
 
   // Add the event to the avl_tree if necessary
   if (e->state.avl_tree) {
@@ -114,7 +114,7 @@ void LPChare::reconstruct_pending_event(Event* e) {
 // if necessary.
 void LPChare::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
   // Reconstruct pointers
-  e->dest_lp = (tw_lpid)(&lp_structs[g_local_map(e->dest_lp)]);
+  e->dest_lp = (LPID)(&lp_structs[g_local_map(e->dest_lp)]);
   reconstruct_causality(e, pending, processed);
 
   // Add the event to the avl_tree if necessary

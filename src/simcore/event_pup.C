@@ -33,7 +33,7 @@ inline void basic_event_pup(PUP::er& p, Event* e) {
 // Need the index for PendingHeap, and also for processed events causality.
 // No other causality info is needed.
 void pup_pending_event(PUP::er& p, Event* e) {
-  tw_lpid dest_lp;
+  LPID dest_lp;
   if (p.isPacking()) {
     dest_lp = e->dest_lp;
     e->dest_lp = ((LPBase*)e->dest_lp)->gid;
@@ -58,7 +58,7 @@ void pup_pending_event(PUP::er& p, Event* e) {
 // Need the index for ProcessedQueue, and also for processed events causality.
 // Causality pupper needs to be called to pack causality info.
 void pup_processed_event(PUP::er& p, Event* e) {
-  tw_lpid dest_lp;
+  LPID dest_lp;
   if (p.isPacking()) {
     dest_lp = e->dest_lp;
     e->dest_lp = ((LPBase*)e->dest_lp)->gid;

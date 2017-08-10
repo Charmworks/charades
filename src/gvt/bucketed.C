@@ -22,7 +22,7 @@ BucketGVT::BucketGVT() {
     rollback_flags[i] = 0;
     sent[i] = 0;
     received[i] = 0;
-    min_sent[i] = DBL_MAX;
+    min_sent[i] = TIME_MAX;
   }
 }
 
@@ -64,13 +64,14 @@ void BucketGVT::check_counts(int sent, int recvd, int flag ) {
   else {
 
     Time min_time = scheduler->get_min_time();
-    min_time = fmin(min_time, min_sent[cur_bucket]);
+    min_time = std::min(min_time, min_sent[cur_bucket]);
     CkAssert(min_time >= curr_gvt);
-    double flag = ((rollback_flags[cur_bucket]) ? 0 : 1);
 
-    double data[2] = {min_time, flag};
+    // TODO: This is weird, should use Time typedef
+    uint64_t flag = ((rollback_flags[cur_bucket]) ? 0 : 1);
+    uint64_t data[2] = {min_time, flag};
 
-    contribute(2 * sizeof(double), data, CkReduction::min_double,
+    contribute(2 * sizeof(double), data, CkReduction::min_ulong_long,
       CkCallback(CkReductionTarget(BucketGVT,gvt_end),thisProxy));
   }
 }

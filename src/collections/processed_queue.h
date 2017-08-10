@@ -5,8 +5,6 @@
 #include "typedefs.h"
 #include "util.h"
 
-#include <float.h>  // Included for DBL_MAX
-
 class ProcessedQueue {
   size_t length;
   Event *head;
@@ -79,7 +77,7 @@ class ProcessedQueue {
     return head;
   }
 
-  tw_stime max() const {
+  Time max() const {
     return (head ? head->ts : 0);
   }
 
@@ -117,8 +115,8 @@ class ProcessedQueue {
     return tail;
   }
 
-  tw_stime min() const {
-    return (tail ? tail->ts : DBL_MAX);
+  Time min() const {
+    return (tail ? tail->ts : TIME_MAX);
   }
 
   Event * pop_back() {
