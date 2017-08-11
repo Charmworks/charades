@@ -39,12 +39,12 @@ int avlSearch(AvlTree t, Event *key)
     // Timestamp is the same
     if (key->event_id == t->key->event_id) {
       // Event ID is the same
-      if (key->send_pe == t->key->send_pe) {
-        // send_pe is the same
+      if (key->src_lp == t->key->src_lp) {
+        // src_lp is the same
         return 1;
       } else {
-        // send_pe is different
-        return avlSearch(t->child[key->send_pe > t->key->send_pe], key);
+        // src_lp is different
+        return avlSearch(t->child[key->src_lp > t->key->src_lp], key);
       }
     } else {
       // Event ID is different
@@ -167,12 +167,12 @@ void avlInsert(AvlTree *t, Event *key)
   if (key->ts == (*t)->key->ts) {
     // We have a timestamp tie, check the event ID
     if (key->event_id == (*t)->key->event_id) {
-      // We have a event ID tie, check the send_pe
-      if (key->send_pe == (*t)->key->send_pe) {
+      // We have a event ID tie, check the src_lp
+      if (key->src_lp == (*t)->key->src_lp) {
         // This shouldn't happen but we'll allow it
         CkPrintf("Warning: identical events in AVL tree!\n");
       }
-      avlInsert(&(*t)->child[key->send_pe > (*t)->key->send_pe], key);
+      avlInsert(&(*t)->child[key->src_lp > (*t)->key->src_lp], key);
       avlRebalance(t);
     } else {
       // Event IDs are different
@@ -232,8 +232,8 @@ Event * avlDelete(AvlTree *t, Event *key)
   if (key->ts == (*t)->key->ts) {
     // We have a timestamp tie, check the event ID
     if (key->event_id == (*t)->key->event_id) {
-      // We have a event ID tie, check the send_pe
-      if (key->send_pe == (*t)->key->send_pe) {
+      // We have a event ID tie, check the src_lp
+      if (key->src_lp == (*t)->key->src_lp) {
         // This is actually the one we want to delete
         target = (*t)->key;
         /* do we have a right child? */
@@ -248,8 +248,8 @@ Event * avlDelete(AvlTree *t, Event *key)
           avl_free(oldroot);
         }
       } else {
-        // Timestamp and event IDs are the same, but different send_pe
-        target = avlDelete(&(*t)->child[key->send_pe > (*t)->key->send_pe], key);
+        // Timestamp and event IDs are the same, but different src_lp
+        target = avlDelete(&(*t)->child[key->src_lp > (*t)->key->src_lp], key);
       }
     } else {
       // Timestamps are the same but event IDs differ
@@ -280,12 +280,12 @@ Event * avlInsertOrDelete(AvlTree *t, Event *key)
   Event* target;
   if (key->ts == (*t)->key->ts) {
     if (key->event_id == (*t)->key->event_id) {
-      if (key->send_pe == (*t)->key->send_pe) {
+      if (key->src_lp == (*t)->key->src_lp) {
         // We've hit the exact event, so insertion fails and delete it.
         return avlDelete(t, key);
       } else {
-        // send_pe is different
-        target = avlInsertOrDelete(&(*t)->child[key->send_pe > (*t)->key->send_pe], key);
+        // src_lp is different
+        target = avlInsertOrDelete(&(*t)->child[key->src_lp > (*t)->key->src_lp], key);
       }
     } else {
       // Event ID is different

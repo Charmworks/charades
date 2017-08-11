@@ -15,28 +15,29 @@ extern CProxy_Scheduler scheduler;
 // Public functions exposed to the user for allocating, sending, freeing, and
 // rolling back events.
 Event* tw_event_new(LPID dest_gid, Time offset_ts, LPBase * sender) {
-  Event* e;
   Time recv_ts = tw_now(sender) + offset_ts;
 
+  Event* e;
   if (recv_ts >= g_tw_ts_end) {
     e = PE_VALUE(abort_event);
   } else {
     e = charm_allocate_event();
   }
 
-  e->dest_lp = dest_gid;
-  e->src_lp = (LPID)sender;
+  e->owner = sender;
+
+  // TODO: How likely is incrementing uniqID here to cause overflow?
   e->ts = recv_ts;
-  e->send_pe = (uint64_t)(sender->owner);
+  e->event_id = sender->owner->uniqID++;
+  e->src_lp = sender->gid;
+  e->dest_lp = dest_gid;
 
   return e;
 }
 
 void tw_event_free(Event *e, bool commit) {
   if(commit == true) {
-    LPBase* lp;
-    lp = (LPBase*)e->dest_lp;
-    lp->commit(tw_event_data(e), &e->cv);
+    e->owner->commit(tw_event_data(e), &e->cv);
     PE_STATS(events_committed)++;
   }
   charm_free_event(e);
@@ -48,16 +49,15 @@ void tw_event_send(Event * e) {
     return;
   }
   TW_ASSERT(g_tw_synchronization_protocol != CONSERVATIVE ||
-            e->ts - tw_now((LPBase*)e->src_lp) >= g_tw_lookahead,
+            e->ts - tw_now(e->owner) >= g_tw_lookahead,
             "Lookahead violation: try decreasing the lookahead value");
 
-  int dest_peid;
-  LPBase* src_lp = (LPBase*)e->src_lp;
-  link_causality(e, current_event(src_lp));
-  dest_peid = g_chare_map(e->dest_lp);
+  int dest_chare;
+  link_causality(e, current_event(e->owner));
+  dest_chare = g_chare_map(e->dest_lp);
 
   // The charm backend will fill in the remote event and send it
-  int isRemote = charm_event_send(dest_peid, e);
+  int isRemote = charm_event_send(dest_chare, e);
 
   // Unless we are doing optimistic simulation we can just free the event
   if(isRemote && g_tw_synchronization_protocol != OPTIMISTIC) {
@@ -66,8 +66,8 @@ void tw_event_send(Event * e) {
 }
 
 void tw_event_rollback(Event * event) {
-  Event  *e = event->caused_by_me;
-  LPBase     *dest_lp = (LPBase*)event->dest_lp;
+  Event* e = event->caused_by_me;
+  LPBase* dest_lp = event->owner;
 
   set_current_event(dest_lp, event);
   dest_lp->reverse(tw_event_data(event), &event->cv);
@@ -100,7 +100,7 @@ void charm_free_event(Event* e) {
   // as well as freeing any events caused by it.
   if (g_tw_synchronization_protocol == OPTIMISTIC) {
     if(e->state.avl_tree == 1) {
-      avlDelete(&((LPBase*)e->dest_lp)->owner->all_events, e);
+      avlDelete(&(e->owner)->owner->all_events, e);
     }
 
     Event* event = e->caused_by_me;
@@ -120,42 +120,38 @@ void charm_free_event(Event* e) {
 
 // Fill an event's remote message and send it.
 // Returns 1 if the send was remote, 0 if it was local.
-int charm_event_send(unsigned dest_peid, Event * e) {
+int charm_event_send(unsigned dest_chare_id, Event * e) {
   static Scheduler* scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
-  LPChare* send_pe = (LPChare*)(e->send_pe);
-  LPChare* dest_pe;
-
-  // When e is passed in, src_lp and send_pe are pointers, dest_lp is a gid.
-  e->src_lp = ((LPBase*)e->src_lp)->gid;
-  e->send_pe = send_pe->thisIndex;
+  LPChare* send_chare = (e->owner)->owner;
+  LPChare* dest_chare;
 
   // Check to see if this is a local send or not.
-  if (dest_peid == send_pe->thisIndex) {
-    dest_pe = send_pe;
+  if (dest_chare_id == send_chare->thisIndex) {
+    dest_chare = send_chare;
   } else {
-    dest_pe = NULL;
+    dest_chare = NULL;
   }
 
   // If we got a pointer, do a local send. Otherwise, send remotely.
-  if (dest_pe != NULL) {
+  if (dest_chare != NULL) {
     // Check if an LP is sending to an LP other than itself (for stats).
     if (e->dest_lp == e->src_lp) {
       PE_STATS(self_sends)++;
     } else {
       PE_STATS(local_sends)++;
     }
-    dest_pe->recv_local_event(e);
+    dest_chare->recv_local_event(e);
     return 0;
   } else {
     PE_STATS(remote_sends)++;
     // Fill the fields of the charm message to prepare it for sending.
-    e->eventMsg->event_id = e->event_id = send_pe->uniqID++;
     e->eventMsg->ts = e->ts;
+    e->eventMsg->event_id = e->event_id;
+    e->eventMsg->src_lp = e->src_lp;
     e->eventMsg->dest_lp = e->dest_lp;
-    e->eventMsg->send_pe = e->send_pe;
 
     scheduler->produce(e->eventMsg);
-    lps(dest_peid).recv_remote_event(e->eventMsg);
+    lps(dest_chare_id).recv_remote_event(e->eventMsg);
     e->state.owner = TW_sent;
     e->eventMsg = NULL;
     return 1;
@@ -165,17 +161,17 @@ int charm_event_send(unsigned dest_peid, Event * e) {
 // Allocate a new remote message, fill it based on e, and send it.
 // An anti send will never be to a local chare, because locally sent events
 // will never have the owner set to TW_sent.
-void charm_anti_send(unsigned dest_peid, Event * e) {
+void charm_anti_send(unsigned dest_chare_id, Event * e) {
   static Scheduler* scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
   RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;
   eventMsg->dest_lp = e->dest_lp;
-  eventMsg->send_pe = e->send_pe;
+  eventMsg->src_lp = e->src_lp;
 
   scheduler->produce(eventMsg);
   PE_STATS(anti_sends)++;
-  lps(dest_peid).recv_anti_event(eventMsg);
+  lps(dest_chare_id).recv_anti_event(eventMsg);
 }
 
 // Cancels an event by either sending an anti-message, or calling cancel_event
@@ -188,16 +184,15 @@ void charm_event_cancel(Event * e) {
 
   // If already sent, have charm send an anti message, and free the local event
   if(e->state.owner == TW_sent) {
-    unsigned dest_peid = g_chare_map(e->dest_lp);
-    charm_anti_send(dest_peid, e);
+    unsigned dest_chare_id = g_chare_map(e->dest_lp);
+    charm_anti_send(dest_chare_id, e);
 
     tw_event_free(e,false);
     return;
   }
 
   // If is local, then the LP can cancel it
-  LPChare *dest_pe = ((LPBase*)e->dest_lp)->owner;
-  dest_pe->cancel_event(e);
+  e->owner->owner->cancel_event(e);
 }
 
 #include "event.def.h"

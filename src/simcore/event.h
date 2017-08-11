@@ -17,9 +17,9 @@ struct RemoteEvent : public CMessage_RemoteEvent {
       clear();
     }
     void clear() {
+      ts = 0;
       event_id = 0;
-      ts = 0.0;
-      send_pe = 0;
+      src_lp = 0;
       dest_lp = 0;
     }
 
@@ -29,12 +29,12 @@ struct RemoteEvent : public CMessage_RemoteEvent {
     unsigned phase;
 
     // These three fields make up the unique key for identifying events
-    EventID event_id;
     Time ts;
-    uint64_t send_pe;
+    uint64_t event_id;
+    uint64_t src_lp;
 
     // The global id of the destination lp
-    LPID dest_lp;
+    uint64_t dest_lp;
 
     virtual void pup(PUP::er& p);
 };
@@ -110,7 +110,6 @@ public:
     state.owner = state.remote = state.cancel_q = state.avl_tree;
 
     dest_lp = src_lp = 0;
-    send_pe = 0;
 
     eventMsg = NULL;
     userData = NULL;
@@ -125,17 +124,18 @@ public:
   }
 
   // Basic event info, used as a key for unique event identification
-  EventID event_id; // Unique increasing id per LP chare.
-  uint64_t send_pe;  // Cast as a pointer to LP chare before sent.
   Time ts;
+  uint64_t event_id; // Unique increasing id per LP chare.
+  uint64_t src_lp;   // Pointer on sender side, not needed at destination
+  uint64_t dest_lp;  // GID on sender side, pointer at destination
+
+  LPBase* owner;
 
   // Fields used to enable time warp mechanism to do rollbacks
   tw_bf cv;             // Bitfield keeps track of execution path
   tw_event_state state; // State keeps track of who owns the event
 
   // Source and dest LP may either be pointers or gids
-  LPID dest_lp;  // GID on sender side, pointer at destination
-  LPID src_lp;   // Pointer on sender side, not needed at destination
 
   // Fields storing msg data
   RemoteEvent * eventMsg;

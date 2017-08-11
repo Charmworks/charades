@@ -286,7 +286,7 @@ void LPChare::recv_remote_event(RemoteEvent* event) {
   e->eventMsg = event;
   e->event_id = event->event_id;
   e->ts       = event->ts;
-  e->send_pe  = event->send_pe;
+  e->src_lp  = event->src_lp;
   e->dest_lp  = event->dest_lp;
   e->userData = event->userData;
   e->state.remote = 1;
@@ -315,7 +315,7 @@ void LPChare::recv_remote_event(RemoteEvent* event) {
 
 void LPChare::recv_local_event(Event* e) {
   /** Use g_local_map to look up the specific LPStruct pointer for this event */
-  e->dest_lp = (LPID)lp_structs[g_local_map(e->dest_lp)];
+  e->owner = lp_structs[g_local_map(e->dest_lp)];
 
   /**
    * If this event is now the earliest event we know about, update the
@@ -350,7 +350,7 @@ void LPChare::recv_anti_event(RemoteEvent* event) {
   Event* key = charm_allocate_event(0);
   key->event_id = event->event_id;
   key->ts = event->ts;
-  key->send_pe = event->send_pe;
+  key->src_lp = event->src_lp;
 
   /**
    * Attempt to insert the key into the AVL hash, which returns an actual event
@@ -377,7 +377,7 @@ void* LPChare::execute_me() {
       reset_bitfields(e);
     }
     /** Execute the event on the target LPStruct */
-    LPBase* lp = (LPBase*)e->dest_lp;
+    LPBase* lp = e->owner;
     BRACKET_TRACE(lp->forward(tw_event_data(e), &e->cv);, USER_EVENT_FWD)
 
     /**

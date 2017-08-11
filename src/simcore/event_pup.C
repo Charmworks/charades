@@ -7,9 +7,9 @@
 // PUP method for remote events. Called from pup_pending_event() and
 // pup_processed_event().
 void RemoteEvent::pup(PUP::er& p) {
-  p | event_id;
   p | ts;
-  p | send_pe;
+  p | event_id;
+  p | src_lp;
   p | dest_lp;
   p((char*)userData, g_tw_msg_sz);
 }
@@ -17,11 +17,11 @@ PUPbytes(tw_event_state);
 PUPbytes(tw_bf);
 
 // Pup the basic parts needed by every event, which are just the fields used
-// as the event key (event_id, ts, send_pe). Also need dest_lp (not sure why).
+// as the event key (event_id, ts, src_lp). Also need dest_lp (not sure why).
 inline void basic_event_pup(PUP::er& p, Event* e) {
-  p | e->send_pe;
-  p | e->event_id;
   p | e->ts;
+  p | e->event_id;
+  p | e->src_lp;
   p | e->dest_lp;
 }
 
