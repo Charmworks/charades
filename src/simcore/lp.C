@@ -288,7 +288,6 @@ void LPChare::recv_remote_event(RemoteEvent* event) {
   e->ts       = event->ts;
   e->src_lp  = event->src_lp;
   e->dest_lp  = event->dest_lp;
-  e->userData = event->userData;
   e->state.remote = 1;
 
   /**
@@ -378,7 +377,7 @@ void* LPChare::execute_me() {
     }
     /** Execute the event on the target LPStruct */
     LPBase* lp = e->owner;
-    BRACKET_TRACE(lp->forward(tw_event_data(e), &e->cv);, USER_EVENT_FWD)
+    BRACKET_TRACE(lp->forward(e->userData(), &e->cv);, USER_EVENT_FWD)
 
     /**
      * Move the event to the processed queue if we are optimistic, otherwise

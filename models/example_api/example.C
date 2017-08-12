@@ -18,7 +18,7 @@ void ExampleLP::initialize() {
   for (int i = 0; i < g_initial_events; i++) {
     Time delay = g_tw_lookahead + g_adjusted_mean*tw_rand_exponential(rng, 1.0);
     Event* e = tw_event_new(neighbor, delay, this);
-    ExampleMessage* msg = reinterpret_cast<ExampleMessage*>(tw_event_data(e));
+    ExampleMessage* msg = reinterpret_cast<ExampleMessage*>(e->userData());
     msg->payload = counter++;
     tw_event_send(e);
   }
@@ -27,7 +27,7 @@ void ExampleLP::initialize() {
 void ExampleLP::forward(ExampleMessage* msg, tw_bf* bf) {
   Time delay = g_tw_lookahead + g_adjusted_mean*tw_rand_exponential(rng, 1.0);
   Event* e = tw_event_new(neighbor, delay, this);
-  ExampleMessage* new_msg = reinterpret_cast<ExampleMessage*>(tw_event_data(e));
+  ExampleMessage* new_msg = reinterpret_cast<ExampleMessage*>(e->userData());
   new_msg->payload = msg->payload + counter++;
   tw_event_send(e);
 }

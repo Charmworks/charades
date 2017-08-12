@@ -27,7 +27,6 @@ class EventBuffer {
         stack_pointer(max), remote_stack_pointer(max_remote) {
       abort_event = new Event;
       abort_event->eventMsg = new (msg_size) RemoteEvent;
-      abort_event->userData = abort_event->eventMsg->userData;
       int err = posix_memalign((void **)&buffer, 64, max*sizeof(Event*));
       err = posix_memalign((void **)&remote_buffer, 64, max_remote*sizeof(RemoteEvent*));
 

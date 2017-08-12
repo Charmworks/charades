@@ -45,9 +45,6 @@ void pup_pending_event(PUP::er& p, Event* e) {
   p | e->state;
   p | e->index;
   p | *(e->eventMsg);
-  if (p.isUnpacking()) {
-    e->userData = e->eventMsg->userData;
-  }
 }
 
 // PROCESSED EVENTS:
@@ -71,9 +68,6 @@ void pup_processed_event(PUP::er& p, Event* e) {
   p | e->cv;
   p | e->index;
   p | *(e->eventMsg);
-  if (p.isUnpacking()) {
-    e->userData = e->eventMsg->userData;
-  }
   pup_causality(p, e);
 }
 

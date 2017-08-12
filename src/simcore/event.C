@@ -37,7 +37,7 @@ Event* tw_event_new(LPID dest_gid, Time offset_ts, LPBase * sender) {
 
 void tw_event_free(Event *e, bool commit) {
   if(commit == true) {
-    e->owner->commit(tw_event_data(e), &e->cv);
+    e->owner->commit(e->userData(), &e->cv);
     PE_STATS(events_committed)++;
   }
   charm_free_event(e);
@@ -70,7 +70,7 @@ void tw_event_rollback(Event * event) {
   LPBase* dest_lp = event->owner;
 
   set_current_event(dest_lp, event);
-  dest_lp->reverse(tw_event_data(event), &event->cv);
+  dest_lp->reverse(event->userData(), &event->cv);
 
   while (e) {
     Event *n = e->cause_next;
@@ -90,7 +90,6 @@ Event* charm_allocate_event(int needMsg) {
   e = PE_VALUE(event_buffer)->get_event();
   if (needMsg) {
     e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
-    e->userData = e->eventMsg->userData;
   }
   return e;
 }

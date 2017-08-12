@@ -104,18 +104,15 @@ public:
   void clear() {
     reset_bitfields(this);
 
-    event_id = 0;
-    ts = 0.0;
+    ts = 0;
+    event_id = dest_lp = src_lp = 0;
+
+    owner = NULL;
+    eventMsg = NULL;
 
     state.owner = state.remote = state.cancel_q = state.avl_tree;
 
-    dest_lp = src_lp = 0;
-
-    eventMsg = NULL;
-    userData = NULL;
-
-    up = next = prev = NULL;
-    caused_by_me = cause_next = cancel_next = NULL;
+    next = prev = caused_by_me = cause_next = cancel_next = NULL;
 
     index = 0;
 
@@ -123,33 +120,29 @@ public:
     pending_indices = processed_indices = NULL;
   }
 
+  char* userData() const { return eventMsg->userData; }
+
   // Basic event info, used as a key for unique event identification
   Time ts;
-  uint64_t event_id; // Unique increasing id per LP chare.
+  uint64_t event_id; // Unique increasing id per LP chare
   uint64_t src_lp;   // Pointer on sender side, not needed at destination
   uint64_t dest_lp;  // GID on sender side, pointer at destination
 
   LPBase* owner;
+  RemoteEvent * eventMsg;
 
   // Fields used to enable time warp mechanism to do rollbacks
   tw_bf cv;             // Bitfield keeps track of execution path
   tw_event_state state; // State keeps track of who owns the event
 
-  // Source and dest LP may either be pointers or gids
-
-  // Fields storing msg data
-  RemoteEvent * eventMsg;
-  char *userData;
-
   // Pointers used in data structures storing Events
-  Event* up;            // Parent in splay trees
-  Event* prev;          // Prev in processed queue, or left child in splay tree
-  Event* next;          // Next in processed queue, or right child in splay tree
+  Event* prev;          // Prev in processed queue
+  Event* next;          // Next in processed queue
   Event* caused_by_me;  // Start of event list caused by this event
   Event* cause_next;    // Next in parent's caused_by_me chain
   Event* cancel_next;   // next in cancel list
 
-  // Index of the event in the pending heap. Also the order of event pupping.
+  // Index of the event in the pending heap. Also the order of event pupping
   size_t    index;
 
   // Fields for rebuilding causality lists after migration
@@ -175,7 +168,7 @@ static inline void reset_bitfields(Event* revent) {
 
 // This function is also used during unpacking after migration, which is why
 // it is included in the header instead of the cpp file.
-static inline void link_causality (Event* nev, Event* cev) {
+static inline void link_causality(Event* nev, Event* cev) {
   nev->cause_next = cev->caused_by_me;
   cev->caused_by_me = nev;
 }
@@ -196,13 +189,6 @@ Event* tw_event_new(LPID dest_gid, Time offset_ts, LPBase* sender);
 void tw_event_send(Event* event);
 void tw_event_free(Event* e, bool commit);
 void tw_event_rollback(Event* event);
-
-/**
- * Macro for getting the model specific data from the event.
- * \param e the event to extract the data from
- * \returns a pointer to the user data
- */
-#define tw_event_data(e) (e->userData)
 
 // TODO: After unifying events this won't be needed
 // API for Charm++ specific event usage, to be used by original ROSS code
