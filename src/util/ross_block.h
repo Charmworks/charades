@@ -3,9 +3,9 @@
 
 #include "typedefs.h"
 
-LPID init_block_map(unsigned chare, LPID local_id);
-unsigned chare_block_map(LPID global_id);
-LPID local_block_map(LPID global_id);
-unsigned constant_numlp_map(unsigned chare);
+uint64_t init_block_map(uint64_t chare, uint64_t local_id);
+uint64_t chare_block_map(uint64_t global_id);
+uint64_t local_block_map(uint64_t global_id);
+uint64_t constant_numlp_map(uint64_t chare);
 
 #endif

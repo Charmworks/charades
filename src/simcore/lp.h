@@ -148,7 +148,7 @@ class LPChare : public CBase_LPChare {
     ///@}
 
   public:
-    EventID uniqID; ///< Used to give a unique ID to every event sent from here
+    uint64_t uniqID; ///< Used to give a unique ID to every event sent from here
 
     /**
      * A pointer to the PE level AVL tree for hashing remote events.

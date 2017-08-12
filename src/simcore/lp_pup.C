@@ -97,7 +97,7 @@ void LPChare::pup(PUP::er& p) {
 // to the cancel_q and/or avl_tree.
 void LPChare::reconstruct_pending_event(Event* e) {
   // Reconstruct pointers
-  e->dest_lp = (LPID)(&lp_structs[g_local_map(e->dest_lp)]);
+  e->dest_lp = (uint64_t)(&lp_structs[g_local_map(e->dest_lp)]);
 
   // Add the event to the avl_tree if necessary
   if (e->state.avl_tree) {
@@ -114,7 +114,7 @@ void LPChare::reconstruct_pending_event(Event* e) {
 // if necessary.
 void LPChare::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
   // Reconstruct pointers
-  e->dest_lp = (LPID)(&lp_structs[g_local_map(e->dest_lp)]);
+  e->dest_lp = (uint64_t)(&lp_structs[g_local_map(e->dest_lp)]);
   reconstruct_causality(e, pending, processed);
 
   // Add the event to the avl_tree if necessary

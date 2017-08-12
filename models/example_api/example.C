@@ -41,7 +41,7 @@ void ExampleLP::commit(ExampleMessage* msg, tw_bf* bf) {}
 void ExampleLP::finalize() {}
 
 /** LP Factory */
-LPBase* example_type_map(LPID gid) {
+LPBase* example_type_map(uint64_t gid) {
   return new ExampleLP();
 }
 

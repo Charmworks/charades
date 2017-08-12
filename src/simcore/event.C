@@ -14,7 +14,7 @@ extern CProxy_Scheduler scheduler;
 
 // Public functions exposed to the user for allocating, sending, freeing, and
 // rolling back events.
-Event* tw_event_new(LPID dest_gid, Time offset_ts, LPBase * sender) {
+Event* tw_event_new(uint64_t dest_gid, Time offset_ts, LPBase * sender) {
   Time recv_ts = tw_now(sender) + offset_ts;
 
   Event* e;

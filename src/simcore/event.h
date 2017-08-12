@@ -181,7 +181,7 @@ static inline void link_causality(Event* nev, Event* cev) {
  * \param sender a pointer to the sending LP
  * \returns a pointer to a new event
  */
-Event* tw_event_new(LPID dest_gid, Time offset_ts, LPBase* sender);
+Event* tw_event_new(uint64_t dest_gid, Time offset_ts, LPBase* sender);
 /**
  * Send a previously allocated event.
  * \param event the event to send

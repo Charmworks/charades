@@ -28,7 +28,7 @@ enum tw_synch_e {
 
 /** Struct for recording memory usage. \todo is this even used? */
 struct MemUsage {
-  unsigned long long max_memory;
+  uint64_t max_memory;
   double avg_memory;
 };
 
@@ -37,8 +37,6 @@ struct MemUsage {
  *  \todo some are not needed anymore since they just typedef structs
  *////@{
 typedef uint64_t Time;
-typedef uint64_t EventID;         ///< Unique ID for events sent from one LP
-typedef uint64_t LPID;            ///< LP ID, either global or local
 typedef struct avlNode* AvlTree;  ///< Node in the PE level AVL tree
 typedef int32_t* tw_seed;         ///< Type of the RNG seed use by all RNGs
 ///@}
@@ -63,16 +61,16 @@ class PendingQueue;
 ///@}
 
 /** Map that takes an LP chare index and local LP id and returns a global id */
-typedef LPID (*init_map_f) (unsigned, LPID);
+typedef uint64_t (*init_map_f) (uint64_t, uint64_t);
 /** Map that takes a global LP id and returns the chare where that LP resides */
-typedef unsigned (*chare_map_f) (LPID);
+typedef uint64_t (*chare_map_f) (uint64_t);
 /** Map that takes a global LP id and returns a local id within its chare */
-typedef LPID (*local_map_f) (LPID);
+typedef uint64_t (*local_map_f) (uint64_t);
 /** Map that takes a chare index and returns the number of LPs on that chare */
-typedef unsigned (*numlp_map_f) (unsigned);
+typedef uint64_t (*numlp_map_f) (uint64_t);
 
 /** Map that takes a global LP id and returns a pointer to the LP type */
-typedef LPBase* (*type_map_f) (LPID);
+typedef LPBase* (*type_map_f) (uint64_t);
 ///@}
 
 /** Macro for debug printing \todo should be removed or moved elsewhere */
