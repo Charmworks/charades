@@ -95,7 +95,7 @@ static void show_help(void) {
           pos += fprintf(stderr, "=n");
           break;
 
-        case TWOPTTYPE_STIME:
+        case TWOPTTYPE_DOUBLE:
           pos += fprintf(stderr, "=ts");
           break;
 
@@ -133,8 +133,8 @@ static void show_help(void) {
             fprintf(stderr, " (default %u)", *((unsigned int*)def->value));
             break;
 
-          case TWOPTTYPE_STIME:
-            fprintf(stderr, " (default %.2f)", *((Time*)def->value));
+          case TWOPTTYPE_DOUBLE:
+            fprintf(stderr, " (default %.2f)", *((double*)def->value));
             break;
 
           case TWOPTTYPE_CHAR:
@@ -194,9 +194,9 @@ static void apply_opt(const tw_optdef *def, const char *value) {
         break;
       }
 
-    case TWOPTTYPE_STIME:
+    case TWOPTTYPE_DOUBLE:
       {
-        Time v;
+        double v;
         char *end;
 
         if (!value)
@@ -204,7 +204,7 @@ static void apply_opt(const tw_optdef *def, const char *value) {
         v = strtod(value, &end);
         if (*end)
           need_argument(def);
-        *((Time*)def->value) = v;
+        *((double*)def->value) = v;
         break;
       }
 
