@@ -27,9 +27,8 @@ chare_map_f g_chare_map;
 /** \name Event Configuration */
 ///@{
 Time g_tw_lookahead;
-size_t   g_tw_msg_sz;
-unsigned g_tw_max_events_buffered;
-unsigned g_tw_max_remote_events_buffered;
+uint32_t g_num_msg_types;
+uint32_t g_event_buffer_size;
 ///@}
 
 /** \name Scheduler Configuration */
@@ -106,9 +105,8 @@ void clear_globals() {
   g_num_chares     = 1;
   g_total_lps      = 1;
 
-  g_tw_msg_sz              = 0;
-  g_tw_max_events_buffered = 1024;
-  g_tw_max_remote_events_buffered = 1024;
+  g_num_msg_types     = 0;
+  g_event_buffer_size = 8192;
 
   g_numlp_map  = NULL;
   g_init_map   = init_block_map;

@@ -88,9 +88,6 @@ void tw_event_rollback(Event * event) {
 Event* charm_allocate_event(int needMsg) {
   Event* e;
   e = PE_VALUE(event_buffer)->get_event();
-  if (needMsg) {
-    e->eventMsg = PE_VALUE(event_buffer)->get_remote_event();
-  }
   return e;
 }
 
@@ -162,7 +159,7 @@ int charm_event_send(unsigned dest_chare_id, Event * e) {
 // will never have the owner set to TW_sent.
 void charm_anti_send(unsigned dest_chare_id, Event * e) {
   static Scheduler* scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
-  RemoteEvent * eventMsg = PE_VALUE(event_buffer)->get_remote_event();
+  RemoteEvent * eventMsg = new (0) RemoteEvent();
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;
   eventMsg->dest_lp = e->dest_lp;

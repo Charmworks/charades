@@ -25,10 +25,9 @@ extern chare_map_f g_chare_map;  ///< map from global lp id to chare id
 ///@}
 
 /** \name Event Configuration *////@{
-extern Time g_tw_lookahead;                   ///< event lookahead (conservative)
-extern size_t   g_tw_msg_sz;                      ///< user msg size
-extern unsigned g_tw_max_events_buffered;         ///< event buffer size
-extern unsigned g_tw_max_remote_events_buffered;  ///< remote event buffer size
+extern Time g_tw_lookahead;           ///< event lookahead (conservative)
+extern uint32_t g_num_msg_types;      ///< number of message types
+extern uint32_t g_event_buffer_size;  ///< event buffer size
 ///@}
 
 /** \name Scheduler Configuration *////@{
@@ -97,7 +96,10 @@ class Globals {
      */
     AvlTree avl_list_head;
 
-    Globals() : abort_event(NULL), event_buffer(NULL), avl_list_head(NULL) {}
+    Globals() : g_last_gvt(0),
+                abort_event(NULL),
+                event_buffer(NULL),
+                avl_list_head(NULL) {}
 };
 
 void clear_globals();   ///< sets all global variables to default values

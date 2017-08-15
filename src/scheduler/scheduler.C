@@ -27,12 +27,9 @@ Scheduler::Scheduler() {
   rng = tw_rand_init(31, 41);
 
   // Initialize event buffer
-  PE_VALUE(event_buffer) = new EventBuffer(g_tw_max_events_buffered,
-                                           g_tw_max_remote_events_buffered,
-                                           g_tw_msg_sz);
+  PE_VALUE(event_buffer) = new EventBuffer(g_event_buffer_size);
   PE_VALUE(abort_event) = PE_VALUE(event_buffer)->get_abort_event();
-  DEBUG_PE("Created event buffer with %d events and %d msgs of size %d\n",
-      g_tw_max_events_buffered, g_tw_max_remote_events_buffered, g_tw_msg_sz);
+  DEBUG_PE("Created event buffer with %d events\n", g_event_buffer_size);
 
   if (CkMyPe() == 0) {
     CkStartQD(CkCallback(CkIndex_Scheduler::groups_created(), thisProxy));

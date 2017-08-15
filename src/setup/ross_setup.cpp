@@ -43,8 +43,7 @@ void tw_init(int argc, char** tmp_argv) {
     TWOPT_UINT("num-lps", g_total_lps, "Number of total LPs"),
     TWOPT_UINT("num-chares", g_num_chares, "Number of chares"),
     TWOPT_UINT("lps-per-chare", g_lps_per_chare, "LPs per chare"),
-    TWOPT_UINT("buffer-size", g_tw_max_events_buffered, "Number of events buffered"),
-    TWOPT_UINT("msg-buffer-size", g_tw_max_remote_events_buffered, "Number of events buffered"),
+    TWOPT_UINT("buffer-size", g_event_buffer_size, "Number of events buffered"),
     TWOPT_UINT("report-interval", gvt_print_interval, "percent of runtime to print GVT"),
     TWOPT_END()
   };
@@ -54,13 +53,7 @@ void tw_init(int argc, char** tmp_argv) {
   delete [] argv;
 }
 
-void tw_define_lps(size_t msg_sz, tw_seed* seed) {
-  g_tw_msg_sz = msg_sz;
-  g_tw_rng_seed = seed;
-
-  // TODO: Not implemented yet.
-  /* early_sanity_check(); */
-
+void tw_create_lps() {
   // In sequential mode there can only be one chare. Enforce that here.
   if (g_tw_synchronization_protocol == SEQUENTIAL) {
     if (g_num_chares > 1) {
@@ -128,10 +121,11 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
     }
   }
 
+  // TODO Update this
   // Print out configuration info and create the chares
   if (tw_ismaster()) {
     printf("========================================\n");
-    printf("ROSS Configuration.....................\n");
+    printf("Charades Configuration..................\n");
     printf("   Synch Protocol.........%u\n", g_tw_synchronization_protocol);
     printf("   End time...............%llu\n", g_tw_ts_end);
     printf("   Lookahead..............%llu\n", g_tw_lookahead);
@@ -144,7 +138,7 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
     } else {
       printf("   LPs per Chare..........variable\n");
     }
-    printf("   Buffer size............%u\n", g_tw_max_events_buffered);
+    printf("   Buffer size............%u\n", g_event_buffer_size);
     printf("========================================\n\n");
     switch(g_tw_synchronization_protocol) {
       case 1:
