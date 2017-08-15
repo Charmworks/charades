@@ -5,6 +5,7 @@
 #include "scheduler.h"
 #include "ross_clcg4.h"
 
+#if 0
 // Pup function for tw_rng_stream in the LPStruct.
 void operator|(PUP::er& p, tw_rng_stream* s) {
   PUParray(p, s->Ig, 4);
@@ -143,3 +144,4 @@ void LPChare::reconstruct_causality(Event* e, Event** pending, Event** processed
   }
   delete[] e->pending_indices;
 }
+#endif

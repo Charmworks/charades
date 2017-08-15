@@ -98,7 +98,8 @@ class PendingHeap : public PendingQueue {
     }
 
     virtual void pup(PUP::er& p) {
-      p | nelems;
+      CkAbort("Can't PUP yet\n");
+      /*p | nelems;
       p | curr_max;
       if (p.isUnpacking()) {
         int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
@@ -109,7 +110,7 @@ class PendingHeap : public PendingQueue {
           elems[i] = charm_allocate_event();
         }
         pup_pending_event(p, elems[i]);
-      }
+      }*/
     }
 
     Event** get_temp_event_buffer() {

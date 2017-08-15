@@ -162,7 +162,7 @@ class LPChare : public CBase_LPChare {
     /** Default constructor */
     LPChare();
     /** Migration constructor */
-    LPChare(CkMigrateMessage* m);
+    LPChare(CkMigrateMessage* m) {}
 
     /** Stops the Charm++ scheduler and returns control to main */
     void stop_scheduler();
@@ -193,13 +193,13 @@ class LPChare : public CBase_LPChare {
      * \todo Some changes to events should be made to simplify/unify pupping
      *////@{
     /** Correctly rebuild causality chains when unpacking */
-    void reconstruct_causality(Event*, Event**, Event**);
+    //void reconstruct_causality(Event*, Event**, Event**);
     /** Correclty rebuild pending events when unpacking */
-    void reconstruct_pending_event(Event*);
+    //void reconstruct_pending_event(Event*);
     /** Correctly rebuild processed events when unpacking */
-    void reconstruct_processed_event(Event*, Event**, Event**);
+    //void reconstruct_processed_event(Event*, Event**, Event**);
     /** Pack/unpack this LP chare */
-    virtual void pup(PUP::er &p);
+    virtual void pup(PUP::er &p) {}
     /** Tell this chare that we are going to do load balancing */
     void load_balance();
     /** Called by the runtime system to tell this chare we can resume */

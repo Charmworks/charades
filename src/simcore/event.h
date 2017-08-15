@@ -36,7 +36,7 @@ struct RemoteEvent : public CMessage_RemoteEvent {
     // The global id of the destination lp
     uint64_t dest_lp;
 
-    virtual void pup(PUP::er& p);
+    virtual void pup(PUP::er& p) {}
 };
 
 enum tw_event_owner {
@@ -199,9 +199,9 @@ int charm_event_send(unsigned, Event* e);
 void charm_anti_send(unsigned, Event* e);
 
 // Methods for pupping differnet types of events
-void pup_pending_event(PUP::er& p, Event* e);
-void pup_processed_event(PUP::er& p, Event* e);
-void pup_sent_event(PUP::er& p, Event* e);
-void pup_causality(PUP::er& p, Event* e);
+//void pup_pending_event(PUP::er& p, Event* e);
+//void pup_processed_event(PUP::er& p, Event* e);
+//void pup_sent_event(PUP::er& p, Event* e);
+//void pup_causality(PUP::er& p, Event* e);
 
 #endif

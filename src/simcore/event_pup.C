@@ -4,6 +4,7 @@
 #include "lp.h"
 #include "typedefs.h"
 
+#if 0
 // PUP method for remote events. Called from pup_pending_event() and
 // pup_processed_event().
 void RemoteEvent::pup(PUP::er& p) {
@@ -179,3 +180,4 @@ void pup_causality(PUP::er& p, Event* e) {
     }
   }
 }
+#endif
