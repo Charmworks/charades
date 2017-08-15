@@ -21,13 +21,11 @@
 #include <charm++.h>
 
 /** Macro for determinig the local node number */
-#define g_tw_mynode CkMyPe()
+//#define g_tw_mynode CkMyPe()
 /** \deprecated Macro for determining the local node size */
-#define g_tw_npe 1
-/** Macro to access the userData for an event as a void* */
-#define tw_event_data(e) (e->userData)
+//#define g_tw_npe 1
 
-int tw_ismaster();        ///< returns true if we are rank 0
-int tw_nnodes();          ///< returns the number of nodes in the job
+//int tw_ismaster();        ///< returns true if we are rank 0
+//int tw_nnodes();          ///< returns the number of nodes in the job
 
 #endif
