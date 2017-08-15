@@ -1,12 +1,11 @@
-/** \file ross_api.h
+/** \file charades.h
  *  Single include for models which includes all other required headers.
  *
  *  \todo Get rid of/move the other random declarations and defines as needed.
- *  \todo Rename file for Charades
  */
 
-#ifndef _ROSS_API_H
-#define _ROSS_API_H
+#ifndef _CHARADES_H
+#define _CHARADES_H
 
 #include "event.h"
 #include "globals.h"
@@ -19,13 +18,5 @@
 #include "util.h"
 
 #include <charm++.h>
-
-/** Macro for determinig the local node number */
-//#define g_tw_mynode CkMyPe()
-/** \deprecated Macro for determining the local node size */
-//#define g_tw_npe 1
-
-//int tw_ismaster();        ///< returns true if we are rank 0
-//int tw_nnodes();          ///< returns the number of nodes in the job
 
 #endif
