@@ -1,89 +1,53 @@
 #include "phold.h"
 
-void
-phold_init(phold_state* s, tw_lp* lp) {
-  tw_stime offset;
-  tw_event* e;
-  phold_message* msg;
+void PHoldLP::initialize() {
   for (int i = 0; i < start_events; i++) {
     // Set offset using an exponential distribution, adding stagger if necessary
-    offset = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);;
-    if( stagger ) {
-      offset += (tw_stime)(lp->gid % (unsigned int)g_tw_ts_end);
-    }
+    Time offset = g_tw_lookahead + mean * tw_rand_exponential(rng, 1.0);
 
     // Create and send the event.
-    e = tw_event_new(lp->gid, offset, lp);
-    msg = (phold_message *)tw_event_data(e);
-    msg->virtual_time = e->ts;
+    Event* e = tw_event_new<PHoldMessage>(gid, offset, this);
     tw_event_send(e);
   }
 }
 
-void
-phold_event_handler(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
-  tw_lpid	 dest;
-  phold_message* msg;
-  if(tw_rand_unif(lp->rng) <= percent_remote) {
+void PHoldLP::forward(PHoldMessage* msg, tw_bf* bf) {
+  uint64_t dest = gid;
+  if(tw_rand_unif(rng) <= percent_remote) {
     bf->c1 = 1;
-    dest = tw_rand_integer(lp->rng, 0, g_total_lps - 1);
-  } else {
-    bf->c1 = 0;
-    dest = lp->gid;
+    dest = tw_rand_integer(rng, 0, g_total_lps - 1);
   }
 
-  tw_stime offset = g_tw_lookahead + tw_rand_exponential(lp->rng, mean);
-  tw_event* e = tw_event_new(dest, offset, lp);
-  msg = (phold_message *)tw_event_data(e);
-  msg->virtual_time = e->ts;
+  Time offset = g_tw_lookahead + tw_rand_exponential(rng, mean);
+  Event* e = tw_event_new<PHoldMessage>(dest, offset, this);
   tw_event_send(e);
 }
 
-void
-phold_event_handler_rc(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
+void PHoldLP::reverse(PHoldMessage* msg, tw_bf* bf) {
   // We definitely used rng for offset and remote percent
-  tw_rand_reverse_unif(lp->rng);
-  tw_rand_reverse_unif(lp->rng);
+  tw_rand_reverse_unif(rng);
+  tw_rand_reverse_unif(rng);
 
   // If it was a remote message then we also used rng for the destination
   if(bf->c1 == 1) {
-    tw_rand_reverse_unif(lp->rng);
+    tw_rand_reverse_unif(rng);
   }
 }
 
-void
-phold_finish(phold_state * s, tw_lp * lp) {}
-
-void
-phold_commit(phold_state* s, tw_bf* bf, phold_message* m, tw_lp* lp) {
-
-  //printf("LP %d  Time: %f \n",lp->gid, m->virtual_time);
-
-}
-
-tw_lptype mylps[] = {
-  { (init_f) phold_init,
-    (event_f) phold_event_handler,
-    (revent_f) phold_event_handler_rc,
-    (commit_f) phold_commit,
-    (final_f) phold_finish,
-    sizeof(phold_state) },
-  {0},
-};
+void PHoldLP::commit(PHoldMessage* msg, tw_bf* bf) {}
+void PHoldLP::finalize() {}
 
 // Every LP in the PHOLD model has the same type.
-tw_lptype* phold_type_map(tw_lpid global_id) {
-  return &mylps[0];
+LPBase* phold_type_map(uint64_t gid) {
+  return new PHoldLP();
 }
 
 const tw_optdef app_opt[] =
 {
   TWOPT_GROUP("PHOLD Model"),
-  TWOPT_STIME("remote", percent_remote, "desired remote event rate"),
-  TWOPT_STIME("mean", mean, "exponential distribution mean for timestamps"),
+  TWOPT_DOUBLE("remote", percent_remote, "desired remote event rate"),
+  TWOPT_UINT("mean", mean, "exponential distribution mean for timestamps"),
   TWOPT_UINT("start-events", start_events, "number of initial messages per LP"),
-  TWOPT_UINT("stagger", stagger, "Set to 1 to stagger event uniformly across 0 to end time."),
-  TWOPT_CHAR("run", run_id, "user supplied run name"),
   TWOPT_END()
 };
 
@@ -92,9 +56,11 @@ int main(int argc, char **argv, char **env) {
   tw_opt_add(app_opt);
   tw_init(argc, argv);
 
+  register_msg_type<PHoldMessage>();
+
   // Check for a valid configuration
-  if (g_tw_lookahead > 1.0) {
-    CkAbort("Lookahead > 1.0 .. needs to be less\n");
+  if (g_tw_lookahead > 1000) {
+    CkAbort("Lookahead > 1000 .. needs to be less\n");
   }
 
   // Adjust mean based on lookahead
@@ -104,14 +70,13 @@ int main(int argc, char **argv, char **env) {
   g_type_map = phold_type_map;
 
   // Call tw_define_lps to create LPs and event queues
-  tw_define_lps(sizeof(phold_message), 0);
+  tw_create_lps();
 
   if (tw_ismaster()) {
     printf("========================================\n");
     printf("PHOLD Model Configuration..............\n");
-    printf("   Start-events...........%u\n", start_events);
-    printf("   stagger................%u\n", stagger);
-    printf("   Mean...................%lf\n", mean);
+    printf("   Start events...........%u\n", start_events);
+    printf("   Mean...................%llu\n", mean);
     printf("   Remote.................%lf\n", percent_remote);
     printf("========================================\n\n");
   }

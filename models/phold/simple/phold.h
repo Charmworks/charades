@@ -1,28 +1,32 @@
-#ifndef INC_phold_h
-#define INC_phold_h
+#ifndef PHOLD_H_
+#define PHOLD_H_
 
-#include "ross_api.h"
+#include "charades.h"
 
-	/*
-	 * PHOLD Types
-	 */
+/*
+ * PHOLD Types
+ */
 
-typedef struct phold_state {
-  long int  dummy_state;
-} phold_state;
+class PHoldMessage {
+};
 
-typedef struct phold_message {
-  tw_stime  virtual_time;
-} phold_message;
+class PHoldLP : public LP<PHoldLP, PHoldMessage> {
+private:
+public:
+  PHoldLP() {}
+  void initialize();
+  void forward(PHoldMessage* msg, tw_bf* bf);
+  void reverse(PHoldMessage* msg, tw_bf* bf);
+  void commit(PHoldMessage* msg, tw_bf* bf);
+  void finalize();
+};
 
-	/*
-	 * PHOLD Globals
-	 */
-static unsigned int stagger = 0;
-static tw_stime percent_remote = 0.1;
-static int start_events = 1;
-static tw_stime mean = 1.0;
+/*
+ * PHOLD Globals
+ */
 
-static char run_id[1024] = "undefined";
+static uint8_t start_events = 1;
+static double percent_remote = 0.1;
+static Time mean = 1000;
 
 #endif
