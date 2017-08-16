@@ -16,9 +16,7 @@ struct ExampleMessage2 {
 // The first template argument is the derived type, for CRTP
 // All subsequent types are the types of messages this LP will have to respond
 // to. The base class will automatically register message dispatchers for each
-// template argument. Alternatively, if the template arguments are left out
-// registration can be done manually by calling "register_msg_type<Type>() from
-// within your constructor.
+// template argument.
 class ExampleLP : public LP<ExampleLP, ExampleMessage, ExampleMessage2> {
   private:
     int neighbor, counter;

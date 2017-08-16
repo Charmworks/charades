@@ -134,6 +134,7 @@ int main(int argc, char** argv) {
 
   g_type_map = example_type_map;
 
+  // tw_define_lps is now tw_create_lps, which takes 0 arguments
   tw_create_lps();
   tw_run();
   tw_end();
