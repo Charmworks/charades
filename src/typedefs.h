@@ -32,9 +32,9 @@ struct MemUsage {
   double avg_memory;
 };
 
-/** \name Original ROSS typedefs
- *  These are typedefs from original ROSS.
- *  \todo some are not needed anymore since they just typedef structs
+/** \name Useful Typedefs
+ *  Typedefs used by the rest of the engine
+ *  \todo Only put here what needs to be exposed to model
  *////@{
 typedef uint64_t Time;
 typedef struct avlNode* AvlTree;  ///< Node in the PE level AVL tree
@@ -44,11 +44,9 @@ typedef int32_t* tw_seed;         ///< Type of the RNG seed use by all RNGs
 #define TIME_MAX UINT64_MAX
 
 /** \name Charm++ Types/Forward Declarations
- *  Most of these types were introduced for the Charm++ side, and have aliases
- *  to keep compatible with old ROSS.
- *  \see LPStruct
- *  \see LPType
+ *  \see LPBase
  *  \see LP
+ *  \see LPChare
  *  \see Event
  *  \see ProcessedQueue
  *  \see PendingQueue

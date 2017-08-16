@@ -44,7 +44,7 @@ static void show_options(void) {
     hd += strlen("-DROSS_");
 
     if (first) {
-      fprintf(stderr, "\nROSS Kernel Build Options:\n");
+      fprintf(stderr, "\nCharades Engine Build Options:\n");
       first = 0;
     }
 
