@@ -52,38 +52,6 @@ void init_lps() {
   StartCharmScheduler();
 }
 
-/**
- * Accessor method to get the current time of a single LP in the simulation.
- * \param lp the LPStruct being queried
- * \returns the current virtual time of the passed in LP
- */
-Time tw_now(LPBase* lp) {
-  return lp->owner->current_time;
-}
-
-/**
- * Accessor method to get the current event of a single LP in the simulation.
- * \note This actually gets the current event of the owning LP chare which means
- * that the return event may not have been executed by the passed in LP.
- * \param lp the LPStruct being queried
- * \returns a pointer to the Event most recently executed on the owning chare
- */
-Event* current_event(LPBase* lp) {
-  return lp->owner->current_event;
-}
-
-/**
- * Sets the current event for a given LP.
- * \note This actually sets the current event of the owning LP chare, which may
- * own other LPStructs other than the one passed in.
- * \param lp the LPStruct we are setting the current event for
- * \param event the Event pointer to the new current event
- */
-void set_current_event(LPBase* lp, Event* event) {
-  lp->owner->current_event = event;
-  lp->owner->current_time = event->ts;
-}
-
 #undef PE_VALUE
 #define PE_VALUE(x) scheduler->globals->x
 
@@ -91,9 +59,9 @@ void set_current_event(LPBase* lp, Event* event) {
 #define PE_STATS(x) scheduler->stats->x
 
 /** Initializes all member variables for this LP chare */
-LPChare::LPChare() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(TIME_MAX),
-           current_time(0), all_events(0), committed_events(0),
-           rolled_back_events(0), committed_time(0.0) {
+LPChare::LPChare() : next_token(this), uniqID(0), cancel_q(NULL),
+            min_cancel_q(TIME_MAX), all_events(0), committed_events(0),
+            rolled_back_events(0), committed_time(0), current_time(0) {
   /**
    * Since the lps proxy is not set during main, we have to make sure it is
    * correctly set on every PE during the construction of the array.
@@ -114,7 +82,7 @@ LPChare::LPChare() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(T
    * can be scheduled for this LP chare.
    */
   scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
-  scheduler->register_lp(&next_token, 0.0);
+  scheduler->register_lp(&next_token, TIME_MAX);
 
   /**
    * Create the correct number of LPStructs based on the model specified
@@ -194,7 +162,7 @@ void LPChare::UserSetLBLoad() {
   switch(g_tw_ldb_metric) {
     case 1:
       if (thisIndex == 0) CkPrintf("Metric: Current Time\n");
-      metric = timeToWeight(current_time);
+      metric = timeToWeight(get_current_time());
       break;
     case 2:
       if (thisIndex == 0) CkPrintf("Metric: Next Event Time\n");
@@ -255,7 +223,9 @@ void LPChare::init() {
    * Call the init handler on every LP struct owned by this chare, then do a
    * reduction to stop the charm scheduler.
    */
-  current_event = PE_VALUE(abort_event);
+  // TODO change this to not the abort event
+  PE_VALUE(abort_event)->ts = 0;
+  set_current_event(PE_VALUE(abort_event));
   for (int i = 0 ; i < lp_structs.size(); i++) {
     lp_structs[i]->initialize();
   }
@@ -282,12 +252,8 @@ void LPChare::recv_remote_event(RemoteEvent* event) {
   scheduler->consume(event);
 
   /** Allocate local space for the event and copy over the relevant fields */
-  Event *e = charm_allocate_event(0);
-  e->eventMsg = event;
-  e->event_id = event->event_id;
-  e->ts       = event->ts;
-  e->src_lp  = event->src_lp;
-  e->dest_lp  = event->dest_lp;
+  Event *e = event_alloc();
+  e->set_msg(event);
   e->state.remote = 1;
 
   /**
@@ -329,7 +295,7 @@ void LPChare::recv_local_event(Event* e) {
    * \todo Locally sent events can't cause violations so this should be moved
    * to the remote handler.
    */
-  if(isOptimistic && e->ts <= current_time) {
+  if(isOptimistic && e->ts <= get_current_time()) {
     BRACKET_TRACE(rollback_me(e->ts);,USER_EVENT_RB)
   }
 
@@ -346,7 +312,7 @@ void LPChare::recv_anti_event(RemoteEvent* event) {
   scheduler->consume(event);
 
   /** Allocate a local event as a key into the hash and fill it */
-  Event* key = charm_allocate_event(0);
+  Event* key = event_alloc();
   key->event_id = event->event_id;
   key->ts = event->ts;
   key->src_lp = event->src_lp;
@@ -370,14 +336,13 @@ void* LPChare::execute_me() {
   if (events.size()) {
     /** Pull off the top event for execution and set the current event and ts */
     Event* e = events.pop();
-    current_time = e->ts;
-    current_event = e;
+    set_current_event(e);
     if (isOptimistic) {
-      reset_bitfields(e);
+      e->cv.clear();
     }
     /** Execute the event on the target LPStruct */
     LPBase* lp = e->owner;
-    BRACKET_TRACE(lp->forward(e->userData(), &e->cv);, USER_EVENT_FWD)
+    BRACKET_TRACE(lp->forward(e/*->userData(), &e->cv*/);, USER_EVENT_FWD)
 
     /**
      * Move the event to the processed queue if we are optimistic, otherwise
@@ -407,7 +372,7 @@ void LPChare::rollback_me(Time ts) {
    * recently processed event has a timestamp less than or equal to ts. Each
    * rolled back event is pushed back onto the pending heap.
    */
-  while(processed_events.size() && processed_events.front()->ts > ts) {
+  while(processed_events.size() && processed_events.front()->ts >= ts) {
     e = processed_events.pop_front();
     tw_event_rollback(e);
     rolled_back_events++;
@@ -420,13 +385,7 @@ void LPChare::rollback_me(Time ts) {
    * any processed events.
    */
   scheduler->update_next(&next_token, events.min());
-  if(processed_events.front() == NULL) {
-    current_event = NULL;
-    current_time = PE_VALUE(g_last_gvt);
-  } else {
-    current_event = processed_events.front();
-    current_time = current_event->ts;
-  }
+  set_current_event(processed_events.front());
 }
 
 void LPChare::rollback_me(Event* event) {
@@ -461,13 +420,7 @@ void LPChare::rollback_me(Event* event) {
    * any processed events.
    */
   scheduler->update_next(&next_token, events.min());
-  if(processed_events.front() == NULL) {
-    current_event = NULL;
-    current_time = PE_VALUE(g_last_gvt);
-  } else {
-    current_event = processed_events.front();
-    current_time = current_event->ts;
-  }
+  set_current_event(processed_events.front());
 }
 
 void LPChare::fossil_me(Time gvt) {

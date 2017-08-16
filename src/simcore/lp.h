@@ -7,6 +7,7 @@
 
 #include "lp.decl.h"
 
+#include "event.h"
 #include "pending_heap.h"
 #include "processed_queue.h"
 #include "typedefs.h"
@@ -33,13 +34,13 @@ struct LPToken {
 
   public:
     /** Default constructor \todo should this be disabled? */
-    LPToken() {}
+    LPToken() : lp(NULL), ts(0), index(0) {}
 
     /**
      * Constructor called from the LP chare that sets lp at initialization
      * \param lp a pointer to the LP chare this token represents
      */
-    LPToken(LPChare* lp) : lp(lp) {}
+    LPToken(LPChare* lp) : lp(lp), ts(0), index(0) {}
 
     friend class PEQueue;
     friend class Scheduler;
@@ -47,34 +48,7 @@ struct LPToken {
     friend class OptimisticScheduler;
 };
 
-class LPBase {
-  public:
-    LPChare* owner;
-    unsigned gid;
-    tw_rng_stream* rng;
-
-    virtual void initialize() {}
-    virtual void forward(void* msg, tw_bf* bf) {}
-    virtual void reverse(void* msg, tw_bf* bf) {}
-    virtual void commit(void* msg, tw_bf* bf) {}
-    virtual void finalize() {}
-    virtual void pup(PUP::er& p) {}
-};
-
-template <typename Derived, typename Message>
-class LP : public LPBase {
-  public:
-    void forward(void* msg, tw_bf* bf) {
-      static_cast<Derived*>(this)->forward(static_cast<Message*>(msg), bf);
-    }
-    void reverse(void* msg, tw_bf* bf) {
-      static_cast<Derived*>(this)->reverse(static_cast<Message*>(msg), bf);
-    }
-    void commit(void* msg, tw_bf* bf) {
-      static_cast<Derived*>(this)->commit(static_cast<Message*>(msg), bf);
-    }
-};
-
+class LPBase;
 /**
  * A chare that encapsulates a set of LPStructs and their events.
  * Everything the contained LPs need for execution should be contained in here
@@ -95,6 +69,8 @@ class LPChare : public CBase_LPChare {
      * back
      */
     LPToken next_token;
+    Time current_time;    ///< Time of most recently executed event
+    Event* current_event; ///< Most recently executed event
 
     /**
      * All future events received for any of our LPs. The next_token LPToken
@@ -156,13 +132,25 @@ class LPChare : public CBase_LPChare {
      */
     AvlTree all_events;
 
-    Time current_time;    ///< Time of most recently executed event
-    Event *current_event; ///< Most recently executed event
-
     /** Default constructor */
     LPChare();
     /** Migration constructor */
     LPChare(CkMigrateMessage* m) {}
+
+    // TODO: Clean up current/event and time. Probably store a sentinel event
+    // in processed queue that can be used when rolling back to a point where
+    // we have no history. Also have the initial event be not the abort event,
+    // probably by again having a sentinel in the processed queue.
+    Event* get_current_event() const { return current_event; }
+    Time get_current_time() const { return current_time; }
+    void set_current_event(Event* e) {
+      current_event = e;
+      if (current_event == NULL) {
+        current_time = PE_VALUE(g_last_gvt);
+      } else {
+        current_time = current_event->ts;
+      }
+    }
 
     /** Stops the Charm++ scheduler and returns control to main */
     void stop_scheduler();
@@ -266,15 +254,65 @@ class LPChare : public CBase_LPChare {
     ///@}
 };
 
+class LPBase {
+  public:
+    LPChare* owner;
+    unsigned gid;
+    tw_rng_stream* rng;
+
+    virtual void initialize() {}
+    virtual void forward(Event* e) {}
+    virtual void reverse(Event* e) {}
+    virtual void commit(Event* e) {}
+    virtual void finalize() {}
+
+    void set_current_event(Event* e) { owner->set_current_event(e); }
+    Event* get_current_event() const { return owner->get_current_event(); }
+    Time get_current_time() const { return owner->get_current_time(); }
+};
+
+template <typename Derived, typename M, typename... Ms>
+class LP : public LPBase {
+  private:
+    static vector<DispatcherBase<Derived>*> dispatchers;
+
+    template <typename M1>
+    static void register_msg_type() {
+      dispatchers[get_msg_id<M1>()] = new Dispatcher<Derived, M1>();
+    }
+
+    template <typename M1, typename M2, typename... M3>
+    static void register_msg_type() {
+      register_msg_type<M1>();
+      register_msg_type<M2, M3...>();
+    }
+
+  public:
+    LP() {
+      dispatchers.resize(g_num_msg_types);
+      register_msg_type<M, Ms...>();
+    }
+    void forward(Event* e) {
+      dispatchers[e->type_id]->forward(static_cast<Derived*>(this), e);
+    }
+    void reverse(Event* e) {
+      dispatchers[e->type_id]->reverse(static_cast<Derived*>(this), e);
+    }
+    void commit(Event* e) {
+      dispatchers[e->type_id]->commit(static_cast<Derived*>(this), e);
+    }
+};
+
+template <typename Derived, typename M, typename... Ms>
+vector<DispatcherBase<Derived>*> LP<Derived, M, Ms...>::dispatchers;
+
+
 /**
  * \name API for ROSS
  * Allows old ROSS code to interact with LPs.
  * \todo A lot of this should be removed
  *////@{
 void init_lps();
-void set_current_event(LPBase*, Event*);
-Event* current_event(LPBase*);
-Time tw_now(LPBase*);
 ///@}
 
 #endif
