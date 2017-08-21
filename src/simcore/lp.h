@@ -16,6 +16,7 @@
 
 extern CProxy_LPChare lps;
 
+class LPBase;
 class RemoteEvent;
 class Scheduler;
 struct tw_rng_stream;
@@ -28,9 +29,9 @@ using std::vector;
  */
 struct LPToken {
   private:
-    LPChare* lp;         ///< Direct pointer to the LP chare this token represents
+    LPChare* lp;    ///< Direct pointer to the LP chare this token represents
     Time ts;        ///< A timestamp associated with the LP to be used as a key
-    unsigned index; ///< The index of this token within the queue/heap
+    uint32_t index; ///< The index of this token within the queue/heap
 
   public:
     /** Default constructor \todo should this be disabled? */
@@ -48,7 +49,6 @@ struct LPToken {
     friend class OptimisticScheduler;
 };
 
-class LPBase;
 /**
  * A chare that encapsulates a set of LPStructs and their events.
  * Everything the contained LPs need for execution should be contained in here
@@ -71,6 +71,9 @@ class LPChare : public CBase_LPChare {
     LPToken next_token;
     Time current_time;    ///< Time of most recently executed event
     Event* current_event; ///< Most recently executed event
+
+    /** The next available ID for uniquely identifying events from this LP */
+    uint64_t next_event_id;
 
     /**
      * All future events received for any of our LPs. The next_token LPToken
@@ -124,8 +127,6 @@ class LPChare : public CBase_LPChare {
     ///@}
 
   public:
-    uint64_t uniqID; ///< Used to give a unique ID to every event sent from here
-
     /**
      * A pointer to the PE level AVL tree for hashing remote events.
      * \todo should this be move to the LP level?
@@ -141,6 +142,7 @@ class LPChare : public CBase_LPChare {
     // in processed queue that can be used when rolling back to a point where
     // we have no history. Also have the initial event be not the abort event,
     // probably by again having a sentinel in the processed queue.
+    uint64_t get_next_event_id() { return next_event_id++; }
     Event* get_current_event() const { return current_event; }
     Time get_current_time() const { return current_time; }
     void set_current_event(Event* e) {
@@ -166,7 +168,7 @@ class LPChare : public CBase_LPChare {
      * Called during execution to execute the next event owned by this LP
      * \returns false if no events are able to be executed
      */
-    void* execute_me();
+    int execute_me();
     /**
      * Called after GVT computation to commit old events
      * \param gvt the current Global Virtual Time
@@ -305,7 +307,6 @@ class LP : public LPBase {
 
 template <typename Derived, typename M, typename... Ms>
 vector<DispatcherBase<Derived>*> LP<Derived, M, Ms...>::dispatchers;
-
 
 /**
  * \name API for ROSS

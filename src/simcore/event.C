@@ -18,7 +18,7 @@ Event* event_alloc() {
 
 Event* event_alloc(RemoteEvent* msg, uint64_t dest_gid, Time offset, LPBase * sender) {
   msg->ts = sender->get_current_time() + offset;
-  msg->event_id = sender->owner->uniqID++;
+  msg->event_id = sender->owner->get_next_event_id();
   msg->src_lp = sender->gid;
   msg->dest_lp = dest_gid;
 

@@ -59,7 +59,7 @@ void init_lps() {
 #define PE_STATS(x) scheduler->stats->x
 
 /** Initializes all member variables for this LP chare */
-LPChare::LPChare() : next_token(this), uniqID(0), cancel_q(NULL),
+LPChare::LPChare() : next_token(this), next_event_id(0), cancel_q(NULL),
             min_cancel_q(TIME_MAX), all_events(0), committed_events(0),
             rolled_back_events(0), committed_time(0), current_time(0) {
   /**
@@ -332,7 +332,7 @@ void LPChare::recv_anti_event(RemoteEvent* event) {
   delete event;
 }
 
-void* LPChare::execute_me() {
+int LPChare::execute_me() {
   if (events.size()) {
     /** Pull off the top event for execution and set the current event and ts */
     Event* e = events.pop();
@@ -358,9 +358,9 @@ void* LPChare::execute_me() {
 
     /** Update the scheduler with our new minimum timestamp */
     scheduler->update_next(&next_token, events.min());
-    return (void*)true;
+    return 1;
   }
-  return (void*)false;
+  return 0;
 }
 
 void LPChare::rollback_me(Time ts) {

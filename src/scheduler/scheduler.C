@@ -88,8 +88,9 @@ void Scheduler::print_progress(Time ts) {
 bool Scheduler::schedule_next_lp() {
   LPToken *min = next_lps.top();
   if(min == NULL) return false;
-  if (lps(min->lp->thisIndex).execute_me()) {
-    PE_STATS(events_executed)++;
+  int count = lps(min->lp->thisIndex).execute_me();
+  PE_STATS(events_executed) += count;
+  if (count) {
     return true;
   } else {
     return false;
