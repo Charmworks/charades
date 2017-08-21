@@ -169,6 +169,16 @@ public:
   unsigned* processed_indices;
 };
 
+class StandardEventComparator {
+  public:
+    bool operator()(const Event* e1, const Event* e2);
+};
+
+class CustomEventComparator {
+  public:
+    bool operator()(const Event* e1, const Event* e2);
+};
+
 // This function is also used during unpacking after migration, which is why
 // it is included in the header instead of the cpp file.
 static inline void link_causality(Event* nev, Event* cev) {

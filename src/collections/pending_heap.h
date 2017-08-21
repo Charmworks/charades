@@ -19,11 +19,6 @@
 
 #define HEAP_INCREMENT 128
 
-// TODO: Just make this templated?
-typedef Event* ELEMENT_TYPE;
-typedef Time   KEY_TYPE;
-
-#define KEY(i) (elems[i]->ts)
 #define LEFT(i)   (2*i+1)
 #define RIGHT(i)  (2*i+2)
 #define PARENT(i) (((i-1)/2))
@@ -38,6 +33,7 @@ typedef Time   KEY_TYPE;
 
 class PendingHeap : public PendingQueue {
   private:
+    CustomEventComparator comparator;
     size_t  nelems;
     size_t  curr_max;
     Event** elems;
@@ -53,8 +49,8 @@ class PendingHeap : public PendingQueue {
         parent = temp_idx;
         left = LEFT(parent);
         right = RIGHT(parent);
-        if (left  < nelems && KEY(left)  < KEY(temp_idx)) temp_idx = left;
-        if (right < nelems && KEY(right) < KEY(temp_idx)) temp_idx = right;
+        if (left  < nelems && comparator(elems[left], elems[temp_idx])) temp_idx = left;
+        if (right < nelems && comparator(elems[right], elems[temp_idx])) temp_idx = right;
         if (parent != temp_idx) SWAP(parent, temp_idx, temp);
       } while (parent != temp_idx);
     }
@@ -69,7 +65,7 @@ class PendingHeap : public PendingQueue {
       do {
         child = temp_idx;
         parent = PARENT(child);
-        if (parent >= 0 && KEY(parent) > KEY(temp_idx)) temp_idx = parent;
+        if (parent >= 0 && comparator(elems[temp_idx], elems[parent])) temp_idx = parent;
         if (child != temp_idx) SWAP(child, temp_idx, temp);
       } while (child != temp_idx);
     }

@@ -268,6 +268,14 @@ class LPBase {
     virtual void commit(Event* e) {}
     virtual void finalize() {}
 
+    virtual bool compare(const Event* e1, const Event* e2) {
+      if (e1->src_lp != e2->src_lp) {
+        return e1->src_lp < e2->src_lp;
+      } else {
+        return e1->event_id < e2->event_id;
+      }
+    }
+
     void set_current_event(Event* e) { owner->set_current_event(e); }
     Event* get_current_event() const { return owner->get_current_event(); }
     Time get_current_time() const { return owner->get_current_time(); }

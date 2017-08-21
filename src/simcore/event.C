@@ -12,6 +12,26 @@
 extern CProxy_LPChare lps;
 extern CProxy_Scheduler scheduler;
 
+bool StandardEventComparator::operator()(const Event* e1, const Event* e2) {
+  if (e1->ts != e2->ts) {
+    return e1->ts < e2->ts;
+  } else if (e1->src_lp != e2->src_lp) {
+    return e1->src_lp < e2->src_lp;
+  } else {
+    return e1->event_id < e2->event_id;
+  }
+}
+
+bool CustomEventComparator::operator()(const Event* e1, const Event* e2) {
+  if (e1->ts != e2->ts) {
+    return e1->ts < e2->ts;
+  } else if (e1->dest_lp == e2->dest_lp) {
+    return e1->owner->compare(e1, e2);
+  } else {
+    return false;
+  }
+}
+
 Event* event_alloc() {
   return PE_VALUE(event_buffer)->get_event();
 };
