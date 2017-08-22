@@ -129,7 +129,7 @@ class ArithmeticFactory : public LPFactory {
       return num_adders + num_multipliers;
     }
 
-    LPBase* create_lp(uint64_t gid) {
+    LPBase* create_lp(uint64_t gid) const {
       if (gid == 0) {
         return new ArithmeticLP(priority, expected_result);
       } else if (gid <= num_adders) {

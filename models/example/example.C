@@ -107,7 +107,7 @@ void ExampleLP2::commit(ExampleMessage2* msg, tw_bf* bf) {}
 /** LP Factory */
 class ExampleLPFactory : public LPFactory {
   public:
-    LPBase* create_lp(uint64_t gid) {
+    LPBase* create_lp(uint64_t gid) const {
       if (gid % 2 == 0) {
         return new ExampleLP();
       } else {

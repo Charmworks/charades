@@ -11,7 +11,7 @@ void tw_end();
 
 class LPFactory {
   public:
-    virtual LPBase* create_lp(uint64_t gid) = 0;
+    virtual LPBase* create_lp(uint64_t gid) const = 0;
 };
 
 class LPMapper {
