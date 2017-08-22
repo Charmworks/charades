@@ -12,6 +12,7 @@
 #include "scheduler.h"
 #include "statistics.h"
 #include "ross_random.h"
+#include "ross_setup.h"
 #include "ross_clcg4.h"
 #include "util.h"
 
@@ -88,11 +89,12 @@ LPChare::LPChare() : next_token(this), next_event_id(0), cancel_q(NULL),
    * Create the correct number of LPStructs based on the model specified
    * mappings, initialize their RNG streams, but wait to call init handlers.
    */
-  lp_structs.resize(g_numlp_map(thisIndex));
+  lp_structs.resize(g_lp_mapper->get_num_lps(thisIndex));
   for (int i = 0; i < lp_structs.size(); i++) {
-    lp_structs[i] = g_type_map(g_init_map(thisIndex, i));
+    uint64_t gid = g_lp_mapper->get_global_id(thisIndex, i);
+    lp_structs[i] = g_lp_factory->create_lp(gid);
     lp_structs[i]->owner = this;
-    lp_structs[i]->gid   = g_init_map(thisIndex, i);
+    lp_structs[i]->gid   = gid;
 
     if (g_tw_rng_default == 1) {
       tw_rand_init_streams(lp_structs[i], g_tw_nRNG_per_lp);
@@ -232,6 +234,13 @@ void LPChare::init() {
   contribute(CkCallback(CkIndex_LPChare::stop_scheduler(), thisProxy(0)));
 }
 
+void LPChare::finalize() {
+  for (int i = 0; i < lp_structs.size(); i++) {
+    lp_structs[i]->finalize();
+  }
+  contribute(CkCallback(CkReductionTarget(Scheduler, finalize_complete), CProxy_Scheduler(scheduler_id)));
+}
+
 void LPChare::stop_scheduler() {
   /**
    * Just call CkExit(), which stops the Charm++ scheduler and returns control
@@ -280,7 +289,7 @@ void LPChare::recv_remote_event(RemoteEvent* event) {
 
 void LPChare::recv_local_event(Event* e) {
   /** Use g_local_map to look up the specific LPStruct pointer for this event */
-  e->owner = lp_structs[g_local_map(e->dest_lp)];
+  e->owner = lp_structs[g_lp_mapper->get_local_id(e->dest_lp)];
 
   /**
    * If this event is now the earliest event we know about, update the

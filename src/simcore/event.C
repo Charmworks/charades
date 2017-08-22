@@ -4,6 +4,7 @@
 #include "event_buffer.h"
 #include "globals.h"
 #include "lp.h"
+#include "ross_setup.h"
 #include "scheduler.h"
 #include "statistics.h"
 #include "typedefs.h"
@@ -84,7 +85,7 @@ void tw_event_free(Event *e, bool commit) {
   PE_VALUE(event_buffer)->free_event(e);
 }
 
-void tw_event_send(Event * e) {
+void tw_event_send(Event* e) {
   static Scheduler* scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
   if (e == PE_VALUE(abort_event)) {
     TW_ASSERT(e->ts >= g_tw_ts_end, "Can't send abort event before end\n");
@@ -96,8 +97,8 @@ void tw_event_send(Event * e) {
 
   link_causality(e, e->owner->get_current_event());
 
+  uint64_t dest_chare_id = g_lp_mapper->get_chare_id(e->dest_lp);
   LPChare* send_chare = (e->owner)->owner;
-  int dest_chare_id = g_chare_map(e->dest_lp);
   LPChare* dest_chare;
   if (dest_chare_id == send_chare->thisIndex) {
     dest_chare = send_chare;
@@ -172,9 +173,7 @@ void charm_event_cancel(Event * e) {
 
   // If already sent, have charm send an anti message, and free the local event
   if(e->state.owner == TW_sent) {
-    unsigned dest_chare_id = g_chare_map(e->dest_lp);
-    charm_anti_send(dest_chare_id, e);
-
+    charm_anti_send(g_lp_mapper->get_chare_id(e->dest_lp), e);
     tw_event_free(e,false);
     return;
   }

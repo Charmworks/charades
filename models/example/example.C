@@ -105,13 +105,16 @@ void ExampleLP2::reverse(ExampleMessage2* msg, tw_bf* bf) {
 void ExampleLP2::commit(ExampleMessage2* msg, tw_bf* bf) {}
 
 /** LP Factory */
-LPBase* example_type_map(uint64_t gid) {
-  if (gid % 2 == 0) {
-    return new ExampleLP();
-  } else {
-    return new ExampleLP2();
-  }
-}
+class ExampleLPFactory : public LPFactory {
+  public:
+    LPBase* create_lp(uint64_t gid) {
+      if (gid % 2 == 0) {
+        return new ExampleLP();
+      } else {
+        return new ExampleLP2();
+      }
+    }
+};
 
 int main(int argc, char** argv) {
   tw_init(argc, argv);
@@ -132,10 +135,7 @@ int main(int argc, char** argv) {
   g_mean_delay = 1000;
   g_adjusted_mean = g_mean_delay - g_tw_lookahead;
 
-  g_type_map = example_type_map;
-
-  // tw_define_lps is now tw_create_lps, which takes 0 arguments
-  tw_create_lps();
+  tw_create_simulation(new ExampleLPFactory());
   tw_run();
   tw_end();
 

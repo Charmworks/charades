@@ -164,6 +164,7 @@ class LPChare : public CBase_LPChare {
      */ 
     /** Called at the start of a simulation to run LP init handlers */
     void init();
+    void finalize();
     /**
      * Called during execution to execute the next event owned by this LP
      * \returns false if no events are able to be executed

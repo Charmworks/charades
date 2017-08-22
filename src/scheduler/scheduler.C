@@ -57,6 +57,12 @@ void Scheduler::start_simulation() {
 void Scheduler::end_simulation() {
   end_time = CmiWallTimer();
   cumulative_stats->total_time = end_time - start_time;
+  if (CkMyPe() == 0) {
+    lps.finalize();
+  }
+}
+
+void Scheduler::finalize_complete() {
   contribute(sizeof(Statistics), cumulative_stats, statsReductionType,
       CkCallback(CkIndex_Scheduler::finalize(NULL), thisProxy[0]));
 }

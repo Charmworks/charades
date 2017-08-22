@@ -17,11 +17,8 @@ unsigned g_total_lps;
 unsigned g_num_chares;
 unsigned g_lps_per_chare;
 
-numlp_map_f g_numlp_map;
-init_map_f  g_init_map;
-type_map_f  g_type_map;
-local_map_f g_local_map;
-chare_map_f g_chare_map;
+LPMapper*   g_lp_mapper;
+LPFactory*  g_lp_factory;
 ///@}
 
 /** \name Event Configuration */
@@ -108,11 +105,8 @@ void clear_globals() {
   g_num_msg_types     = 0;
   g_event_buffer_size = 8192;
 
-  g_numlp_map  = NULL;
-  g_init_map   = init_block_map;
-  g_type_map   = NULL;
-  g_local_map  = local_block_map;
-  g_chare_map  = chare_block_map;
+  g_lp_mapper   = NULL;
+  g_lp_factory  = NULL;
 }
 
 Globals* get_globals() {

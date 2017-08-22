@@ -53,25 +53,11 @@ typedef int32_t* tw_seed;         ///< Type of the RNG seed use by all RNGs
  *  \todo Many of these forward declarations may not even be needed
  *////@{
 class LPBase;
+class LPFactory;
+class LPMapper;
 class Event;
 class ProcessedQueue;
 class PendingQueue;
 ///@}
-
-/** Map that takes an LP chare index and local LP id and returns a global id */
-typedef uint64_t (*init_map_f) (uint64_t, uint64_t);
-/** Map that takes a global LP id and returns the chare where that LP resides */
-typedef uint64_t (*chare_map_f) (uint64_t);
-/** Map that takes a global LP id and returns a local id within its chare */
-typedef uint64_t (*local_map_f) (uint64_t);
-/** Map that takes a chare index and returns the number of LPs on that chare */
-typedef uint64_t (*numlp_map_f) (uint64_t);
-
-/** Map that takes a global LP id and returns a pointer to the LP type */
-typedef LPBase* (*type_map_f) (uint64_t);
-///@}
-
-/** Macro for debug printing \todo should be removed or moved elsewhere */
-#define TW_LOC  __FILE__,__LINE__
 
 #endif

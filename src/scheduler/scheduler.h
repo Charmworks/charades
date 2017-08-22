@@ -55,6 +55,7 @@ class Scheduler : public CBase_Scheduler {
     /** Methods for starting and stopping the entire simulation */
     void start_simulation();  /**< Sets initial state and calls execute() */
     void end_simulation();    /**< Starts stats reduction */
+    void finalize_complete();
     void finalize(CkReductionMsg *m); /**< Receives stats reduction and exits */
 
     /** Method for printing out basic info about the current progress */

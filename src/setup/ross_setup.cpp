@@ -53,7 +53,13 @@ void tw_init(int argc, char** tmp_argv) {
   delete [] argv;
 }
 
-void tw_create_lps() {
+void tw_create_simulation(LPFactory* factory) {
+  tw_create_simulation(factory, new BlockMapper());
+}
+
+void tw_create_simulation(LPFactory* factory, LPMapper* mapper) {
+  g_lp_factory = factory;
+  g_lp_mapper = mapper;
   // In sequential mode there can only be one chare. Enforce that here.
   if (g_tw_synchronization_protocol == SEQUENTIAL) {
     if (g_num_chares > 1) {
@@ -68,56 +74,19 @@ void tw_create_lps() {
     g_lps_per_chare = g_total_lps;
     CkPrintf("WARNING: In sequential mode all LPs must map to chare 0\n");
     CkPrintf("Overriding LP placement maps.\n");
-    g_numlp_map  = NULL;
-    g_init_map   = init_block_map;
-    g_local_map  = local_block_map;
-    g_chare_map  = chare_block_map;
-  }
-
-  bool constant_per_chare = false;
-  // Check consistency and calculate values for number of lps and chares
-  if (g_numlp_map == NULL) {
-    g_numlp_map = constant_numlp_map;
-    constant_per_chare = true;
-
-    if (g_total_lps == 1) {
-      g_total_lps = g_num_chares * g_lps_per_chare;
-    } else if (g_num_chares == 1) {
-      g_num_chares = g_total_lps / g_lps_per_chare;
-    } else if (g_lps_per_chare == 1) {
-      g_lps_per_chare = g_total_lps / g_num_chares;
-    }
-
-    // Check for consitency
-    if (g_total_lps != g_num_chares * g_lps_per_chare) {
-      CkAbort("Inconsistent values for g_total_lps, g_num_chares, and g_lps_per_chare\n");
-    }
+    g_lp_mapper = new BlockMapper();
   } else {
     if (g_total_lps == 1) {
       g_total_lps = 0;
       for (int i = 0; i < g_num_chares; i++) {
-        g_total_lps += g_numlp_map(i);
+        g_total_lps += g_lp_mapper->get_num_lps(i);
       }
     } else if (g_num_chares == 1) {
       g_num_chares = 0;
-      unsigned sum = 0;
+      uint64_t sum = 0;
       while (sum < g_total_lps) {
-        sum += g_numlp_map(g_num_chares++);
+        sum += g_lp_mapper->get_num_lps(g_num_chares++);
       }
-    }
-
-    // Check for consistency
-    unsigned sum = 0;
-    for (int i = 0; i < g_num_chares; i++) {
-      sum += g_numlp_map(i);
-    }
-    if (sum != g_total_lps) {
-      CkAbort("Inconsistent values for g_total_lps and g_num_chares when using a non-constant numlps per chare\n");
-    }
-    if (tw_ismaster()) {
-      printf("Creating %d chares and a total of %d lps, with a variable number of lps per chare.\n",
-          g_num_chares,
-          g_total_lps);
     }
   }
 
@@ -133,11 +102,6 @@ void tw_create_lps() {
     printf("   GVT Interval...........%u\n", g_tw_gvt_interval);
     printf("   Total LPs..............%u\n", g_total_lps);
     printf("   Chares.................%u\n", g_num_chares);
-    if (constant_per_chare) {
-      printf("   LPs per Chare..........%u\n", g_lps_per_chare);
-    } else {
-      printf("   LPs per Chare..........variable\n");
-    }
     printf("   Buffer size............%u\n", g_event_buffer_size);
     printf("========================================\n\n");
     switch(g_tw_synchronization_protocol) {

@@ -3,6 +3,7 @@ module scheduler {
   group Scheduler {
     entry [notrace] Scheduler();
     entry [notrace] void execute();
+    entry [notrace, reductiontarget] void finalize_complete();
     entry [notrace] void finalize(CkReductionMsg* msg);
     entry [notrace] void groups_created();
   };

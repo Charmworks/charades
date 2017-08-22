@@ -17,11 +17,8 @@ extern unsigned g_total_lps;     ///< total number of LPs
 extern unsigned g_num_chares;    ///< total number of chares
 extern unsigned g_lps_per_chare; ///< number of LPs per chare (if constant)
 
-extern numlp_map_f g_numlp_map;  ///< map from chare id to number of lps on that chare
-extern init_map_f  g_init_map;   ///< map from chare id and local lp id to global lp id
-extern type_map_f  g_type_map;   ///< map from global lp id to lp type
-extern local_map_f g_local_map;  ///< map from global lp id to local lp id
-extern chare_map_f g_chare_map;  ///< map from global lp id to chare id
+extern LPMapper*  g_lp_mapper;  ///< mapper for placing and locating LPs
+extern LPFactory* g_lp_factory; ///< factory for creating LPs based on global id
 ///@}
 
 /** \name Event Configuration *////@{

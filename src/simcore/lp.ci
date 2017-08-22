@@ -6,6 +6,7 @@ module lp {
   array [1D] LPChare {
     entry [notrace] LPChare(); /**< constructor */
     entry [notrace] void init(); /**< call the init handler on all lps on all lp chares */
+    entry [notrace] void finalize();
     entry [notrace,reductiontarget] void stop_scheduler(); /**< stops charm scheduler */
     entry [notrace,expedited] void recv_remote_event(RemoteEvent*); /**< receive an event for this LPChare */
     entry [notrace,expedited] void recv_anti_event(RemoteEvent*);   /**< receive an anti event for this LPChare */
