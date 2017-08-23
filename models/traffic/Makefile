@@ -7,5 +7,5 @@ clean:
 	rm -f output ross.csv
 
 
-traffic: traffic.C traffic.h $(BUILD_DIR)/libcharades.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs traffic.C -o traffic $(LDFLAGS) -L$(BUILD_DIR) -lcharades
+traffic: traffic.C traffic.h intersection.C intersection.h factory.h $(BUILD_DIR)/libcharades.a
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs traffic.C intersection.C -o traffic $(LDFLAGS) -L$(BUILD_DIR) -lcharades
