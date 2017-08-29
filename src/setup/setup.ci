@@ -1,4 +1,4 @@
-mainmodule charm_setup {
+mainmodule setup {
   readonly CProxy_Initialize mainProxy;
   mainchare Initialize {
     entry [notrace] Initialize(CkArgMsg *);

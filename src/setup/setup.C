@@ -1,4 +1,4 @@
-#include "charm_setup.h"
+#include "setup.h"
 
 #include "command_line.h"
 #include "factory.h"
@@ -125,4 +125,4 @@ int tw_mype() {
   return CkMyPe();
 }
 
-#include "charm_setup.def.h"
+#include "setup.def.h"

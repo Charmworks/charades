@@ -7,7 +7,6 @@
 #ifndef _CHARADES_H
 #define _CHARADES_H
 
-#include "charm_setup.h"
 #include "command_line.h"
 #include "event.h"
 #include "factory.h"
@@ -16,6 +15,7 @@
 #include "mapper.h"
 #include "ross_random.h"
 #include "ross_clcg4.h"
+#include "setup.h"
 #include "util.h"
 
 #include <charm++.h>

@@ -1,7 +1,7 @@
 #ifndef _CHARM_SETUP_H
 #define _CHARM_SETUP_H
 
-#include "charm_setup.decl.h"
+#include "setup.decl.h"
 
 #include "event.h"
 #include "lp.h"
