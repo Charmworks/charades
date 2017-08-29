@@ -17,7 +17,9 @@ class PHoldLP : public LP<PHoldLP, PHoldMessage> {
     Time mean_delay;
     double percent_remote;
   public:
-    PHoldLP() {}
+    PHoldLP(Time load, Time delay, double remote) : work_load(load),
+                                                    mean_delay(delay),
+                                                    percent_remote(remote) {}
     void initialize();
     void forward(PHoldMessage* msg, tw_bf* bf);
     void reverse(PHoldMessage* msg, tw_bf* bf);

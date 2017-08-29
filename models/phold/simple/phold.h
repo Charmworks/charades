@@ -3,12 +3,13 @@
 
 #include "charades.h"
 
-/*
- * PHOLD Types
- */
+// Global configuration variables
+static uint8_t start_events = 1;
+static double percent_remote = 0.1;
+static Time mean = 1000;
 
-class PHoldMessage {
-};
+// Message and LP type declarations
+class PHoldMessage {};
 
 class PHoldLP : public LP<PHoldLP, PHoldMessage> {
 private:
@@ -20,13 +21,5 @@ public:
   void commit(PHoldMessage* msg, tw_bf* bf);
   void finalize();
 };
-
-/*
- * PHOLD Globals
- */
-
-static uint8_t start_events = 1;
-static double percent_remote = 0.1;
-static Time mean = 1000;
 
 #endif

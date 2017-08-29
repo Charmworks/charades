@@ -38,9 +38,12 @@ void PHoldLP::commit(PHoldMessage* msg, tw_bf* bf) {}
 void PHoldLP::finalize() {}
 
 // Every LP in the PHOLD model has the same type.
-LPBase* phold_type_map(uint64_t gid) {
-  return new PHoldLP();
-}
+class PHoldLPFactory : public LPFactory {
+  public:
+    LPBase* create_lp(uint64_t gid) const {
+      return new PHoldLP();
+    }
+};
 
 const tw_optdef app_opt[] =
 {
@@ -56,23 +59,18 @@ int main(int argc, char **argv, char **env) {
   tw_opt_add(app_opt);
   tw_init(argc, argv);
 
-  register_msg_type<PHoldMessage>();
-
-  // Check for a valid configuration
-  if (g_tw_lookahead > 1000) {
-    CkAbort("Lookahead > 1000 .. needs to be less\n");
+  // Check for a valid configuration and adjust mean
+  if (g_tw_lookahead > mean) {
+    CkAbort("Lookahead must be less than mean\n");
   }
-
-  // Adjust mean based on lookahead
   mean = mean - g_tw_lookahead;
 
-  // Type map must be set before tw_define_lps, all other maps will be default
-  g_type_map = phold_type_map;
+  // Register messages and create the simulation
+  register_msg_type<PHoldMessage>();
 
-  // Call tw_define_lps to create LPs and event queues
-  tw_create_lps();
+  tw_create_simulation(new PHoldLPFactory());
 
-  if (tw_ismaster()) {
+  if (CkMyPe() == 0) {
     printf("========================================\n");
     printf("PHOLD Model Configuration..............\n");
     printf("   Start events...........%u\n", start_events);

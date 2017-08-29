@@ -1,11 +1,6 @@
 #include "phold.h"
 
 void PHoldLP::initialize() {
-  // Set my load and mean delays
-  work_load = lp_load_map(gid);
-  mean_delay = lp_delay_map(gid);
-  percent_remote = lp_remote_map(gid);
-
   for (int i = 0; i < start_events; i++) {
     // Determine the offset based on our lps mean delay
     Time offset = g_tw_lookahead + mean_delay * tw_rand_exponential(rng, 1.0);
@@ -58,9 +53,12 @@ void PHoldLP::commit(PHoldMessage* msg, tw_bf* bf) {}
 void PHoldLP::finalize() {}
 
 // Every LP in the PHOLD model has the same type.
-LPBase* phold_type_map(uint64_t gid) {
-  return new PHoldLP();
-}
+class PHoldLPFactory : public LPFactory {
+  public:
+    LPBase* create_lp(uint64_t gid) const {
+      return new PHoldLP(lp_load_map(gid), lp_delay_map(gid), lp_remote_map(gid));
+    }
+};
 
 const tw_optdef app_opt[] =
 {
@@ -153,11 +151,8 @@ int main(int argc, char **argv, char **env) {
       CkAbort("Bad remote map type specified\n");
   }
 
-  // Type map must be set before tw_define_lps, all other maps will be default
-  g_type_map = phold_type_map;
-
   // Call tw_define_lps to create LPs and event queues
-  tw_create_lps();
+  tw_create_simulation(new PHoldLPFactory());
 
   if (tw_ismaster()) {
     printf("========================================\n");
