@@ -1,8 +1,13 @@
-#ifndef ROSS_BLOCK_H_
-#define ROSS_BLOCK_H_
+#ifndef MAPPER_H_
+#define MAPPER_H_
 
-#include "globals.h"
-#include "ross_setup.h"
+class LPMapper {
+  public:
+    virtual uint64_t get_chare_id(uint64_t global_id) const = 0;
+    virtual uint64_t get_local_id(uint64_t global_id) const = 0;
+    virtual uint64_t get_global_id(uint64_t chare_id, uint64_t local_id) const = 0;
+    virtual uint64_t get_num_lps(uint64_t chare_id) const = 0;
+};
 
 class BlockMapper : public LPMapper {
   uint64_t get_chare_id(uint64_t global_id) const {;

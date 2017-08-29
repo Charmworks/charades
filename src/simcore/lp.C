@@ -7,12 +7,13 @@
 
 #include "avl_tree.h"
 #include "event.h"
+#include "factory.h"
 #include "globals.h"
+#include "mapper.h"
 #include "mpi-interoperate.h"
 #include "scheduler.h"
 #include "statistics.h"
 #include "ross_random.h"
-#include "ross_setup.h"
 #include "ross_clcg4.h"
 #include "util.h"
 

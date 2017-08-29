@@ -6,8 +6,6 @@
  */
 
 #include "globals.h"
-
-#include "ross_block.h"
 #include "scheduler.h"
 
 /** \name LP Configuration
