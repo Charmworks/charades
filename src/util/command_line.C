@@ -63,6 +63,8 @@ void parse_command_line(int argc, char** argv) {
         while(std::getline(file, line)) {
           if (line.find("//") == 0) {
             continue;
+          } else if (line.find_first_not_of("\t\r\n ") == std::string::npos) {
+            continue;
           } else if (!command_line_parser.parse(line)) {
             CkPrintf("Warning: %s in file %s is an unrecognized option\n",
                 line.c_str(), argument.c_str());
