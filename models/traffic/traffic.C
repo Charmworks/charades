@@ -1,6 +1,6 @@
-#include "factory.h"
-#include "intersection.h"
 #include "traffic.h"
+
+#include "intersection.h"
 
 // Mean time for event delays
 Time mean = 1000;
@@ -22,26 +22,22 @@ uint32_t g_end_size = 1;
 uint32_t g_end_x = 0;
 uint32_t g_end_y = 0;
 
-const tw_optdef app_opt[] =
-{
-  TWOPT_GROUP("TRAFFIC Model"),
-  TWOPT_UINT("mean", mean, "Exponential distribution mean for timestamps"),
-  TWOPT_UINT("num-x", g_num_x, "Width of the block of intersections"),
-  TWOPT_UINT("num-y", g_num_y, "Height of the block of intersections"),
-  TWOPT_UINT("total-cars", g_total_cars, "Total number of cars being simulated"),
-  TWOPT_DOUBLE("percent-start", g_percent_start, "Pecent of cars that start in clustered block [0-1]"),
-  TWOPT_UINT("start-size", g_start_size, "Size of start cluster block. X by X block"),
-  TWOPT_UINT("start-x", g_start_x, "X coord of upper left corner of start cluster"),
-  TWOPT_UINT("start-y", g_start_y, "Y coord of upper left corner of start cluster"),
-  TWOPT_DOUBLE("percent-end", g_percent_end, "Pecent of cars that end in clustered block [0-1]"),
-  TWOPT_UINT("end-size", g_end_size, "Size of end cluster block. X by X block"),
-  TWOPT_UINT("end-x", g_end_x, "X coord of upper left corner of end cluster"),
-  TWOPT_UINT("end-y", g_end_y, "Y coord of upper left corner of end cluster"),
-  TWOPT_END()
-};
-
 int main(int argc, char * argv[]) {
-  tw_opt_add(app_opt);
+  ArgumentSet args("TRAFFIC Model");
+  args.register_argument("mean", "Exponential distribution mean for timestamps", mean);
+  args.register_argument("num-x", "Width of the block of intersections", g_num_x);
+  args.register_argument("num-y", "Height of the block of intersections", g_num_y);
+  args.register_argument("total-cars", "Total number of cars being simulated", g_total_cars);
+  args.register_argument("percent-start", "Pecent of cars that start in clustered block [0-1]", g_percent_start);
+  args.register_argument("start-size", "Size of start cluster block. X by X block", g_start_size);
+  args.register_argument("start-x", "X coord of upper left corner of start cluster", g_start_x);
+  args.register_argument("start-y", "Y coord of upper left corner of start cluster", g_start_y);
+  args.register_argument("percent-end", "Pecent of cars that end in clustered block [0-1]", g_percent_end);
+  args.register_argument("end-size", "Size of end cluster block. X by X block", g_end_size);
+  args.register_argument("end-x", "X coord of upper left corner of end cluster", g_end_x);
+  args.register_argument("end-y", "Y coord of upper left corner of end cluster", g_end_y);
+  tw_add_arguments(&args);
+
   tw_init(argc, argv);
   if (g_tw_lookahead > mean) {
     CkAbort("Lookahead must be less than mean\n");

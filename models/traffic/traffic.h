@@ -28,10 +28,4 @@ extern uint32_t g_end_size;
 extern uint32_t g_end_x;
 extern uint32_t g_end_y;
 
-struct Car {
-  uint32_t src, id;
-  uint32_t dest_x, dest_y;
-  uint8_t current_lane;
-};
-
 #endif
