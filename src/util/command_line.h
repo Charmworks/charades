@@ -88,13 +88,13 @@ public:
   ArgumentSet(std::string n) : name(n) {}
 
   template <typename ArgType>
-  void register_arg(std::string name, std::string desc, ArgType& location) {
+  void register_argument(std::string name, std::string desc, ArgType& loc) {
     if (indices.find(name) != indices.end()) {
       CkPrintf("Duplicate argument registration: %s\n", name.c_str());
       CkAbort("Argument parse error\n");
     }
     indices[name] = parsers.size();
-    add_parser(new Argument<ArgType>(name, desc, location));
+    add_parser(new Argument<ArgType>(name, desc, loc));
   }
 
   void print() const {
@@ -103,7 +103,7 @@ public:
   }
 };
 
-void add_arguments(ArgumentSet* args);
+void tw_add_arguments(ArgumentSet* args);
 void parse_command_line(int argc, char** argv);
 
 #endif

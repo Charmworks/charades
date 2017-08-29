@@ -120,9 +120,9 @@ int main(int argc, char** argv) {
   uint64_t test1;
   int test2;
   ArgumentSet set("Example Model Arguments");
-  set.register_arg("uint-test", "An unsigned integer", test1);
-  set.register_arg("int-test", "A regular integer", test2);
-  add_arguments(&set);
+  set.register_argument("uint-test", "An unsigned integer", test1);
+  set.register_argument("int-test", "A regular integer", test2);
+  tw_add_arguments(&set);
 
   tw_init(argc, argv);
 
