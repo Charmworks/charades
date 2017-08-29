@@ -39,7 +39,9 @@ void parse_command_line(int argc, char** argv) {
   // Search for --help and print arguments if it's there
   for (int i = 1; i < argc; i++) {
     if (std::string(argv[i]) == std::string("--help")) {
-      command_line_parser.print();
+      if (CkMyPe() == 0) {
+        command_line_parser.print();
+      }
       CkExit();
       return;
     }
@@ -50,14 +52,18 @@ void parse_command_line(int argc, char** argv) {
     if (argument.find("--") == 0) {
       argument.erase(0,2);
       if (!command_line_parser.parse(argument)) {
-        CkPrintf("Warning: --%s is an unrecognized command line option\n",
-            argument.c_str());
+        if (CkMyPe() == 0) {
+          CkPrintf("Warning: --%s is an unrecognized command line option\n",
+              argument.c_str());
+        }
       }
     } else {
       std::ifstream file(argument);
       if (!file.good()) {
-        CkPrintf("Warning: %s is not a valid configuration file\n",
-            argument.c_str());
+        if (CkMyPe() == 0) {
+          CkPrintf("Warning: %s is not a valid configuration file\n",
+              argument.c_str());
+        }
       } else {
         std::string line;
         while(std::getline(file, line)) {
@@ -66,8 +72,10 @@ void parse_command_line(int argc, char** argv) {
           } else if (line.find_first_not_of("\t\r\n ") == std::string::npos) {
             continue;
           } else if (!command_line_parser.parse(line)) {
-            CkPrintf("Warning: %s in file %s is an unrecognized option\n",
-                line.c_str(), argument.c_str());
+            if (CkMyPe() == 0) {
+              CkPrintf("Warning: %s in file %s is an unrecognized option\n",
+                  line.c_str(), argument.c_str());
+            }
           }
         }
       }

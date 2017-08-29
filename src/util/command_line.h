@@ -90,8 +90,10 @@ public:
   template <typename ArgType>
   void register_argument(std::string name, std::string desc, ArgType& loc) {
     if (indices.find(name) != indices.end()) {
-      CkPrintf("Duplicate argument registration: %s\n", name.c_str());
-      CkAbort("Argument parse error\n");
+      if (CkMyPe() == 0) {
+        CkPrintf("Duplicate argument registration: %s\n", name.c_str());
+        CkAbort("Argument parse error\n");
+      }
     }
     indices[name] = parsers.size();
     add_parser(new Argument<ArgType>(name, desc, loc));
