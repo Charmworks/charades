@@ -60,36 +60,28 @@ class PHoldLPFactory : public LPFactory {
     }
 };
 
-const tw_optdef app_opt[] =
-{
-  TWOPT_GROUP("PHOLD Model"),
-  TWOPT_UINT("start-events", start_events, "number of initial messages per LP"),
-
-  TWOPT_UINT("load-map", load_map, "0 - Uniform, 1 - Blocked, 2 - Linear"),
-  TWOPT_DOUBLE("percent-heavy", percent_heavy, "desired percent of heavy sends [0.0=1.0]"),
-  TWOPT_UINT("light-load", light_load, "load for lightly loaded lps in us"),
-  TWOPT_UINT("heavy-load", heavy_load, "load for heavily loaded lps in us"),
-  TWOPT_UINT("load-seed", load_seed, "extra param used by certain load maps"),
-
-  TWOPT_UINT("delay-map", delay_map, "0 - Uniform"),
-  TWOPT_DOUBLE("percent-long", percent_long, "desired percent of long sends [0.0-1.0]"),
-  TWOPT_DOUBLE("short-delay", short_delay, "exponential distribution mean for event delays"),
-  TWOPT_DOUBLE("long-delay", long_delay, "long exponential distribution mean for event delays"),
-  TWOPT_UINT("delay-seed", delay_seed, "used with some delay maps"),
-
-  TWOPT_UINT("remote-map", remote_map, "0 - Uniform, 1 - Blocked"),
-  TWOPT_DOUBLE("percent-greedy", percent_greedy, "desired percent of greedy lps [0.0-1.0]"),
-  TWOPT_DOUBLE("generous-remote", generous_remote, "remote percent for generous lps [0.0-1.0]"),
-  TWOPT_DOUBLE("greedy-remote", greedy_remote, "remote percent for greedy lps [0.0-1.0]"),
-  TWOPT_UINT("remote-seed", remote_seed, "extra param used by certain remote maps"),
-
-  TWOPT_UINT("region-size", region_size, "defines the size of the region in which lps send events"),
-  TWOPT_END()
-};
 
 int main(int argc, char **argv, char **env) {
-  // Add the model specific options, then initialize ROSS and Charm++
-  tw_opt_add(app_opt);
+  ArgumentSet args("PHOLD Model");
+  args.register_argument("start-events", "number of initial messages per LP", start_events);
+  args.register_argument("load-map", "0 - Uniform, 1 - Blocked, 2 - Linear", load_map);
+  args.register_argument("percent-heavy", "desired percent of heavy sends [0.0=1.0]", percent_heavy);
+  args.register_argument("light-load", "load for lightly loaded lps in us", light_load);
+  args.register_argument("heavy-load", "load for heavily loaded lps in us", heavy_load);
+  args.register_argument("load-seed", "extra param used by certain load maps", load_seed);
+  args.register_argument("delay-map", "0 - Uniform", delay_map);
+  args.register_argument("percent-long", "desired percent of long sends [0.0-1.0]", percent_long);
+  args.register_argument("short-delay", "exponential distribution mean for event delays", short_delay);
+  args.register_argument("long-delay", "long exponential distribution mean for event delays", long_delay);
+  args.register_argument("delay-seed", "used with some delay maps", delay_seed);
+  args.register_argument("remote-map", "0 - Uniform, 1 - Blocked", remote_map);
+  args.register_argument("percent-greedy", "desired percent of greedy lps [0.0-1.0]", percent_greedy);
+  args.register_argument("generous-remote", "remote percent for generous lps [0.0-1.0]", generous_remote);
+  args.register_argument("greedy-remote", "remote percent for greedy lps [0.0-1.0]", greedy_remote);
+  args.register_argument("remote-seed", "extra param used by certain remote maps", remote_seed);
+  args.register_argument("region-size", "defines the size of the region in which lps send events", region_size);
+  tw_add_arguments(&args);
+
   tw_init(argc, argv);
 
   register_msg_type<PHoldMessage>();

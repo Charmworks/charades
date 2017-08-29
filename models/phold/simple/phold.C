@@ -45,18 +45,13 @@ class PHoldLPFactory : public LPFactory {
     }
 };
 
-const tw_optdef app_opt[] =
-{
-  TWOPT_GROUP("PHOLD Model"),
-  TWOPT_DOUBLE("remote", percent_remote, "desired remote event rate"),
-  TWOPT_UINT("mean", mean, "exponential distribution mean for timestamps"),
-  TWOPT_UINT("start-events", start_events, "number of initial messages per LP"),
-  TWOPT_END()
-};
-
 int main(int argc, char **argv, char **env) {
-  // Add the model specific options, then initialize ROSS and Charm++
-  tw_opt_add(app_opt);
+  ArgumentSet args("PHOLD Model");
+  args.register_argument("remote", "desired remote event rate", percent_remote);
+  args.register_argument("mean", "exponential distribution mean for timestamps", mean);
+  args.register_argument("start-events", "number of initial messages per LP", start_events);
+  tw_add_arguments(&args);
+
   tw_init(argc, argv);
 
   // Check for a valid configuration and adjust mean
