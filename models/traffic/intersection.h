@@ -32,6 +32,19 @@ private:
   uint64_t neighbors[4];
 public:
   IntersectionLP(uint32_t cars);
+
+  virtual void pup(PUP::er& p) {
+    LPBase::pup(p);
+    p | this_x;
+    p | this_y;
+    p | initial_cars;
+    p | total_cars_arrived;
+    p | total_cars_finished;
+    PUParray(p, in_lane, 4);
+    PUParray(p, out_lane, 4);
+    PUParray(p, neighbors, 4);
+  }
+
   void initialize();
   void finalize();
 

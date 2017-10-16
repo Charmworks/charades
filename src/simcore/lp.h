@@ -10,6 +10,7 @@
 #include "event.h"
 #include "pending_heap.h"
 #include "processed_queue.h"
+#include "ross_clcg4.h"
 #include "typedefs.h"
 
 #include <vector>
@@ -19,7 +20,6 @@ extern CProxy_LPChare lps;
 class LPBase;
 class RemoteEvent;
 class Scheduler;
-struct tw_rng_stream;
 
 using std::vector;
 
@@ -136,7 +136,7 @@ class LPChare : public CBase_LPChare {
     /** Default constructor */
     LPChare();
     /** Migration constructor */
-    LPChare(CkMigrateMessage* m) {}
+    LPChare(CkMigrateMessage* m);
 
     // TODO: Clean up current/event and time. Probably store a sentinel event
     // in processed queue that can be used when rolling back to a point where
@@ -184,13 +184,13 @@ class LPChare : public CBase_LPChare {
      * \todo Some changes to events should be made to simplify/unify pupping
      *////@{
     /** Correctly rebuild causality chains when unpacking */
-    //void reconstruct_causality(Event*, Event**, Event**);
+    void reconstruct_causality(Event*, Event**, Event**);
     /** Correclty rebuild pending events when unpacking */
-    //void reconstruct_pending_event(Event*);
+    void reconstruct_pending_event(Event*);
     /** Correctly rebuild processed events when unpacking */
-    //void reconstruct_processed_event(Event*, Event**, Event**);
+    void reconstruct_processed_event(Event*, Event**, Event**);
     /** Pack/unpack this LP chare */
-    virtual void pup(PUP::er &p) {}
+    virtual void pup(PUP::er &p);
     /** Tell this chare that we are going to do load balancing */
     void load_balance();
     /** Called by the runtime system to tell this chare we can resume */
@@ -280,6 +280,14 @@ class LPBase {
     void set_current_event(Event* e) { owner->set_current_event(e); }
     Event* get_current_event() const { return owner->get_current_event(); }
     Time get_current_time() const { return owner->get_current_time(); }
+
+    virtual void pup(PUP::er& p) {
+      p | gid;
+      if (p.isUnpacking()) {
+        rng = new tw_rng_stream();
+      }
+      rng->pup(p);
+    }
 };
 
 template <typename Derived, typename M, typename... Ms>

@@ -75,14 +75,14 @@ class PendingHeap : public PendingQueue {
       int init_size = HEAP_INCREMENT;
       nelems = 0;
       curr_max = (2*init_size);
-      int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
-      memset(elems, 0, sizeof(Event**) * curr_max);
+      int err = posix_memalign((void**)&elems, 64, sizeof(Event*)*curr_max);
+      memset(elems, 0, sizeof(Event*) * curr_max);
     }
 
     PendingHeap(int init_size) {
       nelems = 0;
       curr_max = (2*init_size);
-      int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
+      int err = posix_memalign((void**)&elems, 64, sizeof(Event*)*curr_max);
       memset(elems, 0, sizeof(Event**) * curr_max);
     }
 
@@ -94,19 +94,18 @@ class PendingHeap : public PendingQueue {
     }
 
     virtual void pup(PUP::er& p) {
-      CkAbort("Can't PUP yet\n");
-      /*p | nelems;
+      p | nelems;
       p | curr_max;
       if (p.isUnpacking()) {
-        int err = posix_memalign((void**)&elems, 64, sizeof(Event**)*curr_max);
+        int err = posix_memalign((void**)&elems, 64, sizeof(Event*)*curr_max);
         memset(elems, 0, sizeof(Event**) * curr_max);
       }
       for (int i = 0; i < nelems; i++) {
         if (p.isUnpacking()) {
-          elems[i] = charm_allocate_event();
+          elems[i] = event_alloc();
         }
-        pup_pending_event(p, elems[i]);
-      }*/
+        elems[i]->pup(p);
+      }
     }
 
     Event** get_temp_event_buffer() {

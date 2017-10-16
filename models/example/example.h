@@ -24,6 +24,12 @@ class ExampleLP : public LP<ExampleLP, ExampleMessage, ExampleMessage2> {
     int neighbor, counter;
   public:
     ExampleLP() {}
+    void pup(PUP::er& p) {
+      LPBase::pup(p);
+      p | neighbor;
+      p | counter;
+    }
+
     void initialize();
     void finalize();
 
@@ -41,6 +47,12 @@ class ExampleLP2 : public LP<ExampleLP2, ExampleMessage, ExampleMessage2> {
     int neighbor, counter;
   public:
     ExampleLP2() {}
+    void pup(PUP::er& p) {
+      LPBase::pup(p);
+      p | neighbor;
+      p | counter;
+    }
+
     void initialize();
     void finalize();
 

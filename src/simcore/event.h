@@ -32,9 +32,19 @@ struct RemoteEvent : public CMessage_RemoteEvent {
 
     uint8_t phase;    /**< Used for async phased GVT calculation */
     uint8_t type_id;  /**< Used for double-dispatch of event data */
+    uint8_t type_size;
     char* data;       /**< Points to memory for user event data */
 
-    virtual void pup(PUP::er& p) {}
+    virtual void pup(PUP::er& p) {
+      p | ts;
+      p | event_id;
+      p | src_lp;
+      p | dest_lp;
+      p | phase;
+      p | type_id;
+      p | type_size;
+      p(data, type_size);
+    }
 };
 
 enum tw_event_owner {
@@ -50,6 +60,7 @@ struct tw_event_state {
   unsigned char remote;   /**< Indicates union addr is in 'remote' storage */
   unsigned char avl_tree; /**< Indicates that the event is in the AVL tree */
 };
+PUPbytes(tw_event_state);
 
 /**
  * tw_bf
@@ -96,9 +107,46 @@ struct tw_bf {
     memset(this, 0, sizeof(tw_bf));
   }
 };
+PUPbytes(tw_bf);
+
+void pup_causality(PUP::er& p, Event* e);
 
 class Event {
 public:
+  // Basic event info, used as a key for unique event identification
+  Time ts;
+  uint64_t event_id;
+  uint64_t src_lp;
+  uint64_t dest_lp;
+
+  LPBase* owner;
+  RemoteEvent* msg;
+
+  // Variables for message data types
+  uint8_t type_id;
+  uint8_t type_size;
+
+  // Fields used to enable time warp mechanism to do rollbacks
+  tw_bf cv;             // Bitfield keeps track of execution path
+  tw_event_state state; // State keeps track of who owns the event
+
+  // Pointers used in data structures storing Events
+  Event* prev;          // Prev in processed queue
+  Event* next;          // Next in processed queue
+  Event* caused_by_me;  // Start of event list caused by this event
+  Event* cause_next;    // Next in parent's caused_by_me chain
+  Event* cancel_next;   // next in cancel list
+
+  // Index of the event in the pending heap and the order of event pupping
+  uint8_t index;
+
+  // Fields for rebuilding causality lists after migration
+  unsigned  pending_count;
+  unsigned  processed_count;
+  unsigned  sent_count;
+  unsigned* pending_indices;
+  unsigned* processed_indices;
+
   Event() {
     clear();
   }
@@ -114,10 +162,40 @@ public:
 
     next = prev = caused_by_me = cause_next = cancel_next = NULL;
 
-    index = 0;
+    type_id = type_size = index = 0;
 
     pending_count = processed_count = sent_count = 0;
     pending_indices = processed_indices = NULL;
+  }
+  void pup(PUP::er& p) {
+    p | state;
+
+    if (state.owner == TW_chare_q) {
+      p | index;
+      p | type_size;
+      if (p.isUnpacking()) {
+        msg = new (type_size) RemoteEvent();
+      }
+      msg->pup(p);
+      set_msg(msg);
+    } else if (state.owner == TW_rollback_q) {
+      p | cv;
+      p | index;
+      p | type_size;
+      if (p.isUnpacking()) {
+        msg = new (type_size) RemoteEvent();
+      }
+      msg->pup(p);
+      set_msg(msg);
+      pup_causality(p,this);
+    } else if (state.owner == TW_sent) {
+      p | ts;
+      p | event_id;
+      p | src_lp;
+      p | dest_lp;
+    } else {
+      CkAbort("Bad event state during pupping\n");
+    }
   }
 
   void set_msg(RemoteEvent* m) {
@@ -127,6 +205,7 @@ public:
     src_lp    = msg->src_lp;
     dest_lp   = msg->dest_lp;
     type_id   = msg->type_id;
+    type_size = msg->type_size;
   }
   RemoteEvent* get_msg() const {
     return msg;
@@ -136,37 +215,6 @@ public:
   DataType* get_data() const {
     return reinterpret_cast<DataType*>(msg->data);
   }
-
-  // Basic event info, used as a key for unique event identification
-  Time ts;
-  uint64_t event_id; // Unique increasing id per LP chare
-  uint64_t src_lp;   // Pointer on sender side, not needed at destination
-  uint64_t dest_lp;  // GID on sender side, pointer at destination
-  uint8_t type_id;
-
-  LPBase* owner;
-  RemoteEvent * msg;
-
-  // Fields used to enable time warp mechanism to do rollbacks
-  tw_bf cv;             // Bitfield keeps track of execution path
-  tw_event_state state; // State keeps track of who owns the event
-
-  // Pointers used in data structures storing Events
-  Event* prev;          // Prev in processed queue
-  Event* next;          // Next in processed queue
-  Event* caused_by_me;  // Start of event list caused by this event
-  Event* cause_next;    // Next in parent's caused_by_me chain
-  Event* cancel_next;   // next in cancel list
-
-  // Index of the event in the pending heap. Also the order of event pupping
-  size_t    index;
-
-  // Fields for rebuilding causality lists after migration
-  unsigned  pending_count;
-  unsigned  processed_count;
-  unsigned  sent_count;
-  unsigned* pending_indices;
-  unsigned* processed_indices;
 };
 
 class StandardEventComparator {
@@ -201,12 +249,6 @@ void tw_event_rollback(Event* event);
 // API for Charm++ specific event usage, to be used by original ROSS code
 void charm_event_cancel(Event* e);
 void charm_anti_send(unsigned, Event* e);
-
-// Methods for pupping differnet types of events
-//void pup_pending_event(PUP::er& p, Event* e);
-//void pup_processed_event(PUP::er& p, Event* e);
-//void pup_sent_event(PUP::er& p, Event* e);
-//void pup_causality(PUP::er& p, Event* e);
 
 template <typename MsgType>
 uint32_t get_msg_id() {
@@ -245,6 +287,7 @@ template <typename MsgType, typename... Args>
 Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender, Args&&... args) {
   RemoteEvent* msg = new (sizeof(MsgType)) RemoteEvent();
   msg->type_id = get_msg_id<MsgType>();
+  msg->type_size = sizeof(MsgType);
   new (msg->data) MsgType(std::forward<Args>(args)...);
   return event_alloc(msg, dest_gid, offset, sender);
 }

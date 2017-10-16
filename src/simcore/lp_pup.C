@@ -1,35 +1,11 @@
 #include "lp.h"
 
 #include "avl_tree.h"
+#include "factory.h"
 #include "globals.h"
+#include "mapper.h"
 #include "scheduler.h"
 #include "ross_clcg4.h"
-
-#if 0
-// Pup function for tw_rng_stream in the LPStruct.
-void operator|(PUP::er& p, tw_rng_stream* s) {
-  PUParray(p, s->Ig, 4);
-  PUParray(p, s->Lg, 4);
-  PUParray(p, s->Cg, 4);
-#ifdef RAND_NORMAL
-  p | s->tw_normal_u1;
-  p | s->tw_normal_u2;
-  p | s->tw_normal_flipflop;
-#endif
-}
-
-// When the LP chare is unpacking lp_structs, it will handle the owner field.
-// The LPStruct pup just needs to handle the gid, state, type, and rng stream.
-/*void operator|(PUP::er& p, LPStruct& lp) {
-  p | lp.gid;
-  if (p.isUnpacking()) {
-    lp.type = g_type_map(lp.gid);
-    lp.state = malloc(lp.type->state_size);
-    lp.rng = (tw_rng_stream*)malloc(sizeof(tw_rng_stream));
-  }
-  p((char*)lp.state, lp.type->state_size);
-  p | lp.rng;
-}*/
 
 // Make sure we know our local pe, and construct the tokens.
 LPChare::LPChare(CkMigrateMessage* m) : next_token(this),
@@ -51,15 +27,18 @@ void LPChare::pup(PUP::er& p) {
 
   // Pup the basic fields
   p | isOptimistic;
-  p | uniqID;
   p | current_time;
+  p | next_event_id;
 
   // LP Struct Pupping (reassign owner upon unpacking)
-  //p | lp_structs;
-  if (p.isUnpacking()) {
-    for (int i = 0; i < lp_structs.size(); i++) {
-      lp_structs[i]->owner = this;
+  lp_structs.resize(g_lp_mapper->get_num_lps(thisIndex));
+  for (int i = 0; i < lp_structs.size(); i++) {
+    if (p.isUnpacking()) {
+      uint64_t gid = g_lp_mapper->get_global_id(thisIndex, i);
+      lp_structs[i] = g_lp_factory->create_lp(gid);
     }
+    lp_structs[i]->owner = this;
+    lp_structs[i]->pup(p);
   }
 
   // Event Queue Pupping
@@ -98,7 +77,7 @@ void LPChare::pup(PUP::er& p) {
 // to the cancel_q and/or avl_tree.
 void LPChare::reconstruct_pending_event(Event* e) {
   // Reconstruct pointers
-  e->dest_lp = (uint64_t)(&lp_structs[g_local_map(e->dest_lp)]);
+  e->owner = lp_structs[g_lp_mapper->get_local_id(e->dest_lp)];
 
   // Add the event to the avl_tree if necessary
   if (e->state.avl_tree) {
@@ -115,7 +94,7 @@ void LPChare::reconstruct_pending_event(Event* e) {
 // if necessary.
 void LPChare::reconstruct_processed_event(Event* e, Event** pending, Event** processed) {
   // Reconstruct pointers
-  e->dest_lp = (uint64_t)(&lp_structs[g_local_map(e->dest_lp)]);
+  e->owner = lp_structs[g_lp_mapper->get_local_id(e->dest_lp)];
   reconstruct_causality(e, pending, processed);
 
   // Add the event to the avl_tree if necessary
@@ -144,4 +123,3 @@ void LPChare::reconstruct_causality(Event* e, Event** pending, Event** processed
   }
   delete[] e->pending_indices;
 }
-#endif

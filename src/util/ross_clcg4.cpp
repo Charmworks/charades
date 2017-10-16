@@ -283,16 +283,18 @@ tw_rand_initial_seed(tw_rng_stream * g, uint64_t id)
 	//rng_write_state(g);
 }
 
+// TODO: Pupping assume a single rng stream
 void
 tw_rand_init_streams(LPBase* lp, unsigned int nstreams)
 {
   TW_ASSERT(nstreams <= g_tw_rng_max, "RNG Max Streams Exceeded: %i > %i\n",
       nstreams, g_tw_rng_max);
 	int	 i;
-	lp->rng = (tw_rng_stream*)calloc(sizeof(*lp->rng), nstreams);
+	//lp->rng = (tw_rng_stream*)calloc(sizeof(*lp->rng), nstreams);
+	lp->rng = new tw_rng_stream();
 
-	for(i = 0; i < nstreams; i++)
-		tw_rand_initial_seed((tw_rng_stream*)(&lp->rng[i]), (lp->gid * g_tw_rng_max) + i);
+	//for(i = 0; i < nstreams; i++)
+	tw_rand_initial_seed(lp->rng, lp->gid);
 }
 
 /*

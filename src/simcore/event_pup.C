@@ -4,83 +4,6 @@
 #include "lp.h"
 #include "typedefs.h"
 
-#if 0
-// PUP method for remote events. Called from pup_pending_event() and
-// pup_processed_event().
-void RemoteEvent::pup(PUP::er& p) {
-  p | ts;
-  p | event_id;
-  p | src_lp;
-  p | dest_lp;
-  p((char*)userData, g_tw_msg_sz);
-}
-PUPbytes(tw_event_state);
-PUPbytes(tw_bf);
-
-// Pup the basic parts needed by every event, which are just the fields used
-// as the event key (event_id, ts, src_lp). Also need dest_lp (not sure why).
-inline void basic_event_pup(PUP::er& p, Event* e) {
-  p | e->ts;
-  p | e->event_id;
-  p | e->src_lp;
-  p | e->dest_lp;
-}
-
-// PENDING EVENTS:
-// Doesn't need bitfield, does need state.
-// Doesn't need src_lp, dest_lp is a pointer.
-// Guaranteed to have a RemoteEvent.
-// Pointers handled by LP, PendingQueue.
-// Need the index for PendingHeap, and also for processed events causality.
-// No other causality info is needed.
-void pup_pending_event(PUP::er& p, Event* e) {
-  uint64_t dest_lp;
-  if (p.isPacking()) {
-    dest_lp = e->dest_lp;
-    e->dest_lp = ((LPBase*)e->dest_lp)->gid;
-  }
-  basic_event_pup(p, e);
-  if (p.isPacking()) {
-    e->dest_lp = dest_lp;
-  }
-  p | e->state;
-  p | e->index;
-  p | *(e->eventMsg);
-}
-
-// PROCESSED EVENTS:
-// Does need bitfield, does need state.
-// Doesn't need src_lp, dest_lp is a pointer.
-// Guaranteed to have a RemoteEvent.
-// Pointers handled by LP and ProcessedQueue.
-// Need the index for ProcessedQueue, and also for processed events causality.
-// Causality pupper needs to be called to pack causality info.
-void pup_processed_event(PUP::er& p, Event* e) {
-  uint64_t dest_lp;
-  if (p.isPacking()) {
-    dest_lp = e->dest_lp;
-    e->dest_lp = ((LPBase*)e->dest_lp)->gid;
-  }
-  basic_event_pup(p, e);
-  if (p.isPacking()) {
-    e->dest_lp = dest_lp;
-  }
-  p | e->state;
-  p | e->cv;
-  p | e->index;
-  p | *(e->eventMsg);
-  pup_causality(p, e);
-}
-
-// SENT EVENTS:
-// Only needs basic info and to reset state.owner.
-void pup_sent_event(PUP::er& p, Event* e) {
-  basic_event_pup(p, e);
-  if (p.isUnpacking()) {
-    e->state.owner = TW_sent;
-  }
-}
-
 // CAUSALITY LIST:
 // Basically, we pack up two extra arrays that hold causality info.
 // The first array holds the index field of pending events, the second holds the
@@ -169,9 +92,9 @@ void pup_causality(PUP::er& p, Event* e) {
   Event* tmp = e->caused_by_me;
   for (int i = 0; i < e->sent_count; i++) {
     if (p.isUnpacking()) {
-      tmp = charm_allocate_event(0);
+      tmp = event_alloc();
     }
-    pup_sent_event(p, tmp);
+    tmp->pup(p);
     if (p.isUnpacking()) {
       tmp->cause_next = e->caused_by_me;
       e->caused_by_me = tmp;
@@ -180,4 +103,3 @@ void pup_causality(PUP::er& p, Event* e) {
     }
   }
 }
-#endif

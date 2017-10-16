@@ -352,7 +352,7 @@ int LPChare::execute_me() {
     }
     /** Execute the event on the target LPStruct */
     LPBase* lp = e->owner;
-    BRACKET_TRACE(lp->forward(e/*->userData(), &e->cv*/);, USER_EVENT_FWD)
+    BRACKET_TRACE(lp->forward(e);, USER_EVENT_FWD)
 
     /**
      * Move the event to the processed queue if we are optimistic, otherwise

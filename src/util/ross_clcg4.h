@@ -3,6 +3,7 @@
 
 #include "typedefs.h"
 
+#include <charm++.h>
 #include <stdint.h> // Included for int32_t
 #include <stdio.h> // Included for FILE
 
@@ -28,19 +29,28 @@ typedef struct tw_rng {
 	int32_t	seed[4];
 } tw_rng;
 
-typedef struct tw_rng_stream {
-	int32_t	 Ig[4];
-	int32_t	 Lg[4];
-	int32_t	 Cg[4];
-
-	//tw_rng	*rng;
+struct tw_rng_stream {
+	int32_t	Ig[4];
+	int32_t	Lg[4];
+	int32_t	Cg[4];
 
 #ifdef RAND_NORMAL
 	double	 tw_normal_u1;
 	double	 tw_normal_u2;
 	int	 tw_normal_flipflop;
 #endif
-} tw_rng_stream;
+
+  void pup(PUP::er& p) {
+    PUParray(p, Ig, 4);
+    PUParray(p, Lg, 4);
+    PUParray(p, Cg, 4);
+#ifdef RAND_NORMAL
+    p | tw_normal_u1;
+    p | tw_normal_u2;
+    p | tw_normal_flipflop;
+#endif
+  }
+};
 
 extern tw_rng*  rng_init(int v, int w);
 extern void     rng_set_initial_seed();

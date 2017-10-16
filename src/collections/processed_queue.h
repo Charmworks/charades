@@ -22,8 +22,7 @@ class ProcessedQueue {
   }
 
   virtual void pup(PUP::er &p) {
-    CkAbort("Can't PUP yet\n");
-    /*p | length;
+    p | length;
 
     int temp_items = length;
     if (p.isUnpacking()) {
@@ -34,9 +33,9 @@ class ProcessedQueue {
     Event* e = head;
     for (int i = 0; i < temp_items; i++) {
       if (p.isUnpacking()) {
-        e = charm_allocate_event();
+        e = event_alloc();
       }
-      pup_processed_event(p, e);
+      e->pup(p);
       if (p.isUnpacking()) {
         temp_event_buffer[e->index] = e;
         push_back(e);
@@ -44,7 +43,7 @@ class ProcessedQueue {
         e->index = i;
         e = e->next;
       }
-    }*/
+    }
   }
 
   Event** get_temp_event_buffer() const {
