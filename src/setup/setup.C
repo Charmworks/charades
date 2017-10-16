@@ -17,7 +17,7 @@ Initialize::Initialize(CkArgMsg *m) {
 void tw_init(int argc, char** argv) {
   clear_globals();
   charm_init(argc, argv);
-  parse_command_line(argc, argv);
+  parse_command_line(CmiGetArgc(argv), argv);
 }
 
 void tw_create_simulation(LPFactory* factory) {
