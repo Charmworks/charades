@@ -241,11 +241,11 @@ public:
   }
 };
 
-template <typename MsgType>
-Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender) {
+template <typename MsgType, typename... Args>
+Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender, Args&&... args) {
   RemoteEvent* msg = new (sizeof(MsgType)) RemoteEvent();
   msg->type_id = get_msg_id<MsgType>();
-  new (msg->data) MsgType();
+  new (msg->data) MsgType(std::forward<Args>(args)...);
   return event_alloc(msg, dest_gid, offset, sender);
 }
 

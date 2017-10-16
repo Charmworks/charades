@@ -5,10 +5,12 @@
 
 // Declare message types as structs or classes. No inheritance needed.
 struct ExampleMessage {
+  ExampleMessage(int p) : payload(p) {}
   int payload;
 };
 
 struct ExampleMessage2 {
+  ExampleMessage2(int p) : payload(p) {}
   int payload;
 };
 
