@@ -109,6 +109,5 @@ void clear_globals() {
 
 Globals* get_globals() {
   /** Store the pointer in a static variable for faster lookup */
-  static Globals* globals = ((Scheduler*)CkLocalBranch(scheduler_id))->globals;
-  return globals;
+  return CpvAccess(g_scheduler)->globals;
 }

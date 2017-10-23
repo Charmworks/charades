@@ -11,6 +11,7 @@
 #include "util.h"
 
 CkGroupID scheduler_id;
+CpvDeclare(SchedulerPtr, g_scheduler);
 
 /******************************************************************************/
 /* Scheduler Base Class                                                       */
@@ -20,6 +21,9 @@ Scheduler::Scheduler() {
   globals = new Globals();
   stats = new Statistics();
   cumulative_stats = stats;
+
+  CpvInitialize(SchedulerPtr, g_scheduler);
+  CpvAccess(g_scheduler) = this;
 
   running = false;
 

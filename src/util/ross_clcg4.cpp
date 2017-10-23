@@ -25,7 +25,8 @@
 #define H   32768
 
 // One RNG per PE
-static tw_rng	*rng = NULL;
+typedef tw_rng* RngPointer;
+CpvStaticDeclare(RngPointer, rng);
 
 // default RNG seed
 int32_t seed[4] = { 11111111, 22222222, 33333333, 44444444 };
@@ -219,7 +220,7 @@ rng_init_generator(tw_rng_stream * g, SeedType Where)
 				g->Lg[j] = g->Ig[j];
 				break;
 			case NewSeed:
-				g->Lg[j] = MultModM(rng->aw[j], g->Lg[j], rng->m[j]);
+				g->Lg[j] = MultModM(CpvAccess(rng)->aw[j], g->Lg[j], CpvAccess(rng)->m[j]);
 				break;
 			case LastSeed:
 				break;
@@ -246,7 +247,7 @@ tw_rand_initial_seed(tw_rng_stream * g, uint64_t id)
 
 	//seed for zero
 	for(j = 0; j < 4; j++)
-		Ig_t[j] = rng->seed[j];
+		Ig_t[j] = CpvAccess(rng)->seed[j];
 
 	mask_bit <<= positions;
 
@@ -256,13 +257,13 @@ tw_rand_initial_seed(tw_rng_stream * g, uint64_t id)
 		{
 			for(j = 0; j < 4; j++)
 			{
-				avw_t[j] = rng->avw[j];
+				avw_t[j] = CpvAccess(rng)->avw[j];
 
 				// exponentiate modulus
 				for(i = 0; i < positions; i++)
-					avw_t[j] = MultModM(avw_t[j], avw_t[j], rng->m[j]);
+					avw_t[j] = MultModM(avw_t[j], avw_t[j], CpvAccess(rng)->m[j]);
 
-				Ig_t[j] = MultModM(avw_t[j], Ig_t[j], rng->m[j]);
+				Ig_t[j] = MultModM(avw_t[j], Ig_t[j], CpvAccess(rng)->m[j]);
 			}
 		}
 
@@ -273,7 +274,7 @@ tw_rand_initial_seed(tw_rng_stream * g, uint64_t id)
 	if(id % 2)
 	{
 		for(j = 0; j < 4; j++)
-			Ig_t[j] = MultModM(rng->avw[j], Ig_t[j], rng->m[j]);
+			Ig_t[j] = MultModM(CpvAccess(rng)->avw[j], Ig_t[j], CpvAccess(rng)->m[j]);
 	}
 
 	for(j = 0; j < 4; j++)
@@ -303,52 +304,53 @@ tw_rand_init_streams(LPBase* lp, unsigned int nstreams)
 tw_rng	*
 rng_init(int v, int w)
 {
+	CpvInitialize(RngPointer, rng);
 	int	 i;
 	int	 j;
 
 	//rng = (tw_rng*)tw_calloc(TW_LOC, "RNG", sizeof(*rng), 1);
-	rng = (tw_rng*)calloc(sizeof(*rng), 1);
+	CpvAccess(rng) = (RngPointer)calloc(sizeof(tw_rng), 1);
 
-	rng->m[0] = 2147483647;
-	rng->m[1] = 2147483543;
-	rng->m[2] = 2147483423;
-	rng->m[3] = 2147483323;
+	CpvAccess(rng)->m[0] = 2147483647;
+	CpvAccess(rng)->m[1] = 2147483543;
+	CpvAccess(rng)->m[2] = 2147483423;
+	CpvAccess(rng)->m[3] = 2147483323;
 
-	rng->a[0] = 45991;
-	rng->a[1] = 207707;
-	rng->a[2] = 138556;
-	rng->a[3] = 49689;
+	CpvAccess(rng)->a[0] = 45991;
+	CpvAccess(rng)->a[1] = 207707;
+	CpvAccess(rng)->a[2] = 138556;
+	CpvAccess(rng)->a[3] = 49689;
 
 	if(g_tw_rng_seed)
 	{
 		for(j = 0; j < 4; j++)
-			rng->seed[j] = *(g_tw_rng_seed)[j];
+			CpvAccess(rng)->seed[j] = *(g_tw_rng_seed)[j];
 	} else
 	{
-		rng->seed[0] = 11111111;
-		rng->seed[1] = 22222222;
-		rng->seed[2] = 33333333;
-		rng->seed[3] = 44444444;
+		CpvAccess(rng)->seed[0] = 11111111;
+		CpvAccess(rng)->seed[1] = 22222222;
+		CpvAccess(rng)->seed[2] = 33333333;
+		CpvAccess(rng)->seed[3] = 44444444;
 	}
 
 	for(j = 0; j < 4; j++)
-		rng->aw[j] = rng->a[j];
+		CpvAccess(rng)->aw[j] = CpvAccess(rng)->a[j];
 
 	for(j = 0; j < 4; j++)
 	{
 		for(i = 1; i <= w; i++)
-			rng->aw[j] = MultModM(rng->aw[j], rng->aw[j], rng->m[j]);
+			CpvAccess(rng)->aw[j] = MultModM(CpvAccess(rng)->aw[j], CpvAccess(rng)->aw[j], CpvAccess(rng)->m[j]);
 
-		rng->avw[j] = rng->aw[j];
+		CpvAccess(rng)->avw[j] = CpvAccess(rng)->aw[j];
 
 		for(i = 1; i <= v; i++)
-			rng->avw[j] = MultModM(rng->avw[j], rng->avw[j], rng->m[j]);
+			CpvAccess(rng)->avw[j] = MultModM(CpvAccess(rng)->avw[j], CpvAccess(rng)->avw[j], CpvAccess(rng)->m[j]);
 	}
 
 	for(j = 0; j < 4; j++)
-		rng->b[j] = FindB(rng->a[j],(rng->m[j] - 2), rng->m[j]);
+		CpvAccess(rng)->b[j] = FindB(CpvAccess(rng)->a[j],(CpvAccess(rng)->m[j] - 2), CpvAccess(rng)->m[j]);
 
-	return rng;
+	return CpvAccess(rng);
 }
 
 /*
@@ -414,8 +416,8 @@ rng_gen_val(tw_rng_stream * g)
 double
 rng_gen_reverse_val(tw_rng_stream * g)
 {
-  long long *b = rng->b;
-  int32_t *m = rng->m;
+  long long *b = CpvAccess(rng)->b;
+  int32_t *m = CpvAccess(rng)->m;
   int32_t s;
   double u;
 

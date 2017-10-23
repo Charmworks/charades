@@ -9,9 +9,7 @@
 #include <stdio.h>  // Included for printf
 
 Statistics* get_statistics() {
-  /** Cache the pointer in a local variable for quicker lookup */
-  static Statistics* statistics = ((Scheduler*)CkLocalBranch(scheduler_id))->stats;
-  return statistics;
+  return CpvAccess(g_scheduler)->stats;
 }
 
 CkReduction::reducerType statsReductionType;

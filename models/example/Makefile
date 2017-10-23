@@ -7,4 +7,4 @@ clean:
 
 
 example: example.C example.h $(BUILD_DIR)/libcharades.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs example.C -o example $(LDFLAGS) -L$(BUILD_DIR) -lcharades
+	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs example.C -o example $(LFLAGS) -L$(BUILD_DIR) -lcharades

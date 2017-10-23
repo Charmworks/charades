@@ -9,6 +9,9 @@
 
 extern CkGroupID scheduler_id;
 
+typedef Scheduler* SchedulerPtr;
+CpvExtern(SchedulerPtr, g_scheduler);
+
 class Globals;
 class LPChare;
 class LPToken;

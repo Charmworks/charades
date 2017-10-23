@@ -12,7 +12,6 @@
 #include "util.h"
 
 extern CProxy_LPChare lps;
-extern CProxy_Scheduler scheduler;
 
 bool StandardEventComparator::operator()(const Event* e1, const Event* e2) {
   if (e1->ts != e2->ts) {
@@ -94,7 +93,7 @@ void tw_event_free(Event *e, bool commit) {
 }
 
 void tw_event_send(Event* e) {
-  static Scheduler* scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
+  Scheduler* scheduler = CpvAccess(g_scheduler);
   if (e == PE_VALUE(abort_event)) {
     TW_ASSERT(e->ts >= g_tw_ts_end, "Can't send abort event before end\n");
     return;
@@ -159,7 +158,7 @@ void tw_event_rollback(Event * event) {
 // An anti send will never be to a local chare, because locally sent events
 // will never have the owner set to TW_sent.
 void charm_anti_send(unsigned dest_chare_id, Event* e) {
-  static Scheduler* scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
+  Scheduler* scheduler = CpvAccess(g_scheduler);
   RemoteEvent* eventMsg = new (0) RemoteEvent();
   eventMsg->event_id = e->event_id;
   eventMsg->ts = e->ts;
