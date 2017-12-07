@@ -12,9 +12,9 @@
 #ifndef CODES_WORKLOAD_H
 #define CODES_WORKLOAD_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <ross.h>
 #include "configuration.h"
@@ -335,9 +335,9 @@ void codes_workload_add_method(struct codes_workload_method const * method);
  * will shut down automatically once they have issued their last event.
  */
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* CODES_WORKLOAD_H */
 

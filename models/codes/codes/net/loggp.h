@@ -7,9 +7,9 @@
 #ifndef LOGGP_H
 #define LOGGP_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include "../model-net-sched.h"
 
@@ -49,9 +49,9 @@ struct loggp_message
     tw_stime recv_time_saved;
 };
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* end of include guard: LOGGP_H */
 

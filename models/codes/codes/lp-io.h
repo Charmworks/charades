@@ -7,9 +7,9 @@
 #ifndef LP_IO_H
 #define LP_IO_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <ross.h>
 
@@ -37,9 +37,9 @@ static inline char* lp_io_handle_to_dir(lp_io_handle handle)
     return(strdup(handle));
 }
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* LP_IO_H */
 

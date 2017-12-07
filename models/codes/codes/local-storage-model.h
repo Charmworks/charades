@@ -7,9 +7,9 @@
 #ifndef __LS_MODEL__
 #define __LS_MODEL__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <ross.h>
 
@@ -114,9 +114,9 @@ void lsm_configure(void);
 
 #define LSM_DEBUG 0
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif
 

@@ -7,9 +7,9 @@
 #ifndef __CONFIGURATION_H__
 #define __CONFIGURATION_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <stddef.h>
 #include <inttypes.h>
@@ -253,9 +253,9 @@ extern ConfigHandle config;
 
 extern config_lpgroups_t lpconf;
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif
 

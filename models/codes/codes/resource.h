@@ -14,9 +14,9 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <stdint.h>
 
@@ -73,9 +73,9 @@ struct resource_s {
     unsigned int num_tokens;
 };
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* end of include guard: RESOURCE_H */
 

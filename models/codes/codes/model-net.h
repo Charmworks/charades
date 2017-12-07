@@ -7,9 +7,9 @@
 #ifndef MODELNET_H
 #define MODELNET_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <ross.h>
 #include <codes/lp-type-lookup.h>
@@ -417,9 +417,9 @@ mn_stats* model_net_find_stats(char const * category, mn_stats mn_stats_array[])
 extern cortex_topology model_net_topology;
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* MODELNET_H */
 

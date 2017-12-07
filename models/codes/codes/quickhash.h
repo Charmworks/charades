@@ -14,9 +14,9 @@
 #ifndef SRC_COMMON_UTIL_QUICKHASH_H
 #define SRC_COMMON_UTIL_QUICKHASH_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -340,9 +340,9 @@ static inline int quickhash_null32_hash(void *k, int table_size)
     return(int)(*tmp & (table_size - 1));
 }
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* SRC_COMMON_UTIL_QUICKHASH_H */
 

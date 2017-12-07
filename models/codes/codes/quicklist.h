@@ -25,9 +25,9 @@
 #ifndef QUICKLIST_H
 #define QUICKLIST_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <stdlib.h>
 
@@ -293,8 +293,8 @@ static inline struct qlist_head * qlist_find(
  * vim: ts=8 sts=4 sw=4 expandtab
  */
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* QUICKLIST_H */

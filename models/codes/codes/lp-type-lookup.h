@@ -8,9 +8,9 @@
 #ifndef LP_TYPE_LOOKUP_H
 #define LP_TYPE_LOOKUP_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include "ross.h"
 
@@ -23,9 +23,9 @@ void lp_type_register(const char* name, const tw_lptype* type);
 
 //void st_model_type_register(const char* name, const st_model_types* type);
 //const st_model_types* st_model_type_lookup(const char* name);
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* LP_TYPE_LOOKUP_H */
 

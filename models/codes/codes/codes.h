@@ -8,9 +8,9 @@
 #ifndef CODES_H
 #define CODES_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <ross.h>
 #include <assert.h>
@@ -97,9 +97,9 @@ static inline void codes_local_latency_reverse(tw_lp *lp)
     return;
 }
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* CODES_H */
 

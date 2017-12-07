@@ -7,9 +7,9 @@
 #ifndef TORUS_H
 #define TORUS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 typedef struct nodes_message nodes_message;
 
@@ -93,9 +93,9 @@ struct nodes_message
   int remote_event_size_bytes;
 };
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* end of include guard: TORUS_H */
 

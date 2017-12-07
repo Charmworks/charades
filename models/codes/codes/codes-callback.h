@@ -7,9 +7,9 @@
 #ifndef CODES_CALLBACK_H
 #define CODES_CALLBACK_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <assert.h>
 #include "codes/lp-msg.h"
@@ -87,9 +87,9 @@ struct codes_cb_params {
         assert(_esize >= (_cb_info_ptr)->cb_ret_offset + sizeof(_ret_type)); \
     } while (0)
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* end of include guard: CODES_CALLBACK_H */
 

@@ -7,9 +7,9 @@
 #ifndef DRAGONFLY_CUSTOM_H
 #define DRAGONFLY_CUSTOM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <ross.h>
 
@@ -87,9 +87,9 @@ struct terminal_custom_message
    tw_stime msg_start_time;
 };
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* end of include guard: DRAGONFLY_H */
 

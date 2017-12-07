@@ -7,9 +7,9 @@
 #ifndef MODELNET_METHOD_H
 #define MODELNET_METHOD_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <ross.h>
 
@@ -69,9 +69,9 @@ struct model_net_method
 
 extern struct model_net_method * method_array[];
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* MODELNET_METHOD_H */
 

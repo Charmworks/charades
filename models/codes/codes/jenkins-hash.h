@@ -7,9 +7,9 @@
 #ifndef __JENKINS_HASH__
 #define __JENKINS_HASH__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -43,9 +43,9 @@ void bj_hashlittle2(
  */
 #define bj_hashmask(n) (bj_hashsize(n)-1)
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif
 

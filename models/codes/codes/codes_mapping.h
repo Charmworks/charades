@@ -11,9 +11,9 @@
 #ifndef CODES_MAPPING_H
 #define CODES_MAPPING_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include "configuration.h"
 #include "codes.h"
@@ -228,9 +228,9 @@ int codes_mapping_get_anno_cid_by_name(char const * annotation);
 int codes_mapping_get_anno_cid_by_lpid(tw_lpid id);
 char const * codes_mapping_get_anno_name_by_cid(int cid);
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif
 

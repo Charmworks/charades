@@ -10,9 +10,9 @@
 #include <stddef.h>  /* size_t */
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 
 /**
@@ -163,9 +163,9 @@ static inline int cf_createKey (struct ConfigVTable * handle, SectionHandle sect
    return handle->createKey (handle->data, section, key, data, count);
 }
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+//#ifdef __cplusplus
+//} /* extern "C" */
+//#endif
 
 #endif
 

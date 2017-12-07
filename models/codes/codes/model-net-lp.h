@@ -13,9 +13,9 @@
 #ifndef MODEL_NET_LP_H  
 #define MODEL_NET_LP_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <ross.h>
 #include "codes/lp-msg.h"
@@ -136,9 +136,9 @@ typedef struct model_net_wrap_msg {
     } msg;
 } model_net_wrap_msg;
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* end of include guard: MODEL_NET_LP_H */
 
