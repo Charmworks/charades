@@ -104,12 +104,12 @@ static void svr_finalize(
  * structure (NOTE: ROSS is in charge of event and state (de-)allocation) */
 tw_lptype svr_lp = {
     (init_f) svr_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) svr_event,
     (revent_f) svr_rev_event,
     (commit_f) NULL,
     (final_f)  svr_finalize,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(svr_state),
 };
 
@@ -194,26 +194,26 @@ int main(
     /* ROSS initialization function calls */
     tw_opt_add(app_opt); /* add user-defined args */
     /* initialize ROSS and parse args. NOTE: tw_init calls MPI_Init */
-    tw_init(&argc, &argv);
+    tw_init(argc, argv);
 
-    if (!conf_file_name[0])
+    /*if (!conf_file_name[0])
     {
         fprintf(stderr, "Expected \"codes-config\" option, please see --help.\n");
         MPI_Finalize();
         return 1;
-    }
+    }*/
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+    //MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    //MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
     /* loading the config file into the codes-mapping utility, giving us the
      * parsed config object in return.
      * "config" is a global var defined by codes-mapping */
-    if (configuration_load(conf_file_name, MPI_COMM_WORLD, &config)){
+    /*if (configuration_load(conf_file_name, MPI_COMM_WORLD, &config)){
         fprintf(stderr, "Error loading config file %s.\n", conf_file_name);
         MPI_Finalize();
         return 1;
-    }
+    }*/
 
     /* register model-net LPs with ROSS */
     model_net_register();
@@ -237,12 +237,12 @@ int main(
     /* in this example, we are using simplenet, which simulates point to point
      * communication between any two entities (other networks are trickier to
      * setup). Hence: */
-    if(net_id != SIMPLENET)
+    /*if(net_id != SIMPLENET)
     {
 	    printf("\n The test works with simple-net configuration only! ");
 	    MPI_Finalize();
 	    return 0;
-    }
+    }*/
 
     /* calculate the number of servers in this simulation,
      * ignoring annotations */
@@ -297,7 +297,7 @@ static void svr_init(
     e = tw_event_new(lp->gid, kickoff_time, lp);
     /* after event is created, grab the allocated message and set msg-specific
      * data */
-    m = tw_event_data(e);
+    m = (svr_msg*)tw_event_data(e);
     m->svr_event_type = KICKOFF;
     /* event is ready to be processed, send it off */
     tw_event_send(e);
