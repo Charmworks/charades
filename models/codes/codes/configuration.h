@@ -13,7 +13,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <inttypes.h>
-#include <mpi.h>
+//#include <mpi.h>
 
 #define CONFIGURATION_MAX_NAME 128
 #define CONFIGURATION_MAX_GROUPS 10
@@ -90,9 +90,9 @@ typedef struct ConfigVTable * ConfigHandle;
  *
  * return 0 on success
  */
-int configuration_load (const char * filepath,
-                        MPI_Comm comm,
-                        ConfigHandle *handle);
+//int configuration_load (const char * filepath,
+//                        MPI_Comm comm,
+//                        ConfigHandle *handle);
 
 /*
  * Free any resources allocated on load.

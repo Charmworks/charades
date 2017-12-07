@@ -20,7 +20,7 @@ typedef char* lp_io_handle;
 /* to be called (collectively) before running simulation to prepare the
  * output directory.
  */
-int lp_io_prepare(char *directory, int flags, lp_io_handle* handle, MPI_Comm comm);
+//int lp_io_prepare(char *directory, int flags, lp_io_handle* handle, MPI_Comm comm);
 
 /* to be called within LPs to store a block of data */
 int lp_io_write(tw_lpid gid, char* identifier, int size, void* buffer);
@@ -29,7 +29,7 @@ int lp_io_write(tw_lpid gid, char* identifier, int size, void* buffer);
 int lp_io_write_rev(tw_lpid gid, char* identifier);
 
 /* to be called (collectively) after tw_run() to flush data to disk */
-int lp_io_flush(lp_io_handle handle, MPI_Comm comm);
+//int lp_io_flush(lp_io_handle handle, MPI_Comm comm);
 
 /* retrieves the directory name for a handle */
 static inline char* lp_io_handle_to_dir(lp_io_handle handle)
