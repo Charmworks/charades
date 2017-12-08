@@ -87,11 +87,11 @@ typedef LP tw_pe;           ///< \deprecated Treats LP chares as old ROSS pes
 /** Called at simulation start for LP initialization */
 typedef void (*init_f) (void*,LPStruct*);
 /** Forward event handler */
-typedef void (*event_f) (void*, tw_bf*, char*, LPStruct*);
+typedef void (*event_f) (void*, tw_bf*, void*, LPStruct*);
 /** Reverse event handler */
-typedef void (*revent_f) (void*, tw_bf*, char*, LPStruct*);
+typedef void (*revent_f) (void*, tw_bf*, void*, LPStruct*);
 /** Commit event handler */
-typedef void (*commit_f) (void*, tw_bf*, char*, LPStruct*);
+typedef void (*commit_f) (void*, tw_bf*, void*, LPStruct*);
 /** Called at simulation end for finalization */
 typedef void (*final_f) (void*, LPStruct*);
 

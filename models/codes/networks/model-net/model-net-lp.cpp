@@ -53,7 +53,7 @@ typedef struct model_net_base_state {
     // lp type and state of underlying model net method - cache here so we
     // don't have to constantly look up
     const tw_lptype *sub_type;
-    const st_model_types *sub_model_type;
+    //const st_model_types *sub_model_type;
     void *sub_state;
 } model_net_base_state;
 
@@ -105,12 +105,12 @@ static void handle_sched_next_rc(
 /* ROSS function pointer table for this LP */
 tw_lptype model_net_base_lp = {
     (init_f) model_net_base_lp_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) model_net_base_event,
     (revent_f) model_net_base_event_rc,
     (commit_f) NULL,
     (final_f)  model_net_base_finalize,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(model_net_base_state),
 };
 
@@ -138,11 +138,11 @@ void mn_event_collect(model_net_wrap_msg *m, tw_lp *lp, char *buffer, int *colle
             memcpy(buffer, &type, sizeof(type));
             break;
         case MN_BASE_PASS:
-            sub_msg = ((char*)m)+msg_offsets[((model_net_base_state*)lp->cur_state)->net_id];
-            if (g_st_ev_trace == RB_TRACE || g_st_ev_trace == COMMIT_TRACE)
+            //sub_msg = ((char*)m)+msg_offsets[((model_net_base_state*)lp->cur_state)->net_id];
+            /*if (g_st_ev_trace == RB_TRACE || g_st_ev_trace == COMMIT_TRACE)
                 (((model_net_base_state*)lp->cur_state)->sub_model_type->rbev_trace)(sub_msg, lp, buffer, collect_flag);
             else if (g_st_ev_trace == FULL_TRACE)
-                (((model_net_base_state*)lp->cur_state)->sub_model_type->ev_trace)(sub_msg, lp, buffer, collect_flag);
+                (((model_net_base_state*)lp->cur_state)->sub_model_type->ev_trace)(sub_msg, lp, buffer, collect_flag);*/
             break;
         default:  // this shouldn't happen, but can help detect an issue
             type = 9004;
@@ -153,20 +153,20 @@ void mn_event_collect(model_net_wrap_msg *m, tw_lp *lp, char *buffer, int *colle
 void mn_model_stat_collect(model_net_base_state *s, tw_lp *lp, char *buffer)
 {
     // need to call the model level stats collection fn
-    (*s->sub_model_type->model_stat_fn)(s->sub_state, lp, buffer);
+    //(*s->sub_model_type->model_stat_fn)(s->sub_state, lp, buffer);
     return;
 }
 
-st_model_types mn_model_types[MAX_NETS];
+//st_model_types mn_model_types[MAX_NETS];
 
-st_model_types mn_model_base_type = {
+/*st_model_types mn_model_base_type = {
     (rbev_trace_f) mn_event_collect,
      sizeof(int),
      (ev_trace_f) mn_event_collect,
      sizeof(int),
      (model_stat_f) mn_model_stat_collect,
      0
-};
+};*/
 
 /**** END LP, EVENT PROCESSING FUNCTION DECLS ****/
 
@@ -189,7 +189,7 @@ static void issue_sample_event(tw_lp *lp)
 {
     if (tw_now(lp) + mn_sample_interval < mn_sample_end + 0.0001) {
         tw_event *e = tw_event_new(lp->gid, mn_sample_interval, lp);
-        model_net_wrap_msg *m = tw_event_data(e);
+        model_net_wrap_msg *m = (model_net_wrap_msg*)tw_event_data(e);
         msg_set_header(model_net_base_magic, MN_BASE_SAMPLE, lp->gid, &m->h);
         tw_event_send(e);
     }
@@ -206,7 +206,7 @@ void model_net_base_register(int *do_config_nets){
                         &model_net_base_lp);
             else
                 method_array[i]->mn_register(&model_net_base_lp);
-            if (g_st_ev_trace || g_st_model_stats) // for ROSS event tracing
+            /*if (g_st_ev_trace || g_st_model_stats) // for ROSS event tracing
             {
                 memcpy(&mn_model_types[i], &mn_model_base_type, sizeof(st_model_types));
 
@@ -214,7 +214,7 @@ void model_net_base_register(int *do_config_nets){
                     st_model_type_register(model_net_lp_config_names[i], &mn_model_types[i]);
                 else
                     method_array[i]->mn_model_stat_register(&mn_model_types[i]);
-            }
+            }*/
         }
     }
 }
@@ -235,7 +235,7 @@ static void base_read_config(const char * anno, model_net_base_params *p){
         int i;
         for (i = 0; i < MAX_SCHEDS; i++){
             if (strcmp(sched_names[i], sched) == 0){
-                p->sched_params.type = i;
+                p->sched_params.type = (sched_type)i;
                 break;
             }
         }
@@ -268,7 +268,7 @@ static void base_read_config(const char * anno, model_net_base_params *p){
             int i;
             for (i = 0; i < MAX_SCHEDS; i++){
                 if (strcmp(sched_names[i], sched) == 0){
-                    *sub_stype = i;
+                    *sub_stype = (sched_type)i;
                     break;
                 }
             }
@@ -407,8 +407,8 @@ void model_net_base_lp_init(
         }
     }
 
-    ns->sched_send = malloc(sizeof(model_net_sched));
-    ns->sched_recv = malloc(sizeof(model_net_sched));
+    ns->sched_send = (model_net_sched*)malloc(sizeof(model_net_sched));
+    ns->sched_recv = (model_net_sched*)malloc(sizeof(model_net_sched));
     // init both the sender queue and the 'receiver' queue
     model_net_sched_init(&ns->params->sched_params, 0, method_array[ns->net_id],
             ns->sched_send);
@@ -418,11 +418,11 @@ void model_net_base_lp_init(
     ns->sub_type = model_net_get_lp_type(ns->net_id);
 
     /* some ROSS instrumentation setup */
-    if (g_st_ev_trace || g_st_model_stats)
+    /*if (g_st_ev_trace || g_st_model_stats)
     {
         ns->sub_model_type = model_net_get_model_stat_type(ns->net_id);
         mn_model_types[ns->net_id].mstat_sz = ns->sub_model_type->mstat_sz;
-    }
+    }*/
 
     // NOTE: some models actually expect LP state to be 0 initialized...
     // *cough anything that uses mn_stats_array cough*
@@ -441,8 +441,8 @@ void model_net_base_lp_init(
             //        "Sampling requested for a model that doesn't provide it\n");
         }
         else if (rsample == NULL &&
-                (g_tw_synchronization_protocol == OPTIMISTIC ||
-                 g_tw_synchronization_protocol == OPTIMISTIC_DEBUG)) {
+                (g_tw_synchronization_protocol == OPTIMISTIC /*||
+                 g_tw_synchronization_protocol == OPTIMISTIC_DEBUG*/)) {
             /* MM: Commented out temporarily--- */
             //tw_error(TW_LOC,
             //        "Sampling requested for a model that doesn't provide it\n");
@@ -475,13 +475,15 @@ void model_net_base_event(
         case MN_BASE_SCHED_NEXT:
             handle_sched_next(ns, b, m, lp);
             break;
-        case MN_BASE_SAMPLE: ;
+        case MN_BASE_SAMPLE:
+        {
             event_f sample = method_array[ns->net_id]->mn_sample_fn;
             assert(model_net_sampling_enabled() && sample != NULL);
             sub_msg = ((char*)m)+msg_offsets[ns->net_id];
             sample(ns->sub_state, b, sub_msg, lp);
             issue_sample_event(lp);
             break;
+        }
         case MN_BASE_PASS: ;
             sub_msg = ((char*)m)+msg_offsets[ns->net_id];
             ns->sub_type->event(ns->sub_state, b, sub_msg, lp);
@@ -508,12 +510,14 @@ void model_net_base_event_rc(
         case MN_BASE_SCHED_NEXT:
             handle_sched_next_rc(ns, b, m, lp);
             break;
-        case MN_BASE_SAMPLE: ;
+        case MN_BASE_SAMPLE:
+        {
             revent_f sample_rc = method_array[ns->net_id]->mn_sample_rc_fn;
             assert(model_net_sampling_enabled() && sample_rc != NULL);
             sub_msg = ((char*)m)+msg_offsets[ns->net_id];
             sample_rc(ns->sub_state, b, sub_msg, lp);
             break;
+        }
         case MN_BASE_PASS: ;
             sub_msg = ((char*)m)+msg_offsets[ns->net_id];
             ns->sub_type->revent(ns->sub_state, b, sub_msg, lp);
@@ -620,7 +624,7 @@ void handle_sched_next(
     else if (ns->net_id == SIMPLEP2P || ns->net_id == TORUS){
         tw_event *e = tw_event_new(lp->gid,
                 poffset+codes_local_latency(lp), lp);
-        model_net_wrap_msg *m_wrap = tw_event_data(e);
+        model_net_wrap_msg *m_wrap = (model_net_wrap_msg*)tw_event_data(e);
         msg_set_header(model_net_base_magic, MN_BASE_SCHED_NEXT, lp->gid,
                 &m_wrap->h);
         m_wrap->msg.m_base.is_from_remote = is_from_remote;
@@ -658,7 +662,7 @@ tw_event * model_net_method_event_new(
         void **msg_data,
         void **extra_data){
     tw_event *e = tw_event_new(dest_gid, offset_ts, sender);
-    model_net_wrap_msg *m_wrap = tw_event_data(e);
+    model_net_wrap_msg *m_wrap = (model_net_wrap_msg*)tw_event_data(e);
     msg_set_header(model_net_base_magic, MN_BASE_PASS, sender->gid,
             &m_wrap->h);
     *msg_data = ((char*)m_wrap)+msg_offsets[net_id];
@@ -685,7 +689,7 @@ void model_net_method_send_msg_recv_event(
         tw_lp *sender){
     tw_event *e =
         tw_event_new(dest_mn_lp, offset+codes_local_latency(sender), sender);
-    model_net_wrap_msg *m = tw_event_data(e);
+    model_net_wrap_msg *m = (model_net_wrap_msg*)tw_event_data(e);
     msg_set_header(model_net_base_magic, MN_BASE_NEW_MSG, sender->gid, &m->h);
 
     if (sched_params != NULL)
@@ -727,7 +731,7 @@ void model_net_method_send_msg_recv_event_rc(tw_lp *sender){
 void model_net_method_idle_event(tw_stime offset_ts, int is_recv_queue,
         tw_lp * lp){
     tw_event *e = tw_event_new(lp->gid, offset_ts, lp);
-    model_net_wrap_msg *m_wrap = tw_event_data(e);
+    model_net_wrap_msg *m_wrap = (model_net_wrap_msg*)tw_event_data(e);
     msg_set_header(model_net_base_magic, MN_BASE_SCHED_NEXT, lp->gid,
             &m_wrap->h);
     m_wrap->msg.m_base.is_from_remote = is_recv_queue;
