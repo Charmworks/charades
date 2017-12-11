@@ -146,21 +146,22 @@ static const struct param_table_entry* find_params(
 /* data structure for model-net statistics */
 struct model_net_method loggp_method =
 {
-    .mn_configure = loggp_configure,
-    .mn_register = NULL,
-    .model_net_method_packet_event = loggp_packet_event,
-    .model_net_method_packet_event_rc = loggp_packet_event_rc,
-    .model_net_method_recv_msg_event = loggp_recv_msg_event,
-    .model_net_method_recv_msg_event_rc = loggp_recv_msg_event_rc,
-    .mn_get_lp_type = loggp_get_lp_type,
-    .mn_get_msg_sz = loggp_get_msg_sz,
-    .mn_report_stats = loggp_report_stats,
-    .mn_collective_call = loggp_collective,
-    .mn_collective_call_rc = loggp_collective_rc,
-    .mn_sample_fn = NULL,
-    .mn_sample_rc_fn = NULL,
-    .mn_sample_init_fn = NULL,
-    .mn_sample_fini_fn = NULL
+    0,                      // packet_size
+    loggp_configure,        // mn_configure
+    NULL,                   // mn_register
+    loggp_packet_event,     // model_net_method_packet_event
+    loggp_packet_event_rc,  // model_net_method_packet_event_rc
+    loggp_recv_msg_event,   // model_net_method_recv_msg_event
+    loggp_recv_msg_event_rc,// model_net_method_recv_msg_event_rc
+    loggp_get_lp_type,      // mn_get_lp_type
+    loggp_get_msg_sz,       // mn_get_msg_size
+    loggp_report_stats,     // mn_report_stats
+    loggp_collective,       // mn_collective_call
+    loggp_collective_rc,    // mn_collective_call_rc
+    NULL,                   // mn_sample_fn
+    NULL,                   // mn_sample_rc_fn
+    NULL,                   // mn_sample_init_fn
+    NULL                    // mn_sample_fini_fn
 };
 
 static void loggp_init(
@@ -182,12 +183,12 @@ static void loggp_finalize(
 
 tw_lptype loggp_lp = {
     (init_f) loggp_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) loggp_event,
     (revent_f) loggp_rev_event,
     (commit_f) NULL,
     (final_f) loggp_finalize,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(loggp_state),
 };
 
@@ -440,7 +441,7 @@ static void handle_msg_ready_event(
         }
         else{
             e_new = tw_event_new(m->final_dest_gid, recv_queue_time, lp);
-            m_new = tw_event_data(e_new);
+            m_new = (loggp_message*)tw_event_data(e_new);
             memcpy(m_new, tmp_ptr, m->event_size_bytes);
             tw_event_send(e_new);
         }
@@ -583,7 +584,7 @@ static void handle_msg_start_event(
         //char* local_event;
 
         e_new = tw_event_new(m->src_gid, send_queue_time+codes_local_latency(lp), lp);
-        m_new = tw_event_data(e_new);
+        m_new = (loggp_message*)tw_event_data(e_new);
 
         void * m_loc = (char*) model_net_method_get_edata(LOGGP, m) +
             m->event_size_bytes;

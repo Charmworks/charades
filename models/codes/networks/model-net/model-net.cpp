@@ -312,7 +312,7 @@ static model_net_event_return model_net_event_impl_base(
 
     tw_event *e = tw_event_new(src_mn_lp, poffset+offset, sender);
 
-    model_net_wrap_msg *m = tw_event_data(e);
+    model_net_wrap_msg *m = (model_net_wrap_msg*)tw_event_data(e);
     msg_set_header(model_net_base_magic, MN_BASE_NEW_MSG, sender->gid, &m->h);
 
     // set the request struct 
@@ -598,10 +598,10 @@ const tw_lptype* model_net_get_lp_type(int net_id)
    return method_array[net_id]->mn_get_lp_type();
 }
 
-const st_model_types* model_net_get_model_stat_type(int net_id)
-{
-   return method_array[net_id]->mn_get_model_stat_types();
-}
+//const st_model_types* model_net_get_model_stat_type(int net_id)
+//{
+//   return method_array[net_id]->mn_get_model_stat_types();
+//}
 
 void model_net_report_stats(int net_id)
 {
