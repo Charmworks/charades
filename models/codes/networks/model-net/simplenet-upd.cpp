@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -630,3 +631,4 @@ void print_msg(sn_message *m){
  *
  * vim: ft=c ts=8 sts=4 sw=4 expandtab
  */
+#endif

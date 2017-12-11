@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -3607,4 +3608,5 @@ cortex_topology dragonfly_cortex_topology = {
         .get_router_compute_node_list   = dragonfly_get_router_compute_node_list,
 };
 
+#endif
 #endif

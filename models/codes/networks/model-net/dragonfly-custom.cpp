@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -3681,3 +3682,4 @@ cortex_topology dragonfly_custom_cortex_topology = {
 #endif
 
 }
+#endif

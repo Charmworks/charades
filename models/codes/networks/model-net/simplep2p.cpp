@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (C) 2014 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -960,3 +961,4 @@ static category_idles* sp_get_category_idles(
  *
  * vim: ft=c ts=8 sts=4 sw=4 expandtab
  */
+#endif

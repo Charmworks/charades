@@ -1,3 +1,4 @@
+#if 0
 #include <ross.h>
 
 #include "codes/jenkins-hash.h"
@@ -3129,4 +3130,5 @@ cortex_topology fattree_cortex_topology = {
         .get_router_compute_node_list   = fattree_get_router_compute_node_list,
 };
 
+#endif
 #endif

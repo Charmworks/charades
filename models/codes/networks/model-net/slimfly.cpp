@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -3372,3 +3373,4 @@ struct model_net_method slimfly_method =
     .mn_get_msg_sz = slimfly_get_msg_sz,
     .mn_report_stats = slimfly_report_stats
 };
+#endif
