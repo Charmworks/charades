@@ -1,4 +1,6 @@
 /* turning on track lp will generate a lot of output messages */
+#if 0
+
 #include <ross.h>
 #include <inttypes.h>
 
@@ -161,3 +163,4 @@ int main(int argc, char** argv) {
   MPI_Finalize();
 #endif
 }
+#endif

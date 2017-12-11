@@ -62,6 +62,9 @@ typedef struct mn_stats mn_stats;
 // format: { enum vals, config name, internal lp name, lp method struct}
 // last value is sentinel
 #define NETWORK_DEF \
+    X(LOGGP,     "modelnet_loggp",     "loggp",     &loggp_method)\
+    X(MAX_NETS,  NULL,                 NULL,        NULL)
+/*#define NETWORK_DEF \
     X(SIMPLENET, "modelnet_simplenet", "simplenet", &simplenet_method)\
     X(SIMPLEP2P, "modelnet_simplep2p", "simplep2p", &simplep2p_method)\
     X(TORUS,     "modelnet_torus",     "torus",     &torus_method)\
@@ -72,7 +75,7 @@ typedef struct mn_stats mn_stats;
     X(DRAGONFLY_CUSTOM, "modelnet_dragonfly_custom", "dragonfly_custom", &dragonfly_custom_method)\
     X(DRAGONFLY_CUSTOM_ROUTER, "modelnet_dragonfly_custom_router", "dragonfly_custom_router", &dragonfly_custom_router_method)\
     X(LOGGP,     "modelnet_loggp",     "loggp",     &loggp_method)\
-    X(MAX_NETS,  NULL,                 NULL,        NULL)
+    X(MAX_NETS,  NULL,                 NULL,        NULL)*/
 
 #define X(a,b,c,d) a,
 enum NETWORKS
