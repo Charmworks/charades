@@ -4,6 +4,7 @@
  *
  */
 
+#if 0
 #include <mpi.h>
 
 MPI_Comm MPI_COMM_CODES = MPI_COMM_WORLD;
@@ -17,3 +18,4 @@ MPI_Comm MPI_COMM_CODES = MPI_COMM_WORLD;
  *
  * vim: ts=8 sts=4 sw=4 expandtab
  */
+#endif

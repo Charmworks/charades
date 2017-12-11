@@ -4,6 +4,8 @@
  *
  */
 
+#if 0
+
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -414,3 +416,4 @@ static int write_id(char* directory, char* identifier, MPI_Comm comm)
  *
  * vim: ft=c ts=8 sts=4 sw=4 expandtab
  */
+#endif

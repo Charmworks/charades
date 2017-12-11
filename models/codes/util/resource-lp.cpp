@@ -105,12 +105,12 @@ static void resource_finalize(
 /* ROSS function pointer table for this LP */
 static tw_lptype resource_lp = {
     (init_f) resource_lp_ind_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) resource_event_handler,
     (revent_f) resource_rev_handler,
     (commit_f) NULL,
     (final_f)  resource_finalize,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(resource_state),
 };
 
@@ -181,16 +181,17 @@ static void handle_resource_get(
     if (!qlist_empty(&ns->pending[m->i.tok]) ||
             (ret = resource_get(m->i.req, m->i.tok, &ns->r))){
         /* failed to receive data */
-        if (ret == 2)
+        if (ret == 2) {
             tw_error(TW_LOC,
                     "resource LP %lu: invalid token %d passed in "
                     "(%d tokens created)\n",
                     lp->gid, m->i.tok, ns->r.num_tokens);
-        else if (ret == -1)
+        } else if (ret == -1) {
             tw_error(TW_LOC,
                     "resource LP %lu: unsatisfiable request: "
                     "token %d, size %lu\n",
                     lp->gid, m->i.tok, m->i.req);
+        }
 
         if (m->i.block_on_unavail){
             /* queue up operation, save til later */
@@ -491,7 +492,7 @@ static void resource_lp_issue_event_base(
     tw_event *e = tw_event_new(resource_lpid, codes_local_latency(sender),
             sender);
 
-    resource_msg *m = tw_event_data(e);
+    resource_msg *m = (resource_msg*)tw_event_data(e);
 
     msg_set_header(resource_magic, type, sender->gid, &m->i.h);
     m->i.req = req;

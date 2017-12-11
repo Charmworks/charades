@@ -172,12 +172,12 @@ static int temp_prio = -1;
 tw_lptype lsm_lp =
 {
     (init_f) lsm_lp_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) lsm_event,
     (revent_f) lsm_rev_event,
     (commit_f) NULL,
     (final_f) lsm_finalize,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(lsm_state_t)
 };
 
@@ -294,7 +294,7 @@ void lsm_io_event(
     }
 
     tw_event *e = tw_event_new(lsm_id, delta, sender);
-    lsm_message_t *m = tw_event_data(e);
+    lsm_message_t *m = (lsm_message_t*)tw_event_data(e);
     m->magic = lsm_magic;
     m->event = (lsm_event_t) io_type;
     m->data.object = io_object;

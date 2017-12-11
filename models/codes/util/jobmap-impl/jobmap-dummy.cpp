@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "src/util/codes-jobmap-method-impl.h"
+#include "util/codes-jobmap-method-impl.h"
 
 static int jobmap_dummy_configure(void const * params, void ** ctx)
 {

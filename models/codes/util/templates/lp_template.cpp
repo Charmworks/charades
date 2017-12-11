@@ -82,12 +82,12 @@ static void handle_template_b_rev(
 /* ROSS function pointer table for this LP */
 tw_lptype template_lp = {
     (init_f) template_lp_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) template_event_handler,
     (revent_f) template_rev_handler,
     (commit_f) NULL,
     (final_f)  template_finalize,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(template_state),
 };
 

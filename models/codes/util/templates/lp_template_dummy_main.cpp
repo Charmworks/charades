@@ -3,7 +3,7 @@
  * See COPYRIGHT notice in top-level directory.
  *
  */
-
+#if 0
 #include "lp_template.h"
 int main()
 {
@@ -19,3 +19,4 @@ int main()
  *
  * vim: ft=c ts=8 sts=4 sw=4 expandtab
  */
+#endif

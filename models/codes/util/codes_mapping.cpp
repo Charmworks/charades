@@ -66,6 +66,7 @@ static char local_lp_name[MAX_NAME_LENGTH],
 
 int codes_mapping_get_lps_for_pe()
 {
+#if 0
     int rank;
     MPI_Comm_rank(MPI_COMM_CODES, &rank);
 #if CODES_MAPPING_DEBUG
@@ -85,6 +86,7 @@ tw_peid codes_mapping( tw_lpid gid)
         return (gid-lps_on_pes_with_leftover)/lps_per_pe_floor + lps_leftover;
     }
   /*return gid / lps_per_pe_floor;*/
+#endif
 }
 
 int codes_mapping_get_group_reps(const char* group_name)
@@ -451,6 +453,7 @@ void codes_mapping_get_lp_info2(
 /* This function assigns local and global LP Ids to LPs */
 static void codes_mapping_init(void)
 {
+#if 0
      int grp_id, lpt_id, rep_id, offset;
      tw_lpid ross_gid, ross_lid; /* ross global and local IDs */
      tw_pe * pe;
@@ -496,6 +499,7 @@ static void codes_mapping_init(void)
          }
      }
      return;
+#endif
 }
 
 /* This function takes the global LP ID, maps it to the local LP ID and returns the LP 
@@ -503,15 +507,19 @@ static void codes_mapping_init(void)
  * global LP IDs are unique across all PEs, local LP IDs are unique within a PE */
 static tw_lp * codes_mapping_to_lp( tw_lpid lpid)
 {
+#if 0
    int index = lpid - (g_tw_mynode * lps_per_pe_floor) -
        mini(g_tw_mynode, lps_leftover);
 //   printf("\n global id %d index %d lps_before %d lps_offset %d local index %d ", lpid, index, lps_before, g_tw_mynode, local_index);
    return g_tw_lp[index];
+#endif
+  return NULL;
 }
 
 /* This function loads the configuration file and sets up the number of LPs on each PE */
 void codes_mapping_setup_with_seed_offset(int offset)
 {
+#if 0
   int grp, lpt, message_size;
   int pes = tw_nnodes();
 
@@ -563,6 +571,7 @@ void codes_mapping_setup_with_seed_offset(int offset)
           }
       }
   }
+#endif
 }
 
 void codes_mapping_setup(){

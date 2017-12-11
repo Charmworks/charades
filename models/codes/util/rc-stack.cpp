@@ -38,12 +38,12 @@ void rc_stack_create(struct rc_stack **s){
         case OPTIMISTIC:
             ss->mode = RC_OPT;
             break;
-        case OPTIMISTIC_REALTIME:
-            ss->mode = RC_OPT;
-            break;
-        case OPTIMISTIC_DEBUG:
-            ss->mode = RC_OPT_DBG;
-            break;
+        //case OPTIMISTIC_REALTIME:
+        //    ss->mode = RC_OPT;
+        //    break;
+        //case OPTIMISTIC_DEBUG:
+        //    ss->mode = RC_OPT_DBG;
+        //    break;
         default:
             ss->mode = RC_NONOPT;
     }
@@ -96,7 +96,8 @@ void rc_stack_gc(tw_lp const *lp, struct rc_stack *s) {
         return;
 
     struct qlist_head *ent = s->head.next;
-    while (ent != &s->head) {
+    // TODO: This just needs to be fixed to be able to access GVT correctly
+    /*while (ent != &s->head) {
         rc_entry *r = qlist_entry(ent, rc_entry, ql);
         if (lp == NULL || r->time < lp->pe->GVT){
             qlist_del(ent);
@@ -107,7 +108,7 @@ void rc_stack_gc(tw_lp const *lp, struct rc_stack *s) {
         }
         else
             break;
-    }
+    }*/
 }
 
 /*
