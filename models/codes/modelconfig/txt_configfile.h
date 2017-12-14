@@ -11,9 +11,9 @@
 #include <stdio.h>
 #include <codes/configfile.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 /**
  * ConfigFile implementation that stores data in a text file 
@@ -47,9 +47,9 @@ struct ConfigVTable * txtfile_openStream (FILE * f, char ** err);
  */
 int txtfile_writeConfig (struct ConfigVTable * h, SectionHandle h2, FILE * out, char ** err);
 
-#ifdef __cplusplus
-} /* extern "C"  */
-#endif
+//#ifdef __cplusplus
+//} /* extern "C"  */
+//#endif
 
 #endif
 

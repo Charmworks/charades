@@ -24,6 +24,7 @@ ConfigHandle config;
 /* Global to hold LP configuration */
 config_lpgroups_t lpconf;
 
+#if 0
 int configuration_load (const char *filepath,
                         MPI_Comm comm,
                         ConfigHandle *handle)
@@ -79,6 +80,7 @@ finalize:
 
     return rc;
 }
+#endif
 
 int configuration_get_value(ConfigHandle *handle,
                             const char *section_name,
@@ -425,10 +427,10 @@ int configuration_get_lpgroups (ConfigHandle *handle,
     do{ \
         errno = 0; \
         long int _rd = strtol(_data, NULL, 10); \
-        if (_rd <= 0 || errno) \
+        if (_rd <= 0 || errno) {\
             tw_error(TW_LOC, "bad value (expected positive integer) for " \
                     "\"%s\": %s\n", _field, _data); \
-        else \
+        } else \
             _val = _rd; \
     }while(0);
 

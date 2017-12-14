@@ -477,8 +477,8 @@ static yyconst flex_int16_t yy_chk[128] =
 #line 2 "../src/modelconfig/configlex.l"
 
 #include <string.h>
-#include "src/modelconfig/configglue.h"
-#include "src/modelconfig/configparser.h"
+#include "modelconfig/configglue.h"
+#include "modelconfig/configparser.h"
 
 #define YY_EXTRA_TYPE ParserParams * 
 
@@ -576,7 +576,7 @@ static int yy_init_globals (yyscan_t yyscanner );
     
 int cfgp_lex_init (yyscan_t* scanner);
 
-int cfgp_lex_init_extra (YY_EXTRA_TYPE user_defined,yyscan_t* scanner);
+//int cfgp_lex_init_extra (YY_EXTRA_TYPE user_defined,yyscan_t* scanner);
 
 /* Accessor methods to globals.
    These are made visible to non-reentrant scanners for convenience. */
@@ -2233,7 +2233,8 @@ int cfgp_lex_init(yyscan_t* ptr_yy_globals)
  * the yyextra field.
  */
 
-int cfgp_lex_init_extra(YY_EXTRA_TYPE yy_user_defined,yyscan_t* ptr_yy_globals )
+//int cfgp_lex_init_extra(YY_EXTRA_TYPE yy_user_defined,yyscan_t* ptr_yy_globals )
+int cfgp_lex_init_extra(void* yy_user_defined, void** ptr_yy_globals )
 
 {
     struct yyguts_t dummy_yyguts;

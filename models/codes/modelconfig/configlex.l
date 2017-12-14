@@ -1,8 +1,8 @@
 %{
 
 #include <string.h>
-#include "src/modelconfig/configglue.h"
-#include "src/modelconfig/configparser.h"
+#include "modelconfig/configglue.h"
+#include "modelconfig/configparser.h"
 
 #define YY_EXTRA_TYPE ParserParams * 
 

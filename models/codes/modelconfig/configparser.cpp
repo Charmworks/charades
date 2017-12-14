@@ -73,7 +73,7 @@
 
 
 #include <assert.h>
-#include "src/modelconfig/configglue.h"
+#include "modelconfig/configglue.h"
 
 #if defined __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -199,7 +199,7 @@ int cfgp_parse (yyscan_t * scanner, ParserParams * param);
 /* Copy the second part of user declarations.  */
 #line 53 "../src/modelconfig/configparser.y" /* yacc.c:358  */
 
-#include "src/modelconfig/configlex.h"
+#include "modelconfig/configlex.h"
 
 int cfgp_error (YYLTYPE * loc, yyscan_t * scanner, ParserParams * p, 
                         const char * msg)

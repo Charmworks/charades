@@ -7,9 +7,9 @@
 #ifndef SRC_COMMON_MODELCONFIG_CONFIGSTORE_H
 #define SRC_COMMON_MODELCONFIG_CONFIGSTORE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 /*
  * Memory based storage for config file. 
@@ -85,9 +85,9 @@ typedef struct
 int mcs_listsection (const mcs_entry * a, mcs_section_entry * e, unsigned int
       entries);
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+//#ifdef __cplusplus
+//} /* extern "C" */
+//#endif
 
 
 #endif

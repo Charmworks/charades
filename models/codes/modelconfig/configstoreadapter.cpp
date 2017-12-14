@@ -212,16 +212,17 @@ static int cfsa_getSectionSize (void * handle, SectionHandle section,
 
 
 static struct ConfigVTable cfsa_template = {
-   .getKey = cfsa_getKey,
-   .getMultiKey = cfsa_getMultiKey,
-   .listSection = cfsa_listSection,
-   .openSection = cfsa_openSection,
-   .getSectionSize = cfsa_getSectionSize,
-   .closeSection = cfsa_closeSection,
-   .createSection = cfsa_createSection,
-   .createKey = cfsa_createKey,
-   .free = cfsa_free,
-   .data = 0
+   NULL,                // config_dir
+   cfsa_getKey,         // getKey
+   cfsa_getMultiKey,    // getMultiKey
+   cfsa_listSection,    // listSection
+   cfsa_openSection,    // openSection
+   cfsa_getSectionSize, // getSectionSize
+   cfsa_closeSection,   // closeSection
+   cfsa_createSection,  // createSection
+   cfsa_createKey,      // createKey
+   cfsa_free,           // free
+   0                    // data
 };
 
 struct ConfigVTable * cfsa_create (mcs_entry * e)

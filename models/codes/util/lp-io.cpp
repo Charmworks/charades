@@ -4,7 +4,6 @@
  *
  */
 
-#if 0
 
 #include <assert.h>
 #include <sys/stat.h>
@@ -12,6 +11,8 @@
 
 #include <codes/lp-io.h>
 #include <codes/codes.h>
+
+#if 0
 
 struct io_buffer
 {
@@ -39,9 +40,11 @@ struct identifier global_identifiers[64];
 int global_identifiers_count = 0;
 
 static int write_id(char* directory, char* identifier, MPI_Comm comm);
+#endif
 
 int lp_io_write(tw_lpid gid, char* identifier, int size, void* buffer)
 {
+#if 0
     struct identifier* id;
     struct io_buffer *buf;
 
@@ -99,10 +102,11 @@ int lp_io_write(tw_lpid gid, char* identifier, int size, void* buffer)
         buf->next = NULL;
         identifiers_count++;
     }
-
+#endif
     return(0);
 }
 
+#if 0
 int lp_io_write_rev(tw_lpid gid, char* identifier){
     struct identifier* id, *id_prev;
     struct io_buffer *buf, *buf_prev;

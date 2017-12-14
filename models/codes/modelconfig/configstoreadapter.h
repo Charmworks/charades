@@ -10,18 +10,18 @@
 #include <codes/configfile.h>
 #include "configstore.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 /* Create a new configfile interface backed by a configstore */
 struct ConfigVTable * cfsa_create (mcs_entry * e);
 
 struct ConfigVTable * cfsa_create_empty ();
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+//#ifdef __cplusplus
+//} /* extern "C" */
+//#endif
 
 #endif
 
