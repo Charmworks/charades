@@ -4,6 +4,7 @@
 #include "event.h"
 #include "scheduler.h"
 #include "globals.h"
+#include "util.h"
 #include <float.h>
 
 CdGVT::CdGVT() {
@@ -30,23 +31,26 @@ void CdGVT::initialize_detectors() {
 }
 
 void CdGVT::broadcast_detector_proxies(int num, CProxy_CompletionDetector* proxies) {
+  DEBUG_PE("Received proxies\n");
   for (int i = 0; i < num; i++) {
     detector_proxies[i] = proxies[i];
     detector_pointers[i] = detector_proxies[i].ckLocalBranch();
     detector_ready[i] = true;
-    if (CkMyPe() == 0) {
-      detector_proxies[i].start_detection(CkNumPes(),
-          CkCallback(),
-          CkCallback(),
-          CkCallback(CkIndex_CdGVT::gvt_contribute(), thisProxy), 0);
-    }
   }
   current_phase = 0;
   next_phase = (current_phase + 1) % max_phase;
 }
 
 void CdGVT::gvt_begin() {
+  DEBUG_PE("GVT beginning\n");
   if(detector_ready[next_phase]) {
+    DEBUG_PE("Next phase is ready\n");
+    if (CkMyPe() == 0) {
+      detector_proxies[current_phase].start_detection(CkNumPes(),
+          CkCallback(),
+          CkCallback(),
+          CkCallback(CkIndex_CdGVT::gvt_contribute(), thisProxy), 0);
+    }
     min_sent = DBL_MAX;
     detector_pointers[current_phase]->done();
     detector_ready[current_phase] = false;
@@ -60,19 +64,14 @@ void CdGVT::gvt_contribute() {
   Time min_time = scheduler->get_min_time();
   min_time = fmin(min_time, min_sent);
   CkAssert(min_time >= curr_gvt);
+  DEBUG_PE("GVT contributing time %lf\n", min_time);
 
-  // TODO: Can we just call start_detection directly?
-  if (CkMyPe() == 0) {
-    detector_proxies[next_phase].start_detection(CkNumPes(),
-        CkCallback(),
-        CkCallback(),
-        CkCallback(CkIndex_CdGVT::gvt_contribute(), thisProxy), 0);
-  }
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(CdGVT,gvt_end),thisProxy));
 }
 
 void CdGVT::gvt_end(Time new_gvt) {
+  DEBUG_PE("GVT computed %lf\n", new_gvt);
   // TODO: Why is ready not set to true in contribute?
   detector_ready[next_phase] = true;
   prev_gvt = curr_gvt;
