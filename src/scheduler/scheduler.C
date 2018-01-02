@@ -129,6 +129,7 @@ void SequentialScheduler::execute() {
 /******************************************************************************/
 DistributedScheduler::DistributedScheduler() {
   // Create the correct GVT Manager, which will be created before QD triggers
+  doing_gvt = false;
   if (CkMyPe() == 0) {
     switch (g_tw_gvt_scheme) {
       case 1:
@@ -189,7 +190,8 @@ void DistributedScheduler::groups_created() {
 void DistributedScheduler::iteration_done() {
   running = false;
   gvt_trigger->iteration_done();
-  if (gvt_trigger->ready()) {
+  if (gvt_trigger->ready() && !doing_gvt) {
+    doing_gvt = true;
     gvt_manager->gvt_begin();
     gvt_trigger->reset();
     lb_trigger->iteration_done();
@@ -224,6 +226,7 @@ void DistributedScheduler::gvt_done(Time gvt) {
   TW_ASSERT(gvt >= PE_VALUE(g_last_gvt), "GVT Causality Violation\n");
   PE_STATS(total_gvts)++;
   PE_VALUE(g_last_gvt) = gvt;
+  doing_gvt = false;
 
   // TODO: Make stats trigger work like print trigger does below.
 #if CMK_TRACE_ENABLED

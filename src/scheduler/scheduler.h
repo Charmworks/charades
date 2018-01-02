@@ -108,6 +108,7 @@ class DistributedScheduler : public CBase_DistributedScheduler {
   protected:
     GVTManager* gvt_manager;  /**< Direct pointer to our local GVT Manager */
 
+    bool   doing_gvt;
     TriggerPtr gvt_trigger;   /**< Determines when to compute GVT */
     TriggerPtr lb_trigger;    /**< Determines when to do LB */
     TriggerPtr print_trigger; /**< Determines when to print progress */
