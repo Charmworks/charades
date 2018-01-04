@@ -40,7 +40,7 @@ class CountTrigger : public Trigger {
     CountTrigger(unsigned max) : iter_cnt(0), iter_max(max) {}
     void iteration_done() { iter_cnt++; }
     void reset() { iter_cnt = 0; }
-    bool ready() const { return iter_cnt == iter_max; }
+    bool ready() const { return iter_cnt >= iter_max; }
 };
 
 // TODO: What do to on resume before GVT is computed?
