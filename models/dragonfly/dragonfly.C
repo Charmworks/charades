@@ -1,5 +1,7 @@
 #include "dragonfly.h"
 
+#define tw_error(...) { CkAbort("ROSS ERROR\n"); }
+
 // Local router ID: 0 --- total_router-1
 // Router LP ID
 // Terminal LP ID
@@ -462,7 +464,7 @@ void packet_generate(terminal_state * s, tw_bf * bf, terminal_message * msg, tw_
           // m->wait_type = T_SEND;
 	  // tw_event_send(e);
 	  printf("\n Exceeded queue size, exitting ");
-	  exit(-1);
+	  CkAbort("ROSS ERROR\n");
         } //else
   } // for
 }
@@ -725,7 +727,7 @@ terminal_buf_update(terminal_state * s,
 {
   // Update the buffer space associated with this router LP
     int msg_indx = msg->vc_index;
-    assert(msg_indx == 0);
+    if (msg_indx != 0) { CkAbort("Bad msg_indx\n"); }
 
     s->vc_occupancy[msg_indx]--;
     s->output_vc_state[msg_indx] = VC_IDLE;
@@ -1626,7 +1628,7 @@ unsigned dragonfly_numlp_map (unsigned chareid) {
 int main(int argc, char **argv) {
   char log[32];
   tw_opt_add(app_opt);
-  tw_init(&argc, &argv);
+  tw_init(argc, argv);
 
   minimal_count = 0;
   nonmin_count = 0;

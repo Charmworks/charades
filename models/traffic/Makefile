@@ -8,4 +8,4 @@ clean:
 
 
 traffic: traffic.C traffic.h $(BUILD_DIR)/libross.a
-	$(CHARMC) $(CFLAGS) $(OPTIONS) $(OPTS) -module CommonLBs traffic.C -o traffic $(LDFLAGS) -L$(BUILD_DIR) -lross
+	$(CHARMC) $(CFLAGS) traffic.C -o traffic $(LFLAGS) -L$(BUILD_DIR) -lross

@@ -1,5 +1,6 @@
 #include "traffic.h"
 
+#define tw_error(...) { CkAbort("ROSS ERROR\n"); }
 
 //Map consists of NUM_CELLS_X x NUM_CELL_Y LPS
 
@@ -153,7 +154,7 @@ int main(int argc, char * argv[])
 
 
 	tw_opt_add(app_opt);
-	tw_init(&argc, &argv);
+	tw_init(argc, argv);
 
 	if( g_tw_lookahead > 1.0 )
 		tw_error(TW_LOC, "Lookahead > 1.0 .. needs to be less\n");
