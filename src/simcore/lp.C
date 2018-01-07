@@ -226,11 +226,11 @@ void LP::recv_remote_event(RemoteEvent* event) {
 void LP::recv_local_event(Event* e) {
   e->dest_lp = (tw_lpid)&lp_structs[g_local_map(e->dest_lp)];
 
-  if (e->ts < events.min()) {
-    scheduler->update_next(&next_token, e->ts);
-  }
   if(isOptimistic && e->ts < current_time) {
     BRACKET_TRACE(rollback_me(e->ts);,USER_EVENT_RB)
+  }
+  if (e->ts < events.min()) {
+    scheduler->update_next(&next_token, e->ts);
   }
 
   events.push(e);

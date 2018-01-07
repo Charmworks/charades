@@ -1651,7 +1651,7 @@ int main(int argc, char **argv) {
   g_chare_map = mapping;
   g_numlp_map = dragonfly_numlp_map;
 
-  g_tw_max_events_buffered = mem_factor * 1024 * ((total_terminals+total_routers)/tw_nnodes()) + opt_mem;
+  //g_tw_max_events_buffered = mem_factor * 1024 * ((total_terminals+total_routers)/tw_nnodes()) + opt_mem;
 
   if (tw_ismaster()) {
     printf("Creating Dragonfly Network:\n");
