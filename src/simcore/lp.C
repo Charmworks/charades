@@ -51,7 +51,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 #define PE_STATS(x) scheduler->stats->x
 
 // Create LPStructs based on mappings, and do initial registration with the PE.
-LP::LP() : next_token(this), uniqID(0), cancel_q(NULL), min_cancel_q(DBL_MAX),
+LP::LP() : next_token(this), uniqID(0), min_cancel_q(DBL_MAX),
            current_time(0), all_events(0), committed_events(0),
            rolled_back_events(0), committed_time(0.0) {
   if(isLpSet == 0) {
@@ -369,9 +369,8 @@ void LP::cancel_event(Event* e) {
 }
 
 void LP::add_to_cancel_q(Event* e) {
+  cancel_queue.push_back(e);
   e->state.cancel_q = 1;
-  e->cancel_next = cancel_q;
-  cancel_q = e;
   if (e->ts < min_cancel_q) {
     min_cancel_q = e->ts;
     scheduler->update_min_cancel(min_cancel_q);
@@ -389,33 +388,28 @@ void LP::delete_pending(Event *e) {
 // queue, they can be rolled back during execution and end up back in the
 // chare queue.
 void LP::process_cancel_q() {
-  Event *curr, *next;
+  while (cancel_queue.size()) {
+    Event* e = cancel_queue.front();
+    cancel_queue.pop_front();
 
-  while (cancel_q) {
-    curr = cancel_q;
-    cancel_q = NULL;
-    min_cancel_q = DBL_MAX;
+    switch (e->state.owner) {
+      case TW_chare_q:
+        delete_pending(e);
+        tw_event_free(e,false);
+        break;
 
-    while(curr) {
-      next = curr->cancel_next;
-      switch (curr->state.owner) {
-        case TW_chare_q:
-          delete_pending(curr);
-          tw_event_free(curr,false);
-          break;
+      case TW_rollback_q:
+        rollback_me(e);
+        tw_event_free(e,false);
+        break;
 
-        case TW_rollback_q:
-          rollback_me(curr);
-          tw_event_free(curr,false);
-          break;
-
-        default:
-          CkAbort("Unknown event owner in cancel_q\n");
-          break;
-      }
-      curr = next;
+      default:
+        CkAbort("Unknown event owner in cancel_q\n");
+        break;
     }
   }
+  min_cancel_q = DBL_MAX;
+  TW_ASSERT(cancel_queue.size() == 0, "Non-empty cancel queue\n");
 }
 
 #include "lp.def.h"

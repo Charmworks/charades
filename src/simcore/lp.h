@@ -77,7 +77,8 @@ class LP : public CBase_LP {
     int committed_time;
 
     // Cancel queue management
-    Event *cancel_q;    // Queue of events this LP needs to cancel
+    std::list<Event*> cancel_queue;
+    //Event *cancel_q;    // Queue of events this LP needs to cancel
     Time min_cancel_q;  // Minimum time in this LPs cancel queue
 
     // A direct pointer to the PE where this LP chare resides

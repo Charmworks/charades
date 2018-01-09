@@ -110,7 +110,7 @@ public:
     userData = NULL;
 
     up = next = prev = NULL;
-    caused_by_me = cause_next = cancel_next = NULL;
+    caused_by_me = cause_next = NULL;
 
     index = 0;
 
@@ -141,7 +141,6 @@ public:
   Event* next;          // Next in processed queue, or right child in splay tree
   Event* caused_by_me;  // Start of event list caused by this event
   Event* cause_next;    // Next in parent's caused_by_me chain
-  Event* cancel_next;   // next in cancel list
 
   // Index of the event in the pending heap. Also the order of event pupping.
   size_t    index;
