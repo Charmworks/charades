@@ -2,6 +2,7 @@
 
 #include "scheduler.h"
 
+#include <cstring>  // Included for std::memcpy
 #include <stdio.h>  // Included for printf
 #include <float.h>  // Included for DBL_MAX
 #include <math.h>   // Included for fmax/fmin
