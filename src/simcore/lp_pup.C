@@ -43,9 +43,9 @@ void LP::pup(PUP::er& p) {
   // LPs must be unregistered from their current PE before they migrate, and
   // re-register with the new PE when they are being unpacked.
   if (p.isPacking()) {
-    scheduler->unregister_lp(&next_token);
+    scheduler->unregister_lp(this, &next_token);
   } else if (p.isUnpacking()) {
-    scheduler->register_lp(&next_token, 0.0);
+    scheduler->register_lp(this, &next_token, 0.0);
   }
 
   // Pup the basic fields

@@ -39,6 +39,7 @@ class Scheduler : public CBase_Scheduler {
     double end_time;        /**< End wall time for the simulation */
 
     PEQueue next_lps; /**< queue storing LPTokens ordered by next event ts */
+    std::list<LP*> registered_lps;
     tw_rng * rng;     /**< ROSS rng stream */
 
   public:
@@ -70,11 +71,14 @@ class Scheduler : public CBase_Scheduler {
     virtual void execute();
 
     /** Update the queue of LPs that are local to this PE */
-    void register_lp(LPToken* next_token, Time next_ts) {
+    /** TODO: Push all LPToken crap to data structure */
+    void register_lp(LP* lp, LPToken* next_token, Time next_ts) {
       next_lps.insert(next_token, next_ts);
+      registered_lps.push_back(lp);
     }
-    void unregister_lp(LPToken* next_token) {
+    void unregister_lp(LP* lp, LPToken* next_token) {
       next_lps.remove(next_token);
+      registered_lps.remove(lp);
     }
     void update_next(LPToken* token, Time ts) {
       next_lps.update(token, ts);
