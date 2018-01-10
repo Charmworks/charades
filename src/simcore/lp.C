@@ -67,7 +67,7 @@ LP::LP() : next_token(this), uniqID(0), min_cancel_q(DBL_MAX),
 
   // Register with the local PE so it can schedule this LP for execution, fossil
   // collection, and cancelation.
-  scheduler->register_lp(&next_token, 0.0);
+  scheduler->register_lp(this, &next_token, 0.0);
 
   isOptimistic = g_tw_synchronization_protocol == OPTIMISTIC;
 
@@ -342,7 +342,7 @@ void LP::rollback_me(Event *event) {
 // 2) Update the PE with our oldest unprocessed event time.
 void LP::fossil_me(tw_stime gvt) {
   Event* e;
-  while (processed_events.back() != NULL && processed_events.back()->ts < gvt) {
+  while (processed_events.size() && processed_events.back()->ts < gvt) {
     e = processed_events.pop_back();
     tw_event_free(e,true);
     committed_events++;
@@ -404,7 +404,9 @@ void LP::process_cancel_q() {
         break;
 
       default:
-        CkAbort("Unknown event owner in cancel_q\n");
+        CkPrintf("[%i,%i]: Unknown event owner in cancel queue%i\n",
+            CkMyPe(), e->state.owner);
+        CkAbort("ERROR: Unable to process cancel queue\n");
         break;
     }
   }

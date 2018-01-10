@@ -76,17 +76,17 @@ void OptimisticScheduler::gvt_done(Time gvt) {
 }
 
 void OptimisticScheduler::collect_fossils(Time gvt) {
-  for (int i = 0; i < next_lps.get_size(); i++) {
-    next_lps.as_array()[i]->lp->fossil_me(gvt);
+  for (LP* lp : registered_lps) {
+    lp->fossil_me(gvt);
   }
 }
 
 /** Call process_cancel_q on every LP chare on our PE */
 void OptimisticScheduler::process_cancel_q() {
-  min_cancel_time = DBL_MAX;
-  for (int i = 0; i < next_lps.get_size(); i++) {
-    next_lps.as_array()[i]->lp->process_cancel_q();
+  for (LP* lp : registered_lps) {
+    lp->process_cancel_q();
   }
+  min_cancel_time = DBL_MAX;
 }
 
 /** Check for a new min cancel time */
