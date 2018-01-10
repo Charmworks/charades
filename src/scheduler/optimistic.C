@@ -2,6 +2,7 @@
 
 #include "avl_tree.h"   // Temporary, should be moved to LP
 #include "globals.h"
+#include "statistics.h"
 #include "trigger.h"
 #include "util.h"
 
@@ -44,16 +45,28 @@ Time OptimisticScheduler::get_min_time() const {
 
 /** Execute events in batches until the trigger dictates it's GVT time */
 void OptimisticScheduler::execute() {
+#ifdef DETAILED_TIMING
+  double start = CmiWallTimer();
+#endif
   for (int num_executed = 0; num_executed < g_tw_mblock; num_executed++) {
     if (!schedule_next_lp()) {
       break;
     }
   }
+#ifdef DETAILED_TIMING
+  double execute_time = CmiWallTimer() - start;
+  PE_STATS(execute_time) += execute_time;
+#endif
   process_cancel_q();
   iteration_done();
 }
 
 void OptimisticScheduler::gvt_resume() {
+#ifdef DETAILED_TIMING
+  double gvt_delay = CmiWallTimer() - gvt_start;
+  PE_STATS(gvt_delay) += gvt_delay;
+  delay_marked = true;
+#endif
   next_iteration();
 }
 

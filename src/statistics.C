@@ -17,9 +17,12 @@ void registerStatsReduction() {
 }
 
 CkReductionMsg *statsReduction(int nMsg, CkReductionMsg **msgs) {
+  CkAssert(nMsg > 0);
+  CkAssert(msgs[0]->getSize() == sizeof(Statistics));
   Statistics* s = new Statistics();
+  std::memcpy(s, msgs[0]->getData(), sizeof(Statistics));
 
-  for (int i = 0; i < nMsg; i++) {
+  for (int i = 1; i < nMsg; i++) {
     CkAssert(msgs[i]->getSize() == sizeof(Statistics));
 
     Statistics* c = (Statistics*)msgs[i]->getData();
@@ -35,7 +38,13 @@ Statistics::Statistics() {
 
 void Statistics::clear() {
   // Timing stats
-  total_time = 0.0;
+  total_time.clear();
+#ifdef DETAILED_TIMING
+  execute_time.clear();
+  gvt_time.clear();
+  gvt_delay.clear();
+  lb_time.clear();
+#endif
 
   // Event stats
   events_executed = 0;
@@ -56,16 +65,36 @@ void Statistics::clear() {
   // GVT stats
   total_gvts = 0;
 
+  // LB stats
+  total_lbs = 0;
+
   // Memory stats
   max_events_used = 0;
   new_event_calls = 0;
   del_event_calls = 0;
 }
 
+void Statistics::finalize() {
+  total_time.finalize();
+#ifdef DETAILED_TIMING
+  execute_time.finalize();
+  gvt_time.finalize();
+  gvt_delay.finalize();
+  lb_time.finalize();
+#endif
+}
+
 void Statistics::add(const Statistics* other) {
   // Timing stats
-  total_time += other->total_time;
+  total_time.add(other->total_time);
+#ifdef DETAILED_TIMING
+  execute_time.add(other->execute_time);
+  gvt_time.add(other->gvt_time);
+  gvt_delay.add(other->gvt_delay);
+  lb_time.add(other->lb_time);
+#endif
 
+  // Event stats
   events_executed += other->events_executed;
   events_committed += other->events_committed;
   events_rolled_back += other->events_rolled_back;
@@ -84,6 +113,9 @@ void Statistics::add(const Statistics* other) {
   // GVT stats
   total_gvts += other->total_gvts;
 
+  // LB stats
+  total_lbs += other->total_lbs;
+
   // Memory stats
   max_events_used = fmax(max_events_used, other->max_events_used);
   new_event_calls += other->new_event_calls;
@@ -92,7 +124,13 @@ void Statistics::add(const Statistics* other) {
 
 void Statistics::reduce(const Statistics* other) {
   // Timing stats
-  total_time = fmax(total_time, other->total_time);
+  total_time.reduce(other->total_time);
+#ifdef DETAILED_TIMING
+  execute_time.reduce(other->execute_time);
+  gvt_time.reduce(other->gvt_time);
+  gvt_delay.reduce(other->gvt_delay);
+  lb_time.reduce(other->lb_time);
+#endif
 
   events_executed += other->events_executed;
   events_committed += other->events_committed;
@@ -112,6 +150,9 @@ void Statistics::reduce(const Statistics* other) {
   // GVT stats
   total_gvts = other->total_gvts;
 
+  // LB stats
+  total_lbs = other->total_lbs;
+
   // Memory stats
   max_events_used = fmax(max_events_used, other->max_events_used);
   new_event_calls += other->new_event_calls;
@@ -130,12 +171,18 @@ void Statistics::print_double(const char* name, double v) const {
   CkPrintf("\t%-50s %11.2f\n", name, v);
 }
 
+void Statistics::print_stat_double(const char* name,
+    const Stat<double>& stat) const {
+  CkPrintf("\t%-50s %11.2f [%.2f,%.2f]\n",
+    name, stat.total / CkNumPes(), stat.minimum, stat.maximum);
+}
+
 void Statistics::print() const {
   // TODO: Add stats about PEs, num nodes, etc?
   print_section("SUMMARY");
   print_int("Events Committed", events_committed);
-  print_double("Execution Time", total_time);
-  print_double("Event Rate", events_committed / total_time);
+  print_double("Execution Time", total_time.maximum);
+  print_double("Event Rate", events_committed / total_time.maximum);
 
   print_section("EVENT STATISTICS");
   print_int("Total Events Processed", events_executed);
@@ -145,6 +192,9 @@ void Statistics::print() const {
 
   print_section("GVT STATISTICS");
   print_int("Total GVT Computations", total_gvts);
+
+  print_section("LB STATISTICS");
+  print_int("Total LB Calls", total_lbs);
 
   print_section("SEND STATISTICS");
   // TODO: Improve these stats to include remote % and also to track the sent
@@ -164,6 +214,15 @@ void Statistics::print() const {
   print_int("Max Events Allocated on a PE", max_events_used);
   print_int("Remote Event Allocations", new_event_calls);
   print_int("Remote Event Dealloactions", del_event_calls);
+
+#ifdef DETAILED_TIMING
+  print_section("DETAILED TIMING");
+  print_stat_double("Total Time", total_time);
+  print_stat_double("Forward Execute Time", execute_time);
+  print_stat_double("GVT Time", gvt_time);
+  print_stat_double("GVT Delay", gvt_delay);
+  print_stat_double("Min LB Time", lb_time);
+#endif
 }
 
 #if CMK_TRACE_ENABLED

@@ -116,6 +116,12 @@ class DistributedScheduler : public CBase_DistributedScheduler {
     TriggerPtr stat_trigger;  /**< Determines when to log stats */
 #endif
 
+#ifdef DETAILED_TIMING
+    bool delay_marked;
+    double gvt_start;
+    double lb_start;
+#endif
+
   public:
     DistributedScheduler();
 

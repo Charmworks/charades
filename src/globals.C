@@ -11,7 +11,7 @@ chare_map_f g_chare_map;  // gid -> chare
 
 unsigned g_tw_synchronization_protocol;
 unsigned g_tw_gvt_scheme;
-unsigned g_tw_expected_events;
+int g_tw_expected_events;
 tw_stime g_tw_ts_end;       // end time of simulation
 unsigned g_tw_mblock;       // number of events per gvt interval
 unsigned g_tw_gvt_interval; // number of intervals per gvt
@@ -44,6 +44,7 @@ unsigned g_tw_max_remote_events_buffered;
 void clear_globals() {
   g_tw_synchronization_protocol = CONSERVATIVE;
   g_tw_gvt_scheme    = 1;
+  g_tw_expected_events = -1;
   g_tw_ts_end        = 100000.0;
   g_tw_mblock        = 16;
   g_tw_gvt_interval  = 16;
@@ -52,7 +53,7 @@ void clear_globals() {
   g_tw_gvt_bucket_size    = 8;
   g_tw_async_reduction = 0;
   g_tw_ldb_interval  = 0;
-  g_tw_stat_interval = 16;
+  g_tw_stat_interval = 0;
   g_tw_max_ldb       = 0;
   g_tw_ldb_metric    = 0;
   g_tw_metric_ts_abs = 0;

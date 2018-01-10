@@ -60,8 +60,9 @@ void Scheduler::start_simulation() {
 }
 
 void Scheduler::end_simulation() {
-  end_time = CmiWallTimer();
-  cumulative_stats->total_time = end_time - start_time;
+  double total_time = CmiWallTimer() - start_time;
+  cumulative_stats->total_time += total_time;
+  cumulative_stats->finalize();
   contribute(sizeof(Statistics), cumulative_stats, statsReductionType,
       CkCallback(CkIndex_Scheduler::finalize(NULL), thisProxy[0]));
 }
@@ -191,6 +192,10 @@ void DistributedScheduler::iteration_done() {
   running = false;
   gvt_trigger->iteration_done();
   if (gvt_trigger->ready() && !doing_gvt) {
+#ifdef DETAILED_TIMING
+    delay_marked = false;
+    gvt_start = CmiWallTimer();
+#endif
     doing_gvt = true;
     gvt_manager->gvt_begin();
     gvt_trigger->reset();
@@ -224,9 +229,18 @@ void DistributedScheduler::gvt_resume() {}
  */
 void DistributedScheduler::gvt_done(Time gvt) {
   TW_ASSERT(gvt >= PE_VALUE(g_last_gvt), "GVT Causality Violation\n");
+
+#ifdef DETAILED_TIMING
+  double gvt_time = CmiWallTimer() - gvt_start;
+  PE_STATS(gvt_time) += gvt_time;
+  if (!delay_marked) {
+    PE_STATS(gvt_delay) += gvt_time;
+  }
+#endif
+
+  doing_gvt = false;
   PE_STATS(total_gvts)++;
   PE_VALUE(g_last_gvt) = gvt;
-  doing_gvt = false;
 
   // TODO: Make stats trigger work like print trigger does below.
 #if CMK_TRACE_ENABLED
@@ -265,7 +279,9 @@ void DistributedScheduler::gvt_done(Time gvt) {
 /** Tell every local LP to start load balancing */
 void DistributedScheduler::start_balancing() {
   TW_ASSERT(!running, "Can't balance while scheduler is running\n");
-  DEBUG_PE("Starting to load balancing\n");
+#ifdef DETAILED_TIMING
+  lb_start = CmiWallTimer();
+#endif
   for (int i = 0; i < next_lps.get_size(); i++) {
     next_lps.as_array()[i]->lp->load_balance();
   }
@@ -273,7 +289,10 @@ void DistributedScheduler::start_balancing() {
 
 /** After load balancing completes we can do the next scheduler iteration */
 void DistributedScheduler::balancing_complete() {
-  DEBUG_PE("Load balancing complete\n");
+#ifdef DETAILED_TIMING
+  double lb_time = CmiWallTimer() - lb_start;
+  PE_STATS(lb_time) += lb_time;
+#endif
   lb_trigger->reset();
   next_iteration();
 }

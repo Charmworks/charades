@@ -25,10 +25,44 @@
 // Two instances of this will be on each PE, one for stats for the current GVT
 // period, and one for the accumulated stats for the whole run.
 
+template <typename T>
+class Stat {
+public:
+  T total;
+  T minimum;
+  T maximum;
+
+  Stat() { clear(); }
+
+  void clear() {
+    total = 0;
+    minimum = 0;
+    maximum = 0;
+  }
+  void finalize() {
+    minimum = maximum = total;
+  }
+  void add(const Stat<T>& other) {
+    total += other.total;
+  }
+  void reduce(const Stat<T>& other) {
+    total += other.total;
+    minimum = std::min(minimum, other.minimum);
+    maximum = std::max(maximum, other.maximum);
+  }
+  void operator+=(const T& t) { total += t; }
+};
+
 class Statistics {
   public:
     // Timing stats
-    double total_time;  // Execution time these stats were collected during
+    Stat<double> total_time;
+#ifdef DETAILED_TIMING
+    Stat<double> execute_time;
+    Stat<double> gvt_time;
+    Stat<double> gvt_delay;
+    Stat<double> lb_time;
+#endif
 
     // Event stats
     tw_stat events_executed;    // Total number of events executed
@@ -50,6 +84,9 @@ class Statistics {
     // TODO: Move these to the standalone GVT controller once it exists
     tw_stat total_gvts;           // Total number of GVT calculations
 
+    // LB stats
+    tw_stat total_lbs;
+
     // Memory stats
     tw_stat max_events_used;	// Max number of events allocated from buffer
     tw_stat new_event_calls;  // Number of events allocated for an empty buffer
@@ -58,12 +95,14 @@ class Statistics {
   Statistics();
 
   void clear();
+  void finalize();
   void add(const Statistics*);
   void reduce(const Statistics*);
 
   void print_section(const char*) const;
   void print_int(const char*, tw_stat) const;
   void print_double(const char*, double) const;
+  void print_stat_double(const char*, const Stat<double>&) const;
   void print() const;
 
 #if CMK_TRACE_ENABLED
