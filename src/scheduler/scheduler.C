@@ -282,8 +282,8 @@ void DistributedScheduler::start_balancing() {
 #ifdef DETAILED_TIMING
   lb_start = CmiWallTimer();
 #endif
-  for (int i = 0; i < next_lps.get_size(); i++) {
-    next_lps.as_array()[i]->lp->load_balance();
+  for (LP* lp : registered_lps) {
+    lp->load_balance();
   }
 }
 

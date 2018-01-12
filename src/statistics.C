@@ -222,7 +222,7 @@ void Statistics::print() const {
   print_stat_double("Forward Execute Time", execute_time);
   print_stat_double("GVT Time", gvt_time);
   print_stat_double("GVT Delay", gvt_delay);
-  print_stat_double("Min LB Time", lb_time);
+  print_stat_double("LB Time", lb_time);
 #endif
 }
 
