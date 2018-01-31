@@ -11,4 +11,5 @@ mainmodule charm_setup {
   extern module gvtmanager;
   extern module lp;
   extern module scheduler;
+  extern module PrefixLB;
 }

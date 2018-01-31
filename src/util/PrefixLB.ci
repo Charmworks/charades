@@ -1,0 +1,14 @@
+module PrefixLB {
+extern module DistBaseLB;
+initnode void lbinit(void);
+group [migratable] PrefixLB : DistBaseLB {
+  entry void PrefixLB(const CkLBOptions &);  
+  entry [reductiontarget] void FoundPrefix();
+  entry [reductiontarget] void AvgLoadReduction(double x);
+  entry [reductiontarget] void MaxLoadReductionBeforeLB(double init_max_load);
+  entry void receivedPrefixSum(double prefix_sum_in);
+  entry void expected(int migrates);
+  entry [reductiontarget] void SendAfterBarrier();
+  entry [reductiontarget] void SendAfterBarrier2();
+};
+};
