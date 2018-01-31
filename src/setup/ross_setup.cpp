@@ -34,6 +34,7 @@ void tw_init(int argc, char** tmp_argv) {
     TWOPT_UINT("gvt-phases", g_tw_gvt_phases, "Number of GVT Phases"),
     TWOPT_UINT("gvt-bucket-size", g_tw_gvt_bucket_size, "Size of each bucket for Bucketed GVT"),
     TWOPT_UINT("async-reduction", g_tw_async_reduction, "0=sync red, 1=async red"),
+    TWOPT_UINT("ldb-first", g_tw_ldb_first, "First LB Interval"),
     TWOPT_UINT("ldb-interval", g_tw_ldb_interval, "Load Balancing Interval"),
     TWOPT_UINT("max-ldb", g_tw_max_ldb, "Max number of load balancing calls"),
     TWOPT_UINT("ldb-metric", g_tw_ldb_metric, "Metric for measuring LB load"),

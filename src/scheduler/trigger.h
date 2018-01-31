@@ -35,9 +35,10 @@ class ConstTrigger : public Trigger {
 
 class CountTrigger : public Trigger {
   private:
-    unsigned int iter_cnt, iter_max;
+    int iter_cnt, iter_max;
   public:
-    CountTrigger(unsigned max) : iter_cnt(0), iter_max(max) {}
+    CountTrigger(int max) : iter_cnt(0), iter_max(max) {}
+    CountTrigger(int first, int max) : iter_cnt(max - first), iter_max(max) {}
     void iteration_done() { iter_cnt++; }
     void reset() { iter_cnt = 0; }
     bool ready() const { return iter_cnt >= iter_max; }

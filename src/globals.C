@@ -21,6 +21,7 @@ unsigned g_tw_gvt_bucket_size; // size of each bucket for bucketed gvt
 unsigned g_tw_greedy_start; // whether we allow a greedy start or not
 unsigned g_tw_async_reduction; // allow GVT reduction and event exec to overlap
 unsigned g_tw_ldb_interval; // number of intervals to wait before ldb
+unsigned g_tw_ldb_first;    // first interval to call load balancing
 unsigned g_tw_max_ldb;      // max number of times we will load balance
 unsigned g_tw_ldb_metric;    // Metric used to measure LP load
 unsigned g_tw_metric_ts_abs;// Use absolute time or not
@@ -53,6 +54,7 @@ void clear_globals() {
   g_tw_gvt_bucket_size    = 8;
   g_tw_async_reduction = 0;
   g_tw_ldb_interval  = 0;
+  g_tw_ldb_first     = 0;
   g_tw_stat_interval = 0;
   g_tw_max_ldb       = 0;
   g_tw_ldb_metric    = 0;

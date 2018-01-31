@@ -152,8 +152,11 @@ DistributedScheduler::DistributedScheduler() {
   }
 
   // Set up the load balancing trigger
-  if (g_tw_ldb_interval > 0) {
-    lb_trigger.reset(new CountTrigger(g_tw_ldb_interval));
+  if (g_tw_ldb_interval > 0 || g_tw_ldb_first > 0) {
+    if (g_tw_ldb_interval == 0) {
+      g_tw_max_ldb = 1;
+    }
+    lb_trigger.reset(new CountTrigger(g_tw_ldb_first, g_tw_ldb_interval));
     if (g_tw_max_ldb > 0) {
       lb_trigger.reset(new BoundedTrigger(lb_trigger.release(), g_tw_max_ldb));
     }
