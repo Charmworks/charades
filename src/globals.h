@@ -44,12 +44,14 @@ class EventBuffer;
 class Globals {
   public:
     Time g_last_gvt;            // TODO: Needed for rollbacks, but should be moved
+    Time g_leash_time;          // Used for leash trigger
     // Differs by PE
     tw_event*     abort_event;  // TODO: Can this just be part of event buffer? Do we need this at all even?
     EventBuffer*  event_buffer; // TODO: Move to scheduler
     AvlTree       avl_list_head;      // TODO: Move to optimistic scheduler or maybe even LP, experiment with unordered_map
 
-    Globals() : abort_event(NULL), event_buffer(NULL), avl_list_head(NULL) {}
+    Globals() : g_last_gvt(0.0), g_leash_time(0.0),
+        abort_event(NULL), event_buffer(NULL), avl_list_head(NULL) {}
 };
 
 void clear_globals();

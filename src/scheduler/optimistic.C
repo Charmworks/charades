@@ -67,6 +67,7 @@ void OptimisticScheduler::gvt_resume() {
   PE_STATS(gvt_delay) += gvt_delay;
   delay_marked = true;
 #endif
+  PE_VALUE(g_leash_time) = get_min_time();
   next_iteration();
 }
 

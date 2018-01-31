@@ -200,7 +200,7 @@ void DistributedScheduler::iteration_done() {
     gvt_manager->gvt_begin();
     gvt_trigger->reset();
     lb_trigger->iteration_done();
-  } else {
+  } else if (!gvt_trigger->ready() || g_tw_gvt_scheme == 2) {
     next_iteration();
   }
 }
@@ -241,6 +241,7 @@ void DistributedScheduler::gvt_done(Time gvt) {
   doing_gvt = false;
   PE_STATS(total_gvts)++;
   PE_VALUE(g_last_gvt) = gvt;
+  PE_VALUE(g_leash_time) = gvt;
 
   // TODO: Make stats trigger work like print trigger does below.
 #if CMK_TRACE_ENABLED

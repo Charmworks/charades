@@ -53,7 +53,7 @@ class LeashTrigger : public Trigger {
     void iteration_done() {}
     void reset() {}
     bool ready() const {
-      return scheduler->get_min_time() > scheduler->globals->g_last_gvt + leash;
+      return scheduler->get_min_time() > scheduler->globals->g_leash_time + leash;
     }
 };
 
