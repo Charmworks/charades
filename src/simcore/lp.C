@@ -53,7 +53,7 @@ void set_current_event(tw_lp* lp, Event* event) {
 // Create LPStructs based on mappings, and do initial registration with the PE.
 LP::LP() : next_token(this), uniqID(0), min_cancel_q(DBL_MAX),
            current_time(0), all_events(0), committed_events(0),
-           rolled_back_events(0), committed_time(0.0) {
+           rolled_back_events(0), committed_time(0.0), latest_time(0.0) {
   if(isLpSet == 0) {
     lps = thisProxy;
     isLpSet = 1;
@@ -94,6 +94,10 @@ void LP::ResumeFromSync() {
   contribute(
       CkCallback(CkReductionTarget(DistributedScheduler, balancing_complete),
                  CProxy_DistributedScheduler(scheduler_id)));
+
+  // Reset manually tracked metrics for next LB period
+  committed_events = rolled_back_events = 0;
+  latest_time = committed_time = 0.0;
 }
 
 // Helper function for metric determination
@@ -167,6 +171,10 @@ void LP::UserSetLBLoad() {
     case 12:
       if (thisIndex == 0) CkPrintf("Metric: Active Events\n");
       metric = events.size() + processed_events.size();
+      break;
+    case 13:
+      if (thisIndex == 0) CkPrintf("Metric: Latest Time\n");
+      metric = timeToWeight(latest_time);
       break;
     default:
       CkAbort("Invalid load balancing metric\n");
@@ -267,6 +275,7 @@ void* LP::execute_me() {
     Event* e = events.pop();
     current_time = e->ts;
     current_event = e;
+    latest_time = std::max(latest_time, current_time);
     LPStruct* lp = (LPStruct*)e->dest_lp;
     if (isOptimistic) {
       reset_bitfields(e);

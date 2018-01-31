@@ -74,7 +74,7 @@ class LP : public CBase_LP {
 
     // Used for certain LB metrics
     int committed_events, rolled_back_events;
-    int committed_time;
+    Time committed_time, latest_time;
 
     // Cancel queue management
     std::list<Event*> cancel_queue;
