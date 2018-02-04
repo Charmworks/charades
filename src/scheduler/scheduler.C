@@ -155,6 +155,8 @@ DistributedScheduler::DistributedScheduler() {
   if (g_tw_ldb_interval > 0 || g_tw_ldb_first > 0) {
     if (g_tw_ldb_interval == 0) {
       g_tw_max_ldb = 1;
+    } else if (g_tw_ldb_first == 0) {
+      g_tw_ldb_first = g_tw_ldb_interval;
     }
     lb_trigger.reset(new CountTrigger(g_tw_ldb_first, g_tw_ldb_interval));
     if (g_tw_max_ldb > 0) {
@@ -163,6 +165,8 @@ DistributedScheduler::DistributedScheduler() {
   } else {
     lb_trigger.reset(new ConstTrigger(false));
   }
+  TW_ASSERT(!lb_trigger->ready(),
+      "LB Configuration Error: Can not load balance before the first GVT!\n");
 
   // Set up the print trigger
   print_trigger.reset(new CountTrigger(gvt_print_interval));
