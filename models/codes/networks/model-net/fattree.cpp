@@ -1,4 +1,3 @@
-#if 0
 #include <ross.h>
 
 #include "codes/jenkins-hash.h"
@@ -111,17 +110,17 @@ struct fattree_message_list {
     fattree_message_list *prev;
 };
 
-void init_fattree_message_list(fattree_message_list *this,
+void init_fattree_message_list(fattree_message_list *self,
   fattree_message *inmsg) {
-    this->msg = *inmsg;
-    this->event_data = NULL;
-    this->next = NULL;
-    this->prev = NULL;
+    self->msg = *inmsg;
+    self->event_data = NULL;
+    self->next = NULL;
+    self->prev = NULL;
 }
 
-void delete_fattree_message_list(fattree_message_list *this) {
-    if(this->event_data != NULL) free(this->event_data);
-    free(this);
+void delete_fattree_message_list(fattree_message_list *self) {
+    if(self->event_data != NULL) free(self->event_data);
+    free(self);
 }
 
 struct fattree_param
@@ -168,7 +167,6 @@ struct ftree_qhash_entry
 };
 
 /* handles terminal and switch events like packet generate/send/receive/buffer */
-typedef enum event_t event_t;
 typedef struct ft_terminal_state ft_terminal_state;
 typedef struct switch_state switch_state;
 
@@ -236,6 +234,7 @@ enum event_t
   S_ARRIVE,
   S_BUFFER,
 };
+typedef enum event_t event_t;
 
 enum last_hop
 {
@@ -541,8 +540,8 @@ static void dot_write_open_file(FILE **fout)
   sprintf(dir_name, "%s", io_dir);
 
   char *dot_file_prefix = dot_file_p;
-  int rank;
-  MPI_Comm_rank(MPI_COMM_CODES, &rank);
+  int rank = CkMyPe();
+  //MPI_Comm_rank(MPI_COMM_CODES, &rank);
   sprintf(file_name, "%s/%s.dot.%d", dir_name, dot_file_prefix, rank);
   *fout = fopen(file_name, "w+");
   if(*fout == NULL) {
@@ -1327,6 +1326,7 @@ void switch_init(switch_state * r, tw_lp * lp)
 /* empty for now.. */
 static void fattree_report_stats()
 {
+#if 0
   if(dump_topo) return;
 #if DEBUG_RC
 	long long t_packet_event_f = 0;
@@ -1442,6 +1442,7 @@ static void fattree_report_stats()
 	fclose(fattree_results_log);
 #endif
   }
+#endif
 }
 
 /* fattree packet event */
@@ -1580,7 +1581,10 @@ void ft_packet_generate(ft_terminal_state * s, tw_bf * bf, fattree_message * msg
 
   msg->my_N_hop = 0;
 
-  msg->packet_ID = lp->gid + g_tw_nlp * s->packet_counter;
+  // Used to be g_tw_nlp instead of g_total_lps which was the number of LPs on
+  // this PE only, but this should still work fine since it is just for
+  // generating a unique ID?
+  msg->packet_ID = lp->gid + g_total_lps * s->packet_counter;
 
   for(uint64_t i = 0; i < num_chunks; i++)
   {
@@ -1664,7 +1668,7 @@ void ft_packet_send_rc(ft_terminal_state * s, tw_bf *bf, fattree_message * msg, 
     s->packet_counter--;
     s->vc_occupancy -= s->params->chunk_size;
 
-    fattree_message_list* cur_entry = rc_stack_pop(s->st);
+    fattree_message_list* cur_entry = (fattree_message_list*)rc_stack_pop(s->st);
 
     prepend_to_fattree_message_list(s->terminal_msgs,
         s->terminal_msgs_tail, 0, cur_entry);
@@ -1734,7 +1738,7 @@ void ft_packet_send(ft_terminal_state * s, tw_bf * bf, fattree_message * msg,
   ts = s->terminal_available_time - tw_now(lp);
 
   e = tw_event_new(s->switch_lp, ts, lp);
-  m = tw_event_data(e);
+  m = (fattree_message*)tw_event_data(e);
   memcpy(m, &cur_entry->msg, sizeof(fattree_message));
   if (m->remote_event_size_bytes){
     memcpy(model_net_method_get_edata(FATTREE, m), cur_entry->event_data,
@@ -1758,7 +1762,7 @@ void ft_packet_send(ft_terminal_state * s, tw_bf * bf, fattree_message * msg,
     bf->c2 = 1;
     double tsT = codes_local_latency(lp);
     tw_event *e_new = tw_event_new(cur_entry->msg.sender_lp, tsT, lp);
-    fattree_message *m_new = tw_event_data(e_new);
+    fattree_message *m_new = (fattree_message*)tw_event_data(e_new);
     void *local_event = (char*)cur_entry->event_data +
                 cur_entry->msg.remote_event_size_bytes;
     memcpy(m_new, local_event, cur_entry->msg.local_event_size_bytes);
@@ -1891,7 +1895,7 @@ void switch_packet_receive( switch_state * s, tw_bf * bf,
       fattree_message *m;
       ts = codes_local_latency(lp);
       tw_event *e = tw_event_new(lp->gid, ts, lp);
-      m = tw_event_data(e);
+      m = (fattree_message*)tw_event_data(e);
       m->type = S_SEND;
       m->magic = switch_magic_num;
       m->vc_index = output_port;
@@ -2013,7 +2017,7 @@ void switch_packet_send( switch_state * s, tw_bf * bf, fattree_message * msg,
         FATTREE, (void**)&m, &m_data);
   } else {
       e = tw_event_new(next_stop, ts, lp);
-      m = tw_event_data(e);
+      m = (fattree_message*)tw_event_data(e);
       m_data = model_net_method_get_edata(FATTREE, m);
   }
 
@@ -2061,7 +2065,7 @@ void switch_packet_send( switch_state * s, tw_bf * bf, fattree_message * msg,
     fattree_message *m_new;
     ts = ts + g_tw_lookahead * tw_rand_unif(lp->rng);
     e = tw_event_new(lp->gid, ts, lp);
-    m_new = tw_event_data(e);
+    m_new = (fattree_message*)tw_event_data(e);
     m_new->type = S_SEND;
     m_new->magic = switch_magic_num;
     m_new->vc_index = output_port;
@@ -2113,7 +2117,7 @@ void switch_credit_send(switch_state * s, tw_bf * bf, fattree_message * msg,
 	buf_msg->magic = fattree_terminal_magic_num;
   } else {
     buf_e = tw_event_new(dest, ts , lp);
-    buf_msg = tw_event_data(buf_e);
+    buf_msg = (fattree_message*)tw_event_data(buf_e);
     buf_msg->magic = switch_magic_num;
   }
 
@@ -2254,7 +2258,7 @@ void switch_buf_update(switch_state * s, tw_bf * bf, fattree_message * msg,
     fattree_message *m;
     tw_stime ts = codes_local_latency(lp);
     tw_event *e = tw_event_new(lp->gid, ts, lp);
-    m = tw_event_data(e);
+    m = (fattree_message*)tw_event_data(e);
     m->type = S_SEND;
     m->vc_index = indx;
     m->magic = switch_magic_num;
@@ -2416,7 +2420,7 @@ void ft_packet_arrive(ft_terminal_state * s, tw_bf * bf, fattree_message * msg,
 
   // no method_event here - message going to switch
   buf_e = tw_event_new(s->switch_lp, ts, lp);
-  buf_msg = tw_event_data(buf_e);
+  buf_msg = (fattree_message*)tw_event_data(buf_e);
   buf_msg->magic = switch_magic_num;
   buf_msg->vc_index = msg->vc_index;
   buf_msg->type = S_BUFFER;
@@ -2839,8 +2843,8 @@ void fattree_switch_final(switch_state * s, tw_lp * lp)
     //Original Output with Tracer
 //    char *stats_file = getenv("TRACER_LINK_FILE");
 //  if(stats_file != NULL) {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_CODES, &rank);
+    int rank = CkMyPe();
+    //MPI_Comm_rank(MPI_COMM_CODES, &rank);
     char file_name[512];
     sprintf(file_name, "%s.%d", "tracer_stats_file", rank);
     FILE *fout = fopen(file_name, "a");
@@ -2944,28 +2948,31 @@ tw_lptype fattree_lps[] =
   // Terminal handling functions
   {
     (init_f)ft_terminal_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) ft_terminal_event,
     (revent_f) ft_terminal_rc_event_handler,
     (commit_f) NULL,
     (final_f) fattree_terminal_final,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(ft_terminal_state)
   },
   {
     (init_f) switch_init,
-    (pre_run_f) post_switch_init,
+    // TODO: Need to reincorporate this somehow...
+    //(pre_run_f) post_switch_init,
     (event_f) switch_event,
     (revent_f) switch_rc_event_handler,
     (commit_f) NULL,
     (final_f) fattree_switch_final,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(switch_state),
   },
-  {NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0},
+  //{NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0},
+  {NULL, NULL, NULL, NULL, NULL, 0},
 };
 
 /* For ROSS event tracing */
+#if 0
 void fattree_event_collect(fattree_message *m, tw_lp *lp, char *buffer, int *collect_flag)
 {
     (void)lp;
@@ -2998,6 +3005,7 @@ static void fattree_register_model_stats(st_model_types *base_type)
     st_model_type_register("fattree_switch", &fattree_model_types[0]);
     //trace_type_register("fattree_switch", base_type);
 }
+#endif
 /*** END of ROSS event tracing additions */
 
 /* returns the fattree lp type for lp registration */
@@ -3017,20 +3025,22 @@ static void fattree_register(tw_lptype *base_type) {
 
 struct model_net_method fattree_method =
 {
-  .mn_configure = fattree_configure,
-  .mn_register = fattree_register,
-  .model_net_method_packet_event = fattree_packet_event,
-  .model_net_method_packet_event_rc = fattree_packet_event_rc,
-  .model_net_method_recv_msg_event = NULL,
-  .model_net_method_recv_msg_event_rc = NULL,
-  .mn_get_lp_type = fattree_get_cn_lp_type,
-  .mn_get_msg_sz = fattree_get_msg_sz,
-  .mn_report_stats = fattree_report_stats,
-//  .model_net_method_find_local_device = NULL,
-  .mn_collective_call = NULL,
-  .mn_collective_call_rc = NULL,
-  .mn_model_stat_register = fattree_register_model_stats,
-  .mn_get_model_stat_types = fattree_get_model_stat_types
+  0,                        // packet_size
+  fattree_configure,        // mn_configure
+  fattree_register,         // mn_register
+  fattree_packet_event,     // model_net_method_packet_event
+  fattree_packet_event_rc,  // model_net_method_packet_event_rc
+  NULL,                     // model_net_method_recv_msg_event
+  NULL,                     // model_net_method_recv_msg_event_rc
+  fattree_get_cn_lp_type,   // mn_get_lp_type
+  fattree_get_msg_sz,       // mn_get_msg_size
+  fattree_report_stats,     // mn_report_stats
+  NULL,                     // mn_collective_call
+  NULL,                     // mn_collective_call_rc
+  NULL,                     // mn_sample_fn
+  NULL,                     // mn_sample_rc_fn
+  NULL,                     // mn_sample_init_fn
+  NULL                      // mn_sample_fini_fn
 };
 
 #ifdef ENABLE_CORTEX
@@ -3130,5 +3140,4 @@ cortex_topology fattree_cortex_topology = {
         .get_router_compute_node_list   = fattree_get_router_compute_node_list,
 };
 
-#endif
 #endif
