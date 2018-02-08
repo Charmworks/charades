@@ -62,7 +62,7 @@ typedef struct mn_stats mn_stats;
 // format: { enum vals, config name, internal lp name, lp method struct}
 // last value is sentinel
 #define NETWORK_DEF \
-    X(SIMPLENET, "modelnet_simplenet", "simplenet", NULL/*&simplenet_method*/)\
+    X(SIMPLENET, "modelnet_simplenet", "simplenet", &simplenet_method)\
     X(SIMPLEP2P, "modelnet_simplep2p", "simplep2p", NULL/*&simplep2p_method*/)\
     X(TORUS,     "modelnet_torus",     "torus",     NULL/*&torus_method*/)\
     X(SLIMFLY,   "modelnet_slimfly",   "slimfly",   NULL/*&slimfly_method*/)\

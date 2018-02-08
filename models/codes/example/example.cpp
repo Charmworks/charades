@@ -96,6 +96,11 @@ static void svr_rev_event(
     tw_bf * b,
     svr_msg * m,
     tw_lp * lp);
+static void svr_commit(
+    svr_state * ns,
+    tw_bf * b,
+    svr_msg * m,
+    tw_lp * lp);
 static void svr_finalize(
     svr_state * ns,
     tw_lp * lp);
@@ -107,7 +112,7 @@ tw_lptype svr_lp = {
     //(pre_run_f) NULL,
     (event_f) svr_event,
     (revent_f) svr_rev_event,
-    (commit_f) NULL,
+    (commit_f) svr_commit,
     (final_f)  svr_finalize,
     //(map_f) codes_mapping,
     sizeof(svr_state),
@@ -196,12 +201,12 @@ int main(
     /* initialize ROSS and parse args. NOTE: tw_init calls MPI_Init */
     tw_init(argc, argv);
 
-    /*if (!conf_file_name[0])
+    if (!conf_file_name[0])
     {
         fprintf(stderr, "Expected \"codes-config\" option, please see --help.\n");
-        MPI_Finalize();
+        //MPI_Finalize();
         return 1;
-    }*/
+    }
 
     //MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     //MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
@@ -209,11 +214,11 @@ int main(
     /* loading the config file into the codes-mapping utility, giving us the
      * parsed config object in return.
      * "config" is a global var defined by codes-mapping */
-    /*if (configuration_load(conf_file_name, MPI_COMM_WORLD, &config)){
+    if (configuration_load(conf_file_name, &config)){
         fprintf(stderr, "Error loading config file %s.\n", conf_file_name);
-        MPI_Finalize();
+        //MPI_Finalize();
         return 1;
-    }*/
+    }
 
     /* register model-net LPs with ROSS */
     model_net_register();
@@ -363,6 +368,14 @@ static void svr_rev_event(
 
     return;
 }
+
+/* event commit processing entry point
+ * - in this case do nothing */
+static void svr_commit(
+    svr_state * ns,
+    tw_bf * b,
+    svr_msg * m,
+    tw_lp * lp) {}
 
 /* once the simulation is over, do some output */
 static void svr_finalize(

@@ -90,9 +90,8 @@ typedef struct ConfigVTable * ConfigHandle;
  *
  * return 0 on success
  */
-//int configuration_load (const char * filepath,
-//                        MPI_Comm comm,
-//                        ConfigHandle *handle);
+int configuration_load (const char * filepath,
+                        ConfigHandle *handle);
 
 /*
  * Free any resources allocated on load.

@@ -18,7 +18,7 @@
 #define STR_SIZE 16
 #define PROC_TIME 10.0
 
-//extern struct model_net_method simplenet_method;
+extern struct model_net_method simplenet_method;
 //extern struct model_net_method simplep2p_method;
 //extern struct model_net_method torus_method;
 //extern struct model_net_method dragonfly_method;
@@ -286,7 +286,7 @@ static model_net_event_return model_net_event_impl_base(
 
     if (remote_event_size + self_event_size + sizeof(model_net_wrap_msg) 
             > g_tw_msg_sz){
-        tw_error(TW_LOC, "Error: model_net trying to transmit an event of size "
+        TW_ASSERT(false, "Error: model_net trying to transmit an event of size "
                          "%d but ROSS is configured for events of size %zd\n",
                          remote_event_size+self_event_size+sizeof(model_net_wrap_msg),
                          g_tw_msg_sz);

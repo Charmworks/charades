@@ -24,20 +24,18 @@ ConfigHandle config;
 /* Global to hold LP configuration */
 config_lpgroups_t lpconf;
 
-#if 0
 int configuration_load (const char *filepath,
-                        MPI_Comm comm,
                         ConfigHandle *handle)
 {
-    MPI_File   fh;
-    MPI_Status status;
-    MPI_Offset txtsize;
     FILE      *f = NULL;
     char      *txtdata = NULL;
     char      *error = NULL;
     int        rc = 0;
     char      *tmp_path = NULL;
 
+/*    MPI_File   fh;
+    MPI_Status status;
+    MPI_Offset txtsize;
     rc = MPI_File_open(comm, (char*)filepath, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (rc != MPI_SUCCESS) goto finalize;
 
@@ -50,11 +48,11 @@ int configuration_load (const char *filepath,
     rc = MPI_File_read_all(fh, txtdata, txtsize, MPI_BYTE, &status);
     if (rc != MPI_SUCCESS) goto finalize;
 
-#ifdef __APPLE__
+#ifdef __APPLE__*/
     f = fopen(filepath, "r");
-#else
-    f = fmemopen(txtdata, txtsize, "rb");
-#endif
+//#else
+//    f = fmemopen(txtdata, txtsize, "rb");
+//#endif
     if (!f) { rc = 1; goto finalize; }
 
     *handle = txtfile_openStream(f, &error);
@@ -69,7 +67,7 @@ int configuration_load (const char *filepath,
     rc = configuration_get_lpgroups(handle, "LPGROUPS", &lpconf);
 
 finalize:
-    if (fh != MPI_FILE_NULL) MPI_File_close(&fh);
+    //if (fh != MPI_FILE_NULL) MPI_File_close(&fh);
     if (f) fclose(f);
     free(txtdata);
     free(tmp_path);
@@ -80,7 +78,6 @@ finalize:
 
     return rc;
 }
-#endif
 
 int configuration_get_value(ConfigHandle *handle,
                             const char *section_name,

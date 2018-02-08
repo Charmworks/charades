@@ -14,12 +14,12 @@
 /* number of LPs assigned to the current PE (abstraction of MPI rank).
  * for lp counts which are not divisible by the number of ranks, keep 
  * modulus around */
-static tw_lpid lps_per_pe_floor = 0;
-static tw_lpid lps_leftover = 0;
+//static tw_lpid lps_per_pe_floor = 0;
+//static tw_lpid lps_leftover = 0;
 
-static int mem_factor = 256;
+//static int mem_factor = 256;
 
-static int mini(int a, int b){ return a < b ? a : b; }
+//static int mini(int a, int b){ return a < b ? a : b; }
 
 // compare passed in annotation strings (NULL or nonempty) against annotation
 // strings in the config (empty or nonempty)
@@ -64,29 +64,15 @@ static int strcmp_anno(
 static char local_lp_name[MAX_NAME_LENGTH],
             local_annotation[MAX_NAME_LENGTH];
 
-int codes_mapping_get_lps_for_pe()
+int codes_numlp_map(int chare_id)
 {
-#if 0
-    int rank;
-    MPI_Comm_rank(MPI_COMM_CODES, &rank);
-#if CODES_MAPPING_DEBUG
-    printf("%d lps for rank %d\n", lps_per_pe_floor+(g_tw_mynode < lps_leftover), rank);
-#endif
-  return lps_per_pe_floor + ((tw_lpid)g_tw_mynode < lps_leftover);
+  return 1;
 }
 
 /* Takes the global LP ID and returns the rank (PE id) on which the LP is mapped */
-tw_peid codes_mapping( tw_lpid gid)
+int codes_chare_map(int gid)
 {
-    tw_lpid lps_on_pes_with_leftover = lps_leftover * (lps_per_pe_floor+1);
-    if (gid < lps_on_pes_with_leftover){
-        return gid / (lps_per_pe_floor+1);
-    }
-    else{
-        return (gid-lps_on_pes_with_leftover)/lps_per_pe_floor + lps_leftover;
-    }
-  /*return gid / lps_per_pe_floor;*/
-#endif
+  return gid;
 }
 
 int codes_mapping_get_group_reps(const char* group_name)
@@ -450,111 +436,37 @@ void codes_mapping_get_lp_info2(
     tw_error(TW_LOC, "Unable to find LP info given gid %lu", gid);
 }
 
-/* This function assigns local and global LP Ids to LPs */
-static void codes_mapping_init(void)
-{
-#if 0
-     int grp_id, lpt_id, rep_id, offset;
-     tw_lpid ross_gid, ross_lid; /* ross global and local IDs */
-     tw_pe * pe;
-     char lp_type_name[MAX_NAME_LENGTH];
-     tw_lpid nkp_per_pe = g_tw_nkp;
-     tw_lpid         lpid, kpid;
-     const tw_lptype *lptype;
-     const st_model_types *trace_type;
-
-     /* have 16 kps per pe, this is the optimized configuration for ROSS custom mapping */
-     for(kpid = 0; kpid < nkp_per_pe; kpid++)
-	tw_kp_onpe(kpid, g_tw_pe[0]);
-
-     tw_lpid lp_start =
-         g_tw_mynode * lps_per_pe_floor + mini(g_tw_mynode,lps_leftover);
-     tw_lpid lp_end =
-         (g_tw_mynode+1) * lps_per_pe_floor + mini(g_tw_mynode+1,lps_leftover);
-
-     for (lpid = lp_start; lpid < lp_end; lpid++)
-      {
-	 ross_gid = lpid;
-	 ross_lid = lpid - lp_start;
-	 kpid = ross_lid % g_tw_nkp;
-	 pe = tw_getpe(kpid % g_tw_npe);
-	 codes_mapping_get_lp_info(ross_gid, NULL, &grp_id, lp_type_name,
-                 &lpt_id, NULL, &rep_id, &offset);
-#if CODES_MAPPING_DEBUG
-         printf("lp:%lu --> kp:%lu, pe:%llu\n", ross_gid, kpid, pe->id);
-#endif
-	 tw_lp_onpe(ross_lid, pe, ross_gid);
-	 tw_lp_onkp(g_tw_lp[ross_lid], g_tw_kp[kpid]);
-         lptype = lp_type_lookup(lp_type_name);
-         if (lptype == NULL)
-             tw_error(TW_LOC, "could not find LP with type name \"%s\", "
-                     "did you forget to register the LP?\n", lp_type_name);
-         else
-             /* sorry, const... */
-             tw_lp_settype(ross_lid, (tw_lptype*) lptype);
-         if (g_st_ev_trace || g_st_model_stats)
-         {
-             trace_type = st_model_type_lookup(lp_type_name);
-             st_model_settype(ross_lid, (st_model_types*) trace_type);
-         }
-     }
-     return;
-#endif
-}
-
-/* This function takes the global LP ID, maps it to the local LP ID and returns the LP 
- * lps have global and local LP IDs
- * global LP IDs are unique across all PEs, local LP IDs are unique within a PE */
-static tw_lp * codes_mapping_to_lp( tw_lpid lpid)
-{
-#if 0
-   int index = lpid - (g_tw_mynode * lps_per_pe_floor) -
-       mini(g_tw_mynode, lps_leftover);
-//   printf("\n global id %d index %d lps_before %d lps_offset %d local index %d ", lpid, index, lps_before, g_tw_mynode, local_index);
-   return g_tw_lp[index];
-#endif
-  return NULL;
+tw_lptype* codes_type_map(int gid) {
+  char lp_type_name[MAX_NAME_LENGTH];
+  int group_index, lp_type_index, dummy;
+  codes_mapping_get_lp_info(gid, NULL, &group_index, lp_type_name, &lp_type_index, NULL, &dummy, &dummy);
+  return lp_type_lookup(lp_type_name);
 }
 
 /* This function loads the configuration file and sets up the number of LPs on each PE */
 void codes_mapping_setup_with_seed_offset(int offset)
 {
-#if 0
-  int grp, lpt, message_size;
-  int pes = tw_nnodes();
-
-  lps_per_pe_floor = 0;
-  for (grp = 0; grp < lpconf.lpgroups_count; grp++)
-   {
-    for (lpt = 0; lpt < lpconf.lpgroups[grp].lptypes_count; lpt++)
-	lps_per_pe_floor += (lpconf.lpgroups[grp].lptypes[lpt].count * lpconf.lpgroups[grp].repetitions);
-   }
-  tw_lpid global_nlps = lps_per_pe_floor;
-  lps_leftover = lps_per_pe_floor % pes;
-  lps_per_pe_floor /= pes;
- //printf("\n LPs for this PE are %d reps %d ", lps_per_pe_floor,  lpconf.lpgroups[grp].repetitions);
-  g_tw_mapping=CUSTOM;
-  g_tw_custom_initial_mapping=&codes_mapping_init;
-  g_tw_custom_lp_global_to_local_map=&codes_mapping_to_lp;
-
-  // configure mem-factor
-  int mem_factor_conf;
-  int rc = configuration_get_value_int(&config, "PARAMS", "pe_mem_factor", NULL,
-          &mem_factor_conf);
-  if (rc == 0 && mem_factor_conf > 0)
-    mem_factor = mem_factor_conf;
-
-  g_tw_events_per_pe = mem_factor * codes_mapping_get_lps_for_pe();
-  configuration_get_value_int(&config, "PARAMS", "message_size", NULL, &message_size);
-  if(!message_size)
-  {
-      message_size = 256;
-      printf("\n Warning: ross message size not defined, resetting it to %d", message_size);
+  g_total_lps = 0;
+  for (int i = 0; i < lpconf.lpgroups_count; i++) {
+    for (int j = 0; j < lpconf.lpgroups[i].lptypes_count; j++) {
+      g_total_lps += lpconf.lpgroups[i].lptypes[j].count * lpconf.lpgroups[i].repetitions;
+    }
   }
+  g_num_chares = g_total_lps;
+  g_lps_per_chare = 1;
+  g_type_map = codes_type_map;
+
+  // Increment number of RNGs so codes_local_latency can use the last one
+  g_tw_rng_max++;
+  g_tw_nRNG_per_lp++;
+
+  int message_size;
+  configuration_get_value_int(&config, "PARAMS", "message_size", NULL, &message_size);
+  tw_define_lps(message_size, 0);
 
   // we increment the number of RNGs used to let codes_local_latency use the
   // last one
-  g_tw_nRNG_per_lp++;
+  /*g_tw_nRNG_per_lp++;
 
   tw_define_lps(codes_mapping_get_lps_for_pe(), message_size);
 
@@ -570,8 +482,7 @@ void codes_mapping_setup_with_seed_offset(int offset)
                           global_nlps * offset) * g_tw_nRNG_per_lp + i);
           }
       }
-  }
-#endif
+  }*/
 }
 
 void codes_mapping_setup(){

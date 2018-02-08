@@ -38,7 +38,9 @@ void tw_event_free(tw_event *e, bool commit) {
   if(commit == true) {
     LPStruct * lp;
     lp = (LPStruct*)e->dest_lp;
-    lp->type->commit(lp->state, &e->cv, tw_event_data(e), lp);
+    if (lp->type->commit != NULL) {
+      lp->type->commit(lp->state, &e->cv, tw_event_data(e), lp);
+    }
     PE_STATS(events_committed)++;
   }
   charm_free_event(e);
@@ -72,7 +74,7 @@ void tw_event_rollback(tw_event * event) {
   tw_lp     *dest_lp = (tw_lp*)event->dest_lp;
 
   set_current_event(dest_lp, event);
-  dest_lp->type->reverse(dest_lp->state, &event->cv, tw_event_data(event), dest_lp);
+  dest_lp->type->revent(dest_lp->state, &event->cv, tw_event_data(event), dest_lp);
 
   while (e) {
     tw_event *n = e->cause_next;

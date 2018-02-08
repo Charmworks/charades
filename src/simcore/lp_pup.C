@@ -23,10 +23,10 @@ void operator|(PUP::er& p, LPStruct& lp) {
   p | lp.gid;
   if (p.isUnpacking()) {
     lp.type = g_type_map(lp.gid);
-    lp.state = malloc(lp.type->state_size);
+    lp.state = malloc(lp.type->state_sz);
     lp.rng = (tw_rng_stream*)malloc(sizeof(tw_rng_stream));
   }
-  p((char*)lp.state, lp.type->state_size);
+  p((char*)lp.state, lp.type->state_sz);
   p | lp.rng;
 }
 

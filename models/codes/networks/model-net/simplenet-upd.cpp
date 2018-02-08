@@ -1,4 +1,3 @@
-#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -112,21 +111,22 @@ static void sn_report_stats();
 /* data structure for model-net statistics */
 struct model_net_method simplenet_method =
 {
-    .mn_configure = sn_configure,
-    .mn_register = NULL,
-    .model_net_method_packet_event = simplenet_packet_event,
-    .model_net_method_packet_event_rc = simplenet_packet_event_rc,
-    .model_net_method_recv_msg_event = NULL,
-    .model_net_method_recv_msg_event_rc = NULL,
-    .mn_get_lp_type = sn_get_lp_type,
-    .mn_get_msg_sz = sn_get_msg_sz,
-    .mn_report_stats = sn_report_stats,
-    .mn_collective_call = simple_net_collective,
-    .mn_collective_call_rc = simple_net_collective_rc,
-    .mn_sample_fn = NULL,
-    .mn_sample_rc_fn = NULL,
-    .mn_sample_init_fn = NULL,
-    .mn_sample_fini_fn = NULL
+    0,                          // packet_size
+    sn_configure,               // mn_configure
+    NULL,                       // mn_register
+    simplenet_packet_event,     // model_net_method_packet_event
+    simplenet_packet_event_rc,  // model_net_method_packet_event_rc
+    NULL,                       // model_net_method_recv_msg_event
+    NULL,                       // model_net_method_recv_msg_event_rc
+    sn_get_lp_type,             // mn_get_lp_type
+    sn_get_msg_sz,              // mn_get_msg_size
+    sn_report_stats,            // mn_report_stats
+    simple_net_collective,      // mn_collective_call
+    simple_net_collective_rc,   // mn_collective_call_rc
+    NULL,                       // mn_sample_fn
+    NULL,                       // mn_sample_rc_fn
+    NULL,                       // mn_sample_init_fn
+    NULL                        // mn_sample_fini_fn
 };
 
 static void sn_init(
@@ -142,18 +142,23 @@ static void sn_rev_event(
     tw_bf * b,
     sn_message * m,
     tw_lp * lp);
+static void sn_commit(
+    sn_state * ns,
+    tw_bf * b,
+    sn_message * m,
+    tw_lp * lp);
 static void sn_finalize(
     sn_state * ns,
     tw_lp * lp);
 
 tw_lptype sn_lp = {
     (init_f) sn_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) sn_event,
     (revent_f) sn_rev_event,
-    (commit_f) NULL,
+    (commit_f) sn_commit,
     (final_f) sn_finalize,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(sn_state),
 };
 
@@ -281,6 +286,13 @@ static void sn_rev_event(
 
     return;
 }
+
+static void sn_commit(
+    sn_state * ns,
+    tw_bf * b,
+    sn_message * m,
+    tw_lp * lp)
+{}
 
 static void sn_finalize(
     sn_state * ns,
@@ -494,7 +506,7 @@ static void handle_msg_start_event(
         //char* local_event;
 
         e_new = tw_event_new(m->src_gid, send_queue_time+codes_local_latency(lp), lp);
-        m_new = tw_event_data(e_new);
+        m_new = (sn_message*)tw_event_data(e_new);
 
         void * m_loc = (char*) model_net_method_get_edata(SIMPLENET, m) +
             m->event_size_bytes;
@@ -574,7 +586,7 @@ static void sn_configure()
     anno_map = codes_mapping_get_lp_anno_map(LP_CONFIG_NM);
     assert(anno_map);
     num_params = anno_map->num_annos + (anno_map->has_unanno_lp > 0);
-    all_params = malloc(num_params * sizeof(*all_params));
+    all_params = (simplenet_param*)malloc(num_params * sizeof(*all_params));
     for (int i = 0; i < anno_map->num_annos; i++){
         const char * anno = anno_map->annotations[i].ptr;
         int rc;
@@ -631,4 +643,3 @@ void print_msg(sn_message *m){
  *
  * vim: ft=c ts=8 sts=4 sw=4 expandtab
  */
-#endif

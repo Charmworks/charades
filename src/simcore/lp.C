@@ -114,7 +114,7 @@ LP::LP() : next_token(this), uniqID(0), min_cancel_q(DBL_MAX),
    * can be scheduled for this LP chare.
    */
   scheduler = (Scheduler*)CkLocalBranch(scheduler_id);
-  scheduler->register_lp(this, &next_token, 0.0);
+  scheduler->register_lp(this, &next_token, DBL_MAX);
 
   /**
    * Create the correct number of LPStructs based on the model specified
@@ -125,7 +125,7 @@ LP::LP() : next_token(this), uniqID(0), min_cancel_q(DBL_MAX),
     lp_structs[i].owner = this;
     lp_structs[i].gid   = g_init_map(thisIndex, i);
     lp_structs[i].type  = g_type_map(lp_structs[i].gid);
-    lp_structs[i].state = malloc(lp_structs[i].type->state_size);
+    lp_structs[i].state = malloc(lp_structs[i].type->state_sz);
 
     if (g_tw_rng_default == 1) {
       tw_rand_init_streams(&lp_structs[i], g_tw_nRNG_per_lp);
@@ -273,7 +273,7 @@ void LP::init() {
 
 void LP::finalize() {
   for (int i = 0 ; i < lp_structs.size(); i++) {
-    lp_structs[i].type->finalize(lp_structs[i].state, &lp_structs[i]);
+    lp_structs[i].type->final(lp_structs[i].state, &lp_structs[i]);
   }
 }
 
@@ -395,7 +395,7 @@ void* LP::execute_me() {
     latest_time = std::max(latest_time, current_time);
     /** Execute the event on the target LPStruct */
     LPStruct* lp = (LPStruct*)e->dest_lp;
-    BRACKET_TRACE(lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);, USER_EVENT_FWD)
+    BRACKET_TRACE(lp->type->event(lp->state, &e->cv, tw_event_data(e), lp);, USER_EVENT_FWD)
 
     /**
      * Move the event to the processed queue if we are optimistic, otherwise

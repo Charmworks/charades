@@ -76,6 +76,11 @@ static void model_net_base_event_rc(
         tw_bf * b,
         model_net_wrap_msg * m,
         tw_lp * lp);
+static void model_net_base_commit(
+        model_net_base_state * ns,
+        tw_bf * b,
+        model_net_wrap_msg * m,
+        tw_lp * lp);
 static void model_net_base_finalize(
         model_net_base_state * ns,
         tw_lp * lp);
@@ -108,7 +113,7 @@ tw_lptype model_net_base_lp = {
     //(pre_run_f) NULL,
     (event_f) model_net_base_event,
     (revent_f) model_net_base_event_rc,
-    (commit_f) NULL,
+    (commit_f) model_net_base_commit,
     (final_f)  model_net_base_finalize,
     //(map_f) codes_mapping,
     sizeof(model_net_base_state),
@@ -410,6 +415,7 @@ void model_net_base_lp_init(
     ns->sched_send = (model_net_sched*)malloc(sizeof(model_net_sched));
     ns->sched_recv = (model_net_sched*)malloc(sizeof(model_net_sched));
     // init both the sender queue and the 'receiver' queue
+    ns->in_sched_send_loop = ns->in_sched_recv_loop = 0;
     model_net_sched_init(&ns->params->sched_params, 0, method_array[ns->net_id],
             ns->sched_send);
     model_net_sched_init(&ns->params->sched_params, 1, method_array[ns->net_id],
@@ -528,6 +534,12 @@ void model_net_base_event_rc(
             break;
     }
 }
+
+void model_net_base_commit(
+        model_net_base_state * ns,
+        tw_bf * b,
+        model_net_wrap_msg * m,
+        tw_lp * lp){}
 
 void model_net_base_finalize(
         model_net_base_state * ns,
