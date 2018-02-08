@@ -1,0 +1,22 @@
+ROSS_SRC  = /scratch/mikida2/charades/src
+CHARM_DIR = /scratch/mikida2/charm_builds/ross
+BUILD_DIR = $(ROSS_SRC)/build
+CHARMC    = $(CHARM_DIR)/bin/charmc
+
+# BASIC COMPILATION AND LINKING FLAGS
+CFLAGS = -g -fpermissive
+LFLAGS = -module completion -module CommonLBs
+
+# SUB DIRECTORY COMPILATION SETUP
+SUB_DIRS = simcore scheduler gvt setup util collections
+ROSS_INCLUDES = -I$(ROSS_SRC) $(addprefix -I$(ROSS_SRC)/, $(SUB_DIRS))
+CFLAGS  += $(ROSS_INCLUDES)
+
+# CODES DIRECTORY SETUP
+CODES_SRC  	= /scratch/mikida2/charades/models/codes
+CODES_BUILD	= $(CODES_SRC)/build
+CODES_DIRS = modelconfig networks/model-net util util/jobmap-impl util/templates
+
+INCLUDES = -I$(CODES_SRC)
+
+CFLAGS += $(INCLUDES)

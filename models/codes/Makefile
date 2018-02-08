@@ -1,17 +1,19 @@
-include ../../src/config.mk
+include config.mk
 
-OBJS = $(patsubst %.cpp, %.o, $(shell find . -name "*.cpp"))
+default: all
+all: $(CODES_BUILD) $(CODES_BUILD)/libcodes.a
 
-CFLAGS += -I.
+.PHONY : $(CODES_DIRS)
 
-all: codes_exe
+$(CODES_BUILD):
+	mkdir $(CODES_BUILD)
 
-codes_exe: $(OBJS) $(BUILD_DIR)/libcharades.a
-	$(CHARMC) $(LFLAGS) -o $@ $^ -L$(BUILD_DIR) -lcharades
+$(CODES_BUILD)/libcodes.a: $(CODES_DIRS)
+	$(CHARMC) $(LFLAGS) $(CODES_BUILD)/*.o -o $@
 
-%.o: %.cpp
-	$(CHARMC) $(CFLAGS) $^ -o $@
+$(CODES_DIRS):
+	make -C $@
 
 clean:
-	rm -f codes_exe charmrun
-	rm -f $(OBJS)
+	rm -rf $(CODES_BUILD)/libcodes.a
+	for dir in $(CODES_DIRS); do make -C $${dir} clean; done
