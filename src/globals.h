@@ -13,9 +13,9 @@
 #include "typedefs.h"
 
 /** \name LP Configuration *////@{
-extern unsigned g_total_lps;     ///< total number of LPs
-extern unsigned g_num_chares;    ///< total number of chares
-extern unsigned g_lps_per_chare; ///< number of LPs per chare (if constant)
+extern uint32_t g_total_lps;     ///< total number of LPs
+extern uint32_t g_num_chares;    ///< total number of chares
+extern uint32_t g_lps_per_chare; ///< number of LPs per chare (if constant)
 
 extern numlp_map_f g_numlp_map;  ///< map from chare id to number of lps on that chare
 extern init_map_f  g_init_map;   ///< map from chare id and local lp id to global lp id
@@ -27,45 +27,45 @@ extern chare_map_f g_chare_map;  ///< map from global lp id to chare id
 /** \name Event Configuration *////@{
 extern tw_stime g_tw_lookahead;                   ///< event lookahead (conservative)
 extern size_t   g_tw_msg_sz;                      ///< user msg size
-extern unsigned g_tw_max_events_buffered;         ///< event buffer size
-extern unsigned g_tw_max_remote_events_buffered;  ///< remote event buffer size
+extern uint32_t g_tw_max_events_buffered;         ///< event buffer size
+extern uint32_t g_tw_max_remote_events_buffered;  ///< remote event buffer size
 ///@}
 
 /** \name Scheduler Configuration *////@{
-extern unsigned g_tw_synchronization_protocol;    ///< scheduler type
-extern unsigned g_tw_mblock;                      ///< batch size for event execution
+extern uint32_t g_tw_synchronization_protocol;    ///< scheduler type
+extern uint32_t g_tw_mblock;                      ///< batch size for event execution
 extern tw_stime g_tw_ts_end;                      ///< end time of simulation
 ///@}
 
 /** \name GVT Configuration *////@{
-extern unsigned g_tw_gvt_scheme;      ///< GVT algorithm
-extern unsigned g_tw_gvt_interval;    ///< distance between GVT calls
-extern unsigned g_tw_gvt_trigger;     ///< unit of the GVT interval (time or events)
-extern unsigned g_tw_gvt_phases;      ///< number of phases in a phased gvt
-extern unsigned g_tw_gvt_bucket_size; ///< size of each bucket in a bucketed gvt
-extern unsigned g_tw_async_reduction; ///< use asynchronous reductions in GVTs
+extern uint32_t g_tw_gvt_scheme;      ///< GVT algorithm
+extern uint32_t g_tw_gvt_interval;    ///< distance between GVT calls
+extern uint32_t g_tw_gvt_trigger;     ///< unit of the GVT interval (time or events)
+extern uint32_t g_tw_gvt_phases;      ///< number of phases in a phased gvt
+extern uint32_t g_tw_gvt_bucket_size; ///< size of each bucket in a bucketed gvt
+extern uint32_t g_tw_async_reduction; ///< use asynchronous reductions in GVTs
 ///@}
 
 /** \name LB Configuration *////@{
-extern unsigned g_tw_ldb_first;     ///< first iteration to call load balancing
-extern unsigned g_tw_ldb_interval;  ///< number of intervals to wait before lb
-extern unsigned g_tw_max_ldb;       ///< max number of times to call lb
-extern unsigned g_tw_ldb_metric;    ///< metric used to measure LP load
-extern unsigned g_tw_metric_ts_abs; ///< use absolute time or not
-extern unsigned g_tw_metric_invert; ///< whether or not to invert metric
+extern uint32_t g_tw_ldb_first;     ///< first iteration to call load balancing
+extern uint32_t g_tw_ldb_interval;  ///< number of intervals to wait before lb
+extern uint32_t g_tw_max_ldb;       ///< max number of times to call lb
+extern uint32_t g_tw_ldb_metric;    ///< metric used to measure LP load
+extern uint32_t g_tw_metric_ts_abs; ///< use absolute time or not
+extern uint32_t g_tw_metric_invert; ///< whether or not to invert metric
 ///@}
 
 /** \name RNG Configuration *////@{
 extern tw_seed* g_tw_rng_seed;    ///< initial seed for all RNGs
 extern size_t   g_tw_rng_max;     ///< \todo documentation needed
-extern unsigned g_tw_nRNG_per_lp; ///< number of RNGs per LP
-extern unsigned g_tw_rng_default; ///< \todo documentation needed
+extern uint32_t g_tw_nRNG_per_lp; ///< number of RNGs per LP
+extern uint32_t g_tw_rng_default; ///< \todo documentation needed
 ///@}
 
 /** \name Misc Configuration *////@{
-extern long int g_tw_expected_events; ///< expected number of committed events
-extern unsigned gvt_print_interval;   ///< frequency of progress print outs
-extern unsigned g_tw_stat_interval;   ///< frequency of logging stats (in GVTs)
+extern int32_t  g_tw_expected_events; ///< expected number of committed events
+extern uint32_t gvt_print_interval;   ///< frequency of progress print outs
+extern uint32_t g_tw_stat_interval;   ///< frequency of logging stats (in GVTs)
 ///@}
 
 class EventBuffer;

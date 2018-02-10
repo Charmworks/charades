@@ -13,9 +13,9 @@
 /** \name LP Configuration
  */
 ///@{
-unsigned g_total_lps;
-unsigned g_num_chares;
-unsigned g_lps_per_chare;
+uint32_t g_total_lps;
+uint32_t g_num_chares;
+uint32_t g_lps_per_chare;
 
 numlp_map_f g_numlp_map;
 init_map_f  g_init_map;
@@ -28,50 +28,50 @@ chare_map_f g_chare_map;
 ///@{
 tw_stime g_tw_lookahead;
 size_t   g_tw_msg_sz;
-unsigned g_tw_max_events_buffered;
-unsigned g_tw_max_remote_events_buffered;
+uint32_t g_tw_max_events_buffered;
+uint32_t g_tw_max_remote_events_buffered;
 ///@}
 
 /** \name Scheduler Configuration */
 ///@{
-unsigned g_tw_synchronization_protocol;
-unsigned g_tw_mblock;
+uint32_t g_tw_synchronization_protocol;
+uint32_t g_tw_mblock;
 tw_stime g_tw_ts_end;
 ///@}
 
 /** \name GVT Configuration */
 ///@{
-unsigned g_tw_gvt_scheme;
-unsigned g_tw_gvt_interval;
-unsigned g_tw_gvt_trigger;
-unsigned g_tw_gvt_phases;
-unsigned g_tw_gvt_bucket_size;
-unsigned g_tw_async_reduction;
+uint32_t g_tw_gvt_scheme;
+uint32_t g_tw_gvt_interval;
+uint32_t g_tw_gvt_trigger;
+uint32_t g_tw_gvt_phases;
+uint32_t g_tw_gvt_bucket_size;
+uint32_t g_tw_async_reduction;
 ///@}
 
 /** \name LB Configuration */
 ///@{
-unsigned g_tw_ldb_first;
-unsigned g_tw_ldb_interval;
-unsigned g_tw_max_ldb;
-unsigned g_tw_ldb_metric;
-unsigned g_tw_metric_ts_abs;
-unsigned g_tw_metric_invert;
+uint32_t g_tw_ldb_first;
+uint32_t g_tw_ldb_interval;
+uint32_t g_tw_max_ldb;
+uint32_t g_tw_ldb_metric;
+uint32_t g_tw_metric_ts_abs;
+uint32_t g_tw_metric_invert;
 ///@}
 
 /** \name RNG Configuration */
 ///@{
 tw_seed* g_tw_rng_seed;
 size_t   g_tw_rng_max;
-unsigned g_tw_nRNG_per_lp;
-unsigned g_tw_rng_default;
+uint32_t g_tw_nRNG_per_lp;
+uint32_t g_tw_rng_default;
 ///@}
 
 /** \name Misc Configuration */
 ///@{
-long int g_tw_expected_events;
-unsigned gvt_print_interval;
-unsigned g_tw_stat_interval;
+int32_t  g_tw_expected_events;
+uint32_t gvt_print_interval;
+uint32_t g_tw_stat_interval;
 ///@}
 
 /**

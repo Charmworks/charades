@@ -39,7 +39,6 @@ struct MemUsage {
 typedef unsigned long long EventID; ///< Unique ID for events sent from one LP
 typedef unsigned long long tw_lpid; ///< LP ID, either global or local
 typedef unsigned long long tw_peid; ///< \deprecated PE ID
-typedef unsigned long long tw_stat; ///< Typedef for integer stats \todo not needed
 typedef uint64_t tw_clock;          ///< \deprecated Clock value? \todo this is not used anywhere
 typedef struct avlNode *AvlTree;    ///< Node in the PE level AVL tree
 typedef struct tw_bf tw_bf;         ///< Bitfield for reverse computation \todo typedef unneeded.

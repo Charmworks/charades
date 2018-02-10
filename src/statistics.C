@@ -191,7 +191,7 @@ void Statistics::print_section(const char* name) const {
 }
 
 /** Print a formatted and labeled integer value */
-void Statistics::print_int(const char* name, tw_stat v) const {
+void Statistics::print_int(const char* name, uint32_t v) const {
   CkPrintf("\t%-50s %11lld\n", name, v);
 }
 
