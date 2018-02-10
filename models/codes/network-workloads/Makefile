@@ -1,6 +1,6 @@
 include ../config.mk
 
-TESTS = model-net-synthetic-fattree
+TESTS = model-net-synthetic-fattree model-net-synthetic-slimfly
 
 default: all
 all: $(TESTS)
