@@ -64,7 +64,7 @@ typedef struct mn_stats mn_stats;
 #define NETWORK_DEF \
     X(SIMPLENET, "modelnet_simplenet", "simplenet", &simplenet_method)\
     X(SIMPLEP2P, "modelnet_simplep2p", "simplep2p", NULL/*&simplep2p_method*/)\
-    X(TORUS,     "modelnet_torus",     "torus",     NULL/*&torus_method*/)\
+    X(TORUS,     "modelnet_torus",     "torus",     &torus_method)\
     X(SLIMFLY,   "modelnet_slimfly",   "slimfly",   NULL/*&slimfly_method*/)\
     X(FATTREE,   "modelnet_fattree",   "fattree",   &fattree_method)\
     X(DRAGONFLY, "modelnet_dragonfly", "dragonfly", NULL/*&dragonfly_method*/)\

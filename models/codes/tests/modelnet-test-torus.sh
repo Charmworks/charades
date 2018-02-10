@@ -4,17 +4,15 @@ syncs="1 2 3"
 
 for s in $syncs
 do
-  ./modelnet-test --sync=$s --codes-config=conf/modelnet-test.conf --expected-events=1744 \
+  ./modelnet-test --sync=$s --codes-config=conf/modelnet-test-torus.conf --expected-events=5968 \
       2>modelnet_test.err \
       1>modelnet_test.out
   err=$?
   if [ "$err" -eq 0 ]; then
-    echo "modelnet-test sync $s PASS!"
+    echo "modelnet-test-torus sync $s PASS!"
     rm modelnet_test.err modelnet_test.out
   else
-    echo "modelnet-test sync $s FAIL!"
+    echo "modelnet-test-torus sync $s FAIL!"
     exit $err
   fi
 done
-
-./modelnet-test-torus.sh

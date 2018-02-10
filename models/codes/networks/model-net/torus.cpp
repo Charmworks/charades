@@ -1,4 +1,3 @@
-#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -57,16 +56,16 @@ struct nodes_message_list {
     nodes_message_list *prev;
 };
 
-void init_nodes_message_list(nodes_message_list *this, nodes_message *inmsg) {
-    this->msg = *inmsg;
-    this->event_data = NULL;
-    this->next = NULL;
-    this->prev = NULL;
+void init_nodes_message_list(nodes_message_list *self, nodes_message *inmsg) {
+    self->msg = *inmsg;
+    self->event_data = NULL;
+    self->next = NULL;
+    self->prev = NULL;
 }
 
-void delete_nodes_message_list(nodes_message_list *this) {
-    if(this->event_data != NULL) free(this->event_data);
-    free(this);
+void delete_nodes_message_list(nodes_message_list *self) {
+    if(self->event_data != NULL) free(self->event_data);
+    free(self);
 }
 
 static void free_tmp(void * ptr)
@@ -810,7 +809,7 @@ static void send_remote_event(nodes_state * s,
             nodes_message * m;
             ts = (1/s->params->link_bandwidth) * msg->remote_event_size_bytes;
             e = tw_event_new(s->origin_svr, ts, lp);
-            m = tw_event_data(e);
+            m = (nodes_message*)tw_event_data(e);
             char* tmp_ptr = (char*)msg;
             tmp_ptr += torus_get_msg_sz();
             memcpy(m, tmp_ptr, msg->remote_event_size_bytes);
@@ -1092,9 +1091,9 @@ static void packet_generate( nodes_state * ns,
     msg->packet_ID = ns->packet_counter;
     msg->my_N_hop = 0;
 
-    if(lp->gid == TRACK && msg->packet_ID == TRACE)
+    /*if(lp->gid == TRACK && msg->packet_ID == TRACE)
         tw_output(lp, "\n packet generated %lld at lp %d dest %d final dest %d",
-        msg->packet_ID, (int)lp->gid, (int)intm_dst, (int)msg->dest_lp);
+        msg->packet_ID, (int)lp->gid, (int)intm_dst, (int)msg->dest_lp);*/
 
     uint64_t num_chunks = msg->packet_size/ns->params->chunk_size;
     if(msg->packet_size % ns->params->chunk_size)
@@ -1375,7 +1374,7 @@ static void packet_send( nodes_state * s,
             nodes_message* m_new;
             void* local_event;
             e_new = tw_event_new(cur_entry->msg.sender_svr, codes_local_latency(lp), lp);
-            m_new = tw_event_data(e_new);
+            m_new = (nodes_message*)tw_event_data(e_new);
             local_event = (char*)cur_entry->event_data +
                 cur_entry->msg.remote_event_size_bytes;
             memcpy(m_new, local_event, cur_entry->msg.local_event_size_bytes);
@@ -1525,11 +1524,11 @@ static void packet_arrive( nodes_state * s,
 
   if( lp->gid == msg->dest_lp )
     {
-          if(lp->gid == TRACK && msg->packet_ID == TRACE)
+          /*if(lp->gid == TRACK && msg->packet_ID == TRACE)
           {
               tw_output(lp, "\n packet %ld arrived at lp %d from %ld final dest %d hops %d",
                       msg->packet_ID, (int)lp->gid, msg->sender_node, (int)msg->dest_lp, msg->my_N_hop);
-          }
+          }*/
         bf->c1 = 1;
         s->total_data_sz += s->params->chunk_size;
 
@@ -1698,6 +1697,7 @@ static void packet_arrive( nodes_state * s,
  * number of torus hops traversed by the packet */
 static void torus_report_stats()
 {
+#if 0
     long long avg_hops, total_finished_packets;
     tw_stime avg_time, max_time;
 
@@ -1711,6 +1711,7 @@ static void torus_report_stats()
        printf(" Average number of hops traversed %f average packet latency %lf us maximum packet latency %lf us finished packets %lld finished hops %lld \n",
                (float)avg_hops/total_finished_packets, avg_time/(total_finished_packets*1000), max_time/1000, total_finished_packets, avg_hops);
      }
+#endif
 }
 /* finalize the torus node and free all event buffers available */
 void
@@ -1987,12 +1988,12 @@ static void event_handler(nodes_state * s, tw_bf * bf, nodes_message * msg, tw_l
 tw_lptype torus_lp =
 {
     (init_f) torus_init,
-    (pre_run_f) NULL,
+    //(pre_run_f) NULL,
     (event_f) event_handler,
     (revent_f) node_rc_handler,
     (commit_f) NULL,
     (final_f) final,
-    (map_f) codes_mapping,
+    //(map_f) codes_mapping,
     sizeof(nodes_state),
 };
 
@@ -2005,21 +2006,22 @@ static const tw_lptype* torus_get_lp_type(void)
 /* data structure for torus statistics */
 struct model_net_method torus_method =
 {
-   .mn_configure = torus_configure,
-   .mn_register = NULL,
-   .model_net_method_packet_event = torus_packet_event,
-   .model_net_method_packet_event_rc = torus_packet_event_rc,
-   .model_net_method_recv_msg_event = NULL,
-   .model_net_method_recv_msg_event_rc = NULL,
-   .mn_get_lp_type = torus_get_lp_type,
-   .mn_get_msg_sz = torus_get_msg_sz,
-   .mn_report_stats = torus_report_stats,
-   .mn_collective_call = torus_collective,
-   .mn_collective_call_rc = torus_collective_rc,
-   .mn_sample_fn = NULL,
-   .mn_sample_rc_fn = NULL,
-   .mn_sample_init_fn = NULL,
-   .mn_sample_fini_fn = NULL
+  0,                      // packet_size
+  torus_configure,        // mn_configure
+  NULL,                   // mn_register
+  torus_packet_event,     // model_net_method_packet_event
+  torus_packet_event_rc,  // model_net_method_packet_event_rc
+  NULL,                   // model_net_method_recv_msg_event
+  NULL,                   // model_net_method_recv_msg_event_rc
+  torus_get_lp_type,      // mn_get_lp_type
+  torus_get_msg_sz,       // mn_get_msg_size
+  torus_report_stats,     // mn_report_stats
+  torus_collective,       // mn_collective_call
+  torus_collective_rc,    // mn_collective_call_rc
+  NULL,                   // mn_sample_fn
+  NULL,                   // mn_sample_rc_fn
+  NULL,                   // mn_sample_init_fn
+  NULL                    // mn_sample_fini_fn
 };
 
 /* user-facing modelnet functions */
@@ -2151,18 +2153,18 @@ static void torus_get_router_compute_node_list(void* topo, router_id_t r, cn_id_
 }
 
 cortex_topology torus_cortex_topology = {
-	.internal = NULL,
-	.get_number_of_compute_nodes = torus_get_number_of_compute_nodes,
-	.get_number_of_routers	= torus_get_number_of_routers,
-	.get_router_link_bandwidth 	= torus_get_router_link_bandwidth,
-	.get_compute_node_bandwidth 	= torus_get_compute_node_bandwidth,
-	.get_router_neighbor_count 	= torus_get_router_neighbor_count,
-	.get_router_neighbor_list	= torus_get_router_neighbor_list,
-	.get_router_location		= torus_get_router_location,
-	.get_compute_node_location	= torus_get_compute_node_location,
-	.get_router_from_compute_node	= torus_get_router_from_compute_node,
-	.get_router_compute_node_count	= torus_get_router_compute_node_count,
-	.get_router_compute_node_list	= torus_get_router_compute_node_list,
+	NULL,                                 // internal
+	torus_get_number_of_compute_nodes,    // get_number_of_compute_nodes
+	torus_get_number_of_routers,          // get_number_of_routers
+	torus_get_router_link_bandwidth,      // get_router_link_bandwidth
+	torus_get_compute_node_bandwidth,     // get_compute_node_bandwidth
+	torus_get_router_neighbor_count,      // get_router_neighbor_count
+	torus_get_router_neighbor_list,       // get_router_neighbor_list
+	torus_get_router_location,            // get_router_location
+	torus_get_compute_node_location,      // get_compute_node_location
+	torus_get_router_from_compute_node,   // get_router_from_compute_node
+	torus_get_router_compute_node_count,  // get_router_compute_node_count
+	torus_get_router_compute_node_list,   // get_router_compute_node_list
 };
 
 #endif
@@ -2176,4 +2178,3 @@ cortex_topology torus_cortex_topology = {
  *
  * vim: ts=8 sts=4 sw=4 expandtab
  */
-#endif

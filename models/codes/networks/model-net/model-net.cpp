@@ -20,7 +20,7 @@
 
 extern struct model_net_method simplenet_method;
 //extern struct model_net_method simplep2p_method;
-//extern struct model_net_method torus_method;
+extern struct model_net_method torus_method;
 //extern struct model_net_method dragonfly_method;
 //extern struct model_net_method dragonfly_custom_method;
 //extern struct model_net_method slimfly_method;
