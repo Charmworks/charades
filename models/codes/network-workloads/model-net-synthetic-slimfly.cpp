@@ -255,10 +255,6 @@ static void handle_kickoff_rev_event(
             svr_msg * m,
             tw_lp * lp)
 {
-    (void)b;
-    (void)m;
-    (void)lp;
-
     if(b->c1)
         tw_rand_reverse_unif(lp->rng);
 
@@ -273,8 +269,6 @@ static void handle_kickoff_event(
 	    svr_msg * m,
 	    tw_lp * lp)
 {
-    (void)m;
-
     char anno[MAX_NAME_LENGTH];
     tw_lpid local_dest = -1, global_dest = -1;
    
@@ -330,7 +324,7 @@ static void handle_kickoff_event(
 //printf("2local_dest:%d global_dest:%d num_nodes:%d\n", local_dest, global_dest, num_nodes);
 
    ns->msg_sent_count++;
-   model_net_event(net_id, "test", global_dest, PAYLOAD_SZ, 0.0, sizeof(svr_msg), (const void*)m_remote, sizeof(svr_msg), (const void*)m_local, lp);
+   m->event_rc = model_net_event(net_id, "test", global_dest, PAYLOAD_SZ, 0.0, sizeof(svr_msg), (const void*)m_remote, sizeof(svr_msg), (const void*)m_local, lp);
    issue_event(ns, lp);
    return;
 }
