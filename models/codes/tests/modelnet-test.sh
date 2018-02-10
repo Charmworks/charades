@@ -18,3 +18,4 @@ do
 done
 
 ./modelnet-test-torus.sh
+./modelnet-test-slimfly.sh

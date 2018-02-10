@@ -1,4 +1,3 @@
-#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -109,17 +108,17 @@ struct slim_terminal_message_list {
     slim_terminal_message_list *prev;
 };
 
-void slim_init_terminal_message_list(slim_terminal_message_list *this,
+void slim_init_terminal_message_list(slim_terminal_message_list *self,
         slim_terminal_message *inmsg) {
-    this->msg = *inmsg;
-    this->event_data = NULL;
-    this->next = NULL;
-    this->prev = NULL;
+    self->msg = *inmsg;
+    self->event_data = NULL;
+    self->next = NULL;
+    self->prev = NULL;
 }
 
-void slim_delete_terminal_message_list(slim_terminal_message_list *this) {
-    if(this->event_data != NULL) free(this->event_data);
-    free(this);
+void slim_delete_terminal_message_list(slim_terminal_message_list *self) {
+    if(self->event_data != NULL) free(self->event_data);
+    free(self);
 }
 
 struct slimfly_param
@@ -167,7 +166,6 @@ struct sfly_qhash_entry
 };
 
 /* handles terminal and router events like packet generate/send/receive/buffer */
-typedef enum event_t event_t;
 typedef struct terminal_state terminal_state;
 typedef struct router_state router_state;
 
@@ -226,6 +224,7 @@ enum event_t
     R_ARRIVE,
     R_BUFFER
 };
+typedef enum event_t event_t;
 /* status of a virtual channel can be idle, active, allocated or wait for credit */
 enum vc_status
 {
@@ -554,8 +553,7 @@ static void slimfly_read_config(const char * anno, slimfly_param *params){
     p->slim_total_terminals = p->slim_total_routers * p->num_cn;
     slim_total_routers_noah = p->num_groups * p->num_routers;
     slim_total_terminals_noah = p->slim_total_routers * p->num_cn;
-    int rank;
-    MPI_Comm_rank(MPI_COMM_CODES, &rank);
+    int rank = CkMyPe();
     if(!rank) {
         printf("\n Total nodes %d total routers %d total groups %d num_terminals %d num_routers %d radix %d local_channels %d global_channels %d \n",
                 p->num_cn * p->slim_total_routers, p->slim_total_routers, p->num_groups, p->num_cn, p->num_routers,
@@ -587,6 +585,7 @@ static void slimfly_configure(){
 /* report slimfly statistics like average and maximum packet latency, average number of hops traversed */
 static void slimfly_report_stats()
 {
+#if 0
     long long avg_hops, total_finished_packets, total_finished_chunks;
     long long total_finished_msgs, final_msg_sz;
     tw_stime avg_time, max_time;
@@ -742,7 +741,7 @@ static void slimfly_report_stats()
     }
     fclose(slimfly_router_sends_recvs_log);
 #endif
-
+#endif
     return;
 }
 
@@ -1165,7 +1164,7 @@ void slim_router_credit_send(router_state * s, slim_terminal_message * msg, tw_l
         buf_msg->magic = slim_terminal_magic_num;
     } else {
         buf_e = tw_event_new(dest, ts , lp);
-        buf_msg = tw_event_data(buf_e);
+        buf_msg = (slim_terminal_message*)tw_event_data(buf_e);
         buf_msg->magic = slim_router_magic_num;
     }
 
@@ -1236,7 +1235,8 @@ void slim_packet_generate(terminal_state * s, tw_bf * bf, slim_terminal_message 
 
     nic_ts = g_tw_lookahead + (s->params->cn_delay * num_chunks) + tw_rand_unif(lp->rng);
 
-    msg->packet_ID = lp->gid + g_tw_nlp * s->packet_counter;
+    //msg->packet_ID = lp->gid + g_tw_nlp * s->packet_counter;
+    msg->packet_ID = lp->gid + g_total_lps * s->packet_counter;
     msg->my_N_hop = 0;
     msg->my_l_hop = 0;
     msg->my_g_hop = 0;
@@ -1400,7 +1400,7 @@ void slim_packet_send(terminal_state * s, tw_bf * bf, slim_terminal_message * ms
             s->router_id, 0, &router_id);
     // we are sending an event to the router, so no method_event here
     e = tw_event_new(router_id, s->terminal_available_time - tw_now(lp), lp);
-    m = tw_event_data(e);
+    m = (slim_terminal_message*)tw_event_data(e);
     memcpy(m, &cur_entry->msg, sizeof(slim_terminal_message));
     if (m->remote_event_size_bytes)
     {
@@ -1443,7 +1443,7 @@ void slim_packet_send(terminal_state * s, tw_bf * bf, slim_terminal_message * ms
         bf->c2 = 1;
         tw_stime local_ts = codes_local_latency(lp);
         tw_event *e_new = tw_event_new(cur_entry->msg.sender_lp, local_ts, lp);
-        slim_terminal_message* m_new = tw_event_data(e_new);
+        slim_terminal_message* m_new = (slim_terminal_message*)tw_event_data(e_new);
         void *local_event = (char*)cur_entry->event_data +
             cur_entry->msg.remote_event_size_bytes;
         memcpy(m_new, local_event, cur_entry->msg.local_event_size_bytes);
@@ -1624,7 +1624,7 @@ void slim_packet_arrive(terminal_state * s, tw_bf * bf, slim_terminal_message * 
     tw_event * buf_e;
     slim_terminal_message * buf_msg;
     buf_e = tw_event_new(msg->intm_lp_id, ts, lp);
-    buf_msg = tw_event_data(buf_e);
+    buf_msg = (slim_terminal_message*)tw_event_data(buf_e);
     buf_msg->magic = slim_router_magic_num;
     buf_msg->vc_index = msg->vc_index;
     buf_msg->output_chan = msg->output_chan;
@@ -1887,8 +1887,8 @@ void slimfly_terminal_final( terminal_state * s,
             slimfly_results_log=fopen(log, "a");
             if(slimfly_results_log == NULL)
                 tw_error(TW_LOC, "\n Failed to open slimfly results log file \n");
-            printf("Printing Simulation Parameters/Results Log File\n");
-            fprintf(slimfly_results_log," %9d.%d, %10.3d, %9.3d, %11.3d, %5.3d, %12.3d, %10.3d, %12.3d, %7.3d, %10.3d, %17.3d, %9.3d, %19.3d, %12.3f, %8.3d, ",s->params->num_global_channels+s->params->num_local_channels, s->params->num_cn,g_tw_synchronization_protocol, tw_nnodes(),(int)g_tw_ts_end,(int)g_tw_mblock,(int)g_tw_gvt_interval, (int)g_tw_nkp, s->params->slim_total_terminals,s->params->slim_total_terminals,s->params->slim_total_routers, routing, csf_ratio, num_indirect_routes, adaptive_threshold, s->params->num_vcs);
+            //printf("Printing Simulation Parameters/Results Log File\n");
+            //fprintf(slimfly_results_log," %9d.%d, %10.3d, %9.3d, %11.3d, %5.3d, %12.3d, %10.3d, %12.3d, %7.3d, %10.3d, %17.3d, %9.3d, %19.3d, %12.3f, %8.3d, ",s->params->num_global_channels+s->params->num_local_channels, s->params->num_cn,g_tw_synchronization_protocol, tw_nnodes(),(int)g_tw_ts_end,(int)g_tw_mblock,(int)g_tw_gvt_interval, (int)g_tw_nkp, s->params->slim_total_terminals,s->params->slim_total_terminals,s->params->slim_total_routers, routing, csf_ratio, num_indirect_routes, adaptive_threshold, s->params->num_vcs);
             fclose(slimfly_results_log);
 #endif
         }
@@ -2933,7 +2933,7 @@ slim_router_packet_receive( router_state * s,
             slim_terminal_message *m;
             ts = codes_local_latency(lp);
             tw_event *e = tw_event_new(lp->gid, ts, lp);
-            m = tw_event_data(e);
+            m = (slim_terminal_message*)tw_event_data(e);
             m->type = R_SEND;
             m->magic = slim_router_magic_num;
             m->vc_index = output_port;
@@ -3094,7 +3094,7 @@ slim_router_packet_send( router_state * s,
     {
         e = tw_event_new(cur_entry->msg.next_stop,
                 s->next_output_available_time[output_port] - tw_now(lp), lp);
-        m = tw_event_data(e);
+        m = (slim_terminal_message*)tw_event_data(e);
         m_data = model_net_method_get_edata(SLIMFLY, m);
     }
     memcpy(m, &cur_entry->msg, sizeof(slim_terminal_message));
@@ -3154,7 +3154,7 @@ slim_router_packet_send( router_state * s,
         slim_terminal_message *m_new;
         ts = ts + g_tw_lookahead * tw_rand_unif(lp->rng);
         tw_event *e_new = tw_event_new(lp->gid, ts, lp);
-        m_new = tw_event_data(e_new);
+        m_new = (slim_terminal_message*)tw_event_data(e_new);
         m_new->type = R_SEND;
         m_new->magic = slim_router_magic_num;
         m_new->vc_index = output_port;
@@ -3244,7 +3244,7 @@ void slim_router_buf_update(router_state * s, tw_bf * bf, slim_terminal_message 
         slim_terminal_message *m;
         tw_stime ts = codes_local_latency(lp);
         tw_event *e = tw_event_new(lp->gid, ts, lp);
-        m = tw_event_data(e);
+        m = (slim_terminal_message*)tw_event_data(e);
         m->type = R_SEND;
         m->vc_index = indx;
         m->magic = slim_router_magic_num;
@@ -3328,25 +3328,25 @@ tw_lptype slimfly_lps[] =
     // Terminal handling functions
     {
         (init_f)slim_terminal_init,
-        (pre_run_f) NULL,
+        //(pre_run_f) NULL,
         (event_f) slim_terminal_event,
         (revent_f) slim_terminal_rc_event_handler,
         (commit_f) NULL,
         (final_f) slimfly_terminal_final,
-        (map_f) codes_mapping,
+        //(map_f) codes_mapping,
         sizeof(terminal_state)
     },
     {
         (init_f) slim_router_setup,
-        (pre_run_f) NULL,
+        //(pre_run_f) NULL,
         (event_f) slim_router_event,
         (revent_f) slim_router_rc_event_handler,
         (commit_f) NULL,
         (final_f) slimfly_router_final,
-        (map_f) codes_mapping,
+        //(map_f) codes_mapping,
         sizeof(router_state),
     },
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0},
+    {NULL, NULL, NULL, NULL, NULL, 0},
 };
 
 /* returns the slimfly lp type for lp registration */
@@ -3363,14 +3363,20 @@ static void slimfly_register(tw_lptype *base_type) {
 /* data structure for slimfly statistics */
 struct model_net_method slimfly_method =
 {
-    .mn_configure = slimfly_configure,
-    .mn_register = slimfly_register,
-    .model_net_method_packet_event = slimfly_packet_event,
-    .model_net_method_packet_event_rc = slimfly_packet_event_rc,
-    .model_net_method_recv_msg_event = NULL,
-    .model_net_method_recv_msg_event_rc = NULL,
-    .mn_get_lp_type = slimfly_get_cn_lp_type,
-    .mn_get_msg_sz = slimfly_get_msg_sz,
-    .mn_report_stats = slimfly_report_stats
+    0,                        // packet_size
+    slimfly_configure,        // mn_configure
+    slimfly_register,         // mn_register
+    slimfly_packet_event,     // model_net_method_packet_event
+    slimfly_packet_event_rc,  // model_net_method_packet_event_rc
+    NULL,                     // model_net_method_recv_msg_event
+    NULL,                     // model_net_method_recv_msg_event_rc
+    slimfly_get_cn_lp_type,   // mn_get_lp_type
+    slimfly_get_msg_sz,       // mn_get_msg_size
+    slimfly_report_stats,     // mn_report_stats
+    NULL,                     // mn_collective_call
+    NULL,                     // mn_collective_call_rc
+    NULL,                     // mn_sample_fn
+    NULL,                     // mn_sample_rc_fn
+    NULL,                     // mn_sample_init_fn
+    NULL                      // mn_sample_fini_fn
 };
-#endif
