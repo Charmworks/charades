@@ -1,4 +1,3 @@
-#if 0
 /*
  * Copyright (C) 2014 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -142,21 +141,22 @@ static void sp_report_stats();
 /* data structure for model-net statistics */
 struct model_net_method simplep2p_method =
 {
-    .mn_configure = sp_configure,
-    .mn_register = NULL,
-    .model_net_method_packet_event = simplep2p_packet_event,
-    .model_net_method_packet_event_rc = simplep2p_packet_event_rc,
-    .model_net_method_recv_msg_event = NULL,
-    .model_net_method_recv_msg_event_rc = NULL,
-    .mn_get_lp_type = sp_get_lp_type,
-    .mn_get_msg_sz = sp_get_msg_sz,
-    .mn_report_stats = sp_report_stats,
-    .mn_collective_call = simple_wan_collective,
-    .mn_collective_call_rc = simple_wan_collective_rc,
-    .mn_sample_fn = NULL,
-    .mn_sample_rc_fn = NULL,
-    .mn_sample_init_fn = NULL,
-    .mn_sample_fini_fn = NULL
+    0,                          // packet_size
+    sp_configure,               // mn_configure
+    NULL,                       // mn_register
+    simplep2p_packet_event,     // model_net_method_packet_event
+    simplep2p_packet_event_rc,  // model_net_method_packet_event_rc
+    NULL,                       // model_net_method_recv_msg_event
+    NULL,                       // model_net_method_recv_msg_event_rc
+    sp_get_lp_type,             // mn_get_lp_type
+    sp_get_msg_sz,              // mn_get_msg_size
+    sp_report_stats,            // mn_report_stats
+    simple_wan_collective,      // mn_collective_call
+    simple_wan_collective_rc,   // mn_collective_call_rc
+    NULL,                       // mn_sample_fn
+    NULL,                       // mn_sample_rc_fn
+    NULL,                       // mn_sample_init_fn
+    NULL                        // mn_sample_fini_fn
 };
 
 static void sp_init(
@@ -178,13 +178,11 @@ static void sp_finalize(
 
 tw_lptype sp_lp = {
     (init_f) sp_init,
-    (pre_run_f) NULL,
     (event_f) sp_event,
     (revent_f) sp_rev_event,
     (commit_f) NULL,
     (final_f) sp_finalize,
-    (map_f) codes_mapping,
-    sizeof(sp_state),
+    sizeof(sp_state)
 };
 
 static tw_stime rate_to_ns(uint64_t bytes, double MB_p_s);
@@ -780,7 +778,7 @@ static void handle_msg_start_event(
         //char* local_event;
 
         e_new = tw_event_new(m->src_gid, send_queue_time+codes_local_latency(lp), lp);
-        m_new = tw_event_data(e_new);
+        m_new = (sp_message*)tw_event_data(e_new);
 
         void * m_loc = (char*) model_net_method_get_edata(SIMPLEP2P, m) +
             m->event_size_bytes;
@@ -869,23 +867,27 @@ static void sp_read_config(const char * anno, simplep2p_param *p){
             "net_latency_ns_file", anno, latency_file, MAX_NAME_LENGTH);
     if (rc <= 0){
         if (anno == NULL)
-            tw_error(TW_LOC,
-                    "simplep2p: unable to read PARAMS:net_latency_ns_file");
+            CkAbort("Unable to read PARAMS:net_latency_ns_file\n");
+            //tw_error(TW_LOC,
+            //        "simplep2p: unable to read PARAMS:net_latency_ns_file");
         else
-            tw_error(TW_LOC,
-                    "simplep2p: unable to read PARAMS:net_latency_ns_file@%s",
-                    anno);
+            CkAbort("Unable to read PARAMS:net_latency_ns_file\n");
+            //tw_error(TW_LOC,
+            //        "simplep2p: unable to read PARAMS:net_latency_ns_file@%s",
+            //        anno);
     }
     rc = configuration_get_value_relpath(&config, "PARAMS", "net_bw_mbps_file",
             anno, bw_file, MAX_NAME_LENGTH);
     if (rc <= 0){
         if (anno == NULL)
-            tw_error(TW_LOC,
-                    "simplep2p: unable to read PARAMS:net_bw_mbps_file");
+            CkAbort("Unable to read PARAMS:net_bw_mbps_file\n");
+            //tw_error(TW_LOC,
+            //        "simplep2p: unable to read PARAMS:net_bw_mbps_file");
         else
-            tw_error(TW_LOC,
-                    "simplep2p: unable to read PARAMS:net_bw_mbps_file@%s",
-                    anno);
+            CkAbort("Unable to read PARAMS:net_bw_mbps_file\n");
+            //tw_error(TW_LOC,
+            //        "simplep2p: unable to read PARAMS:net_bw_mbps_file@%s",
+            //        anno);
     }
     p->num_lps = codes_mapping_get_lp_count(NULL, 0,
             LP_CONFIG_NM, anno, 0);
@@ -961,4 +963,3 @@ static category_idles* sp_get_category_idles(
  *
  * vim: ft=c ts=8 sts=4 sw=4 expandtab
  */
-#endif
