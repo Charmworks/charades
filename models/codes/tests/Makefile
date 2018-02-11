@@ -1,6 +1,6 @@
 include ../config.mk
 
-TESTS = modelnet-test mapping_test modelnet-test-dragonfly modelnet-simplep2p-test
+TESTS = modelnet-test mapping_test
 
 default: all
 all: $(TESTS)
