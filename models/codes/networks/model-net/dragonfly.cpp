@@ -1,4 +1,3 @@
-#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -103,17 +102,17 @@ struct terminal_message_list {
     terminal_message_list *prev;
 };
 
-static void init_terminal_message_list(terminal_message_list *this, 
+static void init_terminal_message_list(terminal_message_list *self, 
     terminal_message *inmsg) {
-    this->msg = *inmsg;
-    this->event_data = NULL;
-    this->next = NULL;
-    this->prev = NULL;
+    self->msg = *inmsg;
+    self->event_data = NULL;
+    self->next = NULL;
+    self->prev = NULL;
 }
 
-static void delete_terminal_message_list(terminal_message_list *this) {
-    if(this->event_data != NULL) free(this->event_data);
-    free(this);
+static void delete_terminal_message_list(terminal_message_list *self) {
+    if(self->event_data != NULL) free(self->event_data);
+    free(self);
 }
 
 struct dragonfly_param
@@ -182,7 +181,6 @@ struct dfly_qhash_entry
 };
 
 /* handles terminal and router events like packet generate/send/receive/buffer */
-typedef enum event_t event_t;
 typedef struct terminal_state terminal_state;
 typedef struct router_state router_state;
 
@@ -295,6 +293,8 @@ enum event_t
   D_COLLECTIVE_FAN_IN,
   D_COLLECTIVE_FAN_OUT
 };
+typedef enum event_t event_t;
+
 /* status of a virtual channel can be idle, active, allocated or wait for credit */
 enum vc_status
 {
@@ -375,7 +375,7 @@ void dragonfly_event_collect(terminal_message *m, tw_lp *lp, char *buffer, int *
 void dragonfly_model_stat_collect(terminal_state *s, tw_lp *lp, char *buffer);
 void dfly_router_model_stat_collect(router_state *s, tw_lp *lp, char *buffer);
 
-st_model_types dragonfly_model_types[] = {
+/*st_model_types dragonfly_model_types[] = {
     {(rbev_trace_f) dragonfly_event_collect,
      sizeof(int),
      (ev_trace_f) dragonfly_event_collect,
@@ -389,7 +389,7 @@ st_model_types dragonfly_model_types[] = {
      (model_stat_f) dfly_router_model_stat_collect,
      0}, //updated in router_setup() since it's based on the radix
     {NULL, 0, NULL, 0, NULL, 0}
-};
+};*/
 /* End of ROSS model stats collection */
 
 static short routing = MINIMAL;
@@ -616,8 +616,7 @@ static void dragonfly_read_config(const char * anno, dragonfly_param *params){
     p->radix = (p->num_routers + p->num_global_channels + p->num_cn);
     p->total_routers = p->num_groups * p->num_routers;
     p->total_terminals = p->total_routers * p->num_cn;
-    int rank;
-    MPI_Comm_rank(MPI_COMM_CODES, &rank);
+    int rank = CkMyPe();
     if(!rank) {
         printf("\n Total nodes %d routers %d groups %d radix %d \n",
                 p->num_cn * p->total_routers, p->total_routers, p->num_groups,
@@ -651,6 +650,7 @@ static void dragonfly_configure(){
 /* report dragonfly statistics like average and maximum packet latency, average number of hops traversed */
 static void dragonfly_report_stats()
 {
+#if 0
    long long avg_hops, total_finished_packets, total_finished_chunks;
    long long total_finished_msgs, final_msg_sz;
    tw_stime avg_time, max_time;
@@ -685,6 +685,7 @@ static void dragonfly_report_stats()
       printf("\n Total packets generated %ld finished %ld \n", total_gen, total_fin);
    }
    return;
+#endif
 }
 
 static void dragonfly_collective_init(terminal_state * s,
@@ -899,8 +900,8 @@ static void router_setup(router_state * r, tw_lp * lp)
    /* set up for ROSS stats sampling */
    r->link_traffic_ross_sample = (int64_t*)calloc(p->radix, sizeof(int64_t));
    r->busy_time_ross_sample = (tw_stime*)calloc(p->radix, sizeof(tw_stime));
-   if (g_st_model_stats)
-       lp->model_types->mstat_sz = sizeof(tw_lpid) + (sizeof(int64_t) + sizeof(tw_stime)) * p->radix;
+   //if (g_st_model_stats)
+   //    lp->model_types->mstat_sz = sizeof(tw_lpid) + (sizeof(int64_t) + sizeof(tw_stime)) * p->radix;
 
    rc_stack_create(&r->st);
    for(int i=0; i < p->radix; i++)
@@ -1196,7 +1197,8 @@ static void packet_generate(terminal_state * s, tw_bf * bf, terminal_message * m
 
   nic_ts = g_tw_lookahead + (num_chunks * s->params->cn_delay) + tw_rand_unif(lp->rng);
   
-  msg->packet_ID = lp->gid + g_tw_nlp * s->packet_counter;
+  //msg->packet_ID = lp->gid + g_tw_nlp * s->packet_counter;
+  msg->packet_ID = lp->gid + g_total_lps * s->packet_counter;
   msg->my_N_hop = 0;
   msg->my_l_hop = 0;
   msg->my_g_hop = 0;
@@ -1816,7 +1818,7 @@ static void send_collective_remote_event(terminal_state * s,
             terminal_message * m;
             ts = (1/s->params->cn_bandwidth) * msg->remote_event_size_bytes;
             e = tw_event_new(s->origin_svr, ts, lp);
-            m = tw_event_data(e);
+            m = (terminal_message*)tw_event_data(e);
             char* tmp_ptr = (char*)msg;
             tmp_ptr += dragonfly_get_msg_sz();
             memcpy(m, tmp_ptr, msg->remote_event_size_bytes);
@@ -3327,28 +3329,25 @@ tw_lptype dragonfly_lps[] =
    // Terminal handling functions
    {
     (init_f)terminal_init,
-    (pre_run_f) NULL,
     (event_f) terminal_event,
     (revent_f) terminal_rc_event_handler,
     (commit_f) NULL,
     (final_f) dragonfly_terminal_final,
-    (map_f) codes_mapping,
     sizeof(terminal_state)
     },
    {
      (init_f) router_setup,
-     (pre_run_f) NULL,
      (event_f) router_event,
      (revent_f) router_rc_event_handler,
      (commit_f) NULL,
      (final_f) dragonfly_router_final,
-     (map_f) codes_mapping,
      sizeof(router_state),
    },
-   {NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0},
+   {NULL, NULL, NULL, NULL, NULL, 0},
 };
 
 /* For ROSS event tracing */
+#if 0
 void dragonfly_event_collect(terminal_message *m, tw_lp *lp, char *buffer, int *collect_flag)
 {
     (void)lp;
@@ -3448,6 +3447,7 @@ static void router_register_model_types(st_model_types *base_type)
 {
     st_model_type_register(LP_CONFIG_NM_ROUT, base_type);
 }
+#endif
 /*** END of ROSS event tracing additions */
 
 /* returns the dragonfly lp type for lp registration */
@@ -3471,44 +3471,42 @@ static void router_register(tw_lptype *base_type) {
 /* data structure for dragonfly statistics */
 struct model_net_method dragonfly_method =
 {
-    .mn_configure = dragonfly_configure,
-    .mn_register = dragonfly_register,
-    .model_net_method_packet_event = dragonfly_packet_event,
-    .model_net_method_packet_event_rc = dragonfly_packet_event_rc,
-    .model_net_method_recv_msg_event = NULL,
-    .model_net_method_recv_msg_event_rc = NULL,
-    .mn_get_lp_type = dragonfly_get_cn_lp_type,
-    .mn_get_msg_sz = dragonfly_get_msg_sz,
-    .mn_report_stats = dragonfly_report_stats,
-    .mn_collective_call = dragonfly_collective,
-    .mn_collective_call_rc = dragonfly_collective_rc,   
-    .mn_sample_fn = (void*)dragonfly_sample_fn,    
-    .mn_sample_rc_fn = (void*)dragonfly_sample_rc_fn,
-    .mn_sample_init_fn = (void*)dragonfly_sample_init,
-    .mn_sample_fini_fn = (void*)dragonfly_sample_fin,
-    .mn_model_stat_register = dragonfly_register_model_types,
-    .mn_get_model_stat_types = dragonfly_get_model_types,
+    0,                             // packet_size
+    dragonfly_configure,           // mn_configure
+    dragonfly_register,            // mn_register
+    dragonfly_packet_event,        // model_net_method_packet_event
+    dragonfly_packet_event_rc,     // model_net_method_packet_event_rc
+    NULL,                          // model_net_method_recv_msg_event
+    NULL,                          // model_net_method_recv_msg_event_rc
+    dragonfly_get_cn_lp_type,      // mn_get_lp_type
+    dragonfly_get_msg_sz,          // mn_get_msg_size
+    dragonfly_report_stats,        // mn_report_stats
+    dragonfly_collective,          // mn_collective_call
+    dragonfly_collective_rc,       // mn_collective_call_rc
+    (void*)dragonfly_sample_fn,    // mn_sample_fn
+    (void*)dragonfly_sample_rc_fn, // mn_sample_rc_fn
+    (void*)dragonfly_sample_init,  // mn_sample_init_fn
+    (void*)dragonfly_sample_fin,   // mn_sample_fini_fn
 };
 
 struct model_net_method dragonfly_router_method =
 {
-    .mn_configure = NULL, // handled by dragonfly_configure
-    .mn_register  = router_register,
-    .model_net_method_packet_event = NULL,
-    .model_net_method_packet_event_rc = NULL,
-    .model_net_method_recv_msg_event = NULL,
-    .model_net_method_recv_msg_event_rc = NULL,
-    .mn_get_lp_type = router_get_lp_type,
-    .mn_get_msg_sz = dragonfly_get_msg_sz,
-    .mn_report_stats = NULL, // not yet supported
-    .mn_collective_call = NULL,
-    .mn_collective_call_rc = NULL,
-    .mn_sample_fn = (void*)dragonfly_rsample_fn,
-    .mn_sample_rc_fn = (void*)dragonfly_rsample_rc_fn,
-    .mn_sample_init_fn = (void*)dragonfly_rsample_init,
-    .mn_sample_fini_fn = (void*)dragonfly_rsample_fin,
-    .mn_model_stat_register = router_register_model_types,
-    .mn_get_model_stat_types = dfly_router_get_model_types,
+    0,                              // packet_size
+    NULL,                           // mn_configure
+    router_register,                // mn_register
+    NULL,                           // model_net_method_packet_event
+    NULL,                           // model_net_method_packet_event_rc
+    NULL,                           // model_net_method_recv_msg_event
+    NULL,                           // model_net_method_recv_msg_event_rc
+    router_get_lp_type,             // mn_get_lp_type
+    dragonfly_get_msg_sz,           // mn_get_msg_size
+    NULL,                           // mn_report_stats
+    NULL,                           // mn_collective_call
+    NULL,                           // mn_collective_call_rc
+    (void*)dragonfly_rsample_fn,    // mn_sample_fn
+    (void*)dragonfly_rsample_rc_fn, // mn_sample_rc_fn
+    (void*)dragonfly_rsample_init,  // mn_sample_init_fn
+    (void*)dragonfly_rsample_fin,   // mn_sample_fini_fn
 };
 
 #ifdef ENABLE_CORTEX
@@ -3594,19 +3592,18 @@ static void dragonfly_get_router_compute_node_list(void* topo, router_id_t r, cn
 }
 
 cortex_topology dragonfly_cortex_topology = {
-        .internal = NULL,
-		.get_number_of_routers			= dragonfly_get_number_of_routers,
-		.get_number_of_compute_nodes	= dragonfly_get_number_of_compute_nodes,
-        .get_router_link_bandwidth      = dragonfly_get_router_link_bandwidth,
-        .get_compute_node_bandwidth     = dragonfly_get_compute_node_bandwidth,
-        .get_router_neighbor_count      = dragonfly_get_router_neighbor_count,
-        .get_router_neighbor_list       = dragonfly_get_router_neighbor_list,
-        .get_router_location            = dragonfly_get_router_location,
-        .get_compute_node_location      = dragonfly_get_compute_node_location,
-        .get_router_from_compute_node   = dragonfly_get_router_from_compute_node,
-        .get_router_compute_node_count  = dragonfly_get_router_compute_node_count,
-        .get_router_compute_node_list   = dragonfly_get_router_compute_node_list,
+  NULL,                                     // internal
+  dragonfly_get_number_of_routers,          // get_number_of_compute_nodes
+  dragonfly_get_number_of_compute_nodes,    // get_number_of_routers
+  dragonfly_get_router_link_bandwidth,      // get_router_link_bandwidth
+  dragonfly_get_compute_node_bandwidth,     // get_compute_node_bandwidth
+  dragonfly_get_router_neighbor_count,      // get_router_neighbor_count
+  dragonfly_get_router_neighbor_list,       // get_router_neighbor_list
+  dragonfly_get_router_location,            // get_router_location
+  dragonfly_get_compute_node_location,      // get_compute_node_location
+  dragonfly_get_router_from_compute_node,   // get_router_from_compute_node
+  dragonfly_get_router_compute_node_count,  // get_router_compute_node_count
+  dragonfly_get_router_compute_node_list,   // get_router_compute_node_list
 };
 
-#endif
 #endif

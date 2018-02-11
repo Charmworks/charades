@@ -1,4 +1,3 @@
-#if 0
 /*
  * Copyright (C) 2013 University of Chicago.
  * See COPYRIGHT notice in top-level directory.
@@ -15,6 +14,7 @@
 #include "codes/model-net-method.h"
 #include "codes/model-net-lp.h"
 #include "codes/net/dragonfly-custom.h"
+#include "limits.h"
 #include "sys/file.h"
 #include "codes/quickhash.h"
 #include "codes/rc-stack.h"
@@ -495,8 +495,8 @@ static terminal_custom_message_list* return_tail(
 static void dragonfly_read_config(const char * anno, dragonfly_param *params){
     // shorthand
     dragonfly_param *p = params;
-    int myRank;
-    MPI_Comm_rank(MPI_COMM_CODES, &myRank);
+    int myRank = CkMyPe();
+    //MPI_Comm_rank(MPI_COMM_CODES, &myRank);
 
     int rc = configuration_get_value_int(&config, "PARAMS", "local_vc_size", anno, &p->local_vc_size);
     if(rc) {
@@ -578,7 +578,8 @@ static void dragonfly_read_config(const char * anno, dragonfly_param *params){
     rc = configuration_get_value_int(&config, "PARAMS", "num_groups", anno, &p->num_groups);
     if(rc) {
       printf("Number of groups not specified. Aborting");
-      MPI_Abort(MPI_COMM_CODES, 1);
+      //MPI_Abort(MPI_COMM_CODES, 1);
+      CkAbort("Configuration error\n");
     }
     rc = configuration_get_value_int(&config, "PARAMS", "num_col_chans", anno, &p->num_col_chans);
     if(rc) {
@@ -778,6 +779,7 @@ void dragonfly_custom_configure(){
 /* report dragonfly statistics like average and maximum packet latency, average number of hops traversed */
 void dragonfly_custom_report_stats()
 {
+#if 0
    long long avg_hops, total_finished_packets, total_finished_chunks;
    long long total_finished_msgs, final_msg_sz;
    tw_stime avg_time, max_time;
@@ -812,6 +814,7 @@ void dragonfly_custom_report_stats()
       printf("\n Total packets generated %ld finished %ld \n", total_gen, total_fin);
    }
    return;
+#endif
 }
 
 
@@ -1169,7 +1172,8 @@ static void packet_generate(terminal_state * s, tw_bf * bf, terminal_custom_mess
 
   nic_ts = g_tw_lookahead + (num_chunks * cn_delay) + tw_rand_unif(lp->rng);
   
-  msg->packet_ID = lp->gid + g_tw_nlp * s->packet_counter;
+  //msg->packet_ID = lp->gid + g_tw_nlp * s->packet_counter;
+  msg->packet_ID = lp->gid + g_total_lps * s->packet_counter;
   msg->my_N_hop = 0;
   msg->my_l_hop = 0;
   msg->my_g_hop = 0;
@@ -3299,25 +3303,21 @@ tw_lptype dragonfly_custom_lps[] =
    // Terminal handling functions
    {
     (init_f)terminal_custom_init,
-    (pre_run_f) NULL,
     (event_f) terminal_custom_event,
     (revent_f) terminal_custom_rc_event_handler,
     (commit_f) NULL,
     (final_f) dragonfly_custom_terminal_final,
-    (map_f) codes_mapping,
     sizeof(terminal_state)
     },
    {
      (init_f) router_custom_setup,
-     (pre_run_f) NULL,
      (event_f) router_custom_event,
      (revent_f) router_custom_rc_event_handler,
      (commit_f) NULL,
      (final_f) dragonfly_custom_router_final,
-     (map_f) codes_mapping,
      sizeof(router_state),
    },
-   {NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0},
+   {NULL, NULL, NULL, NULL, NULL, 0},
 };
 }
 
@@ -3682,4 +3682,3 @@ cortex_topology dragonfly_custom_cortex_topology = {
 #endif
 
 }
-#endif

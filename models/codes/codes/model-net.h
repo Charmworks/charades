@@ -67,10 +67,10 @@ typedef struct mn_stats mn_stats;
     X(TORUS,     "modelnet_torus",     "torus",     &torus_method)\
     X(SLIMFLY,   "modelnet_slimfly",   "slimfly",   &slimfly_method)\
     X(FATTREE,   "modelnet_fattree",   "fattree",   &fattree_method)\
-    X(DRAGONFLY, "modelnet_dragonfly", "dragonfly", NULL/*&dragonfly_method*/)\
-    X(DRAGONFLY_ROUTER, "modelnet_dragonfly_router", "dragonfly_router", NULL/*&dragonfly_router_method*/)\
-    X(DRAGONFLY_CUSTOM, "modelnet_dragonfly_custom", "dragonfly_custom", NULL/*&dragonfly_custom_method*/)\
-    X(DRAGONFLY_CUSTOM_ROUTER, "modelnet_dragonfly_custom_router", "dragonfly_custom_router", NULL/*&dragonfly_custom_router_method*/)\
+    X(DRAGONFLY, "modelnet_dragonfly", "dragonfly", &dragonfly_method)\
+    X(DRAGONFLY_ROUTER, "modelnet_dragonfly_router", "dragonfly_router", &dragonfly_router_method)\
+    X(DRAGONFLY_CUSTOM, "modelnet_dragonfly_custom", "dragonfly_custom", &dragonfly_custom_method)\
+    X(DRAGONFLY_CUSTOM_ROUTER, "modelnet_dragonfly_custom_router", "dragonfly_custom_router", &dragonfly_custom_router_method)\
     X(LOGGP,     "modelnet_loggp",     "loggp",     &loggp_method)\
     X(MAX_NETS,  NULL,                 NULL,        NULL)
 
