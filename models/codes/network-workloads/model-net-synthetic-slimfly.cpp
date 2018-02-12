@@ -18,54 +18,26 @@
 #include "codes/lp-type-lookup.h"
 
 #define PAYLOAD_SZ 256
-#define LP_CONFIG_NM (model_net_lp_config_names[SLIMFLY])
+#include "model-net-synthetic.h"
 
-#define PRINT_WORST_CASE_MATCH 0
-
-//#define PARAMS_LOG 1
 #define PARAMS_LOG 0
-FILE* slimfly_results_log_2=NULL;
-FILE* slimfly_ross_csv_log=NULL;
-
-static int net_id = 0;
-static int offset = 2;
-static int traffic = 1;
-static double arrival_time = 1000.0;
-static double load = 0.0;       //percent utilization of each terminal's uplink when sending messages
-static double MEAN_INTERVAL = 0.0;
-int this_packet_size = 0;
-double this_global_bandwidth = 0.0;
-double this_link_delay = 0;
-int *worst_dest;            //Array mapping worst case destination for each router
-int num_terminals;
-int total_routers;
-
-static char lp_io_dir[356] = {'\0'};
-static lp_io_handle io_handle;
-static unsigned int lp_io_use_suffix = 0;
-static int do_lp_io = 0;
+#define LP_CONFIG_NM (model_net_lp_config_names[SLIMFLY])
+#define PRINT_WORST_CASE_MATCH 0
 
 static int num_servers_per_rep = 0;
 static int num_routers_per_grp = 0;
 static int num_nodes_per_grp = 0;
-
 static int num_groups = 0;
 static int num_nodes = 0;
+static int num_terminals = 0;
+static int num_routers = 0;
 
-typedef struct svr_msg svr_msg;
-typedef struct svr_state svr_state;
-
-/* global variables for codes mapping */
-static char group_name[MAX_NAME_LENGTH];
-static char lp_type_name[MAX_NAME_LENGTH];
-static int group_index, lp_type_index, rep_id;//, offset;
-
-/* type of events */
-enum svr_event {
-  KICKOFF,  /* kickoff event */
-  REMOTE,   /* remote event */
-  LOCAL     /* local event */
-};
+/*FILE* slimfly_results_log_2=NULL;
+FILE* slimfly_ross_csv_log=NULL;
+static char lp_io_dir[356] = {'\0'};
+static lp_io_handle io_handle;
+static unsigned int lp_io_use_suffix = 0;
+static int do_lp_io = 0;*/
 
 /* type of synthetic traffic */
 enum TRAFFIC {
@@ -75,82 +47,27 @@ enum TRAFFIC {
   NEAREST_NEIGHBOR = 4  /* sends message to the next node (potentially connected to the same router) */
 };
 
-struct svr_state {
-  int msg_sent_count;     /* requests sent */
-  int msg_recvd_count;    /* requests recvd */
-  int local_recvd_count;  /* number of local messages received */
-  tw_stime start_ts;      /* time that we started sending requests */
-  tw_stime end_ts;        /* time that we ended sending requests */
-};
-
-struct svr_msg {
-  enum svr_event svr_event_type;
-  tw_lpid src;          /* source of this request or ack */
-  int incremented_flag; /* helper for reverse computation */
-  model_net_event_return event_rc;
-};
-
-static void svr_init(svr_state* ns, tw_lp* lp);
-static void svr_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void svr_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void svr_finalize(svr_state* ns, tw_lp* lp);
-
-static void handle_kickoff_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void handle_local_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void handle_remote_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-
-static void handle_kickoff_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void handle_local_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void handle_remote_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-
-tw_lptype svr_lp = {
-  (init_f) svr_init,
-  (event_f) svr_event,
-  (revent_f) svr_rev_event,
-  (commit_f) NULL,
-  (final_f)  svr_finalize,
-  sizeof(svr_state),
-};
-
+/* Command line configuration options */
+static int traffic = 1;
+static double arrival_time = 1000.0;
+static double load = 0.0;
 static char conf_file_name[128] = {'\0'};
-const tw_optdef app_opt [] =
-{
+const tw_optdef app_opt [] = {
     TWOPT_GROUP("Model net synthetic traffic " ),
     TWOPT_UINT("traffic", traffic, "UNIFORM RANDOM=1, NEAREST NEIGHBOR=2 "),
     TWOPT_STIME("arrival_time", arrival_time, "INTER-ARRIVAL TIME"),
     TWOPT_STIME("load", load, "percentage of packet inter-arrival rate to simulate"),
-    TWOPT_CHAR("lp-io-dir", lp_io_dir, "Where to place io output (unspecified -> no output"),
-    TWOPT_UINT("lp-io-use-suffix", lp_io_use_suffix, "Whether to append uniq suffix to lp-io directory (default 0)"),
+    //TWOPT_CHAR("lp-io-dir", lp_io_dir, "Where to place io output (unspecified -> no output"),
+    //TWOPT_UINT("lp-io-use-suffix", lp_io_use_suffix, "Whether to append uniq suffix to lp-io directory (default 0)"),
     TWOPT_CHAR("codes-config", conf_file_name, "name of codes configuration file"),
     TWOPT_END(),
 };
-
-const tw_lptype* svr_get_lp_type() {
-  return(&svr_lp);
-}
-
-static void svr_add_lp_type() {
-  lp_type_register("server", svr_get_lp_type());
-}
-
-/* convert GiB/s and bytes to ns */
-static tw_stime bytes_to_ns(uint64_t bytes, double GB_p_s) {
-  tw_stime time;
-
-  /* bytes to GB */
-  time = ((double)bytes)/(1024.0*1024.0*1024.0);
-  /* MB to s */
-  time = time / GB_p_s;
-  /* s to ns */
-  time = time * 1000.0 * 1000.0 * 1000.0;
-
-  return time;
-}
 
 /**
  * Latest implementation of function to return an array mapping each router with
  * it's corresponding worst-case router pair.
  */
+int* worst_dest; //Array mapping worst case destination for each router
 void init_worst_case_mapping() {
   int i,j,k;
   int r1,r2;    //Routers to be paired
@@ -173,178 +90,44 @@ void init_worst_case_mapping() {
   }
 }
 
-static void issue_event(svr_state* ns, tw_lp* lp) {
-  (void)ns;
-  /* each server sends a dummy event to itself that will kick off the real
-   * simulation
-   */
-
-  int this_packet_size = 0;
-  double this_link_bandwidth = 0.0;
-
-  configuration_get_value_int(&config, "PARAMS", "packet_size", NULL, &this_packet_size);
-  if (!this_packet_size) {
-    CkAbort("Configuration error: packet size not specified\n");
-  }
-
-  configuration_get_value_double(&config, "PARAMS", "global_bandwidth", NULL, &this_global_bandwidth);
-  if (!this_global_bandwidth) {
-    this_global_bandwidth = 4.7;
-    fprintf(stderr, "Bandwidth of global channels not specified, setting to %lf\n", this_global_bandwidth);
-  }
-
-  if (arrival_time != 0) {
-    MEAN_INTERVAL = arrival_time;
-  }
-  if (load != 0) {
-    MEAN_INTERVAL = bytes_to_ns(this_packet_size, load*this_global_bandwidth);
-  }
-
-  tw_stime kickoff_time = g_tw_lookahead + tw_rand_exponential(lp->rng, MEAN_INTERVAL);
-
-  tw_event* e = tw_event_new(lp->gid, kickoff_time, lp);
-  svr_msg* m = (svr_msg*)tw_event_data(e);
-  m->svr_event_type = KICKOFF;
-  tw_event_send(e);
+double MEAN_INTERVAL = 0.0;
+tw_stime get_mean_interval() {
+  return MEAN_INTERVAL;
 }
 
-static void svr_init(svr_state* ns, tw_lp* lp) {
-  ns->msg_sent_count = 0;
-  ns->msg_recvd_count = 0;
-  ns->local_recvd_count = 0;
-  ns->start_ts = 0.0;
-  ns->end_ts = 0.0;
-
-  issue_event(ns, lp);
-}
-
-static void svr_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  switch (m->svr_event_type) {
-    case REMOTE:
-      handle_remote_event(ns, b, m, lp);
-      break;
-    case LOCAL:
-      handle_local_event(ns, b, m, lp);
-      break;
-    case KICKOFF:
-      handle_kickoff_event(ns, b, m, lp);
-      break;
-    default:
-      CkPrintf("\n LP: %d has received invalid message from src lpID: %d of message type:%d",
-          lp->gid, m->src, m->svr_event_type);
-      CkAbort("ERROR: Bad server event type in svr_event\n");
-      break;
-  }
-}
-
-static void svr_rev_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  switch (m->svr_event_type) {
-    case REMOTE:
-      handle_remote_rev_event(ns, b, m, lp);
-      break;
-    case LOCAL:
-      handle_local_rev_event(ns, b, m, lp);
-      break;
-    case KICKOFF:
-      handle_kickoff_rev_event(ns, b, m, lp);
-      break;
-    default:
-      CkAbort("ERROR: Bad server event type in svr_rev_event\n");
-      break;
-  }
-}
-
-static void svr_finalize(svr_state* ns, tw_lp* lp) {
-  ns->end_ts = tw_now(lp);
-  //printf("server %d server %llu recvd %d bytes in %f seconds, %f MiB/s sent_count %d recvd_count %d local_count %d \n",
-  //index_mine++,(unsigned long long)lp->gid, PAYLOAD_SZ*ns->msg_recvd_count, ns_to_s(ns->end_ts-ns->start_ts),
-  //((double)(PAYLOAD_SZ*ns->msg_sent_count)/(double)(1024*1024)/ns_to_s(ns->end_ts-ns->start_ts)), ns->msg_sent_count, ns->msg_recvd_count, ns->local_recvd_count);
-}
-
-static void handle_kickoff_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
+tw_lpid get_dest(tw_lp* lp) {
+  char group_name[MAX_NAME_LENGTH];
+  char lp_type_name[MAX_NAME_LENGTH];
+  int group_index, lp_type_index, rep_id, offset;
   char anno[MAX_NAME_LENGTH];
-  tw_lpid local_dest = -1, global_dest = -1;
+  tw_lpid local_dest, global_dest;
 
-  svr_msg* m_local = (svr_msg*)malloc(sizeof(svr_msg));
-  svr_msg* m_remote = (svr_msg*)malloc(sizeof(svr_msg));
-
-  m_local->svr_event_type = LOCAL;
-  m_local->src = lp->gid;
-
-  memcpy(m_remote, m_local, sizeof(svr_msg));
-  m_remote->svr_event_type = REMOTE;
-
-  assert(net_id == SLIMFLY); /* only supported for dragonfly model right now. */
-  ns->start_ts = tw_now(lp);
   codes_mapping_get_lp_info(lp->gid, group_name, &group_index, lp_type_name, &lp_type_index, anno, &rep_id, &offset);
+
   if (traffic == UNIFORM) {
-    b->c1 = 1;
     local_dest = tw_rand_integer(lp->rng, 0, num_nodes - 1);
   } else if (traffic == WORST_CASE) {
-    // Assign the global router ID
-    // TODO: be annotation-aware
     int num_lps = codes_mapping_get_lp_count(group_name, 1, LP_CONFIG_NM, anno, 0);
-
     int src_terminal_id = (rep_id * num_lps) + offset;
-    //s->router_id=(int)s->terminal_id / (s->params->num_routers/2);
-    int src_router_id = src_terminal_id / (num_lps);
+    int src_router_id = src_terminal_id / num_lps;
     int dst_router_id = worst_dest[src_router_id];
-    //dst_lp = tw_rand_integer(lp->rng, total_routers + num_terminals*dst_router_id, total_routers + num_terminals*(dst_router_id+1)-1);
-    //local_dest = total_routers + num_terminals*dst_router_id + (src_terminal_id % num_terminals);
     local_dest = num_lps * dst_router_id + (src_terminal_id % num_terminals);
   } else if (traffic == NEAREST_GROUP) {
     local_dest = (rep_id * 2 + offset + num_nodes_per_grp) % num_nodes;
   } else if (traffic == NEAREST_NEIGHBOR) {
     local_dest =  (rep_id * 2 + offset + 2) % num_nodes;
+  } else {
+    CkAbort("ERROR: Invalid value for traffic\n");
   }
- assert(local_dest < (tw_lpid)num_nodes);
- codes_mapping_get_lp_id(group_name, lp_type_name, anno, 1, local_dest / num_servers_per_rep, local_dest % num_servers_per_rep, &global_dest);
+  assert(local_dest < num_nodes);
 
-  ns->msg_sent_count++;
-  m->event_rc = model_net_event(net_id, "test", global_dest, PAYLOAD_SZ, 0.0, sizeof(svr_msg), (const void*)m_remote, sizeof(svr_msg), (const void*)m_local, lp);
-  issue_event(ns, lp);
+  codes_mapping_get_lp_id(group_name, lp_type_name, anno, 1, local_dest / num_servers_per_rep, local_dest % num_servers_per_rep, &global_dest);
+  return global_dest;
 }
-static void handle_kickoff_rev_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  if(b->c1) {
+tw_lpid get_dest_rc(tw_lp* lp) {
+  if (traffic == UNIFORM) {
     tw_rand_reverse_unif(lp->rng);
-  }
-  ns->msg_sent_count--;
-  model_net_event_rc2(lp, &m->event_rc);
-  tw_rand_reverse_unif(lp->rng);
-}
-
-static void handle_remote_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
-  (void)m;
-  (void)lp;
-  ns->msg_recvd_count++;
-}
-static void handle_remote_rev_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
-  (void)m;
-  (void)lp;
-   ns->msg_recvd_count--;
-}
-
-static void handle_local_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
-  (void)m;
-  (void)lp;
-  ns->local_recvd_count++;
-}
-static void handle_local_rev_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
-  (void)m;
-  (void)lp;
-  ns->local_recvd_count--;
+  } 
 }
 
 int main(int argc, char** argv) {
@@ -360,9 +143,6 @@ int main(int argc, char** argv) {
       return 1;
   }
 
-  int rank = CkMyPe();
-  int nprocs = CkMyPe();
-
   model_net_register();
   svr_add_lp_type();
   codes_mapping_setup();
@@ -372,14 +152,40 @@ int main(int argc, char** argv) {
   assert(num_nets==1);
   net_id = *net_ids;
   free(net_ids);
+  assert(net_id == SLIMFLY);
 
-  num_servers_per_rep = codes_mapping_get_lp_count("MODELNET_GRP", 1, "server", NULL, 1);
-  configuration_get_value_int(&config, "PARAMS", "num_terminals", NULL, &num_terminals);
-  configuration_get_value_int(&config, "PARAMS", "num_routers", NULL, &num_routers_per_grp);
-  num_groups = (num_routers_per_grp * 2);
+  num_servers_per_rep = codes_mapping_get_lp_count(
+      "MODELNET_GRP", 1, "server", NULL, 1);
+  configuration_get_value_int(
+      &config, "PARAMS", "num_terminals", NULL, &num_terminals);
+  configuration_get_value_int(
+      &config, "PARAMS", "num_routers", NULL, &num_routers_per_grp);
+  num_groups = num_routers_per_grp * 2;
   num_nodes = num_groups * num_routers_per_grp * num_servers_per_rep;
   num_nodes_per_grp = num_routers_per_grp * num_servers_per_rep;
-  total_routers = num_routers_per_grp * num_routers_per_grp * 2;
+  num_routers = num_routers_per_grp * num_routers_per_grp * 2;
+
+  int this_packet_size = 0;
+  double this_global_bandwidth = 0.0;
+  configuration_get_value_int(
+      &config, "PARAMS", "packet_size", NULL, &this_packet_size);
+  configuration_get_value_double(
+      &config, "PARAMS", "global_bandwidth", NULL, &this_global_bandwidth);
+
+  if (!this_packet_size) {
+    CkAbort("Configuration error: packet size not specified\n");
+  }
+  if (!this_global_bandwidth) {
+    this_global_bandwidth = 4.7;
+    CkPrintf("Bandwidth of global channels not specified, setting to %lf\n",
+        this_global_bandwidth);
+  }
+
+  if (load != 0) {
+    MEAN_INTERVAL = bytes_to_ns(this_packet_size, load * this_global_bandwidth);
+  } else if (arrival_time != 0) {
+    MEAN_INTERVAL = arrival_time;
+  }
 
   /*if (lp_io_prepare("modelnet-test", LP_IO_UNIQ_SUFFIX, &handle, MPI_COMM_WORLD) < 0) {
     return(-1);
@@ -394,10 +200,10 @@ int main(int argc, char** argv) {
 
   //WORST_CASE Initialization array
   if (traffic == WORST_CASE) {
-    worst_dest = (int*)calloc(total_routers,sizeof(int));
+    worst_dest = (int*)calloc(num_routers,sizeof(int));
     init_worst_case_mapping();
 #if PRINT_WORST_CASE_MATCH
-    for(int l = 0; l < total_routers; l++) {
+    for(int l = 0; l < num_routers; l++) {
       CkPrintf("match %d->%d\n",l,worst_dest[l]);
     }
 #endif
@@ -411,7 +217,7 @@ int main(int argc, char** argv) {
   }
   model_net_report_stats(net_id);*/
 
-  if (rank == 0) {
+  if (CkMyPe() == 0) {
 #if PARAMS_LOG
     //Open file to append simulation results
     char log[200];
@@ -432,7 +238,7 @@ int main(int argc, char** argv) {
 
   tw_end();
 
-  if (rank == 0) {
+  if (CkMyPe() == 0) {
 #if PARAMS_LOG
     slimfly_ross_csv_log=fopen("ross.csv", "r");
     if(slimfly_ross_csv_log == NULL) {

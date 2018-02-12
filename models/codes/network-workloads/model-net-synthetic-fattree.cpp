@@ -19,54 +19,15 @@
 #include "codes/lp-type-lookup.h"
 
 #define PAYLOAD_SZ 512
+#include "model-net-synthetic.h"
 
-//#define PARAMS_LOG 1
 #define PARAMS_LOG 0
-
-static int net_id = 0;
-static int offset = 2;
-static int traffic = 1;
-static double arrival_time = 1000.0;
-static double load = 0.0; //Percent utilization of terminal uplink
-static double MEAN_INTERVAL = 0.0;
-char* modelnet_stats_dir;
-/* whether to pull instead of push */
 
 static int num_servers_per_rep = 0;
 static int num_routers_per_grp = 0;
 static int num_nodes_per_grp = 0;
-
 static int num_groups = 0;
 static int num_nodes = 0;
-
-typedef struct svr_msg svr_msg;
-typedef struct svr_state svr_state;
-
-/* global variables for codes mapping */
-static char group_name[MAX_NAME_LENGTH];
-static char lp_type_name[MAX_NAME_LENGTH];
-static int group_index, lp_type_index, rep_id;//, offset;
-
-/* convert GiB/s and bytes to ns */
-static tw_stime bytes_to_ns(uint64_t bytes, double GB_p_s) {
-  tw_stime time;
-
-  /* bytes to GB */
-  time = ((double)bytes)/(1024.0*1024.0*1024.0);
-  /* GiB to s */
-  time = time / GB_p_s;
-  /* s to ns */
-  time = time * 1000.0 * 1000.0 * 1000.0;
-
-  return(time);
-}
-
-/* type of events */
-enum svr_event {
-  KICKOFF,  /* kickoff event */
-  REMOTE,   /* remote event */
-  LOCAL     /* local event */
-};
 
 /* type of synthetic traffic */
 enum TRAFFIC {
@@ -75,44 +36,8 @@ enum TRAFFIC {
   NEAREST_NEIGHBOR = 3  /* sends message to the next node (potentially connected to the same router) */
 };
 
-struct svr_state {
-  int msg_sent_count;     /* requests sent */
-  int msg_recvd_count;    /* requests recvd */
-  int local_recvd_count;  /* number of local messages received */
-  tw_stime start_ts;      /* time that we started sending requests */
-  tw_stime end_ts;        /* time that we ended sending requests */
-};
-
-struct svr_msg {
-  enum svr_event svr_event_type;
-  tw_lpid src;                      /* source of this request or ack */
-  int incremented_flag;             /* helper for reverse computation */
-  model_net_event_return event_rc;
-};
-
-static void svr_init(svr_state* ns, tw_lp* lp);
-static void svr_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void svr_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void svr_finalize(svr_state* ns, tw_lp* lp);
-
-static void handle_kickoff_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void handle_local_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void handle_remote_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-
-static void handle_kickoff_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void handle_local_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-static void handle_remote_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
-
-tw_lptype svr_lp = {
-    (init_f) svr_init,
-    (event_f) svr_event,
-    (revent_f) svr_rev_event,
-    (commit_f) NULL,
-    (final_f)  svr_finalize,
-    sizeof(svr_state),
-};
-
-#if 0
+#if 0 // TRACING CODE NOT ENABLED
+char* modelnet_stats_dir;
 /* setup for the ROSS event tracing
  * can have a different function for  rbev_trace_f and ev_trace_f
  * but right now it is set to the same function for both
@@ -157,6 +82,10 @@ void ft_svr_register_model_stats() {
 }
 #endif
 
+/* Command line configuration options */
+static int traffic = 1;
+static double arrival_time = 1000.0;
+static double load = 0.0;
 static char conf_file_name[128] = {'\0'};
 const tw_optdef app_opt [] = {
   TWOPT_GROUP("Model net synthetic traffic " ),
@@ -167,183 +96,44 @@ const tw_optdef app_opt [] = {
   TWOPT_END()
 };
 
-const tw_lptype* svr_get_lp_type() {
-  return(&svr_lp);
+static double MEAN_INTERVAL = 0.0;
+tw_stime get_mean_interval() {
+  return MEAN_INTERVAL;
 }
 
-static void svr_add_lp_type() {
-  lp_type_register("server", svr_get_lp_type());
-}
-
-static void issue_event(svr_state* ns, tw_lp* lp) {
-  (void)ns;
-  /* each server sends a dummy event to itself that will kick off the real
-   * simulation
-   */
-
-  int this_packet_size = 0;
-  double this_link_bandwidth = 0.0;
-
-  configuration_get_value_int(&config, "PARAMS", "packet_size", NULL, &this_packet_size);
-  if (!this_packet_size) {
-    CkAbort("Configuration error: packet size not specified\n");
-  }
-
-  configuration_get_value_double(&config, "PARAMS", "link_bandwidth", NULL, &this_link_bandwidth);
-  if (!this_link_bandwidth) {
-    this_link_bandwidth = 4.7;
-    fprintf(stderr, "Bandwidth of channels not specified, setting to %lf\n", this_link_bandwidth);
-  }
-
-  if(arrival_time != 0) {
-    MEAN_INTERVAL = arrival_time;
-  }
-  if(load != 0) {
-    MEAN_INTERVAL = bytes_to_ns(this_packet_size, load*this_link_bandwidth);
-  }
-
-  tw_stime kickoff_time = g_tw_lookahead + tw_rand_exponential(lp->rng, MEAN_INTERVAL);
-
-  tw_event* e = tw_event_new(lp->gid, kickoff_time, lp);
-  svr_msg* m = (svr_msg*)tw_event_data(e);
-  m->svr_event_type = KICKOFF;
-  tw_event_send(e);
-}
-
-static void svr_init(svr_state* ns, tw_lp* lp) {
-  ns->msg_sent_count = 0;
-  ns->msg_recvd_count = 0;
-  ns->local_recvd_count = 0;
-  ns->start_ts = 0.0;
-  ns->end_ts = 0.0;
-
-  issue_event(ns, lp);
-}
-
-static void svr_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  switch (m->svr_event_type) {
-    case REMOTE:
-      handle_remote_event(ns, b, m, lp);
-      break;
-    case LOCAL:
-      handle_local_event(ns, b, m, lp);
-      break;
-    case KICKOFF:
-      handle_kickoff_event(ns, b, m, lp);
-      break;
-    default:
-      CkPrintf("\n LP: %d has received invalid message from src lpID: %d of message type:%d",
-          lp->gid, m->src, m->svr_event_type);
-      CkAbort("ERROR: Bad server event type in svr_event\n");
-      break;
-  }
-}
-
-static void svr_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  switch (m->svr_event_type) {
-    case REMOTE:
-      handle_remote_rev_event(ns, b, m, lp);
-      break;
-    case LOCAL:
-      handle_local_rev_event(ns, b, m, lp);
-      break;
-    case KICKOFF:
-      handle_kickoff_rev_event(ns, b, m, lp);
-      break;
-    default:
-      CkAbort("ERROR: Bad server event type in svr_rev_event\n");
-      break;
-  }
-}
-
-static void svr_finalize(svr_state* ns, tw_lp* lp) {
-  ns->end_ts = tw_now(lp);
-  //printf("server %llu recvd %d bytes in %f seconds, %f MiB/s sent_count %d recvd_count %d local_count %d \n",
-      //(unsigned long long)lp->gid, PAYLOAD_SZ*ns->msg_recvd_count, ns_to_s(ns->end_ts-ns->start_ts),
-      //((double)(PAYLOAD_SZ*ns->msg_sent_count)/(double)(1024*1024)/ns_to_s(ns->end_ts-ns->start_ts)),
-      //ns->msg_sent_count, ns->msg_recvd_count, ns->local_recvd_count);
-}
-
-static void handle_kickoff_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
+tw_lpid get_dest(tw_lp* lp) {
+  char group_name[MAX_NAME_LENGTH];
+  char lp_type_name[MAX_NAME_LENGTH];
+  int group_index, lp_type_index, rep_id, offset;
   char anno[MAX_NAME_LENGTH];
-  tw_lpid local_dest = -1, global_dest = -1;
-
-  svr_msg* m_local = (svr_msg*)malloc(sizeof(svr_msg));
-  svr_msg* m_remote = (svr_msg*)malloc(sizeof(svr_msg));
-
-  m_local->svr_event_type = LOCAL;
-  m_local->src = lp->gid;
-
-  memcpy(m_remote, m_local, sizeof(svr_msg));
-  m_remote->svr_event_type = REMOTE;
-
-  ns->start_ts = tw_now(lp);
+  tw_lpid local_dest, global_dest;
 
   codes_mapping_get_lp_info(lp->gid, group_name, &group_index, lp_type_name, &lp_type_index, anno, &rep_id, &offset);
   // In the case of uniform random traffic, send to a random destination
   if (traffic == UNIFORM) {
     local_dest = tw_rand_integer(lp->rng, 0, num_nodes - 1);
+  } else {
+    CkAbort("ERROR: Invalid value for traffic\n");
   }
+  assert(local_dest < num_nodes);
 
-  assert(local_dest < LLU(num_nodes));
-  global_dest = codes_mapping_get_lpid_from_relative(local_dest, group_name, lp_type_name, NULL, 0);
+  global_dest = codes_mapping_get_lpid_from_relative(
+      local_dest, group_name, lp_type_name, NULL, 0);
   // If Destination is self, then generate new destination
   if (global_dest == lp->gid) {
     local_dest = (local_dest+1) % (num_nodes-1);
-    global_dest = codes_mapping_get_lpid_from_relative(local_dest, group_name, lp_type_name, NULL, 0);
+    global_dest = codes_mapping_get_lpid_from_relative(
+        local_dest, group_name, lp_type_name, NULL, 0);
   }
-
-  ns->msg_sent_count++;
-  m->event_rc = model_net_event(net_id, "test", global_dest, PAYLOAD_SZ, 0.0, sizeof(svr_msg), (const void*)m_remote, sizeof(svr_msg), (const void*)m_local, lp);
-  issue_event(ns, lp);
+  return global_dest;
 }
-static void handle_kickoff_rev_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
+tw_lpid get_dest_rc(tw_lp* lp) {
   if (traffic == UNIFORM) {
     tw_rand_reverse_unif(lp->rng);
-  }
-  ns->msg_sent_count--;
-  model_net_event_rc2(lp, &m->event_rc);
-  tw_rand_reverse_unif(lp->rng);  // RNG called from issue_event
-}
-
-static void handle_remote_event(
-      svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
-  (void)m;
-  (void)lp;
-  ns->msg_recvd_count++;
-}
-static void handle_remote_rev_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
-  (void)m;
-  (void)lp;
-  ns->msg_recvd_count--;
-}
-
-static void handle_local_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
-  (void)m;
-  (void)lp;
-  ns->local_recvd_count++;
-}
-static void handle_local_rev_event(
-    svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
-  (void)b;
-  (void)m;
-  (void)lp;
-  ns->local_recvd_count--;
+  } 
 }
 
 int main(int argc, char** argv) {
-  // TODO: Make sure mapping properly handles this
-  offset = 1;
-
   tw_opt_add(app_opt);
   tw_init(argc, argv);
 
@@ -356,48 +146,59 @@ int main(int argc, char** argv) {
       return 1;
   }
 
-  int rank = CkMyPe();
-  int nprocs = CkMyPe();
-
   model_net_register();
   svr_add_lp_type();
+  codes_mapping_setup();
   //if (g_st_ev_trace)
   //    ft_svr_register_model_stats();
-  codes_mapping_setup();
 
   int num_nets;
   int* net_ids = model_net_configure(&num_nets);
-  //assert(num_nets==1);
+  assert(num_nets==1);
   net_id = *net_ids;
   free(net_ids);
+  assert(net_id == FATTREE);
 
-  if (net_id != FATTREE) {
-    CkPrintf("\n The test works with fat tree model configuration only! ");
-    return 0;
-  }
   num_servers_per_rep = codes_mapping_get_lp_count(
       "MODELNET_GRP", 1, "server", NULL, 1);
+  num_nodes = codes_mapping_get_lp_count(
+      "MODELNET_GRP", 0, "server", NULL, 1);
   configuration_get_value_int(
       &config, "PARAMS", "num_routers", NULL, &num_routers_per_grp);
-
   num_groups = (num_routers_per_grp * (num_routers_per_grp/2) + 1);
-  num_nodes = num_groups * num_routers_per_grp * (num_routers_per_grp / 2);
   num_nodes_per_grp = num_routers_per_grp * (num_routers_per_grp / 2);
 
-  num_nodes = codes_mapping_get_lp_count("MODELNET_GRP", 0, "server", NULL, 1);
+  int this_packet_size = 0;
+  double this_link_bandwidth = 0.0;
+  configuration_get_value_int(
+      &config, "PARAMS", "packet_size", NULL, &this_packet_size);
+  configuration_get_value_double(
+      &config, "PARAMS", "link_bandwidth", NULL, &this_link_bandwidth);
 
-  printf("num_nodes:%d \n",num_nodes);
+  if (!this_packet_size) {
+    CkAbort("Configuration error: packet size not specified\n");
+  }
+  if (!this_link_bandwidth) {
+    this_link_bandwidth = 4.7;
+    CkPrintf("Bandwidth of channels not specified, setting to %lf\n",
+        this_link_bandwidth);
+  }
 
-  //lp_io_handle handle;
-  /*if (lp_io_prepare("modelnet-test", LP_IO_UNIQ_SUFFIX, &handle, MPI_COMM_WORLD) < 0) {
+  if(load != 0) {
+    MEAN_INTERVAL = bytes_to_ns(this_packet_size, load*this_link_bandwidth);
+  } else if(arrival_time != 0) {
+    MEAN_INTERVAL = arrival_time;
+  }
+
+  /*lp_io_handle handle;
+  if (lp_io_prepare("modelnet-test", LP_IO_UNIQ_SUFFIX, &handle, MPI_COMM_WORLD) < 0) {
       return(-1);
   }
   modelnet_stats_dir = lp_io_handle_to_dir(handle);*/
 
   tw_run();
 
-  model_net_report_stats(net_id);
-
+  //model_net_report_stats(net_id);
 
 #if PARAMS_LOG
   if (!g_tw_mynode) {
