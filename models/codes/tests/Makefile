@@ -1,6 +1,6 @@
 include ../config.mk
 
-TESTS = modelnet-test mapping_test
+TESTS = modelnet-test mapping_test modelnet-test-collective
 
 default: all
 all: $(TESTS)
