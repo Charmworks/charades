@@ -173,6 +173,8 @@ class LP : public CBase_LP {
      */
     /** Called at the start of a simulation to run LP init handlers */
     void init();
+    /** Called at the end of a simulation to run LP finalize handlers */
+    void finalize();
     /**
      * Called during execution to execute the next event owned by this LP
      * \returns false if no events are able to be executed

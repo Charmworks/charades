@@ -61,6 +61,11 @@ void Scheduler::start_simulation() {
 
 void Scheduler::end_simulation() {
   double total_time = CmiWallTimer() - start_time;
+
+  for (LP* lp : registered_lps) {
+    lp->finalize();
+  }
+
   cumulative_stats->total_time += total_time;
   cumulative_stats->finalize();
   contribute(sizeof(Statistics), cumulative_stats, statsReductionType,

@@ -271,6 +271,12 @@ void LP::init() {
   contribute(CkCallback(CkIndex_LP::stop_scheduler(), thisProxy(0)));
 }
 
+void LP::finalize() {
+  for (int i = 0 ; i < lp_structs.size(); i++) {
+    lp_structs[i].type->finalize(lp_structs[i].state, &lp_structs[i]);
+  }
+}
+
 void LP::stop_scheduler() {
   /**
    * Just call CkExit(), which stops the Charm++ scheduler and returns control
