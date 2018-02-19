@@ -95,6 +95,12 @@ class LP : public CBase_LP {
     LPToken next_token;
 
     /**
+     * A list of all LPs owned by this chare.
+     * Initialized in the constructor based on maps set by the model.
+     */
+    vector<LPStruct> lp_structs;
+
+    /**
      * All future events received for any of our LPs. The next_token LPToken
      * gets its timestamp from the top of this heap.
      */
@@ -106,12 +112,6 @@ class LP : public CBase_LP {
      * timestamp from the back of this queue.
      */
     ProcessedQueue processed_events;
-
-    /**
-     * A list of all LPs owned by this chare.
-     * Initialized in the constructor based on maps set by the model.
-     */
-    vector<LPStruct> lp_structs;
 
     /**
      * A direct pointer to the scheduler managing this LP chare. The scheduler
