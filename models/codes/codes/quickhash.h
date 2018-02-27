@@ -98,6 +98,14 @@ static inline struct qhash_table *qhash_init(
     return (new_table);
 }
 
+template <typename T>
+static inline void qhash_pup(qhash_table* t, PUP::er& p) {
+  p | t->table_size;
+  for (int i = 0; i < t->table_size; i++) {
+    qlist_pup<T>(&t->array[i], p);
+  }
+}
+
 
 /* qhash_finalize()
  *

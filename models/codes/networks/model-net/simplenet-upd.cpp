@@ -158,6 +158,7 @@ tw_lptype sn_lp = {
     (revent_f) sn_rev_event,
     (commit_f) sn_commit,
     (final_f) sn_finalize,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(sn_state),
 };

@@ -31,6 +31,10 @@
 
 struct rc_stack;
 
+typedef void* (*create_fn_t)(void);
+typedef void (*free_fn_t)(void*);
+typedef void (*pup_fn_t)(PUP::er& p, void*);
+
 void rc_stack_create(struct rc_stack **s);
 void rc_stack_destroy(struct rc_stack *s);
 
@@ -40,7 +44,7 @@ void rc_stack_destroy(struct rc_stack *s);
 void rc_stack_push(
         tw_lp const *lp,
         void *data,
-        void (*free_fn)(void*),
+        free_fn_t free_fn,
         struct rc_stack *s);
 
 /* pop data from the stack for rc (tw_error if stack empty) */
@@ -52,6 +56,12 @@ int rc_stack_count(struct rc_stack const *s);
 /* remove entries from the stack with generation time < GVT (lp->pe->GVT).
  * a NULL lp causes a delete-all */
 void rc_stack_gc(tw_lp const *lp, struct rc_stack *s);
+
+void rc_stack_pup(struct rc_stack *s,
+                  create_fn_t create_fn,
+                  free_fn_t free_fn,
+                  pup_fn_t pup_fn,
+                  PUP::er& p);
 
 //#ifdef __cplusplus
 //}

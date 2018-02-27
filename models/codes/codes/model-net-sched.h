@@ -117,6 +117,11 @@ typedef struct model_net_sched_interface {
             const void               * rc_event_save,
             const model_net_sched_rc * rc,
             tw_lp                    * lp);
+
+    void (*pup_f)(
+            const struct model_net_method     * method,
+            void                             ** sched,
+            PUP::er&                            p);
 } model_net_sched_interface;
 
 /// overall scheduler struct - type puns the actual data structure
@@ -152,6 +157,12 @@ void model_net_sched_init(
         int is_recv_queue,
         struct model_net_method *method,
         model_net_sched *sched);
+
+void model_net_sched_pup(
+        const model_net_sched_cfg_params * params,
+        struct model_net_method *method,
+        model_net_sched *sched,
+        PUP::er& p);
 
 /// schedules the next chunk, storing any info needed for rc in sched_rc
 /// packet issue time is placed in poffset to be able to separate packet calls

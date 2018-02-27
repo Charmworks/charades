@@ -3333,6 +3333,7 @@ tw_lptype dragonfly_lps[] =
     (revent_f) terminal_rc_event_handler,
     (commit_f) NULL,
     (final_f) dragonfly_terminal_final,
+    (pup_f) NULL,
     sizeof(terminal_state)
     },
    {
@@ -3341,9 +3342,10 @@ tw_lptype dragonfly_lps[] =
      (revent_f) router_rc_event_handler,
      (commit_f) NULL,
      (final_f) dragonfly_router_final,
+     (pup_f) NULL,
      sizeof(router_state),
    },
-   {NULL, NULL, NULL, NULL, NULL, 0},
+   {NULL, NULL, NULL, NULL, NULL, NULL, 0},
 };
 
 /* For ROSS event tracing */

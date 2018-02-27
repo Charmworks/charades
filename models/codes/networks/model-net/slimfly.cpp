@@ -108,6 +108,22 @@ struct slim_terminal_message_list {
     slim_terminal_message_list *prev;
 };
 
+PUPbytes(slim_terminal_message);
+void slim_pup_terminal_message_list(PUP::er& p, slim_terminal_message_list* list) {
+  p | list->msg;
+  if (p.isUnpacking()) {
+    list->event_data = (char*)malloc(list->msg.remote_event_size_bytes + list->msg.local_event_size_bytes);
+  }
+  p(list->event_data, list->msg.remote_event_size_bytes + list->msg.local_event_size_bytes);
+}
+
+void* slim_create_terminal_message_list() {
+  slim_terminal_message_list* ml = (slim_terminal_message_list*)malloc(sizeof(slim_terminal_message_list));
+  ml->next = ml->prev = NULL;
+  ml->event_data = NULL;
+  return (void*)ml;
+}
+
 void slim_init_terminal_message_list(slim_terminal_message_list *self,
         slim_terminal_message *inmsg) {
     self->msg = *inmsg;
@@ -155,6 +171,7 @@ struct sfly_hash_key
     uint64_t message_id;
     tw_lpid sender_id;
 };
+PUPbytes(sfly_hash_key);
 
 struct sfly_qhash_entry
 {
@@ -164,6 +181,42 @@ struct sfly_qhash_entry
     int remote_event_size;
     struct qhash_head hash_link;
 };
+
+void slim_pup_hash(PUP::er& p, sfly_qhash_entry* e) {
+  p | e->key;
+  p | e->num_chunks;
+  p | e->remote_event_size;
+  if (e->remote_event_size) {
+    if (p.isUnpacking()) {
+      e->remote_event_data = (char*)malloc(e->remote_event_size);
+    }
+    p(e->remote_event_data, e->remote_event_size);
+  } else if (p.isUnpacking()) {
+    e->remote_event_data = NULL;
+  }
+}
+
+template<>
+void qlist_pup<sfly_qhash_entry>(qlist_head* h, PUP::er& p) {
+  sfly_qhash_entry* entry;
+  if (!p.isUnpacking()) {
+    int count = qlist_count(h);
+    p | count;
+    qlist_for_each_entry(sfly_qhash_entry, entry, h, hash_link) {
+      slim_pup_hash(p, entry);
+      count--;
+    }
+    assert(count == 0);
+  } else {
+    int count;
+    p | count;
+    for (int i = 0; i < count; i++) {
+      entry = (sfly_qhash_entry*)malloc(sizeof(struct sfly_qhash_entry));
+      slim_pup_hash(p, entry);
+      qlist_add_tail(&entry->hash_link, h);
+    }
+  }
+}
 
 /* handles terminal and router events like packet generate/send/receive/buffer */
 typedef struct terminal_state terminal_state;
@@ -190,7 +243,8 @@ struct terminal_state
     // Router-Router Inter-group sends and receives RR_GSEND, RR_GARRIVE
     struct mn_stats slimfly_stats_array[CATEGORY_MAX];
 
-    struct rc_stack * st;
+    struct rc_stack * msg_st;
+    struct rc_stack * hash_st;
     int issueIdle;
     int terminal_length;
 
@@ -341,7 +395,11 @@ static int slimfly_get_msg_sz(void)
     return sizeof(slim_terminal_message);
 }
 
-static void free_tmp(void * ptr)
+static void* slim_create_hash() {
+  return malloc(sizeof(sfly_qhash_entry));
+}
+
+static void slim_delete_hash(void * ptr)
 {
     struct sfly_qhash_entry * sfly = ptr;
     if(sfly->remote_event_data)
@@ -787,7 +845,8 @@ void slim_terminal_init( terminal_state * s,
     s->last_buf_full = 0;
     s->busy_time = 0;
 
-    rc_stack_create(&s->st);
+    rc_stack_create(&s->msg_st);
+    rc_stack_create(&s->hash_st);
     s->num_vcs = 1;
     s->vc_occupancy = (int*)malloc(s->num_vcs * sizeof(int));
 
@@ -812,6 +871,96 @@ void slim_terminal_init( terminal_state * s,
     s->issueIdle = 0;
 
     return;
+}
+
+/* pup a slimfly compute node terminal */
+void slim_terminal_pup(terminal_state * s, tw_lp * lp, PUP::er& p) {
+  p | slim_terminal_magic_num; // Need to pup in case dest PE never computed it.
+  p | s->packet_counter;
+  p | s->router_id;
+  p | s->terminal_id;
+  p | s->num_vcs;
+  p | s->terminal_available_time;
+  p | s->in_send_loop;
+  p | s->issueIdle;
+  p | s->terminal_length;
+  p | s->rank_tbl_pop;
+  p | s->total_time;
+  p | s->total_msg_size;
+  p | s->total_hops;
+  p | s->finished_msgs;
+  p | s->finished_chunks;
+  p | s->finished_packets;
+  p | s->last_buf_full;
+  p | s->busy_time;
+  if (p.isUnpacking()) {
+    // Use annotation to get the params
+    char anno[MAX_NAME_LENGTH];
+    codes_mapping_get_lp_info(lp->gid, lp_group_name, &mapping_grp_id, NULL,
+            &mapping_type_id, anno, &mapping_rep_id, &mapping_offset);
+    if (anno[0] == '\0') {
+      s->anno = NULL;
+      s->params = &all_params[num_params-1];
+    } else {
+      s->anno = strdup(anno);
+      int id = configuration_get_annotation_index(anno, anno_map);
+      s->params = &all_params[id];
+    }
+
+    rc_stack_create(&s->msg_st);
+    rc_stack_create(&s->hash_st);
+    s->rank_tbl = qhash_init(slimfly_rank_hash_compare, slimfly_hash_func, DFLY_HASH_TABLE_SIZE);
+
+    // Allocate space for vc occupancy and terminal msg list, initialized to 0
+    s->vc_occupancy = (int*)malloc(s->num_vcs * sizeof(int));
+    s->terminal_msgs =
+        (slim_terminal_message_list**)malloc(1*sizeof(slim_terminal_message_list*));
+    s->terminal_msgs_tail =
+        (slim_terminal_message_list**)malloc(1*sizeof(slim_terminal_message_list*));
+    s->terminal_msgs[0] = NULL;
+    s->terminal_msgs_tail[0] = NULL;
+  }
+
+  rc_stack_pup(s->msg_st,
+      slim_create_terminal_message_list,
+      slim_delete_terminal_message_list,
+      slim_pup_terminal_message_list,
+      p);
+  rc_stack_pup(s->hash_st,
+      slim_create_hash,
+      slim_delete_hash,
+      slim_pup_hash,
+      p);
+  qhash_pup<sfly_qhash_entry>(s->rank_tbl, p);
+
+  // Pup channel occupancy
+  for (int i = 0; i < s->num_vcs; i++) {
+    p | s->vc_occupancy[i];
+  }
+
+  // Pup number of elements in message list
+  int count = 0;
+  slim_terminal_message_list* cur_chunk;
+  if (!p.isUnpacking()) {
+    cur_chunk = s->terminal_msgs[0];
+    while (cur_chunk) {
+      count++;
+      cur_chunk = cur_chunk->next;
+    }
+  }
+  p | count;
+
+  // Pup message list
+  cur_chunk = s->terminal_msgs[0];
+  for (int i = 0; i < count; i++) {
+    if (p.isUnpacking()) {
+      // Allocate a new chunk and add to the end of the list
+      cur_chunk = slim_create_terminal_message_list();
+      append_to_terminal_message_list(s->terminal_msgs, s->terminal_msgs_tail, 0, cur_chunk);
+    }
+    slim_pup_terminal_message_list(p, cur_chunk);
+    cur_chunk = cur_chunk->next;
+  }
 }
 
 
@@ -1055,6 +1204,143 @@ void slim_router_setup(router_state * r, tw_lp * lp)
     return;
 }
 
+void slim_router_pup(router_state * r, tw_lp * lp, PUP::er& p)
+{
+  p | slim_router_magic_num; // Need to pup in case dest PE never computed it.
+  p | r->router_id;
+  p | r->group_id;
+  if (p.isUnpacking()) {
+    char anno[MAX_NAME_LENGTH];
+    codes_mapping_get_lp_info(lp->gid, lp_group_name, &mapping_grp_id, NULL,
+            &mapping_type_id, anno, &mapping_rep_id, &mapping_offset);
+    if (anno[0] == '\0'){
+        r->anno = NULL;
+        r->params = &all_params[num_params-1];
+    } else{
+        r->anno = strdup(anno);
+        int id = configuration_get_annotation_index(anno, anno_map);
+        r->params = &all_params[id];
+    }
+    // shorthand
+    const slimfly_param *pr = r->params;
+
+    r->global_channel = (int*)malloc(pr->num_global_channels * sizeof(int));
+    r->local_channel = (int*)malloc(pr->num_local_channels * sizeof(int));
+    r->next_output_available_time = (tw_stime*)malloc(pr->radix * sizeof(tw_stime));
+    r->link_traffic = (int*)malloc(pr->radix * sizeof(int));
+    r->cur_hist_num = (int*)malloc(pr->radix * sizeof(int));
+    r->prev_hist_num = (int*)malloc(pr->radix * sizeof(int));
+
+    r->vc_occupancy = (int**)malloc(pr->radix * sizeof(int*));
+    r->in_send_loop = (int*)malloc(pr->radix * sizeof(int));
+    r->pending_msgs =
+        (slim_terminal_message_list***)malloc(pr->radix * sizeof(slim_terminal_message_list**));
+    r->pending_msgs_tail =
+        (slim_terminal_message_list***)malloc(pr->radix * sizeof(slim_terminal_message_list**));
+    r->queued_msgs =
+        (slim_terminal_message_list***)malloc(pr->radix * sizeof(slim_terminal_message_list**));
+    r->queued_msgs_tail =
+        (slim_terminal_message_list***)malloc(pr->radix * sizeof(slim_terminal_message_list**));
+
+    r->last_buf_full = (tw_stime*)malloc(pr->radix * sizeof(tw_stime));
+    r->busy_time = (tw_stime*)malloc(pr->radix * sizeof(tw_stime));
+
+    rc_stack_create(&r->st);
+
+    for (int i = 0; i < pr->radix; i++) {
+      r->vc_occupancy[i] = (int*)malloc(pr->num_vcs * sizeof(int));
+      r->pending_msgs[i] = (slim_terminal_message_list**)malloc(pr->num_vcs *
+              sizeof(slim_terminal_message_list*));
+      r->pending_msgs_tail[i] = (slim_terminal_message_list**)malloc(pr->num_vcs *
+              sizeof(slim_terminal_message_list*));
+      r->queued_msgs[i] = (slim_terminal_message_list**)malloc(pr->num_vcs *
+              sizeof(slim_terminal_message_list*));
+      r->queued_msgs_tail[i] = (slim_terminal_message_list**)malloc(pr->num_vcs *
+              sizeof(slim_terminal_message_list*));
+      for(int j = 0; j < pr->num_vcs; j++) {
+          r->pending_msgs[i][j] = NULL;
+          r->pending_msgs_tail[i][j] = NULL;
+          r->queued_msgs[i][j] = NULL;
+          r->queued_msgs_tail[i][j] = NULL;
+      }
+    }
+  }
+  const slimfly_param *pr = r->params;
+  for (int i = 0; i < pr->num_global_channels; i++) {
+    p | r->global_channel[i];
+  }
+  for (int i = 0; i < pr->num_local_channels; i++) {
+    p | r->local_channel[i];
+  }
+  // TODO: Do the links in the list need to be preserved as well?
+  rc_stack_pup(r->st,
+      slim_create_terminal_message_list,
+      slim_delete_terminal_message_list,
+      slim_pup_terminal_message_list,
+      p);
+  for(int i=0; i < pr->radix; i++)
+  {
+      // Set credit & router occupancy
+      p | r->next_output_available_time[i];
+      p | r->link_traffic[i];
+      p | r->cur_hist_num[i];
+      p | r->prev_hist_num[i];
+
+      p | r->last_buf_full[i];
+      p | r->busy_time[i];
+
+      p | r->in_send_loop[i];
+      for(int j = 0; j < pr->num_vcs; j++) {
+          p | r->vc_occupancy[i][j];
+
+          // PUP Pending msg list
+          int count = 0;
+          slim_terminal_message_list* cur_chunk;
+          if (!p.isUnpacking()) {
+            cur_chunk = r->pending_msgs[i][j];
+            while (cur_chunk) {
+              count++;
+              cur_chunk = cur_chunk->next;
+            }
+          }
+          p | count;
+
+          cur_chunk = r->pending_msgs[i][j];
+          for (int c = 0; c < count; c++) {
+            if (p.isUnpacking()) {
+              cur_chunk = slim_create_terminal_message_list();
+              append_to_terminal_message_list(r->pending_msgs[i], r->pending_msgs_tail[i], j, cur_chunk);
+            }
+            slim_pup_terminal_message_list(p, cur_chunk);
+            cur_chunk = cur_chunk->next;
+          }
+
+          // PUP Queued msg list
+          count = 0;
+          if (!p.isUnpacking()) {
+            cur_chunk = r->queued_msgs[i][j];
+            while (cur_chunk) {
+              count++;
+              cur_chunk = cur_chunk->next;
+            }
+          }
+          p | count;
+
+          cur_chunk = r->queued_msgs[i][j];
+          for (int c = 0; c < count; c++) {
+            if (p.isUnpacking()) {
+              cur_chunk = slim_create_terminal_message_list();
+              append_to_terminal_message_list(r->queued_msgs[i], r->queued_msgs_tail[i], j, cur_chunk);
+            }
+            slim_pup_terminal_message_list(p, cur_chunk);
+            cur_chunk = cur_chunk->next;
+            if (c == count) {
+              assert(cur_chunk->msg.saved_busy_time = r->last_buf_full[j]);
+            }
+          }
+      }
+  }
+}
 
 /* slimfly packet event , generates a slimfly packet on the compute node */
 static tw_stime slimfly_packet_event(
@@ -1332,7 +1618,7 @@ void slim_packet_send_rc(terminal_state * s, tw_bf * bf, slim_terminal_message *
     s->packet_counter--;
     s->vc_occupancy[0] -= s->params->chunk_size;
 
-    slim_terminal_message_list* cur_entry = rc_stack_pop(s->st);
+    slim_terminal_message_list* cur_entry = rc_stack_pop(s->msg_st);
 
     prepend_to_terminal_message_list(s->terminal_msgs,
             s->terminal_msgs_tail, 0, cur_entry);
@@ -1455,7 +1741,7 @@ void slim_packet_send(terminal_state * s, tw_bf * bf, slim_terminal_message * ms
     vc_occupancy_storage_terminal[s->terminal_id][0][index] = s->vc_occupancy[0]/s->params->chunk_size;
 #endif
     cur_entry = return_head(s->terminal_msgs, s->terminal_msgs_tail, 0);
-    rc_stack_push(lp, cur_entry, (void*)slim_delete_terminal_message_list, s->st);
+    rc_stack_push(lp, cur_entry, (void*)slim_delete_terminal_message_list, s->msg_st);
     s->terminal_length -= s->params->chunk_size;
 
     cur_entry = s->terminal_msgs[0];
@@ -1546,7 +1832,7 @@ void slim_packet_arrive_rc(terminal_state * s, tw_bf * bf, slim_terminal_message
         N_finished_msgs--;
         s->total_msg_size -= msg->total_size;
 
-        struct sfly_qhash_entry * d_entry_pop = rc_stack_pop(s->st);
+        struct sfly_qhash_entry * d_entry_pop = rc_stack_pop(s->hash_st);
         qhash_add(s->rank_tbl, &key, &(d_entry_pop->hash_link));
         s->rank_tbl_pop++;
 
@@ -1743,7 +2029,7 @@ void slim_packet_arrive(terminal_state * s, tw_bf * bf, slim_terminal_message * 
         }
         /* Remove the hash entry */
         qhash_del(hash_link);
-        rc_stack_push(lp, tmp, free_tmp, s->st);
+        rc_stack_push(lp, tmp, slim_delete_hash, s->hash_st);
         s->rank_tbl_pop--;
     }
 #if TERMINAL_SENDS_RECVS_LOG
@@ -1806,7 +2092,8 @@ void slim_terminal_event( terminal_state * s,
     *(int *)bf = (int)0;
     assert(msg->magic == slim_terminal_magic_num);
 
-    rc_stack_gc(lp, s->st);
+    rc_stack_gc(lp, s->msg_st);
+    rc_stack_gc(lp, s->hash_st);
     switch(msg->type)
     {
         case T_GENERATE:
@@ -1894,7 +2181,8 @@ void slimfly_terminal_final( terminal_state * s,
         }
 
     qhash_finalize(s->rank_tbl);
-    rc_stack_destroy(s->st);
+    rc_stack_destroy(s->msg_st);
+    rc_stack_destroy(s->hash_st);
     free(s->vc_occupancy);
     free(s->terminal_msgs);
     free(s->terminal_msgs_tail);
@@ -3333,6 +3621,7 @@ tw_lptype slimfly_lps[] =
         (revent_f) slim_terminal_rc_event_handler,
         (commit_f) NULL,
         (final_f) slimfly_terminal_final,
+        (pup_f) slim_terminal_pup,
         //(map_f) codes_mapping,
         sizeof(terminal_state)
     },
@@ -3343,10 +3632,11 @@ tw_lptype slimfly_lps[] =
         (revent_f) slim_router_rc_event_handler,
         (commit_f) NULL,
         (final_f) slimfly_router_final,
+        (pup_f) slim_router_pup,
         //(map_f) codes_mapping,
         sizeof(router_state),
     },
-    {NULL, NULL, NULL, NULL, NULL, 0},
+    {NULL, NULL, NULL, NULL, NULL, NULL, 0},
 };
 
 /* returns the slimfly lp type for lp registration */

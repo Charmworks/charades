@@ -52,11 +52,12 @@ struct LPToken {
  * \todo Converting LPStruct to use class inheritance would deprecate this
  */
 struct LPType {
-  init_f init;        ///< Initialization handler for this LP type
+  init_f init;      ///< Initialization handler for this LP type
   event_f event;    ///< Forward event handler for this LP type
-  revent_f revent;   ///< Reverse event handler for this LP type
-  commit_f commit;    ///< Commit event handler for this LP type
-  final_f final;   ///< Finalization handler for this LP type
+  revent_f revent;  ///< Reverse event handler for this LP type
+  commit_f commit;  ///< Commit event handler for this LP type
+  final_f final;    ///< Finalization handler for this LP type
+  pup_f pup;        ///< Handler for serializing state, leave NULL if unneeded
   size_t state_sz;  ///< The size of the model state required for this LP type
 };
 

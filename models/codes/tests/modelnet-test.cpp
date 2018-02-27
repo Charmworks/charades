@@ -103,6 +103,14 @@ void svr_init(svr_state* ns, tw_lp* lp) {
   tw_event_send(e);
 }
 
+void svr_pup(svr_state* ns, tw_lp* lp, PUP::er& p) {
+  p | ns->msg_sent_count;
+  p | ns->msg_recvd_count;
+  p | ns->local_recvd_count;
+  p | ns->start_ts;
+  p | ns->end_ts;
+}
+
 void svr_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp) {
   (void)b;
   switch (m->svr_event_type) {

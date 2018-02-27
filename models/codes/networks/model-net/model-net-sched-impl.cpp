@@ -35,6 +35,43 @@ typedef struct mn_sched_qitem {
     struct qlist_head ql;
 } mn_sched_qitem;
 
+PUPbytes(model_net_request);
+PUPbytes(mn_sched_params);
+void operator|(PUP::er& p, mn_sched_qitem* qi) {
+  p | qi->req;
+  p | qi->sched_params;
+  p | qi->rem;
+  p | qi->entry_time;
+  if (p.isUnpacking()) {
+    qi->remote_event = malloc(qi->req.remote_event_size);
+    qi->local_event = malloc(qi->req.self_event_size);
+  }
+  p((char*)(qi->remote_event), qi->req.remote_event_size);
+  p((char*)(qi->local_event), qi->req.self_event_size);
+}
+
+template<>
+void qlist_pup<mn_sched_qitem>(qlist_head* h, PUP::er& p) {
+  mn_sched_qitem* entry;
+  if (!p.isUnpacking()) {
+    int count = qlist_count(h);
+    p | count;
+    qlist_for_each_entry(mn_sched_qitem, entry, h, ql) {
+      p | entry;
+      count--;
+    }
+    assert(count == 0);
+  } else {
+    int count;
+    p | count;
+    for (int i = 0; i < count; i++) {
+      entry = (mn_sched_qitem*)malloc(sizeof(struct mn_sched_qitem));
+      p | entry;
+      qlist_add_tail(&entry->ql, h);
+    }
+  }
+}
+
 // fcfs and round-robin each use a single queue
 typedef struct mn_sched_queue {
     // method containing packet event to call
@@ -83,6 +120,10 @@ static void fcfs_next_rc(
         const void               * rc_event_save,
         const model_net_sched_rc * rc,
         tw_lp                    * lp);
+static void fcfs_pup (
+        const struct model_net_method     * method,
+        void                             ** sched,
+        PUP::er&                            p);
 
 // ROUND-ROBIN
 static void rr_init (
@@ -113,6 +154,11 @@ static void rr_next_rc (
         const void               * rc_event_save,
         const model_net_sched_rc * rc,
         tw_lp                    * lp);
+static void rr_pup (
+        const struct model_net_method     * method,
+        void                             ** sched,
+        PUP::er&                            p);
+
 static void prio_init (
         const struct model_net_method     * method, 
         const model_net_sched_cfg_params  * params,
@@ -141,14 +187,18 @@ static void prio_next_rc (
         const void               * rc_event_save,
         const model_net_sched_rc * rc,
         tw_lp                    * lp);
+static void prio_pup (
+        const struct model_net_method     * method,
+        void                             ** sched,
+        PUP::er&                            p);
 
 /// function tables (names defined by X macro in model-net-sched.h)
 static const model_net_sched_interface fcfs_tab = 
-{ &fcfs_init, &fcfs_destroy, &fcfs_add, &fcfs_add_rc, &fcfs_next, &fcfs_next_rc};
+{ &fcfs_init, &fcfs_destroy, &fcfs_add, &fcfs_add_rc, &fcfs_next, &fcfs_next_rc, &fcfs_pup};
 static const model_net_sched_interface rr_tab = 
-{ &rr_init, &rr_destroy, &rr_add, &rr_add_rc, &rr_next, &rr_next_rc};
+{ &rr_init, &rr_destroy, &rr_add, &rr_add_rc, &rr_next, &rr_next_rc, &rr_pup};
 static const model_net_sched_interface prio_tab =
-{ &prio_init, &prio_destroy, &prio_add, &prio_add_rc, &prio_next, &prio_next_rc};
+{ &prio_init, &prio_destroy, &prio_add, &prio_add_rc, &prio_next, &prio_next_rc, &prio_pup};
 
 #define X(a,b,c) c,
 const model_net_sched_interface * sched_interfaces[] = {
@@ -170,6 +220,25 @@ void fcfs_init(
     ss->is_recv_queue = is_recv_queue;
     ss->queue_len = 0;
     INIT_QLIST_HEAD(&ss->reqs);
+}
+
+void fcfs_pup(
+        const struct model_net_method     * method,
+        void                             ** sched,
+        PUP::er&                            p){
+  if (p.isUnpacking()) {
+    *sched = malloc(sizeof(mn_sched_queue));
+  }
+  mn_sched_queue* ss = *sched;
+  if (p.isUnpacking()) {
+    ss->method = method;
+  }
+  p | ss->is_recv_queue;
+  p | ss->queue_len;
+  if (p.isUnpacking()) {
+    INIT_QLIST_HEAD(&ss->reqs);
+  }
+  qlist_pup<mn_sched_qitem>(&ss->reqs, p);
 }
 
 void fcfs_destroy(void *sched){
@@ -370,6 +439,13 @@ void rr_init (
     fcfs_init(method, params, is_recv_queue, sched);
 }
 
+void rr_pup (
+        const struct model_net_method     * method,
+        void                             ** sched,
+        PUP::er&                            p){
+  fcfs_pup(method, sched, p);
+}
+
 void rr_destroy (void *sched){
     // same underlying representation
     fcfs_destroy(sched);
@@ -440,6 +516,13 @@ void prio_init (
         ss->sub_sched_iface->init(method, params, is_recv_queue,
                 (void**)&ss->sub_scheds[i]);
     }
+}
+
+void prio_pup (
+        const struct model_net_method     * method,
+        void                             ** sched,
+        PUP::er&                            p){
+    CkAbort("Can't PUP PRIO scheduler yet!\n");
 }
 
 void prio_destroy (void *sched){

@@ -38,6 +38,19 @@ void model_net_sched_init(
     sched->impl->init(method, params, is_recv_queue, &sched->dat);
 }
 
+PUPbytes(sched_type);
+void model_net_sched_pup(
+        const model_net_sched_cfg_params * params,
+        struct model_net_method *method,
+        model_net_sched *sched,
+        PUP::er& p){
+    p | sched->type;
+    if (p.isUnpacking()) {
+      sched->impl = sched_interfaces[sched->type];
+    }
+    sched->impl->pup_f(method, &sched->dat, p);
+}
+
 int model_net_sched_next(
         tw_stime *poffset,
         model_net_sched *sched,

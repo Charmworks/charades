@@ -85,6 +85,11 @@ static void model_net_base_finalize(
         model_net_base_state * ns,
         tw_lp * lp);
 
+static void model_net_base_pup(
+        model_net_base_state * ns,
+        tw_lp* lp,
+        PUP::er& p);
+
 /* event type handlers */
 static void handle_new_msg(
         model_net_base_state * ns,
@@ -115,6 +120,7 @@ tw_lptype model_net_base_lp = {
     (revent_f) model_net_base_event_rc,
     (commit_f) model_net_base_commit,
     (final_f)  model_net_base_finalize,
+    (pup_f) model_net_base_pup,
     //(map_f) codes_mapping,
     sizeof(model_net_base_state),
 };
@@ -460,6 +466,46 @@ void model_net_base_lp_init(
             issue_sample_event(lp);
         }
     }
+}
+
+void model_net_base_pup(model_net_base_state* ns, tw_lp* lp, PUP::er& p) {
+  p | model_net_base_magic; // Need to pup in case dest PE never computed it.
+  p | ns->net_id;
+  p | ns->in_sched_send_loop;
+  p | ns->in_sched_recv_loop;
+  p | ns->msg_id;
+
+  if (p.isUnpacking()) {
+    char lp_type_name[MAX_NAME_LENGTH], anno[MAX_NAME_LENGTH];
+    int dummy;
+
+    codes_mapping_get_lp_info(lp->gid, NULL, &dummy,
+            lp_type_name, &dummy, anno, &dummy, &dummy);
+
+    for (int i = 0; i < num_params; i++){
+        if ((anno[0]=='\0' && annos[i] == NULL) ||
+                strcmp(anno, annos[i]) == 0){
+            ns->params = &all_params[i];
+            break;
+        }
+    }
+
+    ns->sched_send = (model_net_sched*)malloc(sizeof(model_net_sched));
+    ns->sched_recv = (model_net_sched*)malloc(sizeof(model_net_sched));
+
+    ns->sub_type = model_net_get_lp_type(ns->net_id);
+    ns->sub_state = calloc(1, ns->sub_type->state_sz);
+  }
+  model_net_sched_pup(&ns->params->sched_params, method_array[ns->net_id],
+          ns->sched_send, p);
+  model_net_sched_pup(&ns->params->sched_params, method_array[ns->net_id],
+          ns->sched_recv, p);
+
+  if (ns->sub_type->pup) {
+    ns->sub_type->pup(ns->sub_state, lp, p);
+  } else {
+    p((char*)ns->sub_state, ns->sub_type->state_sz);
+  }
 }
 
 void model_net_base_event(

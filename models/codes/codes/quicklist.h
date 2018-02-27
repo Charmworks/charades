@@ -218,10 +218,10 @@ static __inline__ void qlist_splice(struct qlist_head *qlist, struct qlist_head 
  * @head:	the head for your list.
  * @member:	the name of the list_struct within the struct.
  */
-#define qlist_for_each_entry(pos, head, member)				\
-    for (pos = qlist_entry((head)->next, typeof(*pos), member);	\
+#define qlist_for_each_entry(type, pos, head, member)				\
+    for (pos = qlist_entry((head)->next, type, member);	\
          &pos->member != (head); 					\
-         pos = qlist_entry(pos->member.next, typeof(*pos), member))	\
+         pos = qlist_entry(pos->member.next, type, member))	\
 
 /**
  * qlist_for_each_entry_safe - iterate over list of given type safe against removal of list entry
@@ -283,6 +283,35 @@ static inline struct qlist_head * qlist_find(
     }
     return NULL;
 }
+
+template <typename EnclosingType>
+void qlist_pup(qlist_head* h, PUP::er& p) {
+  CkAbort("PUPPER NOT DEFINED FOR A LIST OF THIS TYPE\n");
+}
+
+/* Quicklist PUP functions should follow this format:
+
+template<>
+void qlist_pup<TYPE>(qlist_head* h, PUP::er& p) {
+  TYPE* entry;
+  if (!p.isUnpacking()) {
+    int count = qlist_count(h);
+    p | count;
+    qlist_for_each_entry(TYPE, entry, h, MEMBER) {
+      p | entry;
+      count--;
+    }
+    assert(count == 0);
+  } else {
+    int count;
+    p | count;
+    for (int i = 0; i < count; i++) {
+      entry = (TYPE*)malloc(sizeof(TYPE));
+      p | entry;
+      qlist_add_tail(entry->MEMBER, h);
+    }
+  }
+}*/
 
 /*
  * Local variables:

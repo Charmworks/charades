@@ -44,6 +44,7 @@ void svr_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
 void svr_rev_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
 void svr_commit_event(svr_state* ns, tw_bf* b, svr_msg* m, tw_lp* lp);
 void svr_finalize(svr_state* ns, tw_lp* lp);
+void svr_pup(svr_state* ns, tw_lp* lp, PUP::er& p);
 
 // Server LP type
 tw_lptype svr_lp = {
@@ -52,6 +53,7 @@ tw_lptype svr_lp = {
     (revent_f) svr_rev_event,
     (commit_f) svr_commit_event,
     (final_f)  svr_finalize,
+    (pup_f) svr_pup,
     sizeof(svr_state),
 };
 

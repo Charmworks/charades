@@ -182,6 +182,7 @@ tw_lptype sp_lp = {
     (revent_f) sp_rev_event,
     (commit_f) NULL,
     (final_f) sp_finalize,
+    (pup_f) NULL,
     sizeof(sp_state)
 };
 

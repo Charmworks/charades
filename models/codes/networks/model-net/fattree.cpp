@@ -2953,6 +2953,7 @@ tw_lptype fattree_lps[] =
     (revent_f) ft_terminal_rc_event_handler,
     (commit_f) NULL,
     (final_f) fattree_terminal_final,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(ft_terminal_state)
   },
@@ -2964,6 +2965,7 @@ tw_lptype fattree_lps[] =
     (revent_f) switch_rc_event_handler,
     (commit_f) NULL,
     (final_f) fattree_switch_final,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(switch_state),
   },

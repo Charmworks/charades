@@ -24,10 +24,16 @@ void operator|(PUP::er& p, LPStruct& lp) {
   if (p.isUnpacking()) {
     lp.type = g_type_map(lp.gid);
     lp.state = malloc(lp.type->state_sz);
-    lp.rng = (tw_rng_stream*)malloc(sizeof(tw_rng_stream));
+    tw_rand_init_streams(&lp, g_tw_nRNG_per_lp);
   }
-  p((char*)lp.state, lp.type->state_sz);
-  p | lp.rng;
+  if (lp.type->pup) {
+    lp.type->pup(lp.state, &lp, p);
+  } else {
+    p((char*)lp.state, lp.type->state_sz);
+  }
+  for (int i = 0; i < g_tw_nRNG_per_lp; i++) {
+    p | &(lp.rng[i]);
+  }
 }
 
 // Make sure we know our local pe, and construct the tokens.

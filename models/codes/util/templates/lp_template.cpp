@@ -87,6 +87,7 @@ tw_lptype template_lp = {
     (revent_f) template_rev_handler,
     (commit_f) NULL,
     (final_f)  template_finalize,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(template_state),
 };

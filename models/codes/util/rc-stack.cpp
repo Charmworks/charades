@@ -9,11 +9,13 @@
 #include "codes/rc-stack.h"
 #include "codes/quicklist.h"
 
+// ALL MOVED HERE FOR PUP
 enum rc_stack_mode {
     RC_NONOPT, // not in optimistic mode
     RC_OPT, // optimistic mode
     RC_OPT_DBG // optimistic *debug* mode (requires special handling)
 };
+PUPbytes(rc_stack_mode);
 
 typedef struct rc_entry_s {
     tw_stime time;
@@ -27,6 +29,32 @@ struct rc_stack {
     enum rc_stack_mode mode;
     struct qlist_head head;
 };
+
+void operator|(PUP::er& p, rc_entry* e) {
+  p | e->time;
+}
+
+template<>
+void qlist_pup<rc_entry>(qlist_head* h, PUP::er& p) {
+  rc_entry* entry;
+  if (!p.isUnpacking()) {
+    int count = qlist_count(h);
+    p | count;
+    qlist_for_each_entry(rc_entry, entry, h, ql) {
+      p | entry;
+      count--;
+    }
+    assert(count == 0);
+  } else {
+    int count;
+    p | count;
+    for (int i = 0; i < count; i++) {
+      entry = (rc_entry*)malloc(sizeof(rc_entry));
+      p | entry;
+      qlist_add_tail(&entry->ql, h);
+    }
+  }
+}
 
 void rc_stack_create(struct rc_stack **s){
     struct rc_stack *ss = (struct rc_stack*)malloc(sizeof(*ss));
@@ -48,6 +76,25 @@ void rc_stack_create(struct rc_stack **s){
             ss->mode = RC_NONOPT;
     }
     *s = ss;
+}
+
+void rc_stack_pup(struct rc_stack *s,
+                  create_fn_t create_fn,
+                  free_fn_t free_fn,
+                  pup_fn_t pup_fn,
+                  PUP::er& p) {
+  p | s->count;
+  p | s->mode;
+  qlist_pup<rc_entry>(&s->head, p);
+
+  rc_entry* entry;
+  qlist_for_each_entry(rc_entry, entry, &s->head, ql) {
+    if (p.isUnpacking()) {
+      entry->data = create_fn();
+      entry->free_fn = free_fn;
+    }
+    pup_fn(p, entry->data);
+  }
 }
 
 void rc_stack_destroy(struct rc_stack *s) {

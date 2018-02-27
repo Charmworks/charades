@@ -1993,6 +1993,7 @@ tw_lptype torus_lp =
     (revent_f) node_rc_handler,
     (commit_f) NULL,
     (final_f) final,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(nodes_state),
 };

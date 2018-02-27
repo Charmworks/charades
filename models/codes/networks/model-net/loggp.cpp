@@ -180,6 +180,10 @@ static void loggp_rev_event(
 static void loggp_finalize(
     loggp_state * ns,
     tw_lp * lp);
+static void loggp_pup(
+    loggp_state * ns,
+    tw_lp * lp,
+    PUP::er& p);
 
 tw_lptype loggp_lp = {
     (init_f) loggp_init,
@@ -188,6 +192,7 @@ tw_lptype loggp_lp = {
     (revent_f) loggp_rev_event,
     (commit_f) NULL,
     (final_f) loggp_finalize,
+    (pup_f) loggp_pup,
     //(map_f) codes_mapping,
     sizeof(loggp_state),
 };
@@ -267,6 +272,25 @@ static void loggp_init(
     /* printf("\n loggp_magic %d ", loggp_magic); */
 
     return;
+}
+
+static void loggp_pup(
+    loggp_state * ns,
+    tw_lp * lp,
+    PUP::er& p)
+{
+  p | loggp_magic; // Need to pup in case dest PE never computed it.
+  p | ns->net_send_next_idle;
+  p | ns->net_recv_next_idle;
+  if (p.isUnpacking()) {
+    ns->anno = codes_mapping_get_annotation_by_lpid(lp->gid);
+    if (ns->anno == NULL)
+        ns->params = &all_params[num_params-1];
+    else{
+        int id = configuration_get_annotation_index(ns->anno, anno_map);
+        ns->params = &all_params[id];
+    }
+  }
 }
 
 static void loggp_event(

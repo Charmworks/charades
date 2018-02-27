@@ -15,6 +15,7 @@
 #define TYPEDEFS_H_
 
 // Included for size_t and int32_t respectively
+#include <pup.h>
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -94,6 +95,8 @@ typedef void (*revent_f) (void*, tw_bf*, void*, LPStruct*);
 typedef void (*commit_f) (void*, tw_bf*, void*, LPStruct*);
 /** Called at simulation end for finalization */
 typedef void (*final_f) (void*, LPStruct*);
+/** Called during pupping to handle dynamically allocated state variables */
+typedef void (*pup_f) (void*, LPStruct*, PUP::er& p);
 
 /** Map that takes an LP chare index and local LP id and returns a global id */
 typedef tw_lpid (*init_map_f) (unsigned, tw_lpid);

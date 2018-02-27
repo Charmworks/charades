@@ -92,6 +92,7 @@ tw_lptype a_lp = {
     (revent_f) NULL,
     (commit_f) NULL,
     (final_f)  NULL,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(state),
 };
@@ -102,6 +103,7 @@ tw_lptype b_lp = {
     (revent_f) NULL,
     (commit_f) NULL,
     (final_f) NULL,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(state),
 };
@@ -112,6 +114,7 @@ tw_lptype c_lp = {
     (revent_f) NULL,
     (commit_f) NULL,
     (final_f) NULL,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(state),
 };
