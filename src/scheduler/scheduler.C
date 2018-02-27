@@ -306,6 +306,7 @@ void DistributedScheduler::balancing_complete() {
   double lb_time = CmiWallTimer() - lb_start;
   PE_STATS(lb_time) += lb_time;
 #endif
+  PE_STATS(total_lbs)++;
   lb_trigger->reset();
   next_iteration();
 }
