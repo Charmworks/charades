@@ -961,6 +961,18 @@ void slim_terminal_pup(terminal_state * s, tw_lp * lp, PUP::er& p) {
     slim_pup_terminal_message_list(p, cur_chunk);
     cur_chunk = cur_chunk->next;
   }
+
+  if (p.isPacking()) {
+    while (s->terminal_msgs[0]) {
+      free(return_head(s->terminal_msgs, s->terminal_msgs_tail, 0));
+    }
+    free(s->terminal_msgs_tail);
+    free(s->terminal_msgs);
+    free(s->vc_occupancy);
+    qhash_finalize(s->rank_tbl);
+    rc_stack_destroy(s->hash_st);
+    rc_stack_destroy(s->msg_st);
+  }
 }
 
 
@@ -1339,6 +1351,43 @@ void slim_router_pup(router_state * r, tw_lp * lp, PUP::er& p)
             }
           }
       }
+  }
+  if (p.isPacking()) {
+    rc_stack_destroy(r->st);
+
+    free(r->global_channel);
+    free(r->local_channel);
+
+    free(r->next_output_available_time);
+    free(r->link_traffic);
+    free(r->cur_hist_num);
+    free(r->prev_hist_num);
+
+    free(r->last_buf_full);
+    free(r->busy_time);
+
+    free(r->in_send_loop);
+
+    for (int i = 0; i < pr->radix; i++) {
+      free(r->vc_occupancy[i]);
+      for(int j = 0; j < pr->num_vcs; j++) {
+          while(r->pending_msgs[i][j]) {
+            free(return_head(r->pending_msgs[i], r->pending_msgs_tail[i], j));
+          }
+          while(r->queued_msgs[i][j]) {
+            free(return_head(r->queued_msgs[i], r->queued_msgs_tail[i], j));
+          }
+      }
+      free(r->pending_msgs[i]);
+      free(r->pending_msgs_tail[i]);
+      free(r->queued_msgs[i]);
+      free(r->queued_msgs_tail[i]);
+    }
+    free(r->vc_occupancy);
+    free(r->pending_msgs);
+    free(r->pending_msgs_tail);
+    free(r->queued_msgs);
+    free(r->queued_msgs_tail);
   }
 }
 

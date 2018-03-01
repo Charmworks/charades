@@ -144,9 +144,9 @@ void rc_stack_gc(tw_lp const *lp, struct rc_stack *s) {
 
     struct qlist_head *ent = s->head.next;
     // TODO: This just needs to be fixed to be able to access GVT correctly
-    /*while (ent != &s->head) {
+    while (ent != &s->head) {
         rc_entry *r = qlist_entry(ent, rc_entry, ql);
-        if (lp == NULL || r->time < lp->pe->GVT){
+        if (lp == NULL){//|| r->time < lp->pe->GVT){
             qlist_del(ent);
             if (r->free_fn) r->free_fn(r->data);
             free(r);
@@ -155,7 +155,7 @@ void rc_stack_gc(tw_lp const *lp, struct rc_stack *s) {
         }
         else
             break;
-    }*/
+    }
 }
 
 /*
