@@ -321,7 +321,7 @@ static int fattree_hash_func(void *k, int table_size)
 
 static void free_tmp(void * ptr)
 {
-    struct ftree_qhash_entry * ftree = ptr;
+    struct ftree_qhash_entry * ftree = (ftree_qhash_entry*)ptr;
     free(ftree->remote_event_data);
     free(ftree);
 }
@@ -448,7 +448,7 @@ static int read_static_lft(switch_state *s, tw_lp *lp)
   char *io_dir = routing_folder;
   sprintf(dir_name, "%s", io_dir);
 
-  sprintf(file_name, "%s/0x%016"PRIx64".lft", dir_name, get_switch_guid(s));
+  sprintf(file_name, "%s/0x%016" PRIx64 ".lft", dir_name, get_switch_guid(s));
   FILE *file = NULL;
   if (!(file = fopen(file_name, "r")))
     return -1;
@@ -458,9 +458,9 @@ static int read_static_lft(switch_state *s, tw_lp *lp)
   uint64_t dest_guid = 0, port = 0;
 
   int num_added = 0;
-  guid_port_combi_t *tmpLFT = calloc(s->params->num_terminals,
+  guid_port_combi_t *tmpLFT = (guid_port_combi_t*)calloc(s->params->num_terminals,
         sizeof(guid_port_combi_t));
-  s->lft = malloc(s->params->num_terminals * sizeof(int));
+  s->lft = (int*)malloc(s->params->num_terminals * sizeof(int));
   /* init all with -1 so that we find missing routing entries */
   for (int i = 0; i < s->params->num_terminals; i++) s->lft[i] = -1;
 
@@ -506,7 +506,7 @@ static int read_static_lft(switch_state *s, tw_lp *lp)
     tmpTerm.terminal_id = dest_num;
     uint64_t key = get_term_guid(&tmpTerm);
     size_t size = s->params->num_terminals;
-    guid_port_combi_t *elem = lfind(&key, tmpLFT, &size,
+    guid_port_combi_t *elem = (guid_port_combi_t*)lfind(&key, tmpLFT, &size,
           sizeof(guid_port_combi_t), cmp_guids);
     assert(elem);
     // opensm uses ports=1...n, so convert back here
@@ -567,7 +567,7 @@ static void dot_write_switch_info(switch_state *s, int sw_gid, FILE *fout)
   uint64_t switch_guid = get_switch_guid(s);
   fattree_param *p = s->params;
 
-  fprintf(fout, "\t\"S_%d_%d\" [comment=\"0x%016"PRIx64",radix=%d%s\"];\n",
+  fprintf(fout, "\t\"S_%d_%d\" [comment=\"0x%016" PRIx64 ",radix=%d%s\"];\n",
       s->switch_level, sw_gid, switch_guid, s->radix,
       (p->num_levels == s->switch_level + 1) ? root_attr : empty_attr);
 }
@@ -582,7 +582,7 @@ static void dot_write_term_info(ft_terminal_state *t, FILE *fout)
   /* need to shift the term guid, because opensm doesn't like guid=0...0 */
   //if(NULL != getenv("OSM_ROUTING"))
      term_guid = get_term_guid(t);
-  fprintf(fout, "\t\"H_%d\" [comment=\"0x%016"PRIx64"\"];\n",
+  fprintf(fout, "\t\"H_%d\" [comment=\"0x%016" PRIx64 "\"];\n",
         t->terminal_id, term_guid);
 }
 
@@ -877,7 +877,7 @@ static void fattree_configure(){
   anno_map = codes_mapping_get_lp_anno_map(LP_CONFIG_NM);
   assert(anno_map);
   num_params = anno_map->num_annos + (anno_map->has_unanno_lp > 0);
-  all_params = malloc(num_params * sizeof(*all_params));
+  all_params = (fattree_param*)malloc(num_params * sizeof(*all_params));
 
   for (int i = 0; i < anno_map->num_annos; i++){
     const char * anno = anno_map->annotations[i].ptr;
@@ -1935,7 +1935,7 @@ void switch_packet_send_rc(switch_state * s,
     tw_rand_reverse_unif(lp->rng);
     s->next_output_available_time[output_port] =
       msg->saved_available_time;
-    fattree_message_list * cur_entry = rc_stack_pop(s->st);
+    fattree_message_list * cur_entry = (fattree_message_list*)rc_stack_pop(s->st);
     assert(cur_entry);
 
     if(bf->c11)
@@ -2363,7 +2363,7 @@ void ft_packet_arrive_rc(ft_terminal_state * s, tw_bf * bf, fattree_message * ms
       total_msg_sz -= msg->total_size;
       s->total_msg_size -= msg->total_size;
 
-      struct ftree_qhash_entry * d_entry_pop = rc_stack_pop(s->st);
+      struct ftree_qhash_entry * d_entry_pop = (ftree_qhash_entry*)rc_stack_pop(s->st);
       qhash_add(s->rank_tbl, &key, &(d_entry_pop->hash_link));
       s->rank_tbl_pop++;
             
@@ -2504,7 +2504,7 @@ void ft_packet_arrive(ft_terminal_state * s, tw_bf * bf, fattree_message * msg,
    if(!hash_link)
    {
        bf->c5 = 1;
-       struct ftree_qhash_entry * d_entry = malloc(sizeof (struct ftree_qhash_entry));
+       struct ftree_qhash_entry * d_entry = (ftree_qhash_entry*)malloc(sizeof(struct ftree_qhash_entry));
        d_entry->num_chunks = 0;
        d_entry->key = key;
        d_entry->remote_event_data = NULL;
@@ -2538,7 +2538,7 @@ void ft_packet_arrive(ft_terminal_state * s, tw_bf * bf, fattree_message * msg,
     if(msg->remote_event_size_bytes > 0 && !tmp->remote_event_data)
     {
         /* Retreive the remote event entry */
-         tmp->remote_event_data = (void*)malloc(msg->remote_event_size_bytes);
+         tmp->remote_event_data = (char*)malloc(msg->remote_event_size_bytes);
          assert(tmp->remote_event_data);
          tmp->remote_event_size = msg->remote_event_size_bytes;
          memcpy(tmp->remote_event_data, m_data_src, msg->remote_event_size_bytes);
@@ -2729,12 +2729,12 @@ void fattree_terminal_final( ft_terminal_state * s, tw_lp * lp )
     if(!s->terminal_id)
         written = sprintf(s->output_buf, "# Format <LP id> <Terminal ID> <Total Data Size> <Aggregate packet latency> <# Flits/Packets finished> <Avg hops> <Busy Time>\n");
 
-    written += sprintf(s->output_buf + written, "%llu %u %lld %lf %ld %lf %lf\n",
+    written += sprintf(s->output_buf + written, "%llu %u %lu %lf %ld %lf %lf\n",
             LLU(lp->gid), s->terminal_id, s->total_msg_size, s->total_time,
             s->finished_packets, (double)s->total_hops/s->finished_chunks,
             s->busy_time);
 
-    lp_io_write(lp->gid, "fattree-msg-stats", written, s->output_buf);
+    //lp_io_write(lp->gid, "fattree-msg-stats", written, s->output_buf);
 
     if(s->terminal_msgs[0] != NULL)
       printf("[%llu] leftover terminal messages \n", LLU(lp->gid));
@@ -2822,7 +2822,7 @@ void fattree_switch_final(switch_state * s, tw_lp * lp)
     for(int d = 0; d < s->radix; d++)
         written += sprintf(s->output_buf + written, " %lf", s->busy_time[d]);
 
-    lp_io_write(lp->gid, "fattree-switch-stats", written, s->output_buf);
+    //lp_io_write(lp->gid, "fattree-switch-stats", written, s->output_buf);
 
     written = 0;
     if(!s->switch_id)
@@ -2838,7 +2838,7 @@ void fattree_switch_final(switch_state * s, tw_lp * lp)
         written += sprintf(s->output_buf2 + written, " %lld", LLD(s->link_traffic[d]));
 
     assert(written < 4096);
-    lp_io_write(lp->gid, "fattree-switch-traffic", written, s->output_buf2);
+    //lp_io_write(lp->gid, "fattree-switch-traffic", written, s->output_buf2);
 
     //Original Output with Tracer
 //    char *stats_file = getenv("TRACER_LINK_FILE");

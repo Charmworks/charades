@@ -17,7 +17,7 @@ extern struct codes_jobmap_impl jobmap_identity_impl;
 struct codes_jobmap_ctx *
 codes_jobmap_configure(enum codes_jobmap_type t, void const * params)
 {
-    struct codes_jobmap_ctx *c = malloc(sizeof(*c));
+    struct codes_jobmap_ctx *c = (codes_jobmap_ctx*)malloc(sizeof(*c));
     assert(c);
     int rc;
 

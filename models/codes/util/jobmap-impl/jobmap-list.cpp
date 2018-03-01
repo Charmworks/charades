@@ -33,10 +33,10 @@ struct jobmap_list {
     int **global_ids;
 };
 
-#define COND_REALLOC(_len_expr, _cap_var, _buf_var) \
+#define COND_REALLOC(type, _len_expr, _cap_var, _buf_var) \
     do { \
         if ((_len_expr) == _cap_var) { \
-            _buf_var = realloc(_buf_var, (_cap_var)*2*sizeof(*(_buf_var))); \
+            _buf_var = (type*)realloc(_buf_var, (_cap_var)*2*sizeof(type)); \
             assert(_buf_var); \
             _cap_var *= 2; \
         } \
@@ -53,12 +53,14 @@ static int parse_line(
 
     int cap = *line_cap;
     int pos = 0;
+    int list_cap = 0;
+    int* lst = NULL;
 
     *num_ranks = 0;
 
     for (int c = fgetc(f); c != EOF && c != '\n'; c = fgetc(f)) {
         buf[pos++] = (char)c;
-        COND_REALLOC(pos, cap, buf);
+        COND_REALLOC(char, pos, cap, buf);
     }
     if (ferror(f)) {
         *num_ranks = -1;
@@ -68,8 +70,8 @@ static int parse_line(
         buf[pos]='\0';
     }
 
-    int list_cap = 8;
-    int *lst = malloc(list_cap * sizeof(*lst));
+    list_cap = 8;
+    lst = (int*)malloc(list_cap * sizeof(*lst));
     assert(lst);
     int rank;
 
@@ -84,7 +86,7 @@ static int parse_line(
             *num_ranks = -1;
             break;
         }
-        COND_REALLOC(*num_ranks, list_cap, lst);
+        COND_REALLOC(int, *num_ranks, list_cap, lst);
         lst[*num_ranks] = rank;
         *num_ranks += 1;
     }
@@ -103,8 +105,8 @@ end:
 
 static int jobmap_list_configure(void const * params, void ** ctx)
 {
-    struct codes_jobmap_params_list const * p = params;
-    struct jobmap_list *lst = malloc(sizeof(*lst));
+    struct codes_jobmap_params_list const * p = (codes_jobmap_params_list*)params;
+    struct jobmap_list *lst = (jobmap_list*)malloc(sizeof(*lst));
     assert(lst);
 
     FILE *f = fopen(p->alloc_file, "r");
@@ -115,14 +117,14 @@ static int jobmap_list_configure(void const * params, void ** ctx)
     // job storage
     lst->num_jobs = 0;
     int job_cap = 8;
-    lst->rank_counts = calloc(job_cap, sizeof(*lst->rank_counts));
+    lst->rank_counts = (int*)calloc(job_cap, sizeof(*lst->rank_counts));
     assert(lst->rank_counts);
-    lst->global_ids = calloc(job_cap, sizeof(*lst->global_ids));
+    lst->global_ids = (int**)calloc(job_cap, sizeof(*lst->global_ids));
     assert(lst->global_ids);
 
     // line storage
     int line_cap = 1<<10;
-    char *line_buf = malloc(line_cap);
+    char *line_buf = (char*)malloc(line_cap);
     assert(line_buf);
 
     int rc = 0;
@@ -143,8 +145,8 @@ static int jobmap_list_configure(void const * params, void ** ctx)
         // resize if needed
         if (!feof(f) && lst->num_jobs == job_cap) {
             int tmp = job_cap;
-            COND_REALLOC(lst->num_jobs, tmp, lst->rank_counts);
-            COND_REALLOC(lst->num_jobs, job_cap, lst->global_ids);
+            COND_REALLOC(int, lst->num_jobs, tmp, lst->rank_counts);
+            COND_REALLOC(int*, lst->num_jobs, job_cap, lst->global_ids);
         }
     } while (!feof(f));
 

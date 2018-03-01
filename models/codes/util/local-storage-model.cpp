@@ -177,6 +177,7 @@ tw_lptype lsm_lp =
     (revent_f) lsm_rev_event,
     (commit_f) NULL,
     (final_f) lsm_finalize,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(lsm_state_t)
 };
@@ -378,7 +379,7 @@ static void lsm_lp_init (lsm_state_t *ns, tw_lp *lp)
         ns->sched.active_count = 0;
         rc_stack_create(&ns->sched.freelist);
         ns->sched.queues =
-            malloc(ns->sched.num_prios * sizeof(*ns->sched.queues));
+            (qlist_head*)malloc(ns->sched.num_prios * sizeof(*ns->sched.queues));
         for (int i = 0; i < ns->sched.num_prios; i++)
             INIT_QLIST_HEAD(&ns->sched.queues[i]);
     }
@@ -519,7 +520,7 @@ static void handle_io_sched_new(
     if (!ns->sched.active_count)
         handle_io_request(ns, b, &m_in->data, m_in, lp);
     else {
-        lsm_sched_op_t *op = malloc(sizeof(*op));
+        lsm_sched_op_t *op = (lsm_sched_op_t*)malloc(sizeof(*op));
         op->data = m_in->data;
         qlist_add_tail(&op->ql, &ns->sched.queues[m_in->prio]);
     }
@@ -581,7 +582,7 @@ static void handle_rev_io_sched_compl(
     if (LSM_DEBUG)
         printf("handle_rev_io_sched_compl called\n");
     if (ns->sched.active_count) {
-        lsm_sched_op_t *prev = rc_stack_pop(ns->sched.freelist);
+        lsm_sched_op_t *prev = (lsm_sched_op_t*)rc_stack_pop(ns->sched.freelist);
         handle_rev_io_request(ns, b, &prev->data, m_in, lp);
         qlist_add_tail(&prev->ql, &ns->sched.queues[m_in->prio]);
     }

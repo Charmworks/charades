@@ -22,7 +22,7 @@
 #include <cortex/topology.h>
 #endif
 
-#define DEBUG 1
+#define TORUS_DEBUG 1
 #define MEAN_INTERVAL 100
 // type casts to make compiler happy
 #define TRACE ((unsigned long long)(-1))
@@ -70,7 +70,7 @@ void delete_nodes_message_list(nodes_message_list *self) {
 
 static void free_tmp(void * ptr)
 {
-    nodes_message_list * entry = ptr;
+    nodes_message_list * entry = (nodes_message_list*)ptr;
     if(entry->event_data != NULL)
         free(entry->event_data);
 
@@ -344,7 +344,7 @@ static void torus_read_config(
         tw_error(TW_LOC, "couldn't read PARAMS:dim_length");
     }
     char* token;
-    p->dim_length=malloc(p->n_dims*sizeof(*p->dim_length));
+    p->dim_length=(int*)malloc(p->n_dims*sizeof(*p->dim_length));
     token = strtok(dim_length_str, ",");
     i = 0;
     while(token != NULL)
@@ -363,12 +363,12 @@ static void torus_read_config(
     // factor is an exclusive prefix product
     p->router_delay = 50;
     p->cn_delay = 10;
-    p->factor = malloc(p->n_dims * sizeof(int));
+    p->factor = (int*)malloc(p->n_dims * sizeof(int));
     p->factor[0] = 1;
     for(i = 1; i < p->n_dims; i++)
         p->factor[i] = p->factor[i-1] * p->dim_length[i-1];
 
-    p->half_length = malloc(p->n_dims * sizeof(int));
+    p->half_length = (int*)malloc(p->n_dims * sizeof(int));
     for (i = 0; i < p->n_dims; i++)
         p->half_length[i] = p->dim_length[i] / 2;
 
@@ -381,7 +381,7 @@ static void torus_configure(){
     anno_map = codes_mapping_get_lp_anno_map(LP_CONFIG_NM);
     assert(anno_map);
     num_params = anno_map->num_annos + (anno_map->has_unanno_lp > 0);
-    all_params = malloc(num_params * sizeof(*all_params));
+    all_params = (torus_param*)(torus_param*)(torus_param*)(torus_param*)(torus_param*)(torus_param*)(torus_param*)(torus_param*)(torus_param*)malloc(num_params * sizeof(*all_params));
 
     for (int i = 0; i < anno_map->num_annos; i++){
         const char * anno = anno_map->annotations[i].ptr;
@@ -1219,7 +1219,7 @@ static void packet_send_rc(nodes_state * s,
      codes_local_latency_reverse(lp);
      s->next_link_available_time[queue][0] = msg->saved_available_time;
 
-     nodes_message_list * cur_entry = rc_stack_pop(s->st);
+     nodes_message_list * cur_entry = (nodes_message_list*)rc_stack_pop(s->st);
      assert(cur_entry);
 
      if(bf->c20)
@@ -1760,7 +1760,7 @@ final( nodes_state * s, tw_lp * lp )
                           LLU(lp->gid), LLU(s->node_id), s->total_data_sz, s->total_time,
                           s->finished_packets, (double)s->total_hops/s->finished_packets);
 
-     lp_io_write(lp->gid, "torus-msg-stats", written, s->output_buf);
+     //lp_io_write(lp->gid, "torus-msg-stats", written, s->output_buf);
 
      written = 0;
       if(!s->node_id)
@@ -1775,7 +1775,7 @@ final( nodes_state * s, tw_lp * lp )
      }
      written += sprintf(s->output_busy_buf + written, "\n");
 
-     lp_io_write(lp->gid, "torus-link-stats", written, s->output_busy_buf);
+     //lp_io_write(lp->gid, "torus-link-stats", written, s->output_busy_buf);
 
   // since all LPs are sharing params, just let them leak for now
   // TODO: add a post-sim "cleanup" function?

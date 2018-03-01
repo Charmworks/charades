@@ -110,7 +110,7 @@ void rc_stack_push(
     if (s->mode != RC_NONOPT || free_fn == NULL) {
         rc_entry * ent = (rc_entry*)malloc(sizeof(*ent));
         assert(ent);
-        ent->time = tw_now(lp);
+        ent->time = tw_now((tw_lp*)lp);
         ent->data = data;
         ent->free_fn = free_fn;
         qlist_add_tail(&ent->ql, &s->head);

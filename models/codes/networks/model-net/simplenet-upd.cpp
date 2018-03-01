@@ -69,10 +69,10 @@ static void print_msg(sn_message *m);
 #endif
 
 /* collective network calls */
-static void simple_net_collective();
+static void simple_net_collective(const char*, int, int, const void*, tw_lp*);
 
 /* collective network calls-- rc */
-static void simple_net_collective_rc();
+static void simple_net_collective_rc(int, tw_lp*);
 
 /* Modelnet interface events */
 /* sets up the simplenet parameters through modelnet interface */
@@ -195,17 +195,15 @@ static int sn_get_msg_sz(void)
     return(sizeof(sn_message));
 }
 /* collective network calls */
-static void simple_net_collective()
+static void simple_net_collective(const char*, int, int, const void*, tw_lp*)
 {
-/* collectives not supported */
-    return;
+    CkAbort("Collectives not supported\n");
 }
 
 /* collective network call -- rc*/
-static void simple_net_collective_rc()
+static void simple_net_collective_rc(int, tw_lp*)
 {
-/* collectives not supported */
-   return;
+    CkAbort("Collectives not supported\n");
 }
 
 /* report network statistics */

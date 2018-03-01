@@ -117,10 +117,10 @@ static category_idles* sp_get_category_idles(
         char * category, category_idles *idles);
 
 /* collective network calls */
-static void simple_wan_collective();
+static void simple_wan_collective(const char*, int, int, const void*, tw_lp*);
 
 /* collective network calls-- rc */
-static void simple_wan_collective_rc();
+static void simple_wan_collective_rc(int, tw_lp*);
 
 /* Issues a simplep2p packet event call */
 static tw_stime simplep2p_packet_event(
@@ -205,16 +205,14 @@ static void handle_msg_start_event(
     tw_lp * lp);
 
 /* collective network calls */
-static void simple_wan_collective()
+static void simple_wan_collective(const char*, int, int, const void*, tw_lp*)
 {
-/* collectives not supported */
-    return;
+    CkAbort("Collectives not supported\n");
 }
 
-static void simple_wan_collective_rc()
+static void simple_wan_collective_rc(int, tw_lp*)
 {
-/* collectives not supported */
-   return;
+    CkAbort("Collectives not supported\n");
 }
 
 /* returns pointer to LP information for simplep2p module */
@@ -233,7 +231,7 @@ static int sp_get_msg_sz(void)
 
 static double * parse_mat(char * buf, int *nvals_first, int *nvals_total, int is_tri_mat){
     int bufn = 128;
-    double *vals = malloc(bufn*sizeof(double));
+    double *vals = (double*)malloc(bufn*sizeof(double));
 
     *nvals_first = 0;
     *nvals_total = 0;
@@ -251,7 +249,7 @@ static double * parse_mat(char * buf, int *nvals_first, int *nvals_total, int is
 	    char * val_save;
             if (line_ct + *nvals_total >= bufn){
                 bufn<<=1;
-                vals = realloc(vals, bufn*sizeof(double));
+                vals = (double*)realloc(vals, bufn*sizeof(double));
             }
 	    char * val = strtok_r(tok, ",", &val_save);
 	    while(val != NULL)
@@ -323,9 +321,9 @@ static void sp_set_params(
     fsize_b = ftell(bf);
     assert(fsize_b >= 0);
     fseek(bf, 0, SEEK_SET);
-    char *sbuf = malloc(fsize_s+1);
+    char *sbuf = (char*)malloc(fsize_s+1);
     sbuf[fsize_s] = '\0';
-    char *bbuf = malloc(fsize_b+1);
+    char *bbuf = (char*)malloc(fsize_b+1);
     bbuf[fsize_b] = '\0';
     size_t ret = fread(sbuf, 1, fsize_s, sf);
     assert(ret == (size_t)fsize_s);
@@ -345,9 +343,9 @@ static void sp_set_params(
     params->mat_len = nvals_first_s + ((is_tri_mat) ? 1 : 0);
     if (is_tri_mat){
         params->net_latency_ns_table =
-            malloc(2*params->mat_len*params->mat_len*sizeof(double));
+            (double*)malloc(2*params->mat_len*params->mat_len*sizeof(double));
 	params->net_bw_mbps_table =
-            malloc(2*params->mat_len*params->mat_len*sizeof(double));
+            (double*)malloc(2*params->mat_len*params->mat_len*sizeof(double));
 
 	fill_tri_mat(params->mat_len, params->net_latency_ns_table, latency_tmp);
         fill_tri_mat(params->mat_len, params->net_bw_mbps_table, bw_tmp);
@@ -390,9 +388,9 @@ static void sp_init(
     ns->id = codes_mapping_get_lp_relative_id(lp->gid, 0, 1);
 
     /* all devices are idle to begin with */
-    ns->send_next_idle = malloc(ns->params->num_lps *
+    ns->send_next_idle = (tw_stime*)malloc(ns->params->num_lps *
             sizeof(ns->send_next_idle));
-    ns->recv_next_idle = malloc(ns->params->num_lps *
+    ns->recv_next_idle = (tw_stime*)malloc(ns->params->num_lps *
             sizeof(ns->recv_next_idle));
     tw_stime st = tw_now(lp);
     int i;
@@ -904,7 +902,7 @@ static void sp_configure(){
     anno_map = codes_mapping_get_lp_anno_map(LP_CONFIG_NM);
     assert(anno_map);
     num_params = anno_map->num_annos + (anno_map->has_unanno_lp > 0);
-    all_params = malloc(num_params * sizeof(*all_params));
+    all_params = (simplep2p_param*)malloc(num_params * sizeof(*all_params));
     for (int i = 0; i < anno_map->num_annos; i++){
         sp_read_config(anno_map->annotations[i].ptr, &all_params[i]);
     }

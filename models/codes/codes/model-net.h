@@ -104,8 +104,8 @@ typedef int model_net_event_return;
 
 // network identifiers (both the config lp names and the model-net internal
 // names)
-extern char * model_net_lp_config_names[];
-extern char * model_net_method_names[];
+extern const char * model_net_lp_config_names[];
+extern const char * model_net_method_names[];
 
 // request structure that gets passed around (by the model-net implementation,
 // not the user)
@@ -169,7 +169,7 @@ int model_net_sampling_enabled(void);
 int* model_net_set_params(int *id_count);
 
 /* utility function to get the modelnet ID post-setup */
-int model_net_get_id(char *net_name);
+int model_net_get_id(const char *net_name);
 
 /* This event does a collective operation call for model-net */
 void model_net_event_collective(

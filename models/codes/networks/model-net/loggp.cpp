@@ -98,10 +98,10 @@ static int loggp_get_msg_sz(void);
 static int loggp_get_magic();
 
 /* collective network calls */
-static void loggp_collective();
+static void loggp_collective(const char*, int, int, const void*, tw_lp*);
 
 /* collective network calls-- rc */
-static void loggp_collective_rc();
+static void loggp_collective_rc(int, tw_lp*);
 
 /* Modelnet interface events */
 /* sets up the loggp parameters through modelnet interface */
@@ -236,16 +236,14 @@ static void loggp_report_stats()
 }
 
 /* collective network calls */
-static void loggp_collective()
+static void loggp_collective(const char*, int, int, const void*, tw_lp*)
 {
-/* collectives not supported */
-    return;
+    CkAbort("Collectives not supported\n");
 }
 
-static void loggp_collective_rc()
+static void loggp_collective_rc(int, tw_lp*)
 {
-/* collectives not supported */
-   return;
+    CkAbort("Collectives not supported\n");
 }
 
 static void loggp_init(
@@ -742,7 +740,7 @@ static void loggp_configure(){
     anno_map = codes_mapping_get_lp_anno_map(LP_CONFIG_NM);
     assert(anno_map);
     num_params = anno_map->num_annos + (anno_map->has_unanno_lp > 0);
-    all_params = malloc(num_params * sizeof(*all_params));
+    all_params = (loggp_param*)malloc(num_params * sizeof(*all_params));
 
     for (int i = 0; i < anno_map->num_annos; i++){
         const char * anno = anno_map->annotations[i].ptr;
@@ -784,7 +782,7 @@ void loggp_set_params(const char * config_file, loggp_param * params){
         line_nr++;
         if(buffer[0] == '#')
             continue;
-        ret = sscanf(buffer, "%"PRIu64" %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+        ret = sscanf(buffer, "%" PRIu64 " %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
             &params->table[params->table_size].size,
             &params->table[params->table_size].n,
             &params->table[params->table_size].PRTT_10s,

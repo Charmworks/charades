@@ -11,11 +11,11 @@
 
 static int jobmap_dummy_configure(void const * params, void ** ctx)
 {
-    int *num_jobs = malloc(sizeof(*num_jobs));
+    int *num_jobs = (int*)malloc(sizeof(*num_jobs));
     assert(num_jobs);
     *ctx = num_jobs;
 
-    struct codes_jobmap_params_dummy const * p = params;
+    struct codes_jobmap_params_dummy const * p = (codes_jobmap_params_dummy const*)params;
 
     *num_jobs = p->num_jobs;
 
@@ -30,7 +30,7 @@ static void jobmap_dummy_destroy(void * ctx)
 
 static struct codes_jobmap_id jobmap_dummy_to_local(int id, void const * ctx)
 {
-    int const * num_jobs = ctx;
+    int const * num_jobs = (int const*)ctx;
     struct codes_jobmap_id rtn;
 
     if (id < *num_jobs) {
@@ -47,7 +47,7 @@ static struct codes_jobmap_id jobmap_dummy_to_local(int id, void const * ctx)
 
 static int jobmap_dummy_to_global(struct codes_jobmap_id id, void const * ctx)
 {
-    int const * num_jobs = ctx;
+    int const * num_jobs = (int const*)ctx;
 
     if (id.job < *num_jobs)
         return id.job;

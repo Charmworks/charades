@@ -331,11 +331,11 @@ static void check_add_lp_type_anno(
     }
 }
 
-#define REALLOC_IF(_cap_var, _len_exp, _buf_var) \
+#define REALLOC_IF(type, _cap_var, _len_exp, _buf_var) \
     do { \
         while ((_cap_var) <= (_len_exp)) { \
             _cap_var *= 2; \
-            _buf_var = realloc(_buf_var, (_cap_var) * sizeof(*_buf_var)); \
+            _buf_var = (type*)realloc(_buf_var, (_cap_var) * sizeof(type)); \
             assert(_buf_var); \
         } \
     } while (0)
@@ -359,8 +359,8 @@ static int check_add_uniq_str(
             return i;
     }
 
-    REALLOC_IF(*offset_array_cap, *num_strs, *offset_array);
-    REALLOC_IF(*str_buf_cap, *str_buf_len + slen + 1, *str_buf);
+    REALLOC_IF(int, *offset_array_cap, *num_strs, *offset_array);
+    REALLOC_IF(char, *str_buf_cap, *str_buf_len + slen + 1, *str_buf);
 
     // include null char
     memcpy(*str_buf + *str_buf_len, str, slen+1);
@@ -397,17 +397,17 @@ int configuration_get_lpgroups (ConfigHandle *handle,
     memset (lpgroups, 0, sizeof(*lpgroups));
 
     int *group_names_offsets =
-        malloc(sizeof(*group_names_offsets) * group_names_cap);
+        (int*)malloc(sizeof(*group_names_offsets) * group_names_cap);
     int *lp_names_offsets =
-        malloc(sizeof(*lp_names_offsets) * lp_names_cap);
+        (int*)malloc(sizeof(*lp_names_offsets) * lp_names_cap);
     int *anno_names_offsets =
-        malloc(sizeof(*anno_names_offsets) * anno_names_cap);
+        (int*)malloc(sizeof(*anno_names_offsets) * anno_names_cap);
     lpgroups->group_names_buf =
-        malloc(sizeof(*lpgroups->group_names_buf) * group_names_buf_cap);
+        (char*)malloc(sizeof(*lpgroups->group_names_buf) * group_names_buf_cap);
     lpgroups->lp_names_buf =
-        malloc(sizeof(*lpgroups->lp_names_buf) * lp_names_buf_cap);
+        (char*)malloc(sizeof(*lpgroups->lp_names_buf) * lp_names_buf_cap);
     lpgroups->anno_names_buf =
-        malloc(sizeof(*lpgroups->anno_names_buf) * anno_names_buf_cap);
+        (char*)malloc(sizeof(*lpgroups->anno_names_buf) * anno_names_buf_cap);
     assert(group_names_offsets != NULL);
     assert(lp_names_offsets != NULL);
     assert(anno_names_offsets != NULL);
@@ -516,9 +516,9 @@ int configuration_get_lpgroups (ConfigHandle *handle,
 
     // set up the string pointers
     lpgroups->group_names =
-        malloc(lpgroups->lpgroups_count * sizeof(*lpgroups->group_names));
+        (const char**)malloc(lpgroups->lpgroups_count * sizeof(*lpgroups->group_names));
     lpgroups->lp_names =
-        malloc(lpgroups->num_uniq_lptypes * sizeof(*lpgroups->lp_names));
+        (const char**)malloc(lpgroups->num_uniq_lptypes * sizeof(*lpgroups->lp_names));
     assert(lpgroups->group_names);
     assert(lpgroups->lp_names);
 
@@ -537,7 +537,7 @@ int configuration_get_lpgroups (ConfigHandle *handle,
     }
     else {
         lpgroups->anno_names =
-            malloc(lpgroups->num_uniq_annos * sizeof(*lpgroups->anno_names));
+            (const char**)malloc(lpgroups->num_uniq_annos * sizeof(*lpgroups->anno_names));
         assert(lpgroups->anno_names);
         for (int i = 0; i < lpgroups->num_uniq_annos; i++) {
             lpgroups->anno_names[i] = lpgroups->anno_names_buf +

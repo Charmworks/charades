@@ -215,7 +215,7 @@ void fcfs_init(
         void                             ** sched){
     (void)params; // unused for fcfs
     *sched = malloc(sizeof(mn_sched_queue));
-    mn_sched_queue *ss = *sched;
+    mn_sched_queue *ss = (mn_sched_queue*)*sched;
     ss->method = method;
     ss->is_recv_queue = is_recv_queue;
     ss->queue_len = 0;
@@ -229,7 +229,7 @@ void fcfs_pup(
   if (p.isUnpacking()) {
     *sched = malloc(sizeof(mn_sched_queue));
   }
-  mn_sched_queue* ss = *sched;
+  mn_sched_queue* ss =(mn_sched_queue*)*sched;
   if (p.isUnpacking()) {
     ss->method = method;
   }
@@ -256,7 +256,7 @@ void fcfs_add (
         model_net_sched_rc      * rc,
         tw_lp                   * lp){
     (void)rc; // unneeded for fcfs
-    mn_sched_qitem *q = malloc(sizeof(mn_sched_qitem));
+    mn_sched_qitem *q =(mn_sched_qitem*)malloc(sizeof(mn_sched_qitem));
     q->entry_time = tw_now(lp);
     q->req = *req;
     q->sched_params = *sched_params;
@@ -271,7 +271,7 @@ void fcfs_add (
         memcpy(q->local_event, local_event, local_event_size);
     }
     else { q->local_event = NULL; }
-    mn_sched_queue *s = sched;
+    mn_sched_queue *s = (mn_sched_queue*)sched;
     s->queue_len++;
     qlist_add_tail(&q->ql, &s->reqs);
     dprintf("%llu (mn):    adding %srequest from %llu to %llu, size %llu, at %lf\n",
@@ -281,7 +281,7 @@ void fcfs_add (
 
 void fcfs_add_rc(void *sched, const model_net_sched_rc *rc, tw_lp *lp){
     (void)rc;
-    mn_sched_queue *s = sched;
+    mn_sched_queue *s = (mn_sched_queue*)sched;
     s->queue_len--;
     struct qlist_head *ent = qlist_pop_back(&s->reqs);
     assert(ent != NULL);
@@ -300,7 +300,7 @@ int fcfs_next(
         void                  * rc_event_save,
         model_net_sched_rc    * rc,
         tw_lp                 * lp){
-    mn_sched_queue *s = sched;
+    mn_sched_queue *s = (mn_sched_queue*)sched;
     struct qlist_head *ent = s->reqs.next;
     if (ent == &s->reqs){
         rc->rtn = -1;
@@ -378,7 +378,7 @@ void fcfs_next_rc(
         const void               * rc_event_save,
         const model_net_sched_rc * rc,
         tw_lp                    * lp){
-    mn_sched_queue *s = sched;
+    mn_sched_queue *s = (mn_sched_queue*)sched;
     if (rc->rtn == -1){
         // no op
     }
@@ -399,7 +399,7 @@ void fcfs_next_rc(
         }
         else if (rc->rtn == 1){
             // re-create the q item
-            mn_sched_qitem *q = malloc(sizeof(mn_sched_qitem));
+            mn_sched_qitem *q = (mn_sched_qitem*)malloc(sizeof(mn_sched_qitem));
             assert(q);
             q->req = rc->req;
             q->sched_params = rc->sched_params;
@@ -482,7 +482,7 @@ int rr_next(
         return ret;
     // otherwise request was successful, still in the queue
     else {
-        mn_sched_queue *s = sched;
+        mn_sched_queue *s = (mn_sched_queue*)sched;
         qlist_add_tail(qlist_pop(&s->reqs), &s->reqs);
         return ret;
     }
@@ -496,7 +496,7 @@ void rr_next_rc (
     // only time we need to do something apart from fcfs is on a successful
     // rr_next that didn't remove the item from the queue
     if (rc->rtn == 0){
-        mn_sched_queue *s = sched;
+        mn_sched_queue *s = (mn_sched_queue*)sched;
         qlist_add(qlist_pop_back(&s->reqs), &s->reqs);
     }
     fcfs_next_rc(sched, rc_event_save, rc, lp);
@@ -508,9 +508,9 @@ void prio_init (
         int                                 is_recv_queue,
         void                             ** sched){
     *sched = malloc(sizeof(mn_sched_prio));
-    mn_sched_prio *ss = *sched;
+    mn_sched_prio *ss = (mn_sched_prio*)*sched;
     ss->params = params->u.prio;
-    ss->sub_scheds = malloc(ss->params.num_prios*sizeof(mn_sched_queue*));
+    ss->sub_scheds = (mn_sched_queue**)malloc(ss->params.num_prios*sizeof(mn_sched_queue*));
     ss->sub_sched_iface = sched_interfaces[ss->params.sub_stype];
     for (int i = 0; i < ss->params.num_prios; i++){
         ss->sub_sched_iface->init(method, params, is_recv_queue,
@@ -526,7 +526,7 @@ void prio_pup (
 }
 
 void prio_destroy (void *sched){
-    mn_sched_prio *ss = sched;
+    mn_sched_prio *ss = (mn_sched_prio*)sched;
     for (int i = 0; i < ss->params.num_prios; i++){
         ss->sub_sched_iface->destroy(ss->sub_scheds[i]);
         free(ss->sub_scheds);
@@ -545,7 +545,7 @@ void prio_add (
         model_net_sched_rc      * rc,
         tw_lp                   * lp){
     // sched_msg_params is simply an int
-    mn_sched_prio *ss = sched;
+    mn_sched_prio *ss = (mn_sched_prio*)sched;
     int prio = sched_params->prio;
     if (prio == -1){
         // default prio - lowest possible 
@@ -564,7 +564,7 @@ void prio_add (
 
 void prio_add_rc(void * sched, const model_net_sched_rc *rc, tw_lp *lp){
     // just call the sub scheduler's add_rc
-    mn_sched_prio *ss = sched;
+    mn_sched_prio *ss = (mn_sched_prio*)sched;
     dprintf("%llu (mn): rc adding with prio %d\n", LLU(lp->gid), rc->prio);
     ss->sub_sched_iface->add_rc(ss->sub_scheds[rc->prio], rc, lp);
 }
@@ -576,7 +576,7 @@ int prio_next(
         model_net_sched_rc    * rc,
         tw_lp                 * lp){
     // check each priority, first one that's non-empty gets the next
-    mn_sched_prio *ss = sched;
+    mn_sched_prio *ss = (mn_sched_prio*)sched;
     for (int i = 0; i < ss->params.num_prios; i++){
         // TODO: this works for now while the other schedulers have the same
         // internal representation
@@ -597,7 +597,7 @@ void prio_next_rc (
         tw_lp                    * lp){
     if (rc->prio != -1){
         // we called a next somewhere
-        mn_sched_prio *ss = sched;
+        mn_sched_prio *ss = (mn_sched_prio*)sched;
         ss->sub_sched_iface->next_rc(ss->sub_scheds[rc->prio], rc_event_save,
                 rc, lp);
     }

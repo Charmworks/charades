@@ -6,7 +6,7 @@
 
 #include <ross.h>
 
-#define DEBUG_LP 892
+#define DFLY_DEBUG_LP 892
 #include "codes/jenkins-hash.h"
 #include "codes/codes_mapping.h"
 #include "codes/codes.h"
@@ -35,7 +35,7 @@
 #define TRACK -1
 #define TRACK_PKT -1
 #define TRACK_MSG -1
-#define DEBUG 0
+#define DFLY_DEBUG 0
 #define MAX_STATS 65536
 
 #define LP_CONFIG_NM_TERM (model_net_lp_config_names[DRAGONFLY_CUSTOM])
@@ -1632,7 +1632,7 @@ static void packet_arrive(terminal_state * s, tw_bf * bf, terminal_custom_messag
     msg->saved_rcv_time = stat->recv_time;
     stat->recv_time += (tw_now(lp) - msg->travel_start_time);
 
-#if DEBUG == 1
+#if DFLY_DEBUG == 1
  if( msg->packet_ID == TRACK 
           && msg->chunk_id == num_chunks-1
           && msg->message_id == TRACK_MSG)
@@ -1850,9 +1850,9 @@ void dragonfly_custom_rsample_fin(router_state * s,
     }
         char rt_fn[MAX_NAME_LENGTH];
         if(strcmp(router_sample_file, "") == 0)
-            sprintf(rt_fn, "dragonfly-router-sampling-%ld.bin", g_tw_mynode); 
+            sprintf(rt_fn, "dragonfly-router-sampling-%d.bin", g_tw_mynode);
         else
-            sprintf(rt_fn, "%s-%ld.bin", router_sample_file, g_tw_mynode);
+            sprintf(rt_fn, "%s-%d.bin", router_sample_file, g_tw_mynode);
         
         int i = 0;
 
@@ -1983,9 +1983,9 @@ void dragonfly_custom_sample_fin(terminal_state * s,
 
         char rt_fn[MAX_NAME_LENGTH];
         if(strncmp(cn_sample_file, "", 10) == 0)
-            sprintf(rt_fn, "dragonfly-cn-sampling-%ld.bin", g_tw_mynode); 
+            sprintf(rt_fn, "dragonfly-cn-sampling-%d.bin", g_tw_mynode);
         else
-            sprintf(rt_fn, "%s-%ld.bin", cn_sample_file, g_tw_mynode);
+            sprintf(rt_fn, "%s-%d.bin", cn_sample_file, g_tw_mynode);
 
         FILE * fp = fopen(rt_fn, "a");
         fseek(fp, sample_bytes_written, SEEK_SET);
@@ -3307,6 +3307,7 @@ tw_lptype dragonfly_custom_lps[] =
     (revent_f) terminal_custom_rc_event_handler,
     (commit_f) NULL,
     (final_f) dragonfly_custom_terminal_final,
+    (pup_f) NULL,
     sizeof(terminal_state)
     },
    {
@@ -3315,6 +3316,7 @@ tw_lptype dragonfly_custom_lps[] =
      (revent_f) router_custom_rc_event_handler,
      (commit_f) NULL,
      (final_f) dragonfly_custom_router_final,
+     (pup_f) NULL,
      sizeof(router_state),
    },
    {NULL, NULL, NULL, NULL, NULL, 0},

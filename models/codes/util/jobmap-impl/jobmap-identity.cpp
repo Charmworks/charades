@@ -11,11 +11,11 @@
 
 static int jobmap_identity_configure(void const * params, void ** ctx)
 {
-    int *num_ranks = malloc(sizeof(*num_ranks));
+    int *num_ranks = (int*)malloc(sizeof(*num_ranks));
     assert(num_ranks);
     *ctx = num_ranks;
 
-    struct codes_jobmap_params_identity const * p = params;
+    struct codes_jobmap_params_identity const * p = (codes_jobmap_params_identity const*)params;
 
     *num_ranks = p->num_ranks;
 
@@ -29,7 +29,7 @@ static void jobmap_identity_destroy(void * ctx)
 
 static struct codes_jobmap_id jobmap_identity_to_local(int id, void const * ctx)
 {
-    int const * num_ranks = ctx;
+    int const * num_ranks = (int const*)ctx;
     struct codes_jobmap_id rtn;
 
     if (id < 0 || id >= *num_ranks) {
@@ -46,7 +46,7 @@ static struct codes_jobmap_id jobmap_identity_to_local(int id, void const * ctx)
 
 static int jobmap_identity_to_global(struct codes_jobmap_id id, void const * ctx)
 {
-    int const * num_ranks = ctx;
+    int const * num_ranks = (int const*)ctx;
 
     if (id.job >= 1 || id.rank >= *num_ranks || id.job < 0 || id.rank < 0)
         return -1;

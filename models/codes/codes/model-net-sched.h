@@ -208,7 +208,7 @@ void model_net_sched_add_rc(
 // set default parameters for messages that don't specify any
 void model_net_sched_set_default_params(mn_sched_params *sched_params);
 
-extern char * sched_names[];
+extern const char * sched_names[];
 
 //#ifdef __cplusplus
 //}

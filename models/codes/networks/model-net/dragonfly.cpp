@@ -10,7 +10,7 @@
 
 #include <ross.h>
 
-#define DEBUG_LP 892
+#define DFLY_DEBUG_LP 892
 #include "codes/jenkins-hash.h"
 #include "codes/codes_mapping.h"
 #include "codes/codes.h"
@@ -45,7 +45,7 @@
 #define TRACK_PKT -1
 #define TRACK_MSG -1
 #define PRINT_ROUTER_TABLE 1
-#define DEBUG 0
+#define DFLY_DEBUG 0
 #define USE_DIRECT_SCHEME 1
 #define MAX_STATS 65536
 
@@ -455,7 +455,7 @@ static int dragonfly_get_msg_sz(void)
 
 static void free_tmp(void * ptr)
 {
-    struct dfly_qhash_entry * dfly = ptr; 
+    struct dfly_qhash_entry * dfly = (dfly_qhash_entry*)ptr;
     
     if(dfly->remote_event_data)
         free(dfly->remote_event_data);
@@ -633,7 +633,7 @@ static void dragonfly_configure(){
     anno_map = codes_mapping_get_lp_anno_map(LP_CONFIG_NM_TERM);
     assert(anno_map);
     num_params = anno_map->num_annos + (anno_map->has_unanno_lp > 0);
-    all_params = malloc(num_params * sizeof(*all_params));
+    all_params = (dragonfly_param*)malloc(num_params * sizeof(*all_params));
 
     for (int i = 0; i < anno_map->num_annos; i++){
         const char * anno = anno_map->annotations[i].ptr;
@@ -936,7 +936,7 @@ static void router_setup(router_state * r, tw_lp * lp)
         }
     }
 
-#if DEBUG == 1
+#if DFLY_DEBUG == 1
 //   printf("\n LP ID %d VC occupancy radix %d Router %d is connected to ", lp->gid, p->radix, r->router_id);
 #endif 
    //round the number of global channels to the nearest even number
@@ -973,13 +973,13 @@ static void router_setup(router_state * r, tw_lp * lp)
          {
            r->global_channel[i]=p->total_routers+r->global_channel[i]; 
 	 }
-#if DEBUG == 1
+#if DFLY_DEBUG == 1
     printf("\n channel %d ", r->global_channel[i]);
 #endif 
     }
 #endif
 
-#if DEBUG == 1
+#if DFLY_DEBUG == 1
    printf("\n");
 #endif
    return;
@@ -1293,7 +1293,7 @@ static void packet_send_rc(terminal_state * s, tw_bf * bf, terminal_message * ms
       s->packet_counter--;
       s->vc_occupancy[0] -= s->params->chunk_size;
 
-      terminal_message_list* cur_entry = rc_stack_pop(s->st);
+      terminal_message_list* cur_entry = (terminal_message_list*)rc_stack_pop(s->st);
 
       prepend_to_terminal_message_list(s->terminal_msgs, 
               s->terminal_msgs_tail, 0, cur_entry);
@@ -1394,7 +1394,7 @@ static void packet_send(terminal_state * s, tw_bf * bf, terminal_message * msg,
   s->packet_counter++;
   s->vc_occupancy[0] += s->params->chunk_size;
   cur_entry = return_head(s->terminal_msgs, s->terminal_msgs_tail, 0); 
-  rc_stack_push(lp, cur_entry, (void*)delete_terminal_message_list, s->st);
+  rc_stack_push(lp, cur_entry, (free_fn_t)delete_terminal_message_list, s->st);
   s->terminal_length -= s->params->chunk_size;
 
   cur_entry = s->terminal_msgs[0];
@@ -1501,7 +1501,7 @@ static void packet_arrive_rc(terminal_state * s, tw_bf * bf, terminal_message * 
             s->data_size_sample -= msg->total_size;
             s->data_size_ross_sample -= msg->total_size;
 
-	        struct dfly_qhash_entry * d_entry_pop = rc_stack_pop(s->st);
+	        struct dfly_qhash_entry * d_entry_pop = (dfly_qhash_entry*)rc_stack_pop(s->st);
             qhash_add(s->rank_tbl, &key, &(d_entry_pop->hash_link));
             s->rank_tbl_pop++; 
 
@@ -1670,7 +1670,7 @@ static void packet_arrive(terminal_state * s, tw_bf * bf, terminal_message * msg
     msg->saved_rcv_time = stat->recv_time;
     stat->recv_time += (tw_now(lp) - msg->travel_start_time);
 
-#if DEBUG == 1
+#if DFLY_DEBUG == 1
  if( msg->packet_ID == TRACK 
           && msg->chunk_id == num_chunks-1
           && msg->message_id == TRACK_MSG)
@@ -1693,7 +1693,7 @@ static void packet_arrive(terminal_state * s, tw_bf * bf, terminal_message * msg
    if(!tmp)
    {
         bf->c5 = 1;
-       struct dfly_qhash_entry * d_entry = malloc(sizeof (struct dfly_qhash_entry));
+       struct dfly_qhash_entry * d_entry = (dfly_qhash_entry*)malloc(sizeof (struct dfly_qhash_entry));
        d_entry->num_chunks = 0;
        d_entry->key = key;
        d_entry->remote_event_data = NULL;
@@ -1724,7 +1724,7 @@ static void packet_arrive(terminal_state * s, tw_bf * bf, terminal_message * msg
     if(msg->remote_event_size_bytes > 0 && !tmp->remote_event_data)
     {
         /* Retreive the remote event entry */
-         tmp->remote_event_data = (void*)malloc(msg->remote_event_size_bytes);
+         tmp->remote_event_data = (char*)malloc(msg->remote_event_size_bytes);
          assert(tmp->remote_event_data);
          tmp->remote_event_size = msg->remote_event_size_bytes; 
          memcpy(tmp->remote_event_data, m_data_src, msg->remote_event_size_bytes);
@@ -2039,11 +2039,11 @@ static void dragonfly_rsample_init(router_state * s,
    assert(p->radix);
 
    s->max_arr_size = MAX_STATS;
-   s->rsamples = malloc(MAX_STATS * sizeof(struct dfly_router_sample)); 
+   s->rsamples = (dfly_router_sample*)malloc(MAX_STATS * sizeof(struct dfly_router_sample));
    for(; i < s->max_arr_size; i++)
    {
-    s->rsamples[i].busy_time = malloc(sizeof(tw_stime) * p->radix); 
-    s->rsamples[i].link_traffic_sample = malloc(sizeof(int64_t) * p->radix);
+    s->rsamples[i].busy_time = (tw_stime*)malloc(sizeof(tw_stime) * p->radix);
+    s->rsamples[i].link_traffic_sample = (int64_t*)malloc(sizeof(int64_t) * p->radix);
    }
 }
 static void dragonfly_rsample_rc_fn(router_state * s,
@@ -2090,7 +2090,7 @@ static void dragonfly_rsample_fn(router_state * s,
 
   if(s->op_arr_size >= s->max_arr_size) 
   {
-    struct dfly_router_sample * tmp = malloc((MAX_STATS + s->max_arr_size) * sizeof(struct dfly_router_sample));
+    struct dfly_router_sample * tmp = (dfly_router_sample*)malloc((MAX_STATS + s->max_arr_size) * sizeof(struct dfly_router_sample));
     memcpy(tmp, s->rsamples, s->op_arr_size * sizeof(struct dfly_router_sample));
     free(s->rsamples);
     s->rsamples = tmp;
@@ -2147,9 +2147,9 @@ static void dragonfly_rsample_fin(router_state * s,
     }
     char rt_fn[MAX_NAME_LENGTH];
     if(strcmp(router_sample_file, "") == 0)
-        sprintf(rt_fn, "dragonfly-router-sampling-%ld.bin", g_tw_mynode); 
+        sprintf(rt_fn, "dragonfly-router-sampling-%d.bin", g_tw_mynode);
     else
-        sprintf(rt_fn, "%s-%ld.bin", router_sample_file, g_tw_mynode);
+        sprintf(rt_fn, "%s-%d.bin", router_sample_file, g_tw_mynode);
     
     int i = 0;
 
@@ -2182,7 +2182,7 @@ static void dragonfly_sample_init(terminal_state * s,
     s->op_arr_size = 0;
     s->max_arr_size = MAX_STATS;
 
-    s->sample_stat = malloc(MAX_STATS * sizeof(struct dfly_cn_sample));
+    s->sample_stat = (dfly_cn_sample*)malloc(MAX_STATS * sizeof(struct dfly_cn_sample));
     
     /*char buf[1024];
     int written = 0;
@@ -2253,7 +2253,7 @@ static void dragonfly_sample_fn(terminal_state * s,
     {
         /* In the worst case, copy array to a new memory location, its very
          * expensive operation though */
-        struct dfly_cn_sample * tmp = malloc((MAX_STATS + s->max_arr_size) * sizeof(struct dfly_cn_sample));
+        struct dfly_cn_sample * tmp = (dfly_cn_sample*)malloc((MAX_STATS + s->max_arr_size) * sizeof(struct dfly_cn_sample));
         memcpy(tmp, s->sample_stat, s->op_arr_size * sizeof(struct dfly_cn_sample));
         free(s->sample_stat);
         s->sample_stat = tmp;
@@ -2309,9 +2309,9 @@ static void dragonfly_sample_fin(terminal_state * s,
     }
     char rt_fn[MAX_NAME_LENGTH];
     if(strncmp(cn_sample_file, "", 10) == 0)
-        sprintf(rt_fn, "dragonfly-cn-sampling-%ld.bin", g_tw_mynode); 
+        sprintf(rt_fn, "dragonfly-cn-sampling-%d.bin", g_tw_mynode);
     else
-        sprintf(rt_fn, "%s-%ld.bin", cn_sample_file, g_tw_mynode);
+        sprintf(rt_fn, "%s-%d.bin", cn_sample_file, g_tw_mynode);
 
     FILE * fp = fopen(rt_fn, "a");
     fseek(fp, sample_bytes_written, SEEK_SET);
@@ -2434,12 +2434,12 @@ dragonfly_terminal_final( terminal_state * s,
     if(!s->terminal_id)
         written = sprintf(s->output_buf, "# Format <LP id> <Terminal ID> <Total Data Size> <Aggregate packet latency> <# Flits/Packets finished> <Avg hops> <Busy Time>");
 
-    written += sprintf(s->output_buf + written, "\n %llu %u %lld %lf %ld %lf %lf",
+    written += sprintf(s->output_buf + written, "\n %llu %u %lu %lf %ld %lf %lf",
             LLU(lp->gid), s->terminal_id, s->total_msg_size, (double)s->total_time/s->finished_packets, 
             s->finished_packets, (double)s->total_hops/s->finished_chunks,
             s->busy_time);
 
-    lp_io_write(lp->gid, "dragonfly-msg-stats", written, s->output_buf); 
+    //lp_io_write(lp->gid, "dragonfly-msg-stats", written, s->output_buf);
     
     if(s->terminal_msgs[0] != NULL) 
       printf("[%llu] leftover terminal messages \n", LLU(lp->gid));
@@ -2499,7 +2499,7 @@ static void dragonfly_router_final(router_state * s,
     for(int d = 0; d < p->num_routers + p->num_global_channels; d++) 
         written += sprintf(s->output_buf + written, " %lf", s->busy_time[d]);
 
-    lp_io_write(lp->gid, "dragonfly-router-stats", written, s->output_buf);
+    //lp_io_write(lp->gid, "dragonfly-router-stats", written, s->output_buf);
 
     written = 0;
     if(!s->router_id)
@@ -2517,7 +2517,7 @@ static void dragonfly_router_final(router_state * s,
         written += sprintf(s->output_buf2 + written, " %lld", LLD(s->link_traffic[d]));
 
     assert(written < 4096);
-    lp_io_write(lp->gid, "dragonfly-router-traffic", written, s->output_buf2);
+    //lp_io_write(lp->gid, "dragonfly-router-traffic", written, s->output_buf2);
 }
 
 /* Get the number of hops for this particular path source and destination groups */
@@ -2945,7 +2945,7 @@ static void router_packet_send_rc(router_state * s,
       
     tw_rand_reverse_unif(lp->rng);
       
-    terminal_message_list * cur_entry = rc_stack_pop(s->st);
+    terminal_message_list * cur_entry = (terminal_message_list*)rc_stack_pop(s->st);
     assert(cur_entry);
 
     if(bf->c11)
@@ -3119,7 +3119,7 @@ router_packet_send( router_state * s,
   
   cur_entry = return_head(s->pending_msgs[output_port], 
     s->pending_msgs_tail[output_port], output_chan);
-  rc_stack_push(lp, cur_entry, (void*)delete_terminal_message_list, s->st);
+  rc_stack_push(lp, cur_entry, (free_fn_t)delete_terminal_message_list, s->st);
   
   cur_entry = s->pending_msgs[output_port][2];
  
@@ -3485,10 +3485,10 @@ struct model_net_method dragonfly_method =
     dragonfly_report_stats,        // mn_report_stats
     dragonfly_collective,          // mn_collective_call
     dragonfly_collective_rc,       // mn_collective_call_rc
-    (void*)dragonfly_sample_fn,    // mn_sample_fn
-    (void*)dragonfly_sample_rc_fn, // mn_sample_rc_fn
-    (void*)dragonfly_sample_init,  // mn_sample_init_fn
-    (void*)dragonfly_sample_fin,   // mn_sample_fini_fn
+    (event_f)dragonfly_sample_fn,    // mn_sample_fn
+    (revent_f)dragonfly_sample_rc_fn, // mn_sample_rc_fn
+    (init_f)dragonfly_sample_init,  // mn_sample_init_fn
+    (final_f)dragonfly_sample_fin,   // mn_sample_fini_fn
 };
 
 struct model_net_method dragonfly_router_method =
@@ -3505,10 +3505,10 @@ struct model_net_method dragonfly_router_method =
     NULL,                           // mn_report_stats
     NULL,                           // mn_collective_call
     NULL,                           // mn_collective_call_rc
-    (void*)dragonfly_rsample_fn,    // mn_sample_fn
-    (void*)dragonfly_rsample_rc_fn, // mn_sample_rc_fn
-    (void*)dragonfly_rsample_init,  // mn_sample_init_fn
-    (void*)dragonfly_rsample_fin,   // mn_sample_fini_fn
+    (event_f)dragonfly_rsample_fn,    // mn_sample_fn
+    (revent_f)dragonfly_rsample_rc_fn, // mn_sample_rc_fn
+    (init_f)dragonfly_rsample_init,  // mn_sample_init_fn
+    (final_f)dragonfly_rsample_fin,   // mn_sample_fini_fn
 };
 
 #ifdef ENABLE_CORTEX

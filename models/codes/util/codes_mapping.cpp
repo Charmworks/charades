@@ -436,11 +436,11 @@ void codes_mapping_get_lp_info2(
     tw_error(TW_LOC, "Unable to find LP info given gid %lu", gid);
 }
 
-tw_lptype* codes_type_map(int gid) {
+tw_lptype* codes_type_map(tw_lpid gid) {
   char lp_type_name[MAX_NAME_LENGTH];
   int group_index, lp_type_index, dummy;
   codes_mapping_get_lp_info(gid, NULL, &group_index, lp_type_name, &lp_type_index, NULL, &dummy, &dummy);
-  return lp_type_lookup(lp_type_name);
+  return (tw_lptype*)lp_type_lookup(lp_type_name);
 }
 
 /* This function loads the configuration file and sets up the number of LPs on each PE */

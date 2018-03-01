@@ -110,6 +110,7 @@ static tw_lptype resource_lp = {
     (revent_f) resource_rev_handler,
     (commit_f) NULL,
     (final_f)  resource_finalize,
+    (pup_f) NULL,
     //(map_f) codes_mapping,
     sizeof(resource_state),
 };
@@ -412,7 +413,7 @@ void resource_finalize(
     if (codes_mapping_get_lp_relative_id(lp->gid, 0, 0) == 0){
         written = sprintf(out_buf,
                 "# format: <LP> <max used general> <max used token...>\n");
-        lp_io_write(lp->gid, RESOURCE_LP_NM, written, out_buf);
+        //lp_io_write(lp->gid, RESOURCE_LP_NM, written, out_buf);
     }
     written = sprintf(out_buf, "%llu", LLU(lp->gid));
 
@@ -422,7 +423,7 @@ void resource_finalize(
         written += sprintf(out_buf+written, " %llu", LLU(ns->r.max[i]-ns->r.min_avail[i]));
     }
     written += sprintf(out_buf+written, "\n");
-    lp_io_write(lp->gid, RESOURCE_LP_NM, written, out_buf);
+    //lp_io_write(lp->gid, RESOURCE_LP_NM, written, out_buf);
 }
 
 /**** END IMPLEMENTATIONS ****/

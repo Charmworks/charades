@@ -2239,7 +2239,7 @@ int cfgp_lex_init_extra(void* yy_user_defined, void** ptr_yy_globals )
 {
     struct yyguts_t dummy_yyguts;
 
-    cfgp_set_extra (yy_user_defined, &dummy_yyguts);
+    cfgp_set_extra ((ParserParams*)yy_user_defined, &dummy_yyguts);
 
     if (ptr_yy_globals == NULL){
         errno = EINVAL;
@@ -2257,7 +2257,7 @@ int cfgp_lex_init_extra(void* yy_user_defined, void** ptr_yy_globals )
     yy_init_globals. Leave at 0x00 for releases. */
     memset(*ptr_yy_globals,0x00,sizeof(struct yyguts_t));
     
-    cfgp_set_extra (yy_user_defined, *ptr_yy_globals);
+    cfgp_set_extra ((ParserParams*)yy_user_defined, *ptr_yy_globals);
     
     return yy_init_globals ( *ptr_yy_globals );
 }

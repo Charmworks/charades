@@ -30,13 +30,13 @@ extern struct model_net_method dragonfly_custom_router_method;
 extern struct model_net_method loggp_method;
 
 #define X(a,b,c,d) b,
-char * model_net_lp_config_names[] = {
+const char * model_net_lp_config_names[] = {
     NETWORK_DEF
 };
 #undef X
 
 #define X(a,b,c,d) c,
-char * model_net_method_names[] = {
+const char * model_net_method_names[] = {
     NETWORK_DEF
 };
 #undef X
@@ -98,7 +98,7 @@ int* model_net_configure(int *id_count){
     }
 
     // allocate the output
-    int *ids = malloc(*id_count * sizeof(int));
+    int *ids = (int*)malloc(*id_count * sizeof(int));
     // read the ordering provided by modelnet_order
     char **values;
     size_t length;
@@ -139,7 +139,7 @@ int* model_net_configure(int *id_count){
     return ids;
 }
 
-int model_net_get_id(char *name){
+int model_net_get_id(const char *name){
     int i;
     for(i=0; method_array[i] != NULL; i++) {
         if(strcmp(model_net_method_names[i], name) == 0) {

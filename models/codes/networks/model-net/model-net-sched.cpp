@@ -15,7 +15,7 @@
 #include "codes/quicklist.h"
 
 #define X(a,b,c) b,
-char * sched_names [] = {
+const char * sched_names [] = {
     SCHEDULER_TYPES
 };
 #undef X
