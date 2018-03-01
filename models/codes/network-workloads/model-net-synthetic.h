@@ -70,6 +70,7 @@ tw_lptype svr_lp = {
     (revent_f) svr_rev_event,
     (commit_f) svr_commit_event,
     (final_f)  svr_finalize,
+    (pup_f) NULL,
     sizeof(svr_state),
 };
 
