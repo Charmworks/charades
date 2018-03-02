@@ -11,6 +11,7 @@
 //extern "C" {
 //#endif
 
+#define __STDC_FORMAT_MACROS
 #include <stddef.h>
 #include <inttypes.h>
 //#include <mpi.h>
