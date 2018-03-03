@@ -452,8 +452,14 @@ void codes_mapping_setup_with_seed_offset(int offset)
       g_total_lps += lpconf.lpgroups[i].lptypes[j].count * lpconf.lpgroups[i].repetitions;
     }
   }
-  g_num_chares = g_total_lps;
-  g_lps_per_chare = 1;
+
+  // If there's one group and lps per chare hasn't been explicitly set, map a
+  // single group repetition to a single LP chare
+  if (lpconf.lpgroups_count == 1 && g_lps_per_chare == 0) {
+    g_num_chares = lpconf.lpgroups[0].repetitions;
+  } else {
+    g_num_chares = g_total_lps / g_lps_per_chare;
+  }
   g_type_map = codes_type_map;
 
   // Increment number of RNGs so codes_local_latency can use the last one

@@ -62,6 +62,11 @@ void tw_define_lps(size_t msg_sz, tw_seed* seed) {
   // TODO: Not implemented yet.
   /* early_sanity_check(); */
 
+  // If LP number vars are still at 0 set them to defaults
+  if (g_lps_per_chare == 0) g_lps_per_chare = 1;
+  if (g_total_lps == 0) g_total_lps = 1;
+  if (g_num_chares == 0) g_num_chares = 1;
+
   // In sequential mode there can only be one chare. Enforce that here.
   if (g_tw_synchronization_protocol == SEQUENTIAL) {
     if (g_num_chares > 1) {

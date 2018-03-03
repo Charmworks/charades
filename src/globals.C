@@ -79,9 +79,9 @@ uint32_t g_tw_stat_interval;
  * all moved to more appropriate modules.
  */
 void clear_globals() {
-  g_total_lps      = 1;
-  g_num_chares     = 1;
-  g_lps_per_chare  = 1;
+  g_total_lps      = 0;
+  g_num_chares     = 0;
+  g_lps_per_chare  = 0;
 
   g_numlp_map  = NULL;
   g_init_map   = init_block_map;
