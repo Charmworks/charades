@@ -833,6 +833,10 @@ void slim_terminal_init( terminal_state * s,
 
     s->terminal_id = (mapping_rep_id * num_lps) + mapping_offset;
     s->router_id=(int)s->terminal_id / (num_lps);
+
+    CkPrintf("LPChare %i: Terminal LP %i with terminal ID %i and router ID %i\n",
+        lp->owner->thisIndex, lp->gid, s->terminal_id, s->router_id);
+
     s->terminal_available_time = 0.0;
     s->packet_counter = 0;
 
@@ -964,7 +968,7 @@ void slim_terminal_pup(terminal_state * s, tw_lp * lp, PUP::er& p) {
 
   if (p.isPacking()) {
     while (s->terminal_msgs[0]) {
-      free(return_head(s->terminal_msgs, s->terminal_msgs_tail, 0));
+      slim_delete_terminal_message_list(return_head(s->terminal_msgs, s->terminal_msgs_tail, 0));
     }
     free(s->terminal_msgs_tail);
     free(s->terminal_msgs);
@@ -1002,6 +1006,9 @@ void slim_router_setup(router_state * r, tw_lp * lp)
 
     r->router_id=mapping_rep_id + mapping_offset;
     r->group_id=r->router_id/p->num_routers;
+
+    CkPrintf("LPChare %i: Router LP %i with router ID %i and group ID %i\n",
+        lp->owner->thisIndex, lp->gid, r->router_id, r->group_id);
 
     r->global_channel = (int*)malloc(p->num_global_channels * sizeof(int));
     r->local_channel = (int*)malloc(p->num_local_channels * sizeof(int));
@@ -1372,10 +1379,10 @@ void slim_router_pup(router_state * r, tw_lp * lp, PUP::er& p)
       free(r->vc_occupancy[i]);
       for(int j = 0; j < pr->num_vcs; j++) {
           while(r->pending_msgs[i][j]) {
-            free(return_head(r->pending_msgs[i], r->pending_msgs_tail[i], j));
+            slim_delete_terminal_message_list(return_head(r->pending_msgs[i], r->pending_msgs_tail[i], j));
           }
           while(r->queued_msgs[i][j]) {
-            free(return_head(r->queued_msgs[i], r->queued_msgs_tail[i], j));
+            slim_delete_terminal_message_list(return_head(r->queued_msgs[i], r->queued_msgs_tail[i], j));
           }
       }
       free(r->pending_msgs[i]);

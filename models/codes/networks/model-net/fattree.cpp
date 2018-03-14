@@ -118,6 +118,23 @@ void init_fattree_message_list(fattree_message_list *self,
     self->prev = NULL;
 }
 
+void* create_fattree_message_list() {
+  fattree_message_list* ml = (fattree_message_list*)malloc(sizeof(fattree_message_list));
+  ml->next = ml->prev = NULL;
+  ml->event_data = NULL;
+  return (void*) ml;
+}
+
+// TODO: Check that event_data is the correct size
+PUPbytes(fattree_message);
+void pup_fattree_message_list(PUP::er& p, fattree_message_list* list) {
+  p | list->msg;
+  if (p.isUnpacking()) {
+    list->event_data = (char*)malloc(list->msg.remote_event_size_bytes + list->msg.local_event_size_bytes);
+  }
+  p(list->event_data, list->msg.remote_event_size_bytes + list->msg.local_event_size_bytes);
+}
+
 void delete_fattree_message_list(fattree_message_list *self) {
     if(self->event_data != NULL) free(self->event_data);
     free(self);
@@ -156,6 +173,7 @@ struct ftree_hash_key
     uint64_t message_id;
     tw_lpid sender_id;
 };
+PUPbytes(ftree_hash_key);
 
 struct ftree_qhash_entry
 {
@@ -165,6 +183,42 @@ struct ftree_qhash_entry
    int remote_event_size;
    struct qhash_head hash_link;
 };
+
+void pup_ftree_hash(PUP::er& p, ftree_qhash_entry* e) {
+  p | e->key;
+  p | e->num_chunks;
+  p | e->remote_event_size;
+  if (e->remote_event_size) {
+    if (p.isUnpacking()) {
+      e->remote_event_data = (char*)malloc(e->remote_event_size);
+    }
+    p(e->remote_event_data, e->remote_event_size);
+  } else if (p.isUnpacking()) {
+    e->remote_event_data = NULL;
+  }
+}
+
+template<>
+void qlist_pup<ftree_qhash_entry>(qlist_head* h, PUP::er& p) {
+  ftree_qhash_entry* entry;
+  if (!p.isUnpacking()) {
+    int count = qlist_count(h);
+    p | count;
+    qlist_for_each_entry(ftree_qhash_entry, entry, h, hash_link) {
+      pup_ftree_hash(p, entry);
+      count--;
+    }
+    assert(count == 0);
+  } else {
+    int count;
+    p | count;
+    for (int i = 0; i < count; i++) {
+      entry = (ftree_qhash_entry*)malloc(sizeof(struct ftree_qhash_entry));
+      pup_ftree_hash(p, entry);
+      qlist_add_tail(&entry->hash_link, h);
+    }
+  }
+}
 
 /* handles terminal and switch events like packet generate/send/receive/buffer */
 typedef struct ft_terminal_state ft_terminal_state;
@@ -194,7 +248,8 @@ struct ft_terminal_state
   int in_send_loop;
   int issueIdle;
 
-   struct rc_stack * st;
+   struct rc_stack * msg_st;
+   struct rc_stack * hash_st;
 
   char * anno;
   fattree_param *params;
@@ -319,7 +374,11 @@ static int fattree_hash_func(void *k, int table_size)
     return (int)(key & (table_size - 1));
 }
 
-static void free_tmp(void * ptr)
+static void* create_ftree_hash() {
+  return malloc(sizeof(ftree_qhash_entry));
+}
+
+static void delete_ftree_hash(void * ptr)
 {
     struct ftree_qhash_entry * ftree = (ftree_qhash_entry*)ptr;
     free(ftree->remote_event_data);
@@ -954,7 +1013,8 @@ void ft_terminal_init( ft_terminal_state * s, tw_lp * lp )
        LLU(lp->gid), s->switch_id);
 #endif
 
-   rc_stack_create(&s->st);
+   rc_stack_create(&s->msg_st);
+   rc_stack_create(&s->hash_st);
 
    s->vc_occupancy = 0;
    s->terminal_msgs[0] = NULL;
@@ -982,6 +1042,107 @@ void ft_terminal_init( ft_terminal_state * s, tw_lp * lp )
      fflush(dot_file);
 
    return;
+}
+
+void ft_terminal_pup( ft_terminal_state * s, tw_lp * lp, PUP::er& p )
+{
+  p | s->packet_counter;
+  p | s->packet_gen;
+  p | s->packet_fin;
+  p | s->terminal_id;
+  p | s->switch_id;
+  p | s->switch_lp;
+  p | s->vc_occupancy;
+  p | s->terminal_available_time;
+  p | s->next_credit_available_time;
+  p | s->terminal_length;
+  p | s->in_send_loop;
+  p | s->issueIdle;
+  p | s->rank_tbl_pop;
+  p | s->total_time;
+  p | s->total_msg_size;
+  p | s->total_hops;
+  p | s->finished_msgs;
+  p | s->finished_chunks;
+  p | s->finished_packets;
+  p | s->last_buf_full;
+  p | s->busy_time;
+  p | s->fin_chunks_sample;
+  p | s->data_size_sample;
+  p | s->fin_hops_sample;
+  p | s->fin_chunks_time;
+  p | s->busy_time_sample;
+
+  if (p.isUnpacking()) {
+    char anno[MAX_NAME_LENGTH];
+    codes_mapping_get_lp_info(lp->gid, lp_group_name, &mapping_grp_id, NULL,
+            &mapping_type_id, anno, &mapping_rep_id, &mapping_offset);
+    if (anno[0] == '\0'){
+        s->anno = NULL;
+        s->params = &all_params[num_params-1];
+    } else {
+        s->anno = strdup(anno);
+        int id = configuration_get_annotation_index(anno, anno_map);
+        s->params = &all_params[id];
+    }
+    s->terminal_msgs =
+      (fattree_message_list**)malloc(1*sizeof(fattree_message_list*));
+    s->terminal_msgs_tail =
+      (fattree_message_list**)malloc(1*sizeof(fattree_message_list*));
+    s->terminal_msgs[0] = NULL;
+    s->terminal_msgs_tail[0] = NULL;
+
+    rc_stack_create(&s->msg_st);
+    rc_stack_create(&s->hash_st);
+    s->rank_tbl = qhash_init(fattree_rank_hash_compare, fattree_hash_func, FTREE_HASH_TABLE_SIZE);
+  }
+  rc_stack_pup(s->msg_st,
+      (create_fn_t)create_fattree_message_list,
+      (free_fn_t)delete_fattree_message_list,
+      (pup_fn_t)pup_fattree_message_list,
+      p);
+  rc_stack_pup(s->hash_st,
+      (create_fn_t)create_ftree_hash,
+      (free_fn_t)delete_ftree_hash,
+      (pup_fn_t)pup_ftree_hash,
+      p);
+  if (s->rank_tbl == NULL) CkAbort("Rank table is non-existent\n");
+  qhash_pup<ftree_qhash_entry>(s->rank_tbl, p);
+
+  // Pup number of elements in message list
+  int count = 0;
+  fattree_message_list* cur_chunk;
+  if (!p.isUnpacking()) {
+    cur_chunk = s->terminal_msgs[0];
+    while (cur_chunk) {
+      count++;
+      cur_chunk = cur_chunk->next;
+    }
+  }
+  p | count;
+
+  // Pup message list
+  cur_chunk = s->terminal_msgs[0];
+  for (int i = 0; i < count; i++) {
+    if (p.isUnpacking()) {
+      // Allocate a new chunk and add to the end of the list
+      cur_chunk = (fattree_message_list*)create_fattree_message_list();
+      append_to_fattree_message_list(s->terminal_msgs, s->terminal_msgs_tail, 0, cur_chunk);
+    }
+    pup_fattree_message_list(p, cur_chunk);
+    cur_chunk = cur_chunk->next;
+  }
+
+  if (p.isPacking()) {
+    while (s->terminal_msgs[0]) {
+      delete_fattree_message_list(return_head(s->terminal_msgs, s->terminal_msgs_tail, 0));
+    }
+    free(s->terminal_msgs_tail);
+    free(s->terminal_msgs);
+    qhash_finalize(s->rank_tbl);
+    rc_stack_destroy(s->hash_st);
+    rc_stack_destroy(s->msg_st);
+  }
 }
 
 /* sets up the switch */
@@ -1321,6 +1482,162 @@ void switch_init(switch_state * r, tw_lp * lp)
   lp_io_write(lp->gid, "fattree-config-down-connections", written_2, r->output_buf2);
 #endif
   return;
+}
+
+void switch_pup(switch_state * r, tw_lp * lp, PUP::er& p)
+{
+  p | r->switch_id;
+  p | r->switch_level;
+  p | r->radix;
+  p | r->num_cons;
+  p | r->num_lcons;
+  p | r->con_per_lneigh;
+  p | r->con_per_uneigh;
+  p | r->start_lneigh;
+  p | r->end_lneigh;
+  p | r->start_uneigh;
+  p | r->unused;
+
+  if (p.isUnpacking()) {
+    char anno[MAX_NAME_LENGTH];
+    codes_mapping_get_lp_info(lp->gid, lp_group_name, &mapping_grp_id, NULL,
+        &mapping_type_id, anno, &mapping_rep_id, &mapping_offset);
+
+    if (anno[0] == '\0'){
+      r->anno = NULL;
+      r->params = &all_params[num_params-1];
+    } else {
+      r->anno = strdup(anno);
+      int id = configuration_get_annotation_index(anno, anno_map);
+      r->params = &all_params[id];
+    }
+
+    r->next_output_available_time = (tw_stime*) malloc (r->radix *
+        sizeof(tw_stime));
+    r->next_credit_available_time = (tw_stime*) malloc (r->radix *
+        sizeof(tw_stime));
+    r->vc_occupancy = (int*) malloc (r->radix * sizeof(int));
+    r->in_send_loop = (int*) malloc (r->radix * sizeof(int));
+    r->link_traffic = (int64_t*) malloc (r->radix * sizeof(int64_t));
+    r->port_connections = (tw_lpid*) malloc (r->radix * sizeof(tw_lpid));
+    r->queued_length = (int*)malloc(r->radix * sizeof(int));
+    r->lft = (int*)malloc(r->params->num_terminals * sizeof(int));
+
+    r->last_buf_full = (tw_stime*)malloc(r->radix * sizeof(tw_stime));
+    r->busy_time = (tw_stime*)malloc(r->radix * sizeof(tw_stime));
+    r->busy_time_sample = (tw_stime*)malloc(r->radix * sizeof(tw_stime));
+
+    rc_stack_create(&r->st);
+
+    r->pending_msgs =
+      (fattree_message_list**)malloc(r->radix * sizeof(fattree_message_list*));
+    r->pending_msgs_tail =
+      (fattree_message_list**)malloc(r->radix * sizeof(fattree_message_list*));
+    r->queued_msgs =
+      (fattree_message_list**)malloc(r->radix * sizeof(fattree_message_list*));
+    r->queued_msgs_tail =
+      (fattree_message_list**)malloc(r->radix * sizeof(fattree_message_list*));
+    for(int i = 0; i < r->radix; i++)
+    {
+      r->pending_msgs[i] = NULL;
+      r->pending_msgs_tail[i] = NULL;
+      r->queued_msgs[i] = NULL;
+      r->queued_msgs_tail[i] = NULL;
+    }
+  }
+  //rc_stack_pup(r->st,
+  //    (create_fn_t)create_fattree_message_list,
+  //    (free_fn_t)delete_fattree_message_list,
+  //    (pup_fn_t)pup_fattree_message_list,
+  //    p);
+  if (r->lft == NULL) CkAbort("LFT is NULL\n");
+  for (int i = 0; i < r->params->num_terminals; i++) {
+    p | r->lft[i];
+  }
+  for(int i = 0; i < r->radix; i++)
+  {
+    p | r->last_buf_full[i];
+    p | r->busy_time[i];
+    p | r->busy_time_sample[i];
+    p | r->next_output_available_time[i];
+    p | r->next_credit_available_time[i];
+    p | r->vc_occupancy[i];
+    p | r->in_send_loop[i];
+    p | r->link_traffic[i];
+    p | r->queued_length[i];
+    p | r->port_connections[i];
+
+    // Pup number of elements in message list
+    /*int count = 0;
+    fattree_message_list* cur_chunk;
+    if (!p.isUnpacking()) {
+      cur_chunk = r->pending_msgs[i];
+      while (cur_chunk) {
+        count++;
+        cur_chunk = cur_chunk->next;
+      }
+    }
+    p | count;
+
+    // Pup message list
+    cur_chunk = r->pending_msgs[i];
+    for (int c = 0; c < count; c++) {
+      if (p.isUnpacking()) {
+        // Allocate a new chunk and add to the end of the list
+        cur_chunk = (fattree_message_list*)create_fattree_message_list();
+        append_to_fattree_message_list(r->pending_msgs, r->pending_msgs_tail, i, cur_chunk);
+      }
+      pup_fattree_message_list(p, cur_chunk);
+      cur_chunk = cur_chunk->next;
+    }
+
+    if (!p.isUnpacking()) {
+      cur_chunk = r->queued_msgs[i];
+      while (cur_chunk) {
+        count++;
+        cur_chunk = cur_chunk->next;
+      }
+    }
+    p | count;
+
+    // Pup message list
+    cur_chunk = r->queued_msgs[i];
+    for (int c = 0; c < count; c++) {
+      if (p.isUnpacking()) {
+        // Allocate a new chunk and add to the end of the list
+        cur_chunk = (fattree_message_list*)create_fattree_message_list();
+        append_to_fattree_message_list(r->queued_msgs, r->queued_msgs_tail, i, cur_chunk);
+      }
+      pup_fattree_message_list(p, cur_chunk);
+      cur_chunk = cur_chunk->next;
+    }*/
+  }
+
+  if (p.isPacking()) {
+    for (int i = 0; i < r->radix; i++) {
+      while (r->pending_msgs[i]) {
+        delete_fattree_message_list(return_head(r->pending_msgs, r->pending_msgs_tail, i));
+      }
+      while (r->queued_msgs[i]) {
+        delete_fattree_message_list(return_head(r->queued_msgs, r->queued_msgs_tail, i));
+      }
+    }
+    free(r->pending_msgs_tail);
+    free(r->pending_msgs);
+    free(r->queued_msgs_tail);
+    free(r->queued_msgs);
+    rc_stack_destroy(r->st);
+    free(r->last_buf_full);
+    free(r->busy_time);
+    free(r->busy_time_sample);
+    free(r->next_output_available_time);
+    free(r->next_credit_available_time);
+    free(r->vc_occupancy);
+    free(r->in_send_loop);
+    free(r->link_traffic);
+    free(r->queued_length);
+    free(r->port_connections);
+  }
 }
 
 /* empty for now.. */
@@ -1668,7 +1985,7 @@ void ft_packet_send_rc(ft_terminal_state * s, tw_bf *bf, fattree_message * msg, 
     s->packet_counter--;
     s->vc_occupancy -= s->params->chunk_size;
 
-    fattree_message_list* cur_entry = (fattree_message_list*)rc_stack_pop(s->st);
+    fattree_message_list* cur_entry = (fattree_message_list*)rc_stack_pop(s->msg_st);
 
     prepend_to_fattree_message_list(s->terminal_msgs,
         s->terminal_msgs_tail, 0, cur_entry);
@@ -1772,7 +2089,7 @@ void ft_packet_send(ft_terminal_state * s, tw_bf * bf, fattree_message * msg,
   s->packet_counter++;
   s->vc_occupancy += s->params->chunk_size;
   cur_entry = return_head(s->terminal_msgs, s->terminal_msgs_tail, 0);
-  rc_stack_push(lp, cur_entry, free, s->st);
+  rc_stack_push(lp, cur_entry, (free_fn_t)delete_fattree_message_list, s->msg_st);
   s->terminal_length -= s->params->chunk_size;
 
 //  if(s->terminal_id == 1)
@@ -2054,7 +2371,7 @@ void switch_packet_send( switch_state * s, tw_bf * bf, fattree_message * msg,
 
   cur_entry = return_head(s->pending_msgs, s->pending_msgs_tail,
     output_port);
-  rc_stack_push(lp, cur_entry, free, s->st);
+  rc_stack_push(lp, cur_entry, (free_fn_t)delete_fattree_message_list, s->st);
 
   s->next_output_available_time[output_port] -= s->params->router_delay;
   ts -= s->params->router_delay;
@@ -2363,7 +2680,7 @@ void ft_packet_arrive_rc(ft_terminal_state * s, tw_bf * bf, fattree_message * ms
       total_msg_sz -= msg->total_size;
       s->total_msg_size -= msg->total_size;
 
-      struct ftree_qhash_entry * d_entry_pop = (ftree_qhash_entry*)rc_stack_pop(s->st);
+      struct ftree_qhash_entry * d_entry_pop = (ftree_qhash_entry*)rc_stack_pop(s->hash_st);
       qhash_add(s->rank_tbl, &key, &(d_entry_pop->hash_link));
       s->rank_tbl_pop++;
             
@@ -2381,7 +2698,7 @@ void ft_packet_arrive_rc(ft_terminal_state * s, tw_bf * bf, fattree_message * ms
     if(tmp->num_chunks == 0) {
       qhash_del(hash_link);
       s->rank_tbl_pop--;
-      free_tmp(tmp);
+      delete_ftree_hash(tmp);
     }
 }
 
@@ -2577,7 +2894,7 @@ void ft_packet_arrive(ft_terminal_state * s, tw_bf * bf, fattree_message * msg,
         }
         /* Remove the hash entry */
         qhash_del(hash_link);
-        rc_stack_push(lp, tmp, free_tmp, s->st);
+        rc_stack_push(lp, tmp, delete_ftree_hash, s->hash_st);
         s->rank_tbl_pop--;
    }
 
@@ -2681,7 +2998,8 @@ void ft_terminal_event( ft_terminal_state * s, tw_bf * bf, fattree_message * msg
 		tw_lp * lp ) {
 
   assert(msg->magic == fattree_terminal_magic_num);
-  rc_stack_gc(lp, s->st);
+  rc_stack_gc(lp, s->msg_st);
+  rc_stack_gc(lp, s->hash_st);
   *(int *)bf = (int)0;
   switch(msg->type) {
 
@@ -2784,7 +3102,8 @@ void fattree_terminal_final( ft_terminal_state * s, tw_lp * lp )
     if(s->rank_tbl)
         qhash_finalize(s->rank_tbl);
 
-    rc_stack_destroy(s->st);
+    rc_stack_destroy(s->msg_st);
+    rc_stack_destroy(s->hash_st);
 //    free(s->vc_occupancy);
     free(s->terminal_msgs);
     free(s->terminal_msgs_tail);
@@ -2953,7 +3272,7 @@ tw_lptype fattree_lps[] =
     (revent_f) ft_terminal_rc_event_handler,
     (commit_f) NULL,
     (final_f) fattree_terminal_final,
-    (pup_f) NULL,
+    (pup_f) ft_terminal_pup,
     //(map_f) codes_mapping,
     sizeof(ft_terminal_state)
   },
@@ -2965,12 +3284,12 @@ tw_lptype fattree_lps[] =
     (revent_f) switch_rc_event_handler,
     (commit_f) NULL,
     (final_f) fattree_switch_final,
-    (pup_f) NULL,
+    (pup_f) switch_pup,
     //(map_f) codes_mapping,
     sizeof(switch_state),
   },
   //{NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0},
-  {NULL, NULL, NULL, NULL, NULL, 0},
+  {NULL, NULL, NULL, NULL, NULL, NULL, 0},
 };
 
 /* For ROSS event tracing */

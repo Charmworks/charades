@@ -96,6 +96,9 @@ int main(int argc, char** argv) {
 void svr_init(svr_state* ns, tw_lp* lp) {
   memset(ns, 0, sizeof(*ns));
 
+  CkPrintf("LPChare %i: Server LP %i\n",
+      lp->owner->thisIndex, lp->gid);
+
   tw_stime kickoff_time = g_tw_lookahead + tw_rand_unif(lp->rng);
   tw_event* e = tw_event_new(lp->gid, kickoff_time, lp);
   svr_msg* m = (svr_msg*)tw_event_data(e);
