@@ -34,6 +34,6 @@ module gvtmanager {
     entry [notrace] BucketGVT();
     entry [notrace, reductiontarget] void bucket_ready();
     entry [notrace, reductiontarget] void check_counts(int, int, int);
-    entry [notrace,reductiontarget] void gvt_end(Time, double);
+    entry [notrace,reductiontarget] void gvt_end(int);
   };
 }

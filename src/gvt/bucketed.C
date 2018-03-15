@@ -8,6 +8,8 @@
 
 BucketGVT::BucketGVT() {
   gvt_name = "Bucket GVT";
+  active = false;
+  continuous = true;
 
   bucket_size = g_tw_gvt_bucket_size;
 
@@ -26,70 +28,55 @@ BucketGVT::BucketGVT() {
   }
 }
 
+// TODO: POSSIBLY STILL NEEDED AS A CHECK FOR CASES WHERE NO PROD/CONS HAPPENS
 void BucketGVT::gvt_begin() {
-
   if (scheduler->get_min_time() >= (1 + cur_bucket) * bucket_size && !doing_reduction) {
     rollback_flags[cur_bucket] = 0;
     doing_reduction = true;
     contribute(CkCallback(CkReductionTarget(BucketGVT, bucket_ready), thisProxy));
+    active = true;
   }
   scheduler->gvt_resume();
-
 }
 
+// TODO: Can we just check min time here? We may not need rollback_flags
+// Unless its the case that rolling back, then advance past bucket time is important to track
 void BucketGVT::bucket_ready() {
-
-  int data[3] = {sent[cur_bucket], received[cur_bucket], rollback_flags[cur_bucket]};
-
+  int data[3] = { sent[cur_bucket], received[cur_bucket], rollback_flags[cur_bucket] };
   contribute(3 * sizeof(int), data, CkReduction::sum_int,
       CkCallback(CkReductionTarget(BucketGVT,check_counts),thisProxy));
-
 }
 
-void BucketGVT::check_counts(int sent, int recvd, int flag ) {
-
-  if(flag != 0) {
-
+void BucketGVT::check_counts(int sent, int recvd, int flag) {
+  if (flag != 0) {
+    active = false;
     doing_reduction = false;
     if (scheduler->get_min_time() >= (1 + cur_bucket) * bucket_size) {
       rollback_flags[cur_bucket] = 0;
+      active = true;
       doing_reduction = true;
       contribute(CkCallback(CkReductionTarget(BucketGVT, bucket_ready), thisProxy));
     }
-  }
-  else if (sent != recvd) {
-
+  } else if (sent != recvd) {
     bucket_ready();
-  }
-  else {
-
-    Time min_time = scheduler->get_min_time();
-    min_time = fmin(min_time, min_sent[cur_bucket]);
-    CkAssert(min_time >= curr_gvt);
-    double flag = ((rollback_flags[cur_bucket]) ? 0 : 1);
-
-    double data[2] = {min_time, flag};
-
-    contribute(2 * sizeof(double), data, CkReduction::min_double,
+  } else {
+    contribute(sizeof(int), &rollback_flags[cur_bucket], CkReduction::sum_int,
       CkCallback(CkReductionTarget(BucketGVT,gvt_end),thisProxy));
   }
 }
 
-void BucketGVT::gvt_end(Time new_gvt, double flag) {
+void BucketGVT::gvt_end(int flag) {
   if (flag == 0) {
-    doing_reduction = false;
-    if(scheduler->get_min_time() > (cur_bucket + 1)  * bucket_size) {
-      rollback_flags[cur_bucket] = 0;
-      doing_reduction = true;
-      contribute(CkCallback(CkReductionTarget(BucketGVT, bucket_ready), thisProxy));
-    }
-  }
-  else {
     prev_gvt = curr_gvt;
-    curr_gvt = new_gvt;
-    cur_bucket++;
+    curr_gvt = ++cur_bucket * bucket_size;
+    active = false;
     doing_reduction = false;
     scheduler->gvt_done(curr_gvt);
+  } else if (scheduler->get_min_time() > (cur_bucket + 1)  * bucket_size) {
+    rollback_flags[cur_bucket] = 0;
+    active = true;
+    doing_reduction = true;
+    contribute(CkCallback(CkReductionTarget(BucketGVT, bucket_ready), thisProxy));
   }
 }
 
@@ -98,27 +85,21 @@ void BucketGVT::consume(RemoteEvent* e) {
 
   if (scheduler->get_min_time() >= (1 + cur_bucket) * bucket_size && !doing_reduction) {
     rollback_flags[cur_bucket] = 0;
+    active = true;
     doing_reduction = true;
     contribute(CkCallback(CkReductionTarget(BucketGVT, bucket_ready), thisProxy));
-  }
-  else if(scheduler->get_min_time() < (1 + cur_bucket) * bucket_size && doing_reduction) {
+  } else if(scheduler->get_min_time() < (1 + cur_bucket) * bucket_size) {
     rollback_flags[cur_bucket] = 1;
   }
 }
 
 void BucketGVT::produce(RemoteEvent* e) {
-
   e->phase = e->ts / bucket_size;
   sent[e->phase]++;
 
-  //TODO: Check if min_sent is even needed for this config 
-  if( e->phase > cur_bucket) {
-    if(e->ts < min_sent[cur_bucket]) {
-      min_sent[cur_bucket] = e->ts;
-    }
-  }
   if (scheduler->get_min_time() >= (1 + cur_bucket) * bucket_size && !doing_reduction) {
     rollback_flags[cur_bucket] = 0;
+    active = true;
     doing_reduction = true;
     contribute(CkCallback(CkReductionTarget(BucketGVT, bucket_ready), thisProxy));
   }

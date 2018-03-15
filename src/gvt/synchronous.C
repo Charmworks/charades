@@ -5,9 +5,12 @@
 
 SyncGVT::SyncGVT() {
   gvt_name = "Synchronous GVT";
+  active = false;
+  continuous = false;
 }
 
 void SyncGVT::gvt_begin() {
+  active = true;
   if(CkMyPe() == 0) {
     CkStartQD(CkCallback(CkIndex_SyncGVT::gvt_contribute(), thisProxy));
   }
@@ -26,6 +29,7 @@ void SyncGVT::gvt_contribute() {
 }
 
 void SyncGVT::gvt_end(Time new_gvt) {
+  active = false;
   prev_gvt = curr_gvt;
   curr_gvt = new_gvt;
   scheduler->gvt_done(curr_gvt);

@@ -13,6 +13,8 @@ class GVTManager : public CBase_GVTManager {
     /** Global virtual times */
     Time curr_gvt, prev_gvt;
 
+    bool active, continuous;
+
     /** Local pointers to other PE-level objects */
     DistributedScheduler* scheduler;
 
@@ -24,6 +26,9 @@ class GVTManager : public CBase_GVTManager {
 
     /** Every subclass needs to implement gvt_begin() */
     virtual void gvt_begin() { CkAbort("Cannot call GVTManager::begin()\n"); }
+
+    bool is_active() const { return active; }
+    bool is_continuous() const { return continuous; }
 
     /** Accessors for gvts */
     Time current_gvt() const { return curr_gvt; }

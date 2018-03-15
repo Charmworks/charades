@@ -9,6 +9,8 @@
 
 PhaseGVT::PhaseGVT() {
   gvt_name = "Multi-Phase GVT";
+  active = false;
+  continuous = true;
   
   max_phase = g_tw_gvt_phases;
   producing_phase = 0;
@@ -30,7 +32,7 @@ PhaseGVT::PhaseGVT() {
 void PhaseGVT::gvt_begin() {
 
   if(detector_ready[next_phase]) {
-
+    active = true;
     min_sent[producing_phase] = DBL_MAX;
     detector_ready[producing_phase] = false;
     if(gvt_phase_begin == -1) {
@@ -90,7 +92,7 @@ void PhaseGVT::check_counts(int s, int r) {
 }
 
 void PhaseGVT::gvt_end(Time new_gvt) {
-
+  active = false;
   prev_gvt = curr_gvt;
   curr_gvt = new_gvt;
   for(int i = gvt_phase_begin; i!= gvt_phase_end; i = (i+1)%max_phase) {

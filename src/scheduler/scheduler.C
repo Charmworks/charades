@@ -203,7 +203,8 @@ void DistributedScheduler::groups_created() {
 void DistributedScheduler::iteration_done() {
   running = false;
   gvt_trigger->iteration_done();
-  if (gvt_trigger->ready() && !doing_gvt) {
+  if (gvt_trigger->ready() && !gvt_manager->is_active()) {
+  // TODO: is_active should MAYBE be changed to something like can_begin
 #ifdef DETAILED_TIMING
     delay_marked = false;
     gvt_start = CmiWallTimer();
@@ -212,7 +213,8 @@ void DistributedScheduler::iteration_done() {
     gvt_manager->gvt_begin();
     gvt_trigger->reset();
     lb_trigger->iteration_done();
-  } else if (!gvt_trigger->ready() || g_tw_gvt_scheme == 2) {
+  } else if (!gvt_trigger->ready() || gvt_manager->is_continuous()) {
+    // TODO: is_continuous maybe should be something like allow_execution
     next_iteration();
   }
 }

@@ -14,7 +14,7 @@ class BucketGVT : public CBase_BucketGVT {
     /**Serves as checkpoint to ensure all PES cross boundary before we start reducing counts **/
     void bucket_ready();
     /** Called by the all reduce from check_counts() with resulting gvt**/
-    void gvt_end(Time, double);
+    void gvt_end(int);
     /**Increment received count for the proper bucket of the event, check boundaries **/
     void consume(RemoteEvent* e);
     /**Increment sent count for proper bucket and recalculate min_sent, check boundaries**/
