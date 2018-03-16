@@ -32,8 +32,8 @@ module gvtmanager {
   /** Bucket-based GVT */
   group BucketGVT : GVTManager {
     entry [notrace] BucketGVT();
-    entry [notrace, reductiontarget] void bucket_ready();
+    entry [notrace, reductiontarget] void all_ready();
     entry [notrace, reductiontarget] void check_counts(int, int, int);
-    entry [notrace,reductiontarget] void gvt_end(int);
+    entry [notrace, reductiontarget] void gvt_end(int);
   };
 }
