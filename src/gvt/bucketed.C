@@ -62,8 +62,6 @@ void BucketGVT::all_ready(int num_buckets) {
 }
 
 void BucketGVT::send_counts(int num_buckets) {
-  if (CkMyPe() == 0) CkPrintf("Buckets = %i\n", num_buckets);
-
   int* data = new int[3 * num_buckets];
   int num_passed = buckets_passed();
 
