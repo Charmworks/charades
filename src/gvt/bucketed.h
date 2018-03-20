@@ -15,10 +15,10 @@ class BucketGVT : public CBase_BucketGVT {
      * within the current bucket, so reattempt the GVT. Otherwise, GVT is the
      * end of the bucket, so advance bucket and call Scheduler::gvt_done.
      */
-    void gvt_end(int invalid);  ///< If !invalid set new GVT and advance bucket
+    void gvt_end(int count, int* invalid);  ///< If !invalid set new GVT and advance bucket
 
     /** Returns 1 if the scheduler has passed the end of the current bucket */
-    int passed_bucket() const;
+    int buckets_passed() const;
 
     /**
      * Starts the GVT with a reduction to all_ready if passed_bucket() returns
@@ -28,9 +28,9 @@ class BucketGVT : public CBase_BucketGVT {
     void attempt_gvt();
 
     /** Target of reduction signalling all PEs are ready, so call send_counts */
-    void all_ready();
+    void all_ready(int min);
     /** Contributes sent/recvd counts to sum redn along with validity bit */
-    void send_counts();
+    void send_counts(int buckets);
 
     /**
      * Reduction target that receives counts of all sent and received messages.
@@ -39,17 +39,18 @@ class BucketGVT : public CBase_BucketGVT {
      * As long as invalid remains 0, call send_counts until sent == recvd. Then
      * trigger one last reduction to gvt_end to catch any last rollbacks.
      */
-    void check_counts(int sent, int recvd, int invalid);
+    void check_counts(int count, int* data);
 
     void consume(RemoteEvent* e); ///< Increment recvd and attempt GVT
     void produce(RemoteEvent* e); ///< Increment sent and attempt GVT
 
   private:
-    Time bucket_size; ///< Size of each bucket
-    int num_buckets;  ///< Total number of buckets
-    int curr_bucket;  ///< Index of current bucket
-    int* sent;        ///< Array of sent counts
-    int* received;    ///< Array of received counts
+    Time bucket_size;   ///< Size of each bucket
+    int total_buckets;  ///< Total number of buckets
+    int curr_bucket;    ///< Index of current bucket
+    // TODO: We can make this a single array to avoid exra allocation for redns
+    int* sent;          ///< Array of sent counts
+    int* received;      ///< Array of received counts
 };
 
 #endif
