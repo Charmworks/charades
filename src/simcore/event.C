@@ -46,7 +46,7 @@ void tw_event_free(tw_event *e, bool commit) {
 
 void tw_event_send(tw_event * e) {
   if (e == PE_VALUE(abort_event)) {
-    TW_ASSERT(e->ts > g_tw_ts_end, "Can't send abort event before end\n");
+    TW_ASSERT(e->ts >= g_tw_ts_end, "Can't send abort event before end\n");
     return;
   }
   TW_ASSERT(g_tw_synchronization_protocol != CONSERVATIVE ||
