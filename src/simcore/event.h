@@ -19,12 +19,17 @@ struct RemoteEvent : public CMessage_RemoteEvent {
       ts = 0.0;
       send_pe = 0;
       dest_lp = 0;
+
+      anti = false;
     }
 
     char *userData;
 
     // Used for the async completion detection algorithm
     unsigned phase;
+
+    // Experimentally used for adaptive GVT control
+    bool anti;
 
     // These three fields make up the unique key for identifying events
     EventID event_id;

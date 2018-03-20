@@ -174,6 +174,7 @@ void charm_anti_send(unsigned dest_peid, Event * e) {
   eventMsg->ts = e->ts;
   eventMsg->dest_lp = e->dest_lp;
   eventMsg->send_pe = e->send_pe;
+  eventMsg->anti = true;
 
   scheduler->produce(eventMsg);
   PE_STATS(anti_sends)++;
