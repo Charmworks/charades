@@ -8,6 +8,8 @@ class BucketGVT : public CBase_BucketGVT {
 
     BucketGVT();  ///< Allocate arrays and 0 out all state
 
+    void finalize();
+
     /** Calls attempt_gvt and Scheduler::gvt_resume */
     void gvt_begin();
     /**
@@ -51,6 +53,9 @@ class BucketGVT : public CBase_BucketGVT {
     // TODO: We can make this a single array to avoid exra allocation for redns
     int* sent;          ///< Array of sent counts
     int* received;      ///< Array of received counts
+
+    int* offsets;
+    int* anti_offsets;
 };
 
 #endif

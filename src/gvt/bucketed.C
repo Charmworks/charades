@@ -17,10 +17,38 @@ BucketGVT::BucketGVT() {
 
   sent = new int[total_buckets];
   received = new int[total_buckets];
+  offsets = new int[total_buckets];
+  anti_offsets = new int[total_buckets];
   for (int i = 0; i < total_buckets; i++) {
     sent[i] = 0;
     received[i] = 0;
+    offsets[i] = 0;
+    anti_offsets[i] = 0;
   }
+}
+
+void BucketGVT::finalize() {
+  int total_reg = 0;
+  int total_anti = 0;
+  int total_reg_offset = 0;
+  int total_anti_offset = 0;
+
+  for (int i = 0; i < total_buckets; i++) {
+    total_reg += offsets[i];
+    total_reg_offset += offsets[i] * i;
+    total_anti += anti_offsets[i];
+    total_anti_offset += anti_offsets[i] * i;
+
+    if (offsets[i] > 0) {
+      double percentage = ((double)anti_offsets[i] / offsets[i]) * 100;
+      CkPrintf("GVT[%i:%i]: Percentage of cancelled events %f%%\n",
+          CkMyPe(), i, percentage);
+    }
+  }
+  CkPrintf("GVT[%i]: Average event offset %lf, Average anti offset %lf\n",
+      CkMyPe(),
+      (double)total_reg_offset / total_reg,
+      (double)total_anti_offset / total_anti);
 }
 
 void BucketGVT::gvt_begin() {
@@ -40,6 +68,11 @@ void BucketGVT::gvt_end(int count, int* invalid) {
     prev_gvt = curr_gvt;
     curr_bucket += num_valid;
     curr_gvt = curr_bucket * bucket_size;
+
+    if (curr_gvt >= g_tw_ts_end) {
+      finalize();
+    }
+
     scheduler->gvt_done(curr_gvt);
   }
 }
@@ -121,6 +154,14 @@ void BucketGVT::consume(RemoteEvent* e) {
 
 void BucketGVT::produce(RemoteEvent* e) {
   e->phase = e->ts / bucket_size;
+
+  int offset = e->phase - curr_bucket;
+  if (e->anti) {
+    anti_offsets[offset]++;
+  } else {
+    offsets[offset]++;
+  }
+
   sent[e->phase]++;
   attempt_gvt();
 }
