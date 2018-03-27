@@ -21,6 +21,7 @@ struct RemoteEvent : public CMessage_RemoteEvent {
       dest_lp = 0;
 
       anti = false;
+      offset = 0;
     }
 
     char *userData;
@@ -30,6 +31,7 @@ struct RemoteEvent : public CMessage_RemoteEvent {
 
     // Experimentally used for adaptive GVT control
     bool anti;
+    unsigned offset;
 
     // These three fields make up the unique key for identifying events
     EventID event_id;
@@ -154,6 +156,9 @@ public:
   // Index of the event in the pending heap. Also the order of event pupping.
   size_t    index;
 
+  // Experimentally used for adaptive GVT control
+  unsigned offset;
+
   // Fields for rebuilding causality lists after migration
   unsigned  pending_count;
   unsigned  processed_count;
@@ -212,6 +217,7 @@ Event* charm_allocate_event(int needMsg = 1);
 void charm_free_event(Event* e);
 void charm_event_cancel(Event* e);
 int charm_event_send(unsigned, Event* e);
+void charm_event_release(RemoteEvent* e);
 void charm_anti_send(unsigned, Event* e);
 
 // Methods for pupping differnet types of events

@@ -3,8 +3,10 @@
 #include "event.h"
 #include "globals.h"
 #include "scheduler.h"
+#include "statistics.h"
 
 #include <float.h>
+#include <fstream>
 
 BucketGVT::BucketGVT() {
   gvt_name = "Bucket GVT";
@@ -15,40 +17,84 @@ BucketGVT::BucketGVT() {
   bucket_size = g_tw_gvt_bucket_size;
   total_buckets = ceil(g_tw_ts_end / bucket_size);
 
+  reserved = 0;
+  reserve_threshold = g_tw_reserve_threshold;
+  if (g_tw_reserve_buckets != 0) {
+    reserve_buckets = g_tw_reserve_buckets;
+  } else {
+    reserve_buckets = total_buckets;
+  }
+
   sent = new int[total_buckets];
   received = new int[total_buckets];
-  offsets = new int[total_buckets];
-  anti_offsets = new int[total_buckets];
   for (int i = 0; i < total_buckets; i++) {
     sent[i] = 0;
     received[i] = 0;
-    offsets[i] = 0;
-    anti_offsets[i] = 0;
+  }
+
+  if (g_tw_adaptive_buckets) {
+    offsets = new int[total_buckets];
+    anti_offsets = new int[total_buckets];
+    reserves = new std::vector<RemoteEvent*>[total_buckets];
+     for (int i = 0; i < total_buckets; i++) {
+      offsets[i] = 0;
+      anti_offsets[i] = 0;
+    }
   }
 }
 
 void BucketGVT::finalize() {
-  int total_reg = 0;
-  int total_anti = 0;
-  int total_reg_offset = 0;
-  int total_anti_offset = 0;
+  std::ofstream outfile;
+  std::string filename = "gvt_" + std::to_string(CkMyPe()) + ".out";
+  outfile.open(filename);
+  if (g_tw_adaptive_buckets) {
+    int total_reg = 0;
+    int total_anti = 0;
+    int total_reg_offset = 0;
+    int total_anti_offset = 0;
 
-  for (int i = 0; i < total_buckets; i++) {
-    total_reg += offsets[i];
-    total_reg_offset += offsets[i] * i;
-    total_anti += anti_offsets[i];
-    total_anti_offset += anti_offsets[i] * i;
+    for (int i = 0; i < total_buckets; i++) {
+      total_reg += offsets[i];
+      total_reg_offset += offsets[i] * i;
+      total_anti += anti_offsets[i];
+      total_anti_offset += anti_offsets[i] * i;
 
-    if (offsets[i] > 0) {
-      double percentage = ((double)anti_offsets[i] / offsets[i]) * 100;
-      CkPrintf("GVT[%i:%i]: Percentage of cancelled events %f%%\n",
-          CkMyPe(), i, percentage);
+      if (offsets[i] > 0) {
+        double percentage = ((double)anti_offsets[i] / offsets[i]) * 100;
+        outfile << "Bucket offset " << i << " saw " << offsets[i]
+            << " regular events and " << anti_offsets[i] << " anti events ("
+            << percentage << ")" << std::endl;
+      }
     }
+    outfile << "Average event offset: " << (double)total_reg_offset / total_reg << std::endl;
+    outfile << "Average anti offset: " << (double)total_anti_offset / total_anti << std::endl;
+    outfile << "Held back " << reserved << " events and cancelled " << cancelled
+        << " of them (" << (double)cancelled / reserved << ")" << std::endl;
   }
-  CkPrintf("GVT[%i]: Average event offset %lf, Average anti offset %lf\n",
-      CkMyPe(),
-      (double)total_reg_offset / total_reg,
-      (double)total_anti_offset / total_anti);
+  outfile.close();
+}
+
+bool key_matches(RemoteEvent* e1, RemoteEvent* e2) {
+  return e1->send_pe == e2->send_pe && e1->event_id == e2->event_id;
+}
+
+bool BucketGVT::attempt_cancel(RemoteEvent* anti) {
+  std::vector<RemoteEvent*>& bucket = reserves[anti->phase];
+  auto iter = bucket.begin();
+  while (iter != bucket.end()) {
+    if (key_matches(anti, *iter)) break;
+    iter++;
+  }
+  if (iter != bucket.end()) {
+    cancelled++;
+    RemoteEvent* original = *iter;
+    bucket.erase(iter);
+    delete original;
+    delete anti;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void BucketGVT::gvt_begin() {
@@ -69,8 +115,11 @@ void BucketGVT::gvt_end(int count, int* invalid) {
     curr_bucket += num_valid;
     curr_gvt = curr_bucket * bucket_size;
 
-    if (curr_gvt >= g_tw_ts_end) {
-      finalize();
+    if (g_tw_adaptive_buckets && curr_bucket < total_buckets) {
+      for (RemoteEvent* e : reserves[curr_bucket]) {
+        charm_event_release(e);
+      }
+      reserves[curr_bucket].clear();
     }
 
     scheduler->gvt_done(curr_gvt);
@@ -152,16 +201,38 @@ void BucketGVT::consume(RemoteEvent* e) {
   attempt_gvt();
 }
 
-void BucketGVT::produce(RemoteEvent* e) {
+bool BucketGVT::produce(RemoteEvent* e) {
   e->phase = e->ts / bucket_size;
-
-  int offset = e->phase - curr_bucket;
-  if (e->anti) {
-    anti_offsets[offset]++;
-  } else {
-    offsets[offset]++;
-  }
-
   sent[e->phase]++;
   attempt_gvt();
+
+  if (g_tw_adaptive_buckets) {
+    if (e->anti) {
+      int phase = e->phase;
+      anti_offsets[e->offset]++;
+      if (attempt_cancel(e)) {
+        PE_STATS(remote_cancels)++;
+        PE_STATS(anti_cancels)++;
+        sent[phase] -= 2;
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      e->offset = e->phase - curr_bucket;
+      offsets[e->offset]++;
+      if (e->offset > 0 &&
+          (e->offset > reserve_buckets ||
+          (double)anti_offsets[e->offset] / offsets[e->offset] > reserve_threshold)) {
+        reserves[e->phase].push_back(e);
+        reserved++;
+        PE_STATS(remote_holds)++;
+        return false;
+      } else {
+        return true;
+      }
+    }
+  } else {
+    return true;
+  }
 }

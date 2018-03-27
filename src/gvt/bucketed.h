@@ -29,6 +29,8 @@ class BucketGVT : public CBase_BucketGVT {
      */
     void attempt_gvt();
 
+    bool attempt_cancel(RemoteEvent* anti);
+
     /** Target of reduction signalling all PEs are ready, so call send_counts */
     void all_ready(int min);
     /** Contributes sent/recvd counts to sum redn along with validity bit */
@@ -44,7 +46,7 @@ class BucketGVT : public CBase_BucketGVT {
     void check_counts(int count, int* data);
 
     void consume(RemoteEvent* e); ///< Increment recvd and attempt GVT
-    void produce(RemoteEvent* e); ///< Increment sent and attempt GVT
+    bool produce(RemoteEvent* e); ///< Increment sent and attempt GVT
 
   private:
     Time bucket_size;   ///< Size of each bucket
@@ -54,8 +56,13 @@ class BucketGVT : public CBase_BucketGVT {
     int* sent;          ///< Array of sent counts
     int* received;      ///< Array of received counts
 
+    double reserve_threshold;
+    int reserve_buckets;
+    int reserved;
+    int cancelled;
     int* offsets;
     int* anti_offsets;
+    std::vector<RemoteEvent*>* reserves;
 };
 
 #endif

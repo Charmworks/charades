@@ -37,9 +37,12 @@ class GVTManager : public CBase_GVTManager {
     /** Called by the local PEManager after all groups have been initialized */
     virtual void groups_created();
 
+    /** Called by the local PEManager after the simulation ends */
+    virtual void finalize() {}
+
     /** Methods for producing and consuming events for GVTs that need to know */
     virtual void consume(RemoteEvent* e) {}
-    virtual void produce(RemoteEvent* e) {}
+    virtual bool produce(RemoteEvent* e) { return true; }
 };
 
 #endif
