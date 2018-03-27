@@ -71,7 +71,10 @@ void Statistics::clear() {
   self_sends = 0;
   local_sends = 0;
   remote_sends = 0;
+  remote_holds = 0;
+  remote_cancels = 0;
   anti_sends = 0;
+  anti_cancels = 0;
 
   // GVT stats
   total_gvts = 0;
@@ -129,7 +132,10 @@ void Statistics::add(const Statistics* other) {
   self_sends += other->self_sends;
   local_sends += other->local_sends;
   remote_sends += other->remote_sends;
+  remote_holds += other->remote_holds;
+  remote_cancels += other->remote_cancels;
   anti_sends += other->anti_sends;
+  anti_cancels += other->anti_cancels;
 
   // GVT stats
   total_gvts += other->total_gvts;
@@ -171,7 +177,10 @@ void Statistics::reduce(const Statistics* other) {
   self_sends += other->self_sends;
   local_sends += other->local_sends;
   remote_sends += other->remote_sends;
+  remote_holds += other->remote_holds;
+  remote_cancels += other->remote_cancels;
   anti_sends += other->anti_sends;
+  anti_cancels += other->anti_cancels;
 
   // GVT stats
   total_gvts = other->total_gvts;
@@ -233,7 +242,12 @@ void Statistics::print() const {
   print_int("Self Sends", self_sends);
   print_int("Local Sends", local_sends);
   print_int("Remote Sends", remote_sends);
+  print_int("Remote Holds", remote_holds);
+  print_int("Remote Cancels", remote_cancels);
+  print_int("Actual Remote", remote_sends - remote_cancels);
   print_int("Anti Event Sends", anti_sends);
+  print_int("Anti Event Cancels", anti_cancels);
+  print_int("Actual Anti", anti_sends - anti_cancels);
 
   /** \todo Add stats about cancellations */
   print_section("ROLLBACK STATISTICS");

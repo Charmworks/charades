@@ -44,6 +44,9 @@ extern uint32_t g_tw_gvt_trigger;     ///< unit of the GVT interval (time or eve
 extern uint32_t g_tw_gvt_phases;      ///< number of phases in a phased gvt
 extern uint32_t g_tw_gvt_bucket_size; ///< size of each bucket in a bucketed gvt
 extern uint32_t g_tw_async_reduction; ///< use asynchronous reductions in GVTs
+extern double   g_tw_reserve_threshold;
+extern uint32_t g_tw_reserve_buckets;
+extern uint32_t g_tw_adaptive_buckets;
 ///@}
 
 /** \name LB Configuration *////@{

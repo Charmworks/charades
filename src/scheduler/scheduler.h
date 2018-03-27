@@ -91,7 +91,7 @@ class Scheduler : public CBase_Scheduler {
 
     // TODO: Move to distributed/optimistic
     virtual void consume(RemoteEvent* e) {}
-    virtual void produce(RemoteEvent* e) {}
+    virtual bool produce(RemoteEvent* e) { return true; }
     virtual void update_min_cancel(Time ts) {}
 };
 
@@ -153,8 +153,8 @@ class DistributedScheduler : public CBase_DistributedScheduler {
     void consume(RemoteEvent* e) {
       gvt_manager->consume(e);
     }
-    void produce(RemoteEvent* e) {
-      gvt_manager->produce(e);
+    bool produce(RemoteEvent* e) {
+      return gvt_manager->produce(e);
     }
 };
 

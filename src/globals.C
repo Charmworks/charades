@@ -47,6 +47,9 @@ uint32_t g_tw_gvt_trigger;
 uint32_t g_tw_gvt_phases;
 uint32_t g_tw_gvt_bucket_size;
 uint32_t g_tw_async_reduction;
+double   g_tw_reserve_threshold;
+uint32_t g_tw_reserve_buckets;
+uint32_t g_tw_adaptive_buckets;
 ///@}
 
 /** \name LB Configuration */
@@ -122,6 +125,9 @@ void clear_globals() {
   g_tw_gvt_phases       = 2;
   g_tw_gvt_bucket_size  = 8;
   g_tw_async_reduction  = 0;
+  g_tw_reserve_threshold = 1.0;
+  g_tw_reserve_buckets = 0;
+  g_tw_adaptive_buckets = 0;
 
   g_tw_ldb_first     = 0;
   g_tw_ldb_interval  = 0;

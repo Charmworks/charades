@@ -16,7 +16,7 @@ class PhaseGVT : public CBase_PhaseGVT {
     /**Increment received count for the phase of the event **/
     void consume(RemoteEvent* e);
     /**Increment sent count for producing phase and recalculate min_sent**/
-    void produce(RemoteEvent* e);
+    bool produce(RemoteEvent* e);
 
   private:
 

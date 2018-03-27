@@ -118,7 +118,7 @@ void PhaseGVT::consume(RemoteEvent* e) {
   received[e->phase]++;
 }
 
-void PhaseGVT::produce(RemoteEvent* e) {
+bool PhaseGVT::produce(RemoteEvent* e) {
   if (gvt_phase_end != -1) {
     if(e->ts < min_sent[gvt_phase_end]) {
       min_sent[gvt_phase_end] = e->ts;
@@ -126,4 +126,5 @@ void PhaseGVT::produce(RemoteEvent* e) {
   }
   e->phase = producing_phase;
   sent[producing_phase]++;
+  return true;
 }

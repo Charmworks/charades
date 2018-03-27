@@ -305,6 +305,7 @@ void DistributedScheduler::gvt_done(Time gvt) {
   if(gvt >= g_tw_ts_end) {
     print_progress(gvt);
     end_simulation();
+    gvt_manager->finalize();
   } else if (lb_trigger->ready()) {
     print_progress(gvt);
     start_balancing();

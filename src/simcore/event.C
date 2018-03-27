@@ -156,12 +156,21 @@ int charm_event_send(unsigned dest_peid, Event * e) {
     e->eventMsg->dest_lp = e->dest_lp;
     e->eventMsg->send_pe = e->send_pe;
 
-    scheduler->produce(e->eventMsg);
-    lps(dest_peid).recv_remote_event(e->eventMsg);
+    if (scheduler->produce(e->eventMsg)) {
+      e->offset = e->eventMsg->offset;
+      lps(dest_peid).recv_remote_event(e->eventMsg);
+    } else {
+      e->offset = e->eventMsg->offset;
+    }
     e->state.owner = TW_sent;
     e->eventMsg = NULL;
     return 1;
   }
+}
+
+void charm_event_release(RemoteEvent* e) {
+  int dest_chare = g_chare_map(e->dest_lp);
+  lps(dest_chare).recv_remote_event(e);
 }
 
 // Allocate a new remote message, fill it based on e, and send it.
@@ -175,10 +184,12 @@ void charm_anti_send(unsigned dest_peid, Event * e) {
   eventMsg->dest_lp = e->dest_lp;
   eventMsg->send_pe = e->send_pe;
   eventMsg->anti = true;
+  eventMsg->offset = e->offset;
 
-  scheduler->produce(eventMsg);
   PE_STATS(anti_sends)++;
-  lps(dest_peid).recv_anti_event(eventMsg);
+  if (scheduler->produce(eventMsg)) {
+    lps(dest_peid).recv_anti_event(eventMsg);
+  }
 }
 
 // Cancels an event by either sending an anti-message, or calling cancel_event
