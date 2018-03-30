@@ -3,6 +3,37 @@
 
 #include "gvtmanager.h"
 
+#include "event.h"
+
+struct OffsetStats {
+  int regular, anti;
+  int held, cancelled, released;
+  int lag;
+
+  OffsetStats()
+      : regular(0), anti(0), held(0), cancelled(0), released(0), lag(0) {}
+
+  double anti_ratio() const {
+    return regular ? (double)anti / regular : 0.0;
+  }
+
+  double held_ratio() const {
+    return regular ? (double)held / regular : 0.0;
+  }
+
+  double cancelled_ratio() const {
+    return held ? (double)cancelled / held : 0.0;
+  }
+
+  double released_ratio() const {
+    return held ? (double)released / held : 0.0;
+  }
+
+  double average_lag() const {
+    return anti ? (double)lag / anti : 0.0;
+  }
+};
+
 class BucketGVT : public CBase_BucketGVT {
   public:
 
@@ -56,12 +87,9 @@ class BucketGVT : public CBase_BucketGVT {
     int* sent;          ///< Array of sent counts
     int* received;      ///< Array of received counts
 
-    double reserve_threshold;
+    OffsetStats* stats;
     int reserve_buckets;
-    int reserved;
-    int cancelled;
-    int* offsets;
-    int* anti_offsets;
+    double reserve_threshold;
     std::vector<RemoteEvent*>* reserves;
 };
 
