@@ -87,6 +87,14 @@ class BucketGVT : public CBase_BucketGVT {
     int* sent;          ///< Array of sent counts
     int* received;      ///< Array of received counts
 
+    int start_reductions;
+    int end_reductions;
+    int count_reductions;
+    int curr_count_reductions;
+    int failed_count_reductions;
+    int count_aborts;
+    int end_aborts;
+
     OffsetStats* stats;
     int reserve_buckets;
     double reserve_threshold;

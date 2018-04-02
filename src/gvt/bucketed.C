@@ -43,6 +43,19 @@ void BucketGVT::finalize() {
   std::string filename = "gvt_" + std::to_string(CkMyPe()) + ".out";
   outfile.open(filename);
   outfile << std::fixed << std::setprecision(2);
+
+  outfile << "==== REDUCTION STATISTICS ========" << std::endl;
+  outfile << "Start Reductions: " << start_reductions << std::endl;
+  outfile << "Count Reductions: " << count_reductions << std::endl;
+  outfile << "Failed Count Reductions: " << failed_count_reductions << std::endl;
+  outfile << "End Reductions: " << end_reductions << std::endl;
+  outfile << "Count Aborts: " << count_aborts << std::endl;
+  outfile << "End Aborts: " << end_aborts << std::endl;
+  outfile << "Total Reductions: "
+          << start_reductions + count_reductions + end_reductions << std::endl;
+  outfile << "Total Attempts: " << start_reductions << " Total Aborts: "
+          << count_aborts + end_aborts << std::endl << std::endl;
+
   if (g_tw_adaptive_buckets) {
     OffsetStats total;
     OffsetStats weighted;
@@ -128,12 +141,15 @@ void BucketGVT::gvt_begin() {
 }
 
 void BucketGVT::gvt_end(int count, int* invalid) {
+  end_reductions++;
   active = false;
 
   int num_valid = 0;
   while (!invalid[num_valid] && num_valid < count) { num_valid++; }
 
   if (num_valid == 0) {
+    end_aborts++;
+    failed_count_reductions += curr_count_reductions;
     attempt_gvt();
   } else {
     prev_gvt = curr_gvt;
@@ -166,6 +182,8 @@ void BucketGVT::attempt_gvt() {
 }
 
 void BucketGVT::all_ready(int num_buckets) {
+  start_reductions++;
+  curr_count_reductions = 0;
   send_counts(num_buckets);
 }
 
@@ -191,6 +209,8 @@ void BucketGVT::send_counts(int num_buckets) {
  * all that are still valid.
  */
 void BucketGVT::check_counts(int count, int* data) {
+  count_reductions++;
+  curr_count_reductions++;
   int num_buckets = count / 3;
   int num_valid = 0;
   bool completed = false;
@@ -205,6 +225,8 @@ void BucketGVT::check_counts(int count, int* data) {
     num_valid++;
   }
   if (num_valid == 0) {
+    count_aborts++;
+    failed_count_reductions += curr_count_reductions;
     active = false;
     attempt_gvt();
   } else if (!completed) {
