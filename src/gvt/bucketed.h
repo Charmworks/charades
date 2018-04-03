@@ -48,7 +48,7 @@ class BucketGVT : public CBase_BucketGVT {
      * within the current bucket, so reattempt the GVT. Otherwise, GVT is the
      * end of the bucket, so advance bucket and call Scheduler::gvt_done.
      */
-    void gvt_end(int count, int* invalid);  ///< If !invalid set new GVT and advance bucket
+    void gvt_end(int count);
 
     /** Returns 1 if the scheduler has passed the end of the current bucket */
     int buckets_passed() const;
@@ -74,7 +74,7 @@ class BucketGVT : public CBase_BucketGVT {
      * As long as invalid remains 0, call send_counts until sent == recvd. Then
      * trigger one last reduction to gvt_end to catch any last rollbacks.
      */
-    void check_counts(int count, int* data);
+    void check_counts(CkReductionMsg* msg);
 
     void consume(RemoteEvent* e); ///< Increment recvd and attempt GVT
     bool produce(RemoteEvent* e); ///< Increment sent and attempt GVT
@@ -84,17 +84,10 @@ class BucketGVT : public CBase_BucketGVT {
     Time max_ts;        ///< Max end ts used when bucket size doesn't divide end
     int total_buckets;  ///< Total number of buckets
     int curr_bucket;    ///< Index of current bucket
-    // TODO: We can make this a single array to avoid exra allocation for redns
-    int* sent;          ///< Array of sent counts
-    int* received;      ///< Array of received counts
+    int* counts;        ///< Array of sent and received counts
 
     int start_reductions;
-    int end_reductions;
     int count_reductions;
-    int curr_count_reductions;
-    int failed_count_reductions;
-    int count_aborts;
-    int end_aborts;
 
     OffsetStats* stats;
     int reserve_buckets;
