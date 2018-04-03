@@ -41,40 +41,42 @@ class BucketGVT : public CBase_BucketGVT {
 
     void finalize();
 
-    /** Calls attempt_gvt and Scheduler::gvt_resume */
+    /** Called periodically by scheduler to ensure GVT progress */
     void gvt_begin();
-    /**
-     * If invalid, then even though sent == received some PE has rolled back to
-     * within the current bucket, so reattempt the GVT. Otherwise, GVT is the
-     * end of the bucket, so advance bucket and call Scheduler::gvt_done.
-     */
-    void gvt_end(int count);
 
-    /** Returns 1 if the scheduler has passed the end of the current bucket */
+    /** Returns number of buckets the local scheduler instance has passed */
     int buckets_passed() const;
 
     /**
-     * Starts the GVT with a reduction to all_ready if passed_bucket() returns
-     * 1 and active is false. Called whenever a state update might mean it's
-     * time for a GVT computation, not just from gvt_begin.
+     * Starts the next GVT computation with a reduction to all_ready if active
+     * is false and buckets_passed() is at least 1.
      */
     void attempt_gvt();
 
-    bool attempt_cancel(RemoteEvent* anti);
-
-    /** Target of reduction signalling all PEs are ready, so call send_counts */
-    void all_ready(int min);
-    /** Contributes sent/recvd counts to sum redn along with validity bit */
-    void send_counts(int buckets);
+    /**
+     * Target of reduction signalling all PEs are ready with the minumum number
+     * of buckets passed by all schedulers.
+     */
+    void all_ready(int num_buckets);
 
     /**
-     * Reduction target that receives counts of all sent and received messages.
-     * If invalid is non-zero it means at least one PE has rolled back to within
-     * the bucket, so we can't continue yet and instead reattempt the GVT.
-     * As long as invalid remains 0, call send_counts until sent == recvd. Then
-     * trigger one last reduction to gvt_end to catch any last rollbacks.
+     * Contributes sent and recvd counts for the specified number of buckets, as
+     * well as the number of buckets we are still passed, to check_counts().
+     */
+    void send_counts(int num_buckets);
+
+    /**
+     * Target of the tuple reduction from send_counts() which contains the sent
+     * and recvd counts for relevant buckets as well as the minimum number of
+     * buckets passed by all PEs.
      */
     void check_counts(CkReductionMsg* msg);
+
+    /** Advances the GVT by the specified number of buckets */
+    void advance_gvt(int num_buckets);
+
+    /** Attempt to cancel adaptively held back events */
+    bool attempt_cancel(RemoteEvent* anti);
 
     void consume(RemoteEvent* e); ///< Increment recvd and attempt GVT
     bool produce(RemoteEvent* e); ///< Increment sent and attempt GVT
