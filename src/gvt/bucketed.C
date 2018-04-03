@@ -9,6 +9,9 @@
 #include <fstream>
 #include <iomanip>
 
+#define SENT_IDX(n) (n*2)
+#define RECV_IDX(n) (n*2+1)
+
 BucketGVT::BucketGVT() {
   gvt_name = "Bucket GVT";
   active = false;
@@ -26,11 +29,10 @@ BucketGVT::BucketGVT() {
     reserve_buckets = total_buckets;
   }
 
-  sent = new int[total_buckets];
-  received = new int[total_buckets];
+  counts = new int[total_buckets * 2];
   for (int i = 0; i < total_buckets; i++) {
-    sent[i] = 0;
-    received[i] = 0;
+    counts[SENT_IDX(i)] = 0;
+    counts[RECV_IDX(i)] = 0;
   }
 
   if (g_tw_adaptive_buckets) {
@@ -48,14 +50,8 @@ void BucketGVT::finalize() {
   outfile << "==== REDUCTION STATISTICS ========" << std::endl;
   outfile << "Start Reductions: " << start_reductions << std::endl;
   outfile << "Count Reductions: " << count_reductions << std::endl;
-  outfile << "Failed Count Reductions: " << failed_count_reductions << std::endl;
-  outfile << "End Reductions: " << end_reductions << std::endl;
-  outfile << "Count Aborts: " << count_aborts << std::endl;
-  outfile << "End Aborts: " << end_aborts << std::endl;
   outfile << "Total Reductions: "
-          << start_reductions + count_reductions + end_reductions << std::endl;
-  outfile << "Total Attempts: " << start_reductions << " Total Aborts: "
-          << count_aborts + end_aborts << std::endl << std::endl;
+          << start_reductions + count_reductions << std::endl;
 
   if (g_tw_adaptive_buckets) {
     OffsetStats total;
@@ -141,32 +137,20 @@ void BucketGVT::gvt_begin() {
   scheduler->gvt_resume();
 }
 
-void BucketGVT::gvt_end(int count, int* invalid) {
-  end_reductions++;
-  active = false;
+void BucketGVT::gvt_end(int count) {
+  prev_gvt = curr_gvt;
+  curr_bucket += count;
+  curr_gvt = curr_bucket * bucket_size;
 
-  int num_valid = 0;
-  while (!invalid[num_valid] && num_valid < count) { num_valid++; }
-
-  if (num_valid == 0) {
-    end_aborts++;
-    failed_count_reductions += curr_count_reductions;
-    attempt_gvt();
-  } else {
-    prev_gvt = curr_gvt;
-    curr_bucket += num_valid;
-    curr_gvt = curr_bucket * bucket_size;
-
-    if (g_tw_adaptive_buckets && curr_bucket < total_buckets) {
-      for (RemoteEvent* e : reserves[curr_bucket]) {
-        stats[e->offset].released++;
-        charm_event_release(e);
-      }
-      reserves[curr_bucket].clear();
+  if (g_tw_adaptive_buckets && curr_bucket < total_buckets) {
+    for (RemoteEvent* e : reserves[curr_bucket]) {
+      stats[e->offset].released++;
+      charm_event_release(e);
     }
-
-    scheduler->gvt_done(curr_gvt);
+    reserves[curr_bucket].clear();
   }
+
+  scheduler->gvt_done(curr_gvt);
 }
 
 int BucketGVT::buckets_passed() const {
@@ -184,24 +168,20 @@ void BucketGVT::attempt_gvt() {
 
 void BucketGVT::all_ready(int num_buckets) {
   start_reductions++;
-  curr_count_reductions = 0;
   send_counts(num_buckets);
 }
 
 void BucketGVT::send_counts(int num_buckets) {
-  int* data = new int[3 * num_buckets];
   int num_passed = buckets_passed();
 
-  for (int i = 0; i < num_buckets; i++) {
-    data[i*3] = sent[curr_bucket + i];
-    data[i*3+1] = received[curr_bucket + i];
-    data[i*3+2] = num_passed < i + 1 ? 1 : 0;
-  }
-
-  contribute(3 * num_buckets * sizeof(int), data, CkReduction::sum_int,
-      CkCallback(CkReductionTarget(BucketGVT, check_counts), thisProxy));
-
-  delete[] data;
+  CkReduction::tupleElement tuple[] = {
+    CkReduction::tupleElement(sizeof(int)*2*num_buckets, &counts[SENT_IDX(curr_bucket)], CkReduction::sum_int),
+    CkReduction::tupleElement(sizeof(int), &num_passed, CkReduction::min_int)
+  };
+  CkReductionMsg* msg = CkReductionMsg::buildFromTuple(tuple, 2);
+  CkCallback cb(CkIndex_BucketGVT::check_counts(0), thisProxy);
+  msg->setCallback(cb);
+  contribute(msg);
 }
 
 /**
@@ -209,50 +189,42 @@ void BucketGVT::send_counts(int num_buckets) {
  * any have completed then contribute to gvt_end. Otherwise, recheck counts for
  * all that are still valid.
  */
-void BucketGVT::check_counts(int count, int* data) {
+void BucketGVT::check_counts(CkReductionMsg* msg) {
   count_reductions++;
-  curr_count_reductions++;
-  int num_buckets = count / 3;
-  int num_valid = 0;
-  bool completed = false;
-  while (!data[num_valid * 3 + 2] && num_valid < num_buckets) {
-    int sent = data[num_valid*3];
-    int recvd = data[num_valid*3+1];
-    if (sent != recvd && completed) {
-      break;
-    } else if (sent == recvd) {
-      completed = true;
-    }
-    num_valid++;
+
+  int size;
+  CkReduction::tupleElement* result;
+  msg->toTuple(&result, &size);
+
+  int num_buckets = (result[0].dataSize / sizeof(int)) / 2;
+  int valid_buckets = *((int*)result[1].data);
+
+  int* counts = (int*)result[0].data;
+
+  int completed_buckets = 0;
+  while (completed_buckets < valid_buckets && completed_buckets < num_buckets &&
+      counts[SENT_IDX(completed_buckets)] == counts[RECV_IDX(completed_buckets)]) {
+    completed_buckets++;
   }
-  if (num_valid == 0) {
-    count_aborts++;
-    failed_count_reductions += curr_count_reductions;
+  if (completed_buckets) gvt_end(completed_buckets);
+  if (valid_buckets - completed_buckets) {
+    send_counts(valid_buckets - completed_buckets);
+  } else {
     active = false;
     attempt_gvt();
-  } else if (!completed) {
-    send_counts(num_valid);
-  } else {
-    int* invalid = new int[num_valid];
-    int num_passed = buckets_passed();
-    for (int i = 0; i < num_valid; i++) {
-      invalid[i] = num_passed < i + 1 ? 1 : 0;
-    }
-    contribute(num_valid * sizeof(int), invalid, CkReduction::sum_int,
-      CkCallback(CkReductionTarget(BucketGVT, gvt_end), thisProxy));
-
-    delete[] invalid;
   }
+
+  delete[] result;
 }
 
 void BucketGVT::consume(RemoteEvent* e) {
-  received[e->phase]++;
+  counts[RECV_IDX(e->phase)]++;
   attempt_gvt();
 }
 
 bool BucketGVT::produce(RemoteEvent* e) {
   e->phase = e->ts / bucket_size;
-  sent[e->phase]++;
+  counts[SENT_IDX(e->phase)]++;
   attempt_gvt();
 
   if (g_tw_adaptive_buckets) {
@@ -263,7 +235,7 @@ bool BucketGVT::produce(RemoteEvent* e) {
       if (attempt_cancel(e)) {
         PE_STATS(remote_cancels)++;
         PE_STATS(anti_cancels)++;
-        sent[phase] -= 2;
+        counts[SENT_IDX(phase)] -= 2;
         return false;
       } else {
         return true;

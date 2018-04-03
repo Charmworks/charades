@@ -33,7 +33,6 @@ module gvtmanager {
   group BucketGVT : GVTManager {
     entry [notrace] BucketGVT();
     entry [notrace, reductiontarget] void all_ready(int min);
-    entry [notrace, reductiontarget] void check_counts(int count, int data[count]);
-    entry [notrace, reductiontarget] void gvt_end(int count, int invalid[count]);
+    entry [notrace] void check_counts(CkReductionMsg* msg);
   };
 }
