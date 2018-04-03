@@ -79,12 +79,14 @@ void BucketGVT::finalize() {
                 << " (" << stats[i].held_ratio() * 100 << "%)" << std::endl;
 
         outfile << " Cancelled: " << stats[i].cancelled
-                << " (" << stats[i].cancelled_ratio() * 100 << "%)" << std::endl;
+                << " (" << stats[i].cancelled_ratio() * 100 << "%)"
+                << std::endl;
 
         outfile << " Released: " << stats[i].released
                 << " (" << stats[i].released_ratio() * 100 << "%)" << std::endl;
 
-        outfile << " Average lag: " << stats[i].average_lag() << std::endl << std::endl;
+        outfile << " Average lag: " << stats[i].average_lag() << std::endl
+                << std::endl;
       }
     }
 
@@ -101,12 +103,103 @@ void BucketGVT::finalize() {
 
     outfile << " Released: " << total.released
             << " (" << total.released_ratio() * 100 << "%)" << std::endl;
-    outfile << " Average lag: " << total.average_lag() << std::endl << std::endl;
+    outfile << " Average lag: " << total.average_lag() << std::endl
+            << std::endl;
 
-    outfile << "Average event offset: " << (double)weighted.regular / total.regular << std::endl;
-    outfile << "Average anti offset: " << (double)weighted.anti / total.anti << std::endl;
+    outfile << "Average event offset: "
+            << (double)weighted.regular / total.regular << std::endl;
+    outfile << "Average anti offset: "
+            << (double)weighted.anti / total.anti << std::endl;
   }
   outfile.close();
+}
+
+void BucketGVT::gvt_begin() {
+  attempt_gvt();
+  scheduler->gvt_resume();
+}
+
+int BucketGVT::buckets_passed() const {
+  return (std::min(scheduler->get_min_time(), max_ts) - curr_gvt) / bucket_size;
+}
+
+void BucketGVT::attempt_gvt() {
+  int num_passed = buckets_passed();
+  if (num_passed > 0 && !active) {
+    active = true;
+    contribute(sizeof(int), &num_passed, CkReduction::min_int,
+        CkCallback(CkReductionTarget(BucketGVT, all_ready), thisProxy));
+  }
+}
+
+
+void BucketGVT::all_ready(int num_buckets) {
+  start_reductions++;
+  send_counts(num_buckets);
+}
+
+void BucketGVT::send_counts(int num_buckets) {
+  int num_passed = buckets_passed();
+
+  CkReduction::tupleElement tuple[] = {
+    CkReduction::tupleElement(sizeof(int)*2*num_buckets,
+                              &counts[SENT_IDX(curr_bucket)],
+                              CkReduction::sum_int),
+    CkReduction::tupleElement(sizeof(int), &num_passed, CkReduction::min_int)
+  };
+  CkReductionMsg* msg = CkReductionMsg::buildFromTuple(tuple, 2);
+  CkCallback cb(CkIndex_BucketGVT::check_counts(0), thisProxy);
+  msg->setCallback(cb);
+  contribute(msg);
+}
+
+void BucketGVT::check_counts(CkReductionMsg* msg) {
+  count_reductions++;
+
+  int size;
+  CkReduction::tupleElement* result;
+  msg->toTuple(&result, &size);
+
+  int num_buckets = (result[0].dataSize / sizeof(int)) / 2;
+  int valid_buckets = *((int*)result[1].data);
+
+  int* counts = (int*)result[0].data;
+
+  /** Loop to find out how many of the valid buckets are completed */
+  int completed_buckets = 0;
+  while (completed_buckets < valid_buckets && completed_buckets < num_buckets &&
+      counts[SENT_IDX(completed_buckets)] == counts[RECV_IDX(completed_buckets)]) {
+    completed_buckets++;
+  }
+
+  /** Advance the GVT past the completed buckets */
+  if (completed_buckets) advance_gvt(completed_buckets);
+
+  /** If there are still valid buckets then continue to send counts */
+  if (valid_buckets - completed_buckets) {
+    send_counts(valid_buckets - completed_buckets);
+  } else {
+    active = false;
+    attempt_gvt();
+  }
+
+  delete[] result;
+}
+
+void BucketGVT::advance_gvt(int num_buckets) {
+  prev_gvt = curr_gvt;
+  curr_bucket += num_buckets;
+  curr_gvt = curr_bucket * bucket_size;
+
+  if (g_tw_adaptive_buckets && curr_bucket < total_buckets) {
+    for (RemoteEvent* e : reserves[curr_bucket]) {
+      stats[e->offset].released++;
+      charm_event_release(e);
+    }
+    reserves[curr_bucket].clear();
+  }
+
+  scheduler->gvt_done(curr_gvt);
 }
 
 bool key_matches(RemoteEvent* e1, RemoteEvent* e2) {
@@ -130,91 +223,6 @@ bool BucketGVT::attempt_cancel(RemoteEvent* anti) {
   } else {
     return false;
   }
-}
-
-void BucketGVT::gvt_begin() {
-  attempt_gvt();
-  scheduler->gvt_resume();
-}
-
-void BucketGVT::gvt_end(int count) {
-  prev_gvt = curr_gvt;
-  curr_bucket += count;
-  curr_gvt = curr_bucket * bucket_size;
-
-  if (g_tw_adaptive_buckets && curr_bucket < total_buckets) {
-    for (RemoteEvent* e : reserves[curr_bucket]) {
-      stats[e->offset].released++;
-      charm_event_release(e);
-    }
-    reserves[curr_bucket].clear();
-  }
-
-  scheduler->gvt_done(curr_gvt);
-}
-
-int BucketGVT::buckets_passed() const {
-  return (int)((std::min(scheduler->get_min_time(), max_ts) - curr_gvt) / bucket_size);
-}
-
-void BucketGVT::attempt_gvt() {
-  int num_passed = buckets_passed();
-  if (num_passed > 0 && !active) {
-    active = true;
-    contribute(sizeof(int), &num_passed, CkReduction::min_int,
-        CkCallback(CkReductionTarget(BucketGVT, all_ready), thisProxy));
-  }
-}
-
-void BucketGVT::all_ready(int num_buckets) {
-  start_reductions++;
-  send_counts(num_buckets);
-}
-
-void BucketGVT::send_counts(int num_buckets) {
-  int num_passed = buckets_passed();
-
-  CkReduction::tupleElement tuple[] = {
-    CkReduction::tupleElement(sizeof(int)*2*num_buckets, &counts[SENT_IDX(curr_bucket)], CkReduction::sum_int),
-    CkReduction::tupleElement(sizeof(int), &num_passed, CkReduction::min_int)
-  };
-  CkReductionMsg* msg = CkReductionMsg::buildFromTuple(tuple, 2);
-  CkCallback cb(CkIndex_BucketGVT::check_counts(0), thisProxy);
-  msg->setCallback(cb);
-  contribute(msg);
-}
-
-/**
- * Check all counts sent and see if any match and are therefore completed. If
- * any have completed then contribute to gvt_end. Otherwise, recheck counts for
- * all that are still valid.
- */
-void BucketGVT::check_counts(CkReductionMsg* msg) {
-  count_reductions++;
-
-  int size;
-  CkReduction::tupleElement* result;
-  msg->toTuple(&result, &size);
-
-  int num_buckets = (result[0].dataSize / sizeof(int)) / 2;
-  int valid_buckets = *((int*)result[1].data);
-
-  int* counts = (int*)result[0].data;
-
-  int completed_buckets = 0;
-  while (completed_buckets < valid_buckets && completed_buckets < num_buckets &&
-      counts[SENT_IDX(completed_buckets)] == counts[RECV_IDX(completed_buckets)]) {
-    completed_buckets++;
-  }
-  if (completed_buckets) gvt_end(completed_buckets);
-  if (valid_buckets - completed_buckets) {
-    send_counts(valid_buckets - completed_buckets);
-  } else {
-    active = false;
-    attempt_gvt();
-  }
-
-  delete[] result;
 }
 
 void BucketGVT::consume(RemoteEvent* e) {
