@@ -81,6 +81,7 @@ class BucketGVT : public CBase_BucketGVT {
 
   private:
     Time bucket_size;   ///< Size of each bucket
+    Time max_ts;        ///< Max end ts used when bucket size doesn't divide end
     int total_buckets;  ///< Total number of buckets
     int curr_bucket;    ///< Index of current bucket
     // TODO: We can make this a single array to avoid exra allocation for redns

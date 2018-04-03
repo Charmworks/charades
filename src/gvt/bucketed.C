@@ -17,6 +17,7 @@ BucketGVT::BucketGVT() {
   curr_bucket = 0;
   bucket_size = g_tw_gvt_bucket_size;
   total_buckets = ceil(g_tw_ts_end / bucket_size);
+  max_ts = total_buckets * bucket_size;
 
   reserve_threshold = g_tw_reserve_threshold;
   if (g_tw_reserve_buckets != 0) {
@@ -169,7 +170,7 @@ void BucketGVT::gvt_end(int count, int* invalid) {
 }
 
 int BucketGVT::buckets_passed() const {
-  return (int)((std::min(scheduler->get_min_time(), g_tw_ts_end) - curr_gvt) / bucket_size);
+  return (int)((std::min(scheduler->get_min_time(), max_ts) - curr_gvt) / bucket_size);
 }
 
 void BucketGVT::attempt_gvt() {
