@@ -21,6 +21,7 @@ BucketGVT::BucketGVT() {
   bucket_size = g_tw_gvt_bucket_size;
   total_buckets = ceil(g_tw_ts_end / bucket_size);
   max_ts = total_buckets * bucket_size;
+  clear_buckets = g_tw_clear_buckets ? g_tw_clear_buckets : total_buckets;
 
   reserve_threshold = g_tw_reserve_threshold;
   if (g_tw_reserve_buckets != 0) {
@@ -192,11 +193,16 @@ void BucketGVT::advance_gvt(int num_buckets) {
   curr_gvt = curr_bucket * bucket_size;
 
   if (g_tw_adaptive_buckets && curr_bucket < total_buckets) {
-    for (RemoteEvent* e : reserves[curr_bucket]) {
-      stats[e->offset].released++;
-      charm_event_release(e);
-    }
-    reserves[curr_bucket].clear();
+    int bucket = curr_bucket;
+    int last_bucket = std::min(total_buckets, curr_bucket + clear_buckets);
+    do {
+      for (RemoteEvent* e : reserves[bucket]) {
+        stats[e->offset].released++;
+        charm_event_release(e);
+      }
+      reserves[bucket].clear();
+      bucket++;
+    } while (bucket < last_bucket);
   }
 
   scheduler->gvt_done(curr_gvt);
