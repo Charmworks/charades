@@ -93,6 +93,7 @@ class BucketGVT : public CBase_BucketGVT {
 
     OffsetStats* stats;
     int reserve_buckets;
+    int clear_buckets;
     double reserve_threshold;
     std::vector<RemoteEvent*>* reserves;
 };
