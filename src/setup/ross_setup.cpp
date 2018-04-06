@@ -38,6 +38,7 @@ void tw_init(int argc, char** tmp_argv) {
     TWOPT_UINT("gvt-reserve-buckets", g_tw_reserve_buckets, "Bucketed reserve threshold"),
     TWOPT_UINT("gvt-adaptive-buckets", g_tw_adaptive_buckets, "Use the adaptive bucketed GVT"),
     TWOPT_UINT("gvt-clear-buckets", g_tw_clear_buckets, "Number of buckets to clear after GVT"),
+    TWOPT_UINT("gvt-clear-lag", g_tw_clear_lag, "Number of GVTs to wait before clearing a bucket"),
     TWOPT_UINT("ldb-first", g_tw_ldb_first, "First LB Interval"),
     TWOPT_UINT("ldb-interval", g_tw_ldb_interval, "Load Balancing Interval"),
     TWOPT_UINT("max-ldb", g_tw_max_ldb, "Max number of load balancing calls"),

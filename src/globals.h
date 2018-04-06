@@ -47,6 +47,7 @@ extern uint32_t g_tw_async_reduction; ///< use asynchronous reductions in GVTs
 extern double   g_tw_reserve_threshold;
 extern uint32_t g_tw_reserve_buckets;
 extern uint32_t g_tw_adaptive_buckets;
+extern uint32_t g_tw_clear_lag;
 extern uint32_t g_tw_clear_buckets;
 ///@}
 
