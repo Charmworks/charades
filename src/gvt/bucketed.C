@@ -38,7 +38,7 @@ BucketGVT::BucketGVT() {
 
   if (g_tw_adaptive_buckets) {
     stats = new OffsetStats[total_buckets];
-    reserves = new std::vector<RemoteEvent*>[total_buckets];
+    reserves = new std::list<RemoteEvent*>[total_buckets];
   }
 }
 
@@ -196,11 +196,17 @@ void BucketGVT::advance_gvt(int num_buckets) {
     int bucket = curr_bucket;
     int last_bucket = std::min(total_buckets, curr_bucket + clear_buckets);
     do {
-      for (RemoteEvent* e : reserves[bucket]) {
-        stats[e->offset].released++;
-        charm_event_release(e);
+      auto iter = reserves[bucket].begin();
+      while (iter != reserves[bucket].end()) {
+        if ((*iter)->offset - ((*iter)->phase - curr_bucket) > g_tw_clear_lag ||
+            bucket == curr_bucket) {
+          stats[(*iter)->offset].released++;
+          charm_event_release(*iter);
+          iter = reserves[bucket].erase(iter);
+        } else {
+          iter++;
+        }
       }
-      reserves[bucket].clear();
       bucket++;
     } while (bucket < last_bucket);
   }
@@ -213,7 +219,7 @@ bool key_matches(RemoteEvent* e1, RemoteEvent* e2) {
 }
 
 bool BucketGVT::attempt_cancel(RemoteEvent* anti) {
-  std::vector<RemoteEvent*>& bucket = reserves[anti->phase];
+  std::list<RemoteEvent*>& bucket = reserves[anti->phase];
   auto iter = bucket.begin();
   while (iter != bucket.end()) {
     if (key_matches(anti, *iter)) break;
@@ -260,7 +266,7 @@ bool BucketGVT::produce(RemoteEvent* e) {
       if (e->offset > 0 &&
           (e->offset > reserve_buckets ||
           stats[e->offset].anti_ratio() > reserve_threshold)) {
-        reserves[e->phase].push_back(e);
+        reserves[e->phase].push_front(e);
         stats[e->offset].held++;
         PE_STATS(remote_holds)++;
         return false;

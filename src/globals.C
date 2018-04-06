@@ -50,6 +50,7 @@ uint32_t g_tw_async_reduction;
 double   g_tw_reserve_threshold;
 uint32_t g_tw_reserve_buckets;
 uint32_t g_tw_adaptive_buckets;
+uint32_t g_tw_clear_lag;
 uint32_t g_tw_clear_buckets;
 ///@}
 
@@ -129,6 +130,7 @@ void clear_globals() {
   g_tw_reserve_threshold = 1.0;
   g_tw_reserve_buckets = 0;
   g_tw_adaptive_buckets = 0;
+  g_tw_clear_lag = 0;
   g_tw_clear_buckets = 1;
 
   g_tw_ldb_first     = 0;

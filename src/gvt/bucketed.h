@@ -5,6 +5,8 @@
 
 #include "event.h"
 
+#include <list>
+
 struct OffsetStats {
   int regular, anti;
   int held, cancelled, released;
@@ -95,7 +97,7 @@ class BucketGVT : public CBase_BucketGVT {
     int reserve_buckets;
     int clear_buckets;
     double reserve_threshold;
-    std::vector<RemoteEvent*>* reserves;
+    std::list<RemoteEvent*>* reserves;
 };
 
 #endif
