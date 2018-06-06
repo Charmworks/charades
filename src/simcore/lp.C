@@ -134,12 +134,22 @@ LP::LP() : next_token(this), uniqID(0), min_cancel_q(DBL_MAX),
 }
 
 void LP::load_balance() {
+#ifdef LB_TRACING
+  loads.push_back(std::vector<double>(14));
+  for (int i = 0; i < 14; i++) {
+    loads.back()[i] = getMetricValue(i);
+  }
+#endif
   /** Just call AtSync to trigger automatic load balancing */
   AtSync();
 }
 
 void LP::ResumeFromSync() {
   DEBUG_LP("Now on PE %i\n", CkMyPe());
+#ifdef LB_TRACING
+  std::vector<double> new_loads(loads.back());
+  loads.push_back(new_loads);
+#endif
   /** Do a reduction to inform the scheduler that balancing is complete */
   contribute(
       CkCallback(CkReductionTarget(DistributedScheduler, balancing_complete),
@@ -187,6 +197,66 @@ double timeToWeight(Time ts) {
 }
 ///@}
 
+double LP::getMetricValue(int which) {
+  double metric;
+  switch(which) {
+    case 0:
+      metric = getObjTime();
+      break;
+    case 1:
+      metric = timeToWeight(current_time);
+      break;
+    case 2:
+      metric = timeToWeight(events.min());
+      break;
+    case 3:
+      metric = timeToWeight(committed_time);
+      break;
+    case 4:
+      metric = timeToWeight(processed_events.min());
+      break;
+    case 5:
+      for (int i = 0; i < events.size(); i++) {
+        metric += timeToWeight(events.get_temp_event_buffer()[i]->ts);
+      }
+      break;
+    case 6:
+      metric = committed_events;
+      break;
+    case 7:
+      metric = rolled_back_events;
+      break;
+    case 8:
+      metric = processed_events.size();
+      break;
+    case 9:
+      metric = processed_events.size() + committed_events;
+      break;
+    case 10:
+      metric = processed_events.size() + committed_events + rolled_back_events;
+      break;
+    case 11:
+      metric = events.size();
+      break;
+    case 12:
+      metric = events.size() + processed_events.size();
+      break;
+    case 13:
+      metric = timeToWeight(latest_time);
+      break;
+    default:
+      CkAbort("Invalid load balancing metric\n");
+      break;
+  }
+  return metric;
+}
+
+#ifdef LB_TRACING
+double LP::getMostRecentMetricValue(int which) {
+  return loads.back()[which];
+}
+#endif
+
 /**
  * Sets the weight of this LP chare based on an application specific metric. The
  * metric used and how it is used is configured at runtime.
@@ -195,67 +265,10 @@ double timeToWeight(Time ts) {
  * \see g_tw_metric_invert
  */
 void LP::UserSetLBLoad() {
-  double metric;
-  switch(g_tw_ldb_metric) {
-    case 1:
-      if (thisIndex == 0) CkPrintf("Metric: Current Time\n");
-      metric = timeToWeight(current_time);
-      break;
-    case 2:
-      if (thisIndex == 0) CkPrintf("Metric: Next Event Time\n");
-      metric = timeToWeight(events.min());
-      break;
-    case 3:
-      if (thisIndex == 0) CkPrintf("Metric: Latest Commit Time\n");
-      metric = timeToWeight(committed_time);
-      break;
-    case 4:
-      if (thisIndex == 0) CkPrintf("Metric: Oldest Event Time\n");
-      metric = timeToWeight(processed_events.min());
-      break;
-    case 5:
-      if (thisIndex == 0) CkPrintf("Metric: Weighted Pending Events\n");
-      for (int i = 0; i < events.size(); i++) {
-        metric += timeToWeight(events.get_temp_event_buffer()[i]->ts);
-      }
-      break;
-    case 6:
-      if (thisIndex == 0) CkPrintf("Metric: Committed Events\n");
-      metric = committed_events;
-      break;
-    case 7:
-      if (thisIndex == 0) CkPrintf("Metric: Rolled Back Events\n");
-      metric = rolled_back_events;
-      break;
-    case 8:
-      if (thisIndex == 0) CkPrintf("Metric: Processed Events\n");
-      metric = processed_events.size();
-      break;
-    case 9:
-      if (thisIndex == 0) CkPrintf("Metric: Potential Committed Events\n");
-      metric = processed_events.size() + committed_events;
-      break;
-    case 10:
-      if (thisIndex == 0) CkPrintf("Metric: All Executed Events\n");
-      metric = processed_events.size() + committed_events + rolled_back_events;
-      break;
-    case 11:
-      if (thisIndex == 0) CkPrintf("Metric: Pending Events\n");
-      metric = events.size();
-      break;
-    case 12:
-      if (thisIndex == 0) CkPrintf("Metric: Active Events\n");
-      metric = events.size() + processed_events.size();
-      break;
-    case 13:
-      if (thisIndex == 0) CkPrintf("Metric: Latest Time\n");
-      metric = timeToWeight(latest_time);
-      break;
-    default:
-      CkAbort("Invalid load balancing metric\n");
-      break;
+  if (thisIndex == 0) {
+    CkPrintf("Metric: %s\n", g_tw_metric_names[g_tw_ldb_metric]);
   }
-  DEBUG_LP("On PE %i, Weight: %0.2f\n", CkMyPe(), metric);
+  double metric = getMetricValue(g_tw_ldb_metric);
   setObjTime(metric);
 }
 
@@ -272,6 +285,12 @@ void LP::init() {
 }
 
 void LP::finalize() {
+#ifdef LB_TRACING
+  loads.push_back(std::vector<double>(14));
+  for (int i = 0; i < 14; i++) {
+    loads.back()[i] = getMetricValue(i);
+  }
+#endif
   for (int i = 0 ; i < lp_structs.size(); i++) {
     lp_structs[i].type->finalize(lp_structs[i].state, &lp_structs[i]);
   }

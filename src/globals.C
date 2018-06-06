@@ -57,6 +57,24 @@ uint32_t g_tw_max_ldb;
 uint32_t g_tw_ldb_metric;
 uint32_t g_tw_metric_ts_abs;
 uint32_t g_tw_metric_invert;
+
+const char* const g_tw_metric_names[] = {
+    "CPU Time",
+    "Current Virtual Time",
+    "Next Pending Time",
+    "Most Recent Committed Time",
+    "Most Recent Executed Time",
+    "Weighted Pending Events",
+    "Committed Events",
+    "Rolled Back Events",
+    "Processed Events",
+    "Past Events (Processed + Committed)",
+    "Past Event + Rolled Back Events",
+    "Pending Events",
+    "Active Events (Pending + Processed)",
+    "Latest Time Reached"
+};
+
 ///@}
 
 /** \name RNG Configuration */

@@ -53,6 +53,8 @@ extern uint32_t g_tw_max_ldb;       ///< max number of times to call lb
 extern uint32_t g_tw_ldb_metric;    ///< metric used to measure LP load
 extern uint32_t g_tw_metric_ts_abs; ///< use absolute time or not
 extern uint32_t g_tw_metric_invert; ///< whether or not to invert metric
+
+extern const char* const g_tw_metric_names[];
 ///@}
 
 /** \name RNG Configuration *////@{

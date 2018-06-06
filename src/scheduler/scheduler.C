@@ -11,6 +11,8 @@
 #include "util.h"
 
 #include <float.h> // Included for DBL_MAX
+#include <fstream>
+#include <iomanip>
 
 CkGroupID scheduler_id;
 
@@ -59,12 +61,42 @@ void Scheduler::start_simulation() {
   thisProxy[CkMyPe()].execute();
 }
 
+#ifdef LB_TRACING
+void Scheduler::dump_lb_stats() {
+  std::ofstream outfile;
+  std::string filename = "lb_" + std::to_string(CkMyPe()) + ".out";
+  outfile.open(filename);
+  outfile << std::fixed << std::setprecision(2);
+
+  outfile << "==== LB STATISTICS ========" << std::endl;
+
+  for (int i = 0; i < loads.size(); i++) {
+    outfile << "==== STAT ITERATION " << i << " ============" << std::endl;
+    for (int j = 0; j < 14; j++) {
+      outfile << i << " " << j << " " << loads[i][j] << " (" << g_tw_metric_names[j] << ")" << std::endl;
+    }
+  }
+  outfile.close();
+}
+#endif
+
 void Scheduler::end_simulation() {
   double total_time = CmiWallTimer() - start_time;
 
   for (LP* lp : registered_lps) {
     lp->finalize();
   }
+
+#ifdef LB_TRACING
+  loads.push_back(vector<double>(14));
+  for (LP* lp : registered_lps) {
+    for (int i = 0; i < 14; i++) {
+      loads.back()[i] += lp->getMostRecentMetricValue(i);
+    }
+    lp->finalize();
+  }
+  dump_lb_stats();
+#endif
 
   cumulative_stats->total_time += total_time;
   cumulative_stats->finalize();
@@ -297,8 +329,16 @@ void DistributedScheduler::start_balancing() {
 #ifdef DETAILED_TIMING
   lb_start = CmiWallTimer();
 #endif
+#ifdef LB_TRACING
+  loads.push_back(vector<double>(14));
+#endif
   for (LP* lp : registered_lps) {
     lp->load_balance();
+#ifdef LB_TRACING
+    for (int i = 0; i < 14; i++) {
+      loads.back()[i] += lp->getMostRecentMetricValue(i);
+    }
+#endif
   }
 }
 
@@ -307,6 +347,14 @@ void DistributedScheduler::balancing_complete() {
 #ifdef DETAILED_TIMING
   double lb_time = CmiWallTimer() - lb_start;
   PE_STATS(lb_time) += lb_time;
+#endif
+#ifdef LB_TRACING
+  loads.push_back(vector<double>(14));
+  for (LP* lp : registered_lps) {
+    for (int i = 0; i < 14; i++) {
+      loads.back()[i] += lp->getMostRecentMetricValue(i);
+    }
+  }
 #endif
   PE_STATS(total_lbs)++;
   lb_trigger->reset();

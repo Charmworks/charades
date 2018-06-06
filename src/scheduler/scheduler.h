@@ -42,6 +42,11 @@ class Scheduler : public CBase_Scheduler {
     std::list<LP*> registered_lps;
     tw_rng * rng;     /**< ROSS rng stream */
 
+#ifdef LB_TRACING
+    std::vector<std::vector<double>> loads;
+    void dump_lb_stats();
+#endif
+
   public:
     // TODO: Globals may not be needed once event handling is moved to scheduler
     Globals* globals;             /**< Global variables per PE */

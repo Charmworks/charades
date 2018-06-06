@@ -134,6 +134,10 @@ class LP : public CBase_LP {
     int rolled_back_events; ///< Number of events rolled back since last LB
     Time committed_time;    ///< Timestamp of most recent committed event
     Time latest_time;       ///< Latest timestamp reached by this LP
+
+#ifdef LB_TRACING
+    std::vector<std::vector<double>> loads;
+#endif
     ///@}
 
     /**
@@ -207,6 +211,11 @@ class LP : public CBase_LP {
     void ResumeFromSync();
     /** Called by the runtime system to get the load of this chare */
     void UserSetLBLoad();
+
+    double getMetricValue(int);
+#ifdef LB_TRACING
+    double getMostRecentMetricValue(int);
+#endif
     ///@}
 
     /**

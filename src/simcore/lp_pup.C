@@ -61,6 +61,10 @@ void LP::pup(PUP::er& p) {
     }
   }
 
+#ifdef LB_TRACING
+  p | loads;
+#endif
+
   // Event Queue Pupping
   Event** pending;
   Event** processed;
