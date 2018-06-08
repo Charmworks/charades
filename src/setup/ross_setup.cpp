@@ -52,6 +52,7 @@ void tw_init(int argc, char** tmp_argv) {
     TWOPT_UINT("buffer-size", g_tw_max_events_buffered, "Number of events buffered"),
     TWOPT_UINT("msg-buffer-size", g_tw_max_remote_events_buffered, "Number of events buffered"),
     TWOPT_UINT("report-interval", gvt_print_interval, "percent of runtime to print GVT"),
+    TWOPT_CHAR("output-dir", g_output_dir, "output directory for extra logs"),
     TWOPT_END()
   };
 

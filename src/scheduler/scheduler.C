@@ -64,7 +64,7 @@ void Scheduler::start_simulation() {
 #ifdef LB_TRACING
 void Scheduler::dump_lb_stats() {
   std::ofstream outfile;
-  std::string filename = "lb_" + std::to_string(CkMyPe()) + ".out";
+  std::string filename = std::string(g_output_dir) + "lb_" + std::to_string(CkMyPe()) + ".out";
   outfile.open(filename);
   outfile << std::fixed << std::setprecision(2);
 

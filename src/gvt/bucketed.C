@@ -44,7 +44,7 @@ BucketGVT::BucketGVT() {
 
 void BucketGVT::finalize() {
   std::ofstream outfile;
-  std::string filename = "gvt_" + std::to_string(CkMyPe()) + ".out";
+  std::string filename = std::string(g_output_dir) + "gvt_" + std::to_string(CkMyPe()) + ".out";
   outfile.open(filename);
   outfile << std::fixed << std::setprecision(2);
 

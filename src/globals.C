@@ -95,6 +95,8 @@ uint32_t g_tw_rng_default;
 int32_t  g_tw_expected_events;
 uint32_t gvt_print_interval;
 uint32_t g_tw_stat_interval;
+
+char g_output_dir[256];
 ///@}
 
 /**

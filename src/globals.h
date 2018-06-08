@@ -73,6 +73,8 @@ extern uint32_t g_tw_rng_default; ///< \todo documentation needed
 extern int32_t  g_tw_expected_events; ///< expected number of committed events
 extern uint32_t gvt_print_interval;   ///< frequency of progress print outs
 extern uint32_t g_tw_stat_interval;   ///< frequency of logging stats (in GVTs)
+
+extern char g_output_dir[256];        ///< output directory for extra logging
 ///@}
 
 class EventBuffer;
