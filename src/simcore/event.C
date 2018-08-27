@@ -34,6 +34,13 @@ bool CustomEventComparator::operator()(const Event* e1, const Event* e2) {
   }
 }
 
+Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender, size_t size) {
+  RemoteEvent* msg = new (size) RemoteEvent();
+  msg->type_id = get_msg_id<void*>();
+  msg->type_size = size;
+  return event_alloc(msg, dest_gid, offset, sender);
+}
+
 Event* event_alloc() {
   return PE_VALUE(event_buffer)->get_event();
 };

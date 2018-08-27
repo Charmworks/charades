@@ -18,6 +18,7 @@ void tw_init(int argc, char** argv) {
   clear_globals();
   charm_init(argc, argv);
   parse_command_line(CmiGetArgc(argv), argv);
+  get_msg_id<void *>();
 }
 
 void tw_create_simulation(LPFactory* factory) {

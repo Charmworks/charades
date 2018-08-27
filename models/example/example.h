@@ -19,7 +19,7 @@ struct ExampleMessage2 {
 // All subsequent types are the types of messages this LP will have to respond
 // to. The base class will automatically register message dispatchers for each
 // template argument.
-class ExampleLP : public LP<ExampleLP, ExampleMessage, ExampleMessage2> {
+class ExampleLP : public LP<ExampleLP, ExampleMessage, ExampleMessage2, void*> {
   private:
     int neighbor, counter;
   public:
@@ -40,6 +40,10 @@ class ExampleLP : public LP<ExampleLP, ExampleMessage, ExampleMessage2> {
     void forward(ExampleMessage2* msg, tw_bf* bf);
     void reverse(ExampleMessage2* msg, tw_bf* bf);
     void commit(ExampleMessage2* msg, tw_bf* bf);
+
+    void forward(void* msg, tw_bf* bf);
+    void reverse(void* msg, tw_bf* bf);
+    void commit(void* msg, tw_bf* bf);
 };
 
 class ExampleLP2 : public LP<ExampleLP2, ExampleMessage, ExampleMessage2> {

@@ -293,6 +293,7 @@ class LPBase {
 template <typename Derived, typename M, typename... Ms>
 class LP : public LPBase {
   private:
+    static bool registered;
     static vector<DispatcherBase<Derived>*> dispatchers;
 
     template <typename M1>
@@ -309,7 +310,10 @@ class LP : public LPBase {
   public:
     LP() {
       dispatchers.resize(g_num_msg_types);
-      register_msg_type<M, Ms...>();
+      if (!registered) {
+        register_msg_type<M, Ms...>();
+        registered = true;
+      }
     }
     void forward(Event* e) {
       dispatchers[e->type_id]->forward(static_cast<Derived*>(this), e);
@@ -324,6 +328,9 @@ class LP : public LPBase {
 
 template <typename Derived, typename M, typename... Ms>
 vector<DispatcherBase<Derived>*> LP<Derived, M, Ms...>::dispatchers;
+
+template <typename Derived, typename M, typename... Ms>
+bool LP<Derived, M, Ms...>::registered = false;
 
 /**
  * \name API for ROSS

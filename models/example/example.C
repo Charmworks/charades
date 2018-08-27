@@ -22,9 +22,24 @@ void ExampleLP::initialize() {
     // that message type to initialize the events memory.
     Event* e = tw_event_new<ExampleMessage>(gid, delay, this, counter++);
     tw_event_send(e);
+
+    delay = g_tw_lookahead + g_adjusted_mean*tw_rand_exponential(rng, 1.0);
+    Event* e2 = tw_event_new(gid, delay, this, sizeof(int)*2);
+    e2->get_data<int>()[0] = gid;
+    e2->get_data<int>()[1] = i;
+    tw_event_send(e2);
   }
 }
 void ExampleLP::finalize() {}
+
+void ExampleLP::forward(void* msg, tw_bf* bf) {}
+
+void ExampleLP::reverse(void* msg, tw_bf* bf) {}
+
+void ExampleLP::commit(void* msg, tw_bf* bf) {
+  CkPrintf("LP %i received coordinates: %i, %i\n",
+      gid, static_cast<int*>(msg)[0], static_cast<int*>(msg)[1]);
+}
 
 void ExampleLP::forward(ExampleMessage* msg, tw_bf* bf) {
   Time delay = g_tw_lookahead + g_adjusted_mean*tw_rand_exponential(rng, 1.0);
@@ -118,7 +133,7 @@ int main(int argc, char** argv) {
 
   g_tw_lookahead = 100;
   g_tw_ts_end = 128000;
-  g_tw_expected_events = 8100;
+  g_tw_expected_events = 8132;
   g_total_lps = 16;
   g_lps_per_chare = 1;
 

@@ -292,4 +292,6 @@ Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender, Args&&... ar
   return event_alloc(msg, dest_gid, offset, sender);
 }
 
+Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender, size_t size);
+
 #endif
