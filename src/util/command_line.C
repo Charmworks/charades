@@ -17,6 +17,7 @@ void parse_command_line(int argc, char** argv) {
   kernel.register_argument("end-time",             "Virtual end time", g_tw_ts_end);
   kernel.register_argument("lookahead",            "Virtual lookahead", g_tw_lookahead);
   kernel.register_argument("batch",                "Batch size of a scheduler interval", g_tw_mblock);
+  kernel.register_argument("use-default-rng",      "Use default RNG setup", g_tw_rng_default);
   kernel.register_argument("gvt-interval",         "Size of each GVT interval (based on gvt trigger)", g_tw_gvt_interval);
   kernel.register_argument("gvt-trigger",          "Type of GVT interval - SCHEDULER INTERVAL=1, VIRTUAL TIME LEASH=2", g_tw_gvt_trigger);
   kernel.register_argument("gvt-phases",           "Number of phases for the phased GVT algorithm", g_tw_gvt_phases);

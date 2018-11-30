@@ -108,11 +108,16 @@ void ExampleLP2::commit(ExampleMessage2* msg, tw_bf* bf) {}
 class ExampleLPFactory : public LPFactory {
   public:
     LPBase* create_lp(uint64_t gid) const {
+      LPBase* lp;
       if (gid % 2 == 0) {
-        return new ExampleLP();
+        lp = new ExampleLP();
       } else {
-        return new ExampleLP2();
+        lp = new ExampleLP2();
       }
+      if (g_tw_rng_default == 0) {
+        tw_rand_init_streams(lp, 1, gid * 2);
+      }
+      return lp;
     }
 };
 
@@ -133,10 +138,14 @@ int main(int argc, char** argv) {
 
   g_tw_lookahead = 100;
   g_tw_ts_end = 128000;
-  g_tw_expected_events = 8132;
   g_total_lps = 16;
   g_lps_per_chare = 1;
 
+  if (g_tw_rng_default) {
+    g_tw_expected_events = 8132;
+  } else {
+    g_tw_expected_events = 8173;
+  }
 
   g_initial_events = 4;
   g_mean_delay = 1000;
