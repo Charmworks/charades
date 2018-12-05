@@ -14,103 +14,56 @@ PhaseGVT::PhaseGVT() {
   
   max_phase = g_tw_gvt_phases;
   producing_phase = 0;
-  next_phase = (producing_phase + 1) % max_phase;
-  gvt_phase_begin = -1;
-  gvt_phase_end = -1;
-  detector_ready = new bool[max_phase];
-  sent = new int[max_phase];
-  received = new int[max_phase];
-  min_sent = new Time[max_phase];
-  for (int i = 0; i < max_phase; i++) {
-    detector_ready[i] = true;
+  active_phase = -1;
+
+  min_sent = DBL_MAX;
+  sent = new uint32_t[max_phase];
+  received = new uint32_t[max_phase];
+  for (uint32_t i = 0; i < max_phase; i++) {
     sent[i] = 0;
     received[i] = 0;
-    min_sent[i] = DBL_MAX;
   }
+
+  count_reductions = min_reductions = 0;
 }
 
 void PhaseGVT::gvt_begin() {
-
-  if(detector_ready[next_phase]) {
+  if(!active) {
     active = true;
-    min_sent[producing_phase] = DBL_MAX;
-    detector_ready[producing_phase] = false;
-    if(gvt_phase_begin == -1) {
-      gvt_phase_begin = producing_phase;
-      gvt_phase_end = producing_phase;
-    }
-    else gvt_phase_end = (gvt_phase_end+1) % max_phase;
-    producing_phase = next_phase;
-    next_phase = (producing_phase+1)%max_phase;
+    min_sent = DBL_MAX;
 
-    int counts[2] = {0,0};
+    active_phase = producing_phase;
+    producing_phase = (producing_phase + 1) % max_phase;
 
-    for(int i = gvt_phase_begin; i!= gvt_phase_end; i = (i+1)%max_phase) {
-      counts[0]+= sent[i];
-      counts[1]+= received[i];
-    }
-    counts[0]+= sent[gvt_phase_end];
-    counts[1]+= received[gvt_phase_end];
-    contribute(2 * sizeof(int), counts, CkReduction::sum_int,
+    uint32_t counts[] = { sent[active_phase], received[active_phase] };
+    contribute(2 * sizeof(uint32_t), counts, CkReduction::sum_int,
       CkCallback(CkReductionTarget(PhaseGVT,check_counts),thisProxy));
   }
-  else {
-  //TODO Add code here for forcing gvts or handling too many gvts?
-
-  }
   scheduler->gvt_resume();
-
 }
 
 void PhaseGVT::check_counts(int s, int r) {
+  count_reductions++;
 
   if(s == r) {
-
     Time min_time = scheduler->get_min_time();
-
-    min_time = fmin(min_time, min_sent[gvt_phase_end]);
-    CkAssert(min_time >= curr_gvt);
-
+    min_time = fmin(min_time, min_sent);
     contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(PhaseGVT,gvt_end),thisProxy));
-  }
-
-  else {
-    int counts[2] = {0,0};
-
-    for(int i = gvt_phase_begin; i!= gvt_phase_end; i = (i+1)%max_phase) {
-      counts[0]+= sent[i];
-      counts[1]+= received[i];
-    }
-    counts[0]+= sent[gvt_phase_end];
-    counts[1]+= received[gvt_phase_end];
-
-    contribute(2 * sizeof(int), counts, CkReduction::sum_int,
+  } else {
+    uint32_t counts[] = { sent[active_phase], received[active_phase] };
+    contribute(2 * sizeof(uint32_t), counts, CkReduction::sum_int,
       CkCallback(CkReductionTarget(PhaseGVT,check_counts),thisProxy));
   }
-
 }
 
 void PhaseGVT::gvt_end(Time new_gvt) {
+  min_reductions++;
+
   active = false;
   prev_gvt = curr_gvt;
   curr_gvt = new_gvt;
-  for(int i = gvt_phase_begin; i!= gvt_phase_end; i = (i+1)%max_phase) {
-    detector_ready[i] = true;
-    sent[i] = 0;
-    received[i] = 0;
-  }
-  detector_ready[gvt_phase_end] = true;
-  sent[gvt_phase_end] = 0;
-  received[gvt_phase_end] = 0;
 
-  if( (gvt_phase_end + 1)% max_phase  == producing_phase) {
-    gvt_phase_begin = -1;
-    gvt_phase_end = -1;
-  }
-  else {
-   DEBUG_PE("Error? \n");
-  }
   scheduler->gvt_done(curr_gvt);
 }
 
@@ -119,11 +72,10 @@ void PhaseGVT::consume(RemoteEvent* e) {
 }
 
 bool PhaseGVT::produce(RemoteEvent* e) {
-  if (gvt_phase_end != -1) {
-    if(e->ts < min_sent[gvt_phase_end]) {
-      min_sent[gvt_phase_end] = e->ts;
-    }
+  if(e->ts < min_sent) {
+    min_sent = e->ts;
   }
+
   e->phase = producing_phase;
   sent[producing_phase]++;
   return true;

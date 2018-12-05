@@ -5,28 +5,26 @@
 
 class PhaseGVT : public CBase_PhaseGVT {
   public:
-
     PhaseGVT();
-    /** Switch phases if next phase ready and start GVT process for current phase**/
+    /** Start a new GVT computation if not already active **/
     void gvt_begin();
-    /**Check if phase has completed detection, if so contribute min time to all reduce**/
-    void check_counts(int, int);
-    /** Called by the all reduce from check_counts() with resulting gvt**/
+    /** Check if sent == received, if so compute GVT **/
+    void check_counts(int s, int r);
+    /** Cleanup and report new GVT **/
     void gvt_end(Time);
-    /**Increment received count for the phase of the event **/
+    /** Increment received count based on events phase */
     void consume(RemoteEvent* e);
-    /**Increment sent count for producing phase and recalculate min_sent**/
+    /** Increment sent count for producing phase update min sent time **/
     bool produce(RemoteEvent* e);
 
   private:
+    uint32_t max_phase, producing_phase, active_phase;
+    uint32_t *sent;
+    uint32_t *received;
+    Time min_sent;
 
-    unsigned max_phase, producing_phase, next_phase;
-    /**start and end phase of the gvt**/
-    int gvt_phase_begin, gvt_phase_end;
-    bool* detector_ready;
-    int * sent;
-    int * received;
-    Time*  min_sent;
+    // Reduction statistics
+    uint32_t count_reductions, min_reductions;
 };
 
 #endif
