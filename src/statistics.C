@@ -11,6 +11,9 @@
 #include <float.h>  // Included for DBL_MAX
 #include <math.h>   // Included for fmax/fmin
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 Statistics* get_statistics() {
   /** Cache the pointer in a local variable for quicker lookup */
   static Statistics* statistics = ((Scheduler*)CkLocalBranch(scheduler_id))->stats;
@@ -200,8 +203,8 @@ void Statistics::print_section(const char* name) const {
 }
 
 /** Print a formatted and labeled integer value */
-void Statistics::print_int(const char* name, uint32_t v) const {
-  CkPrintf("\t%-50s %11lld\n", name, v);
+void Statistics::print_int(const char* name, uint64_t v) const {
+  CkPrintf("\t%-50s %11" PRIu64 "\n", name, v);
 }
 
 /** Print a formatted and labeled double value */

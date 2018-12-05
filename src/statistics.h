@@ -96,25 +96,25 @@ class Statistics {
     ///@}
 
     /** \name Event stats *////@{
-    uint32_t events_executed;    ///< total number of events executed
-    uint32_t events_committed;   ///< number of committed events
-    uint32_t events_rolled_back; ///< number of rolled back events
+    uint64_t events_executed;    ///< total number of events executed
+    uint64_t events_committed;   ///< number of committed events
+    uint64_t events_rolled_back; ///< number of rolled back events
     ///@}
 
     /** \name Rollback stats *////@{
-    uint32_t total_rollback_calls; ///< total number of times a rollback is called
-    uint32_t ts_rollback_calls;    ///< number of rollbacks to a certain timestamp
-    uint32_t event_rollback_calls; ///< number of rollbacks to a specific event
+    uint64_t total_rollback_calls; ///< total number of times a rollback is called
+    uint64_t ts_rollback_calls;    ///< number of rollbacks to a certain timestamp
+    uint64_t event_rollback_calls; ///< number of rollbacks to a specific event
     ///@}
 
     /** \name Send stats *////@{
-    uint32_t self_sends;   ///< events sent to ourselves
-    uint32_t local_sends;  ///< events sent to different LPs in the same chare
-    uint32_t remote_sends; ///< events sent to different chares
-    uint32_t remote_holds;
-    uint32_t remote_cancels;
-    uint32_t anti_sends;   ///< anti events sent
-    uint32_t anti_cancels;
+    uint64_t self_sends;   ///< events sent to ourselves
+    uint64_t local_sends;  ///< events sent to different LPs in the same chare
+    uint64_t remote_sends; ///< events sent to different chares
+    uint64_t remote_holds;
+    uint64_t remote_cancels;
+    uint64_t anti_sends;   ///< anti events sent
+    uint64_t anti_cancels;
     ///@}
 
     /** \name GVT stats
@@ -151,7 +151,7 @@ class Statistics {
    *  Utility functions for nicely printing out stats data
    *////@{
   void print_section(const char*) const;
-  void print_int(const char*, uint32_t) const;
+  void print_int(const char*, uint64_t) const;
   void print_double(const char*, double) const;
   void print_stat_double(const char*, const Stat<double>&) const;
   void print() const;
