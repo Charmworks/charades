@@ -93,7 +93,8 @@ void set_current_event(tw_lp* lp, Event* event) {
 /** Initializes all member variables for this LP chare */
 LP::LP() : next_token(this), uniqID(0), min_cancel_q(DBL_MAX),
            current_time(0), all_events(0), committed_events(0),
-           rolled_back_events(0), committed_time(0.0), latest_time(0.0) {
+           rolled_back_events(0), executed_events(0),
+           committed_time(0.0), latest_time(0.0) {
   /**
    * Since the lps proxy is not set during main, we have to make sure it is
    * correctly set on every PE during the construction of the array.
@@ -133,10 +134,19 @@ LP::LP() : next_token(this), uniqID(0), min_cancel_q(DBL_MAX),
   }
 }
 
+void LP::dump_lb_stats() {
+#ifdef LB_TRACING
+  loads.push_back(std::vector<double>(NUM_METRICS));
+  for (int i = 0; i < NUM_METRICS; i++) {
+    loads.back()[i] = getMetricValue(i);
+  }
+#endif
+}
+
 void LP::load_balance() {
 #ifdef LB_TRACING
-  loads.push_back(std::vector<double>(14));
-  for (int i = 0; i < 14; i++) {
+  loads.push_back(std::vector<double>(NUM_METRICS));
+  for (int i = 0; i < NUM_METRICS; i++) {
     loads.back()[i] = getMetricValue(i);
   }
 #endif
@@ -156,7 +166,7 @@ void LP::ResumeFromSync() {
                  CProxy_DistributedScheduler(scheduler_id)));
 
   // Reset manually tracked metrics for next LB period
-  committed_events = rolled_back_events = 0;
+  executed_events = committed_events = rolled_back_events = 0;
   latest_time = committed_time = 0.0;
 }
 
@@ -244,7 +254,11 @@ double LP::getMetricValue(int which) {
     case 13:
       metric = timeToWeight(latest_time);
       break;
+    case 14:
+      metric = executed_events;
+      break;
     default:
+      CkPrintf("Metric %i does not exist\n", which);
       CkAbort("Invalid load balancing metric\n");
       break;
   }
@@ -286,8 +300,8 @@ void LP::init() {
 
 void LP::finalize() {
 #ifdef LB_TRACING
-  loads.push_back(std::vector<double>(14));
-  for (int i = 0; i < 14; i++) {
+  loads.push_back(std::vector<double>(NUM_METRICS));
+  for (int i = 0; i < NUM_METRICS; i++) {
     loads.back()[i] = getMetricValue(i);
   }
 #endif
@@ -415,6 +429,7 @@ void* LP::execute_me() {
     /** Execute the event on the target LPStruct */
     LPStruct* lp = (LPStruct*)e->dest_lp;
     BRACKET_TRACE(lp->type->execute(lp->state, &e->cv, tw_event_data(e), lp);, USER_EVENT_FWD)
+    executed_events++;
 
     /**
      * Move the event to the processed queue if we are optimistic, otherwise

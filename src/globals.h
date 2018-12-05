@@ -124,4 +124,6 @@ Globals* get_globals(); ///< returns a pointer to the local Globals object
 /** Macro to simplify global variable access */
 #define PE_VALUE(x) get_globals()->x
 
+#define NUM_METRICS 15
+
 #endif

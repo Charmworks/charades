@@ -77,7 +77,8 @@ const char* const g_tw_metric_names[] = {
     "Past Event + Rolled Back Events",
     "Pending Events",
     "Active Events (Pending + Processed)",
-    "Latest Time Reached"
+    "Latest Time Reached",
+    "Executed Events"
 };
 
 ///@}

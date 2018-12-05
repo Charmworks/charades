@@ -132,6 +132,7 @@ class LP : public CBase_LP {
      *////@{
     int committed_events;   ///< Number of events committed since last LB
     int rolled_back_events; ///< Number of events rolled back since last LB
+    int executed_events;    ///< Number of events executed since last LB
     Time committed_time;    ///< Timestamp of most recent committed event
     Time latest_time;       ///< Latest timestamp reached by this LP
 
@@ -205,6 +206,7 @@ class LP : public CBase_LP {
     void reconstruct_processed_event(Event*, Event**, Event**);
     /** Pack/unpack this LP chare */
     virtual void pup(PUP::er &p);
+    void dump_lb_stats();
     /** Tell this chare that we are going to do load balancing */
     void load_balance();
     /** Called by the runtime system to tell this chare we can resume */

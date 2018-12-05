@@ -72,9 +72,10 @@ void Scheduler::dump_lb_stats() {
 
   for (int i = 0; i < loads.size(); i++) {
     outfile << "==== STAT ITERATION " << i << " ============" << std::endl;
-    for (int j = 0; j < 14; j++) {
+    for (int j = 0; j < NUM_METRICS; j++) {
       outfile << i << " " << j << " " << loads[i][j] << " (" << g_tw_metric_names[j] << ")" << std::endl;
     }
+    outfile << "Efficiency range: " << lower_efficiency[i]*100 << " - " << upper_efficiency[i]*100 << std::endl;
   }
   outfile.close();
 }
@@ -88,13 +89,15 @@ void Scheduler::end_simulation() {
   }
 
 #ifdef LB_TRACING
-  loads.push_back(vector<double>(14));
+  loads.push_back(vector<double>(NUM_METRICS));
   for (LP* lp : registered_lps) {
-    for (int i = 0; i < 14; i++) {
+    for (int i = 0; i < NUM_METRICS; i++) {
       loads.back()[i] += lp->getMostRecentMetricValue(i);
     }
     lp->finalize();
   }
+  lower_efficiency.push_back((double)PE_STATS(events_committed)/PE_STATS(events_executed));
+  upper_efficiency.push_back((double)(PE_STATS(events_committed)+loads.back()[8])/PE_STATS(events_executed));
   dump_lb_stats();
 #endif
 
@@ -218,6 +221,10 @@ DistributedScheduler::DistributedScheduler() {
     stat_trigger.reset(new ConstTrigger(false));
   }
 #endif
+
+#ifdef LB_TRACING
+  tmp_lb_dump = false;
+#endif
 }
 
 /** Called by QD, which now also includes GVT Manager creation */
@@ -313,6 +320,20 @@ void DistributedScheduler::gvt_done(Time gvt) {
     if (print_trigger->ready()) {
       print_progress(gvt);
     }
+#ifdef LB_TRACING
+    if (gvt >= g_tw_ts_end / 2 && !tmp_lb_dump) {
+      tmp_lb_dump = true;
+      loads.push_back(vector<double>(NUM_METRICS));
+      for (LP* lp : registered_lps) {
+        lp->dump_lb_stats();
+        for (int i = 0; i < NUM_METRICS; i++) {
+          loads.back()[i] += lp->getMostRecentMetricValue(i);
+        }
+      }
+      lower_efficiency.push_back((double)PE_STATS(events_committed)/PE_STATS(events_executed));
+      upper_efficiency.push_back((double)(PE_STATS(events_committed)+loads.back()[8])/PE_STATS(events_executed));
+    }
+#endif
     next_iteration();
   }
 
@@ -331,16 +352,20 @@ void DistributedScheduler::start_balancing() {
   lb_start = CmiWallTimer();
 #endif
 #ifdef LB_TRACING
-  loads.push_back(vector<double>(14));
+  loads.push_back(vector<double>(NUM_METRICS));
 #endif
   for (LP* lp : registered_lps) {
     lp->load_balance();
 #ifdef LB_TRACING
-    for (int i = 0; i < 14; i++) {
+    for (int i = 0; i < NUM_METRICS; i++) {
       loads.back()[i] += lp->getMostRecentMetricValue(i);
     }
 #endif
   }
+#ifdef LB_TRACING
+  lower_efficiency.push_back((double)PE_STATS(events_committed)/PE_STATS(events_executed));
+  upper_efficiency.push_back((double)(PE_STATS(events_committed)+loads.back()[8])/PE_STATS(events_executed));
+#endif
 }
 
 /** After load balancing completes we can do the next scheduler iteration */
@@ -350,12 +375,14 @@ void DistributedScheduler::balancing_complete() {
   PE_STATS(lb_time) += lb_time;
 #endif
 #ifdef LB_TRACING
-  loads.push_back(vector<double>(14));
+  loads.push_back(vector<double>(NUM_METRICS));
   for (LP* lp : registered_lps) {
-    for (int i = 0; i < 14; i++) {
+    for (int i = 0; i < NUM_METRICS; i++) {
       loads.back()[i] += lp->getMostRecentMetricValue(i);
     }
   }
+  lower_efficiency.push_back((double)PE_STATS(events_committed)/PE_STATS(events_executed));
+  upper_efficiency.push_back((double)(PE_STATS(events_committed)+loads.back()[8])/PE_STATS(events_executed));
 #endif
   PE_STATS(total_lbs)++;
   lb_trigger->reset();

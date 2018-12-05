@@ -44,6 +44,7 @@ class Scheduler : public CBase_Scheduler {
 
 #ifdef LB_TRACING
     std::vector<std::vector<double>> loads;
+    std::vector<double> lower_efficiency, upper_efficiency;
     void dump_lb_stats();
 #endif
 
@@ -129,6 +130,10 @@ class DistributedScheduler : public CBase_DistributedScheduler {
     bool delay_marked;
     double gvt_start;
     double lb_start;
+#endif
+
+#ifdef LB_TRACING
+    bool tmp_lb_dump;
 #endif
 
   public:
