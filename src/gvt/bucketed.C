@@ -8,6 +8,7 @@
 #include <float.h>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 
 #define SENT_IDX(n) (n*2)
 #define RECV_IDX(n) (n*2+1)
@@ -43,6 +44,14 @@ BucketGVT::BucketGVT() {
 }
 
 void BucketGVT::finalize() {
+  if (CkMyPe() == 0) {
+    std::cout << std::endl;
+    std::cout << "==== BUCKET GVT REDUCTION STATISTICS ========" << std::endl;
+    std::cout << "Start Reductions : " << start_reductions << std::endl;
+    std::cout << "Count Reductions : " << count_reductions << std::endl;
+    std::cout << "Total Reductions : " << start_reductions + count_reductions;
+  }
+
   std::ofstream outfile;
   std::string filename = std::string(g_output_dir) + "gvt_" + std::to_string(CkMyPe()) + ".out";
   outfile.open(filename);

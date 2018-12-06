@@ -6,6 +6,7 @@
 class PhaseGVT : public CBase_PhaseGVT {
   public:
     PhaseGVT();
+    void finalize();
     /** Start a new GVT computation if not already active **/
     void gvt_begin();
     /** Check if sent == received, if so compute GVT **/

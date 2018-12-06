@@ -6,6 +6,7 @@
 #include "util.h"
 
 #include <float.h>
+#include <iostream>
 
 PhaseGVT::PhaseGVT() {
   gvt_name = "Multi-Phase GVT";
@@ -25,6 +26,16 @@ PhaseGVT::PhaseGVT() {
   }
 
   count_reductions = min_reductions = 0;
+}
+
+void PhaseGVT::finalize() {
+  if (CkMyPe() == 0) {
+    std::cout << std::endl;
+    std::cout << "==== PHASE GVT REDUCTION STATISTICS ========" << std::endl;
+    std::cout << "Count Reductions : " << count_reductions << std::endl;
+    std::cout << "Min Reductions   : " << min_reductions << std::endl;
+    std::cout << "Total Reductions : " << count_reductions + min_reductions;
+  }
 }
 
 void PhaseGVT::gvt_begin() {
