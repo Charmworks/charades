@@ -118,7 +118,8 @@ class DistributedScheduler : public CBase_DistributedScheduler {
   protected:
     GVTManager* gvt_manager;  /**< Direct pointer to our local GVT Manager */
 
-    bool   doing_gvt;
+    bool doing_gvt;
+    bool doing_lb;
     TriggerPtr gvt_trigger;   /**< Determines when to compute GVT */
     TriggerPtr print_trigger; /**< Determines when to print progress */
 #if CMK_TRACE_ENABLED

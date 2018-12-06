@@ -54,7 +54,7 @@ void PhaseGVT::gvt_begin() {
     lb_trigger->iteration_done();
   }
 
-  if (!lb_trigger->ready()) {
+  if (!lb_trigger->ready() || g_tw_ldb_continuous) {
     scheduler->gvt_resume();
   }
 }

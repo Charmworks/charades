@@ -171,6 +171,7 @@ void SequentialScheduler::execute() {
 DistributedScheduler::DistributedScheduler() {
   // Create the correct GVT Manager, which will be created before QD triggers
   doing_gvt = false;
+  doing_lb = false;
   if (CkMyPe() == 0) {
     switch (g_tw_gvt_scheme) {
       case 1:
@@ -295,8 +296,10 @@ void DistributedScheduler::gvt_done(Time gvt, bool lb) {
     end_simulation();
     gvt_manager->finalize();
   } else {
-    if (print_trigger->ready() || lb) {
-      print_trigger->reset();
+    if (print_trigger->ready() || (lb && !doing_lb)) {
+      if (print_trigger->ready()) {
+        print_trigger->reset();
+      }
       print_progress(gvt);
     }
 #ifdef LB_TRACING
@@ -313,7 +316,7 @@ void DistributedScheduler::gvt_done(Time gvt, bool lb) {
       upper_efficiency.push_back((double)(PE_STATS(events_committed)+loads.back()[8])/PE_STATS(events_executed));
     }
 #endif
-    if (lb) {
+    if (lb && !doing_lb) {
       start_balancing();
     } else {
       next_iteration();
@@ -323,7 +326,10 @@ void DistributedScheduler::gvt_done(Time gvt, bool lb) {
 
 /** Tell every local LP to start load balancing */
 void DistributedScheduler::start_balancing() {
-  TW_ASSERT(!running, "Can't balance while scheduler is running\n");
+  if ((running && !g_tw_ldb_continuous) || doing_lb) {
+    CkAbort("LB Control Flow Error!\n");
+  }
+  doing_lb = true;
 #ifdef DETAILED_TIMING
   lb_start = CmiWallTimer();
 #endif
@@ -346,6 +352,7 @@ void DistributedScheduler::start_balancing() {
 
 /** After load balancing completes we can do the next scheduler iteration */
 void DistributedScheduler::balancing_complete() {
+  doing_lb = false;
 #ifdef DETAILED_TIMING
   double lb_time = CmiWallTimer() - lb_start;
   PE_STATS(lb_time) += lb_time;

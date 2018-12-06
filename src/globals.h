@@ -52,12 +52,13 @@ extern uint32_t g_tw_clear_buckets;
 ///@}
 
 /** \name LB Configuration *////@{
-extern uint32_t g_tw_ldb_first;     ///< first iteration to call load balancing
-extern uint32_t g_tw_ldb_interval;  ///< number of intervals to wait before lb
-extern uint32_t g_tw_max_ldb;       ///< max number of times to call lb
-extern uint32_t g_tw_ldb_metric;    ///< metric used to measure LP load
-extern uint32_t g_tw_metric_ts_abs; ///< use absolute time or not
-extern uint32_t g_tw_metric_invert; ///< whether or not to invert metric
+extern uint32_t g_tw_ldb_continuous;  ///< whether LB can happen during exec
+extern uint32_t g_tw_ldb_first;       ///< first iteration to call LB
+extern uint32_t g_tw_ldb_interval;    ///< number of intervals to wait before lb
+extern uint32_t g_tw_max_ldb;         ///< max number of times to call lb
+extern uint32_t g_tw_ldb_metric;      ///< metric used to measure LP load
+extern uint32_t g_tw_metric_ts_abs;   ///< use absolute time or not
+extern uint32_t g_tw_metric_invert;   ///< whether or not to invert metric
 
 extern const char* const g_tw_metric_names[];
 ///@}

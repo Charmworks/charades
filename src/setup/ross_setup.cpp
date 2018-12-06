@@ -42,6 +42,7 @@ void tw_init(int argc, char** tmp_argv) {
     TWOPT_UINT("ldb-first", g_tw_ldb_first, "First LB Interval"),
     TWOPT_UINT("ldb-interval", g_tw_ldb_interval, "Load Balancing Interval"),
     TWOPT_UINT("max-ldb", g_tw_max_ldb, "Max number of load balancing calls"),
+    TWOPT_UINT("ldb-continuous", g_tw_ldb_continuous, "Whether or not LB can occur during execution"),
     TWOPT_UINT("ldb-metric", g_tw_ldb_metric, "Metric for measuring LB load"),
     TWOPT_UINT("ldb-metric-ts-abs", g_tw_metric_ts_abs, "Use absolute timestamps for LP loads"),
     TWOPT_UINT("ldb-metric-invert", g_tw_metric_invert, "Invert load metrics"),
