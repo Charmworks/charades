@@ -3,6 +3,7 @@
 #include "event.h"
 #include "scheduler.h"
 #include "globals.h"
+#include "trigger.h"
 #include "util.h"
 
 #include <float.h>
@@ -49,8 +50,13 @@ void PhaseGVT::gvt_begin() {
     uint32_t counts[] = { sent[active_phase], received[active_phase] };
     contribute(2 * sizeof(uint32_t), counts, CkReduction::sum_int,
       CkCallback(CkReductionTarget(PhaseGVT,check_counts),thisProxy));
+
+    lb_trigger->iteration_done();
   }
-  scheduler->gvt_resume();
+
+  if (!lb_trigger->ready()) {
+    scheduler->gvt_resume();
+  }
 }
 
 void PhaseGVT::check_counts(int s, int r) {
@@ -75,7 +81,12 @@ void PhaseGVT::gvt_end(Time new_gvt) {
   prev_gvt = curr_gvt;
   curr_gvt = new_gvt;
 
-  scheduler->gvt_done(curr_gvt);
+  if (lb_trigger->ready()) {
+    lb_trigger->reset();
+    scheduler->gvt_done(curr_gvt, true);
+  } else {
+    scheduler->gvt_done(curr_gvt, false);
+  }
 }
 
 void PhaseGVT::consume(RemoteEvent* e) {

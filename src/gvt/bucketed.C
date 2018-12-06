@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "scheduler.h"
 #include "statistics.h"
+#include "trigger.h"
 
 #include <float.h>
 #include <fstream>

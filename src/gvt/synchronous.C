@@ -2,6 +2,7 @@
 
 #include "globals.h"
 #include "scheduler.h"
+#include "trigger.h"
 
 SyncGVT::SyncGVT() {
   gvt_name = "Synchronous GVT";
@@ -14,6 +15,8 @@ void SyncGVT::gvt_begin() {
   if(CkMyPe() == 0) {
     CkStartQD(CkCallback(CkIndex_SyncGVT::gvt_contribute(), thisProxy));
   }
+
+  lb_trigger->iteration_done();
 }
 
 void SyncGVT::gvt_contribute() {
@@ -23,7 +26,7 @@ void SyncGVT::gvt_contribute() {
   contribute(sizeof(Time), &min_time, CkReduction::min_double,
       CkCallback(CkReductionTarget(SyncGVT,gvt_end),thisProxy));
 
-  if(g_tw_async_reduction) {
+  if(g_tw_async_reduction && !lb_trigger->ready()) {
     scheduler->gvt_resume();
   }
 }
@@ -32,5 +35,11 @@ void SyncGVT::gvt_end(Time new_gvt) {
   active = false;
   prev_gvt = curr_gvt;
   curr_gvt = new_gvt;
-  scheduler->gvt_done(curr_gvt);
+
+  if (lb_trigger->ready()) {
+    lb_trigger->reset();
+    scheduler->gvt_done(curr_gvt, true);
+  } else {
+    scheduler->gvt_done(curr_gvt, false);
+  }
 }

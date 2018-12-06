@@ -18,7 +18,7 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
 
     /** Method overrides for GVT control flow */
     void gvt_resume();        /**< Overriden to allow overlap with GVT */
-    void gvt_done(Time gvt);  /**< Partially overridden to add FC */
+    void gvt_done(Time gvt, bool lb = false);  /**< Partially overridden to add FC */
 
     /** Extra methods for dealing with speculative events */
     void collect_fossils(Time gvt); /**< Free/commit events before gvt */

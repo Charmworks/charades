@@ -71,9 +71,9 @@ void OptimisticScheduler::gvt_resume() {
   next_iteration();
 }
 
-void OptimisticScheduler::gvt_done(Time gvt) {
+void OptimisticScheduler::gvt_done(Time gvt, bool lb) {
   collect_fossils(gvt);
-  DistributedScheduler::gvt_done(gvt);
+  DistributedScheduler::gvt_done(gvt, lb);
 }
 
 void OptimisticScheduler::collect_fossils(Time gvt) {

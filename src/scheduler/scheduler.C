@@ -191,23 +191,6 @@ DistributedScheduler::DistributedScheduler() {
     }
   }
 
-  // Set up the load balancing trigger
-  if (g_tw_ldb_interval > 0 || g_tw_ldb_first > 0) {
-    if (g_tw_ldb_interval == 0) {
-      g_tw_max_ldb = 1;
-    } else if (g_tw_ldb_first == 0) {
-      g_tw_ldb_first = g_tw_ldb_interval;
-    }
-    lb_trigger.reset(new CountTrigger(g_tw_ldb_first, g_tw_ldb_interval));
-    if (g_tw_max_ldb > 0) {
-      lb_trigger.reset(new BoundedTrigger(lb_trigger.release(), g_tw_max_ldb));
-    }
-  } else {
-    lb_trigger.reset(new ConstTrigger(false));
-  }
-  TW_ASSERT(!lb_trigger->ready(),
-      "LB Configuration Error: Can not load balance before the first GVT!\n");
-
   // Set up the print trigger
   print_trigger.reset(new CountTrigger(gvt_print_interval));
 
@@ -251,7 +234,6 @@ void DistributedScheduler::iteration_done() {
     doing_gvt = true;
     gvt_manager->gvt_begin();
     gvt_trigger->reset();
-    lb_trigger->iteration_done();
   } else if (!gvt_trigger->ready() || gvt_manager->is_continuous()) {
     // TODO: is_continuous maybe should be something like allow_execution
     next_iteration();
@@ -264,7 +246,7 @@ void DistributedScheduler::iteration_done() {
  * going to do load balancing this iteration after the current iteration.
  */
 void DistributedScheduler::next_iteration() {
-  if (!running && !lb_trigger->ready()) {
+  if (!running) {
     running = true;
     thisProxy[CkMyPe()].execute();
   }
@@ -276,11 +258,10 @@ void DistributedScheduler::gvt_resume() {}
 /**
  * After a GVT completes there are a number of things to check:
  * The stat_trigger determines if we should log stats
- * The lb_trigger determines if we should load balance before the next iteration
  * The computed GVT determines if we are past the end time and the sim is over
  * If none of the above are true, then just start the next iteration
  */
-void DistributedScheduler::gvt_done(Time gvt) {
+void DistributedScheduler::gvt_done(Time gvt, bool lb) {
   TW_ASSERT(gvt >= PE_VALUE(g_last_gvt), "GVT Causality Violation\n");
 
 #ifdef DETAILED_TIMING
@@ -313,11 +294,9 @@ void DistributedScheduler::gvt_done(Time gvt) {
     print_progress(gvt);
     end_simulation();
     gvt_manager->finalize();
-  } else if (lb_trigger->ready()) {
-    print_progress(gvt);
-    start_balancing();
   } else {
-    if (print_trigger->ready()) {
+    if (print_trigger->ready() || lb) {
+      print_trigger->reset();
       print_progress(gvt);
     }
 #ifdef LB_TRACING
@@ -334,14 +313,11 @@ void DistributedScheduler::gvt_done(Time gvt) {
       upper_efficiency.push_back((double)(PE_STATS(events_committed)+loads.back()[8])/PE_STATS(events_executed));
     }
 #endif
-    next_iteration();
-  }
-
-  // If printing is ready, it would have been handled in one of the if branches
-  // so just check to reset the trigger. This can't happen in the else branch
-  // for cases where lb happens in the same iteration as the trigger is ready.
-  if (print_trigger->ready()) {
-    print_trigger->reset();
+    if (lb) {
+      start_balancing();
+    } else {
+      next_iteration();
+    }
   }
 }
 
@@ -385,7 +361,6 @@ void DistributedScheduler::balancing_complete() {
   upper_efficiency.push_back((double)(PE_STATS(events_committed)+loads.back()[8])/PE_STATS(events_executed));
 #endif
   PE_STATS(total_lbs)++;
-  lb_trigger->reset();
   next_iteration();
 }
 
