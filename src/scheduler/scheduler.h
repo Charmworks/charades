@@ -148,7 +148,7 @@ class DistributedScheduler : public CBase_DistributedScheduler {
 
     /** Methods for load balancing synchronization */
     void start_balancing();
-    void balancing_complete();
+    virtual void balancing_complete();
 
     /** Methods called by the GVT Manager signifying the scheduler may resume */
     virtual void gvt_resume();        /**< Called when LPs can unblock */

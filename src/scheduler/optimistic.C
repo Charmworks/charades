@@ -88,6 +88,10 @@ void OptimisticScheduler::collect_fossils(Time gvt) {
   PE_STATS(fossil_time) += fossil_time;
 #endif
 }
+
+void OptimisticScheduler::balancing_complete() {
+  process_cancel_q();
+  DistributedScheduler::balancing_complete();
 }
 
 /** Call process_cancel_q on every LP chare on our PE */

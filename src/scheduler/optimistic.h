@@ -22,6 +22,7 @@ class OptimisticScheduler : public CBase_OptimisticScheduler {
 
     /** Extra methods for dealing with speculative events */
     void collect_fossils(Time gvt); /**< Free/commit events before gvt */
+    void balancing_complete();
     void process_cancel_q();        /**< Process the LPs in the cancel_q*/
     void update_min_cancel(Time);   /**< Update min_cancel_time */
     Time get_min_time() const;      /**< Overriden to include min_cancel_time */
