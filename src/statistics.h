@@ -89,6 +89,7 @@ class Statistics {
     Stat<double> total_time;    ///< Total execution time
 #ifdef DETAILED_TIMING
     Stat<double> execute_time;  ///< Time in Scheduler::execute (just events)
+    Stat<double> fossil_time;   ///< Time in fossil collection
     Stat<double> gvt_time;      ///< Time from starting GVT to gvt_done()
     Stat<double> gvt_delay;     ///< Time blocking on the GVT computation
     Stat<double> lb_time;       ///< Time spent load balancing

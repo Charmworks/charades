@@ -55,6 +55,7 @@ void Statistics::clear() {
   total_time.clear();
 #ifdef DETAILED_TIMING
   execute_time.clear();
+  fossil_time.clear();
   gvt_time.clear();
   gvt_delay.clear();
   lb_time.clear();
@@ -98,6 +99,7 @@ void Statistics::finalize() {
   total_time.finalize();
 #ifdef DETAILED_TIMING
   execute_time.finalize();
+  fossil_time.finalize();
   gvt_time.finalize();
   gvt_delay.finalize();
   lb_time.finalize();
@@ -116,6 +118,7 @@ void Statistics::add(const Statistics* other) {
   total_time.add(other->total_time);
 #ifdef DETAILED_TIMING
   execute_time.add(other->execute_time);
+  fossil_time.add(other->fossil_time);
   gvt_time.add(other->gvt_time);
   gvt_delay.add(other->gvt_delay);
   lb_time.add(other->lb_time);
@@ -162,6 +165,7 @@ void Statistics::reduce(const Statistics* other) {
   total_time.reduce(other->total_time);
 #ifdef DETAILED_TIMING
   execute_time.reduce(other->execute_time);
+  fossil_time.reduce(other->fossil_time);
   gvt_time.reduce(other->gvt_time);
   gvt_delay.reduce(other->gvt_delay);
   lb_time.reduce(other->lb_time);
@@ -267,6 +271,7 @@ void Statistics::print() const {
   print_section("DETAILED TIMING");
   print_stat_double("Total Time", total_time);
   print_stat_double("Forward Execute Time", execute_time);
+  print_stat_double("Fossil Collection Time", fossil_time);
   print_stat_double("GVT Time", gvt_time);
   print_stat_double("GVT Delay", gvt_delay);
   print_stat_double("LB Time", lb_time);

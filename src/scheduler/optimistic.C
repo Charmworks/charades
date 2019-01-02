@@ -77,9 +77,17 @@ void OptimisticScheduler::gvt_done(Time gvt, bool lb) {
 }
 
 void OptimisticScheduler::collect_fossils(Time gvt) {
+#ifdef DETAILED_TIMING
+  double fossil_time = CmiWallTimer();
+#endif
   for (LP* lp : registered_lps) {
     lp->fossil_me(gvt);
   }
+#ifdef DETAILED_TIMING
+  fossil_time = CmiWallTimer() - fossil_time;
+  PE_STATS(fossil_time) += fossil_time;
+#endif
+}
 }
 
 /** Call process_cancel_q on every LP chare on our PE */
