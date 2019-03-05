@@ -171,7 +171,7 @@ class PendingHeap : public PendingQueue {
       if (i == nelems) {
         elems[nelems] = NULL;
         return;
-      } else if (elems > 0) {
+      } else if (nelems > 0) {
         elems[i] = elems[nelems];
         elems[i]->index = i;
         elems[nelems] = NULL;
