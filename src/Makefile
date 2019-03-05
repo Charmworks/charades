@@ -6,15 +6,21 @@ MODULES=$(CI_FILES:.ci=.decl.h)
 OBJS=$(addprefix $(BUILD_DIR)/, $(C_FILES:.C=.o))
 
 default: all
-all: $(BUILD_DIR) $(BUILD_DIR)/libcharades.a
+all: $(BUILD_DIR) $(BUILD_DIR)/libcharades.a charmc_flags.mk
 
 .PHONY : $(SUB_DIRS)
 
 $(BUILD_DIR):
 	mkdir $(BUILD_DIR)
 
+
 $(BUILD_DIR)/libcharades.a: make_ci $(OBJS) $(SUB_DIRS)
 	$(CHARMC) $(LFLAGS) $(OBJS) $(BUILD_DIR)/*.o -o $@
+
+charmc_flags.mk:
+ifneq ($(USE_CHARMC),1)
+	$(CHARMC) -print-building-blocks | sed "s/'//g" > charmc_flags.mk
+endif
 
 make_ci: $(MODULES)
 	for dir in $(SUB_DIRS); do make -C $${dir} make_ci; done
@@ -32,5 +38,5 @@ $(BUILD_DIR)/%.o: %.C $(MODULES)
 	$(CHARMC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.decl.h *.def.h $(OBJS) $(BUILD_DIR)/libcharades.a
+	rm -rf *.decl.h *.def.h $(OBJS) $(BUILD_DIR)/libcharades.a charmc_flags.mk
 	for dir in $(SUB_DIRS); do make -C $${dir} clean; done
