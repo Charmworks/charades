@@ -68,7 +68,7 @@ void parse_command_line(int argc, char** argv) {
       } else {
         std::string line;
         while(std::getline(file, line)) {
-          if (line.find("//") == 0) {
+          if (line.find("//") == 0 || line.find("#") == 0) {
             continue;
           } else if (line.find_first_not_of("\t\r\n ") == std::string::npos) {
             continue;

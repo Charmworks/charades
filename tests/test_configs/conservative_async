@@ -1,0 +1,4 @@
+# Conservative w/Async Reduction
+# Async reduction should be ignored by scheduler
+sync=2
+gvt-async-reduction=1

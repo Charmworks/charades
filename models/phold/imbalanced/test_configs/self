@@ -1,0 +1,7 @@
+# Self-Sends Only
+num-lps=32
+start-events=16
+end-time=256000
+lookahead=100
+percent-remote=0
+expected-events=131551

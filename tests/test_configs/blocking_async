@@ -1,0 +1,4 @@
+# Optimistic w/Blocking GVT and Async Reduction
+sync=3
+gvt=1
+gvt-async-reduction=1

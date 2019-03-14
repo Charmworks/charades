@@ -1,7 +1,0 @@
---synch=3
---batch=16
---report-interval=64
-
---gvt=1
---gvt-trigger=2
---gvt-interval=16

@@ -16,6 +16,7 @@ $(BUILD_DIR):
 
 $(BUILD_DIR)/libcharades.a: make_ci $(OBJS) $(SUB_DIRS)
 	$(CHARMC) $(LFLAGS) $(OBJS) $(BUILD_DIR)/*.o -o $@
+	cp $(CHARM_DIR)/bin/charmrun $(BUILD_DIR)
 
 charmc_flags.mk:
 ifneq ($(USE_CHARMC),1)

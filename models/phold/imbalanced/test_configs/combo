@@ -1,0 +1,19 @@
+# Combo Imbalance
+num-lps=32
+start-events=16
+end-time=256000
+lookahead=100
+
+load-map=1
+percent-heavy=0.1
+light-load=1
+heavy-load=10
+load-seed=14
+
+remote-map=1
+percent-greedy=0.1
+generous-remote=0.5
+greedy-remote=0.25
+remote-seed=6
+
+expected-events=131340

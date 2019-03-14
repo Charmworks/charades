@@ -1,0 +1,8 @@
+# No Random Offsets
+# 1 event per LP, 32 LPs 256 seconds (-1 event per LP at end time) = 8160 events
+num-lps=32
+start-events=1
+end-time=256000
+lookahead=1000
+short-delay=1000
+expected-events=8160
