@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "gvtmanager.h"
 #include "lp.h"
-#include "ross_random.h"
+#include "random.h"
 #include "setup.h"
 #include "statistics.h"
 #include "trigger.h"
@@ -27,8 +27,8 @@ Scheduler::Scheduler() {
 
   running = false;
 
-  // Initialize rng
-  rng = tw_rand_init(31, 41);
+  // Initialize rng // TODO: Definitely doesn't belong here
+  tw_rand_init(31, 41);
 
   // Initialize event buffer
   PE_VALUE(event_buffer) = new EventBuffer(g_event_buffer_size);

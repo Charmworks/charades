@@ -10,7 +10,7 @@
 #include "event.h"
 #include "pending_heap.h"
 #include "processed_queue.h"
-#include "ross_clcg4.h"
+#include "random.h"
 #include "typedefs.h"
 
 #include <vector>
@@ -261,7 +261,7 @@ class LPBase {
   public:
     LPChare* owner;
     unsigned gid;
-    tw_rng_stream* rng;
+    tw_rng_stream rng;
 
     virtual void initialize() {}
     virtual void forward(Event* e) {}
@@ -283,10 +283,7 @@ class LPBase {
 
     virtual void pup(PUP::er& p) {
       p | gid;
-      if (p.isUnpacking()) {
-        rng = new tw_rng_stream();
-      }
-      rng->pup(p);
+      p | rng;
     }
 };
 

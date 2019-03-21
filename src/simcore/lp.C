@@ -13,8 +13,6 @@
 #include "mpi-interoperate.h"
 #include "scheduler.h"
 #include "statistics.h"
-#include "ross_random.h"
-#include "ross_clcg4.h"
 #include "util.h"
 
 #include <assert.h>
@@ -98,7 +96,7 @@ LPChare::LPChare() : next_token(this), next_event_id(0), cancel_q(NULL),
     lp_structs[i]->gid   = gid;
 
     if (g_tw_rng_default == 1) {
-      tw_rand_init_streams(lp_structs[i], g_tw_nRNG_per_lp);
+      lp_structs[i]->rng.seed(gid);
     }
   }
 }

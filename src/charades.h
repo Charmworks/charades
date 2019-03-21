@@ -13,8 +13,7 @@
 #include "globals.h"
 #include "lp.h"
 #include "mapper.h"
-#include "ross_random.h"
-#include "ross_clcg4.h"
+#include "random.h"
 #include "setup.h"
 #include "util.h"
 

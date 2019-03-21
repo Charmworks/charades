@@ -18,7 +18,6 @@ class LPToken;
 class RemoteEvent;
 class Statistics;
 class Trigger;
-class tw_rng;
 
 using std::string;
 
@@ -42,7 +41,6 @@ class Scheduler : public CBase_Scheduler {
     double end_time;        /**< End wall time for the simulation */
 
     PEQueue next_lps; /**< queue storing LPTokens ordered by next event ts */
-    tw_rng * rng;     /**< ROSS rng stream */
 
   public:
     // TODO: Globals may not be needed once event handling is moved to scheduler

@@ -5,7 +5,6 @@
 #include "globals.h"
 #include "mapper.h"
 #include "scheduler.h"
-#include "ross_clcg4.h"
 
 // Make sure we know our local pe, and construct the tokens.
 LPChare::LPChare(CkMigrateMessage* m) : next_token(this),

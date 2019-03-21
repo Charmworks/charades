@@ -54,9 +54,6 @@ unsigned g_tw_metric_invert;
 
 /** \name RNG Configuration */
 ///@{
-tw_seed* g_tw_rng_seed;
-size_t   g_tw_rng_max;
-unsigned g_tw_nRNG_per_lp;
 unsigned g_tw_rng_default;
 ///@}
 
@@ -91,9 +88,6 @@ void clear_globals() {
   gvt_print_interval = 64;
   g_tw_expected_events = -1;
 
-  g_tw_rng_seed    = NULL;
-  g_tw_rng_max     = 1;
-  g_tw_nRNG_per_lp = 1;
   g_tw_rng_default = 1;
 
   g_lps_per_chare  = 1;

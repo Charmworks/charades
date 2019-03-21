@@ -51,9 +51,6 @@ extern unsigned g_tw_metric_invert; ///< whether or not to invert metric
 ///@}
 
 /** \name RNG Configuration *////@{
-extern tw_seed* g_tw_rng_seed;    ///< initial seed for all RNGs
-extern size_t   g_tw_rng_max;     ///< \todo documentation needed
-extern unsigned g_tw_nRNG_per_lp; ///< number of RNGs per LP
 extern unsigned g_tw_rng_default; ///< \todo documentation needed
 ///@}
 
