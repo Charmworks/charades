@@ -7,6 +7,7 @@
 
 class Trigger {
   public:
+    virtual ~Trigger() {}
     virtual void iteration_done() = 0;
     virtual void reset() = 0;
     virtual bool ready() const = 0;
