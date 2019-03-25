@@ -35,12 +35,6 @@ private:
 
   uint64_t _count = 0;
 
-#ifdef RAND_NORMAL
-  double tw_normal_u1;
-  double tw_normal_u2;
-  int    tw_normal_flipflop;
-#endif
-
   static int64_t find_b(int64_t a, int64_t k, int64_t m) {
     int64_t sqrs[32];
     sqrs[0] = a;
@@ -313,12 +307,6 @@ public:
     PUParray(p, Ig, 4);
     PUParray(p, Lg, 4);
     PUParray(p, Cg, 4);
-
-#ifdef RAND_NORMAL
-    p | tw_normal_u1;
-    p | tw_normal_u2;
-    p | tw_normal_flipflop;
-#endif
   }
 
   constexpr void discard(uint64_t n) noexcept {

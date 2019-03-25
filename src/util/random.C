@@ -123,34 +123,14 @@ long tw_rand_geometric(tw_rng_stream& g, double P) {
 	return count;
 }
 
-double tw_rand_normal01(tw_rng_stream& g, unsigned int *rng_calls) {
-#ifndef RAND_NORMAL
-	CkAbort("Please compile using -DRAND_NORMAL!");
-  return -1.0;
-#endif
-
-#ifdef RAND_NORMAL
-	*rng_calls = 0;
-	g->tw_normal_flipflop = !g->tw_normal_flipflop;
-
-  if ((g->tw_normal_flipflop)  ||
-      (g->tw_normal_u1< 0.0)   ||
-      (g->tw_normal_u1 >= 1.0) ||
-      (g->tw_normal_u2 < 0.0)  ||
-      (g->tw_normal_u2 > 1.0)) {
-    g->tw_normal_u1 = tw_rand_unif(g);
-    g->tw_normal_u2 = tw_rand_unif(g);
-    *rng_calls = 2;
-
-    return (sqrt(-2.0 * log(g->tw_normal_u1)) * sin(tw_opi * g->tw_normal_u2));
-  } else {
-    return (sqrt(-2.0 * log(g->tw_normal_u1)) * cos(tw_opi * g->tw_normal_u2));
-  }
-#endif
+// Uses the Box-Muller transform to get a random number from a normal
+// distribution from two independent random numbers from a uniform distribution
+double tw_rand_normal01(tw_rng_stream& g) {
+  return (sqrt(-2.0 * log(tw_rand_unif(g))) * sin(tw_opi * tw_rand_unif(g)));
 }
 
-double tw_rand_normal_sd(tw_rng_stream& g, double Mu, double Sd, unsigned int *rng_calls) {
-  return Mu + (tw_rand_normal01(g, rng_calls) * Sd);
+double tw_rand_normal_sd(tw_rng_stream& g, double Mu, double Sd) {
+  return Mu + (tw_rand_normal01(g) * Sd);
 }
 
 long tw_rand_poisson(tw_rng_stream& g, double Lambda) {
@@ -167,8 +147,8 @@ long tw_rand_poisson(tw_rng_stream& g, double Lambda) {
   return count;
 }
 
-double tw_rand_lognormal(tw_rng_stream& g, double mean, double sd, unsigned int *rng_calls) {
-  return exp( mean + sd * tw_rand_normal01(g, rng_calls));
+double tw_rand_lognormal(tw_rng_stream& g, double mean, double sd) {
+  return exp( mean + sd * tw_rand_normal01(g));
 }
 
 double tw_rand_weibull(tw_rng_stream& g, double mean, double shape) {
