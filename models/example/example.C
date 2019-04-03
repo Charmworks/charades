@@ -115,7 +115,7 @@ class ExampleLPFactory : public LPFactory {
         lp = new ExampleLP2();
       }
       if (g_tw_rng_default == 0) {
-        tw_rand_init_streams(lp, 1, gid * 2);
+        lp->rng.seed(gid * 2);
       }
       return lp;
     }
