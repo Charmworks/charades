@@ -71,6 +71,8 @@ charm_cfgs = [['+p1','++local'], ['+p2', '++local']]
 
 tests = []
 for m in model_configs:
+  subprocess.call(["make", "clean", "-C", m.root])
+  subprocess.call(["make", "-C", m.root])
   for mcfg in m.cfgs:
     for t in test_cfgs:
       for c in charm_cfgs:
