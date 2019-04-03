@@ -20,10 +20,8 @@
 #include <charm++.h>
 
 #if not USE_CHARMC
-void _registerExternalModules(char **argv) { (void)argv;
-}
-void _createTraces(char **argv) { (void)argv;
-}
+void _registerExternalModules(char **argv);
+void _createTraces(char **argv);
 #endif
 
 #endif

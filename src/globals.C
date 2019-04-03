@@ -105,3 +105,9 @@ Globals* get_globals() {
   /** Store the pointer in a static variable for faster lookup */
   return CpvAccess(g_scheduler)->globals;
 }
+
+#if not USE_CHARMC
+// TODO: Maybe these should be moved somewhere else?
+void _registerExternalModules(char **argv) {}
+void _createTraces(char **argv) {}
+#endif
