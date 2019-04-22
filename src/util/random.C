@@ -21,11 +21,11 @@ void tw_rand_init(uint32_t v, uint32_t w) {
  * @bug Be careful not to pass LONG_MAX into the high variable for the
  * function below.  high + 1 will cause it to overflow.
  */
-long tw_rand_integer(tw_rng_stream& g, long low, long high) {
+int64_t tw_rand_integer(tw_rng_stream& g, int64_t low, int64_t high) {
   if (high < low) {
     return 0;
   } else {
-    return (low + (long)(tw_rand_unif(g) * (high + 1 - low)));
+    return (low + (int64_t)(tw_rand_unif(g) * (high + 1 - low)));
   }
 }
 
@@ -33,16 +33,16 @@ long tw_rand_integer(tw_rng_stream& g, long low, long high) {
  * @bug Be careful not to pass ULONG_MAX into the high variable for the
  * function below.  high + 1 will cause it to overflow.
  */
-unsigned long tw_rand_ulong(tw_rng_stream& g, unsigned long low, unsigned long high) {
+uint64_t tw_rand_ulong(tw_rng_stream& g, uint64_t low, uint64_t high) {
   if (high < low) {
       return 0;
   } else {
-      return (low + (unsigned long)(tw_rand_unif(g) * (high + 1 - low)));
+      return (low + (uint64_t)(tw_rand_unif(g) * (high + 1 - low)));
   }
 }
 
-long tw_rand_binomial(tw_rng_stream& g, long N, double P) {
-  long sucesses = 0;
+int64_t tw_rand_binomial(tw_rng_stream& g, int64_t N, double P) {
+  int64_t sucesses = 0;
 
   for (int trials = 0; trials < N; trials++) {
     if (tw_rand_unif(g) <= P) {
@@ -114,7 +114,8 @@ double tw_rand_gamma(tw_rng_stream& g, double shape, double scale) {
   }
 }
 
-long tw_rand_geometric(tw_rng_stream& g, double P) {
+int64_t tw_rand_geometric(tw_rng_stream& g, double P) {
+  assert(P > 0);
   int count = 1;
   while (tw_rand_unif(g) > P) {
     count++;
@@ -133,10 +134,14 @@ double tw_rand_normal_sd(tw_rng_stream& g, double Mu, double Sd) {
   return Mu + (tw_rand_normal01(g) * Sd);
 }
 
-long tw_rand_poisson(tw_rng_stream& g, double Lambda) {
+double tw_rand_lognormal(tw_rng_stream& g, double mean, double sd) {
+  return exp( mean + sd * tw_rand_normal01(g));
+}
+
+int64_t tw_rand_poisson(tw_rng_stream& g, double Lambda) {
   double a = exp(-Lambda);
   double b = 1;
-  long count = 0;
+  int64_t count = 0;
 
   b = b * tw_rand_unif(g);
   while (b >= a) {
@@ -145,10 +150,6 @@ long tw_rand_poisson(tw_rng_stream& g, double Lambda) {
   }
 
   return count;
-}
-
-double tw_rand_lognormal(tw_rng_stream& g, double mean, double sd) {
-  return exp( mean + sd * tw_rand_normal01(g));
 }
 
 double tw_rand_weibull(tw_rng_stream& g, double mean, double shape) {

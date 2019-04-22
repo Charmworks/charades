@@ -20,18 +20,19 @@ typedef clcg4 tw_rng_stream;
 /*
  * Public Function Prototypes
  */
-extern void     tw_rand_init(uint32_t v, uint32_t w);
+void     tw_rand_init(uint32_t v, uint32_t w);
 
-extern long     tw_rand_integer(tw_rng_stream&  g, long low, long high);
-extern unsigned long tw_rand_ulong(tw_rng_stream&  g, unsigned long low, unsigned long high);
-extern long     tw_rand_binomial(tw_rng_stream&  g, long N, double P);
-extern double   tw_rand_exponential(tw_rng_stream&  g, double Lambda);
-extern double   tw_rand_pareto(tw_rng_stream&  g, double scale, double shape);
-extern double   tw_rand_gamma(tw_rng_stream&  g, double shape, double scale);
-extern long     tw_rand_geometric(tw_rng_stream&  g, double P);
-extern double   tw_rand_normal01(tw_rng_stream&  g, unsigned int *rng_calls);
-extern double   tw_rand_normal_sd(tw_rng_stream&  g, double Mu, double Sd, unsigned int *rng_calls);
-extern long     tw_rand_poisson(tw_rng_stream&  g, double Lambda);
-extern double   tw_rand_weibull(tw_rng_stream&  g, double mean, double shape);
+int64_t  tw_rand_integer(tw_rng_stream& g, int64_t low, int64_t high);
+uint64_t tw_rand_ulong(tw_rng_stream& g, uint64_t low, uint64_t high);
+int64_t  tw_rand_binomial(tw_rng_stream& g, int64_t N, double P);
+double   tw_rand_exponential(tw_rng_stream& g, double Lambda);
+double   tw_rand_pareto(tw_rng_stream& g, double scale, double shape);
+double   tw_rand_gamma(tw_rng_stream& g, double shape, double scale);
+int64_t  tw_rand_geometric(tw_rng_stream& g, double P);
+double   tw_rand_normal01(tw_rng_stream& g);
+double   tw_rand_normal_sd(tw_rng_stream& g, double Mu, double Sd);
+double   tw_rand_lognormal(tw_rng_stream& g, double mean, double sd);
+int64_t  tw_rand_poisson(tw_rng_stream& g, double Lambda);
+double   tw_rand_weibull(tw_rng_stream& g, double mean, double shape);
 
 #endif
