@@ -8,7 +8,7 @@
  */
 void tw_rand_init(uint32_t v, uint32_t w) {
 #ifndef USE_XOROSHIRO
-	tw_rng_stream::init(v, w);
+  tw_rng_stream::init(v, w);
 #endif
 }
 
@@ -22,10 +22,10 @@ void tw_rand_init(uint32_t v, uint32_t w) {
  * function below.  high + 1 will cause it to overflow.
  */
 long tw_rand_integer(tw_rng_stream& g, long low, long high) {
-	if (high < low) {
-		return 0;
-	} else {
-		return (low + (long)(tw_rand_unif(g) * (high + 1 - low)));
+  if (high < low) {
+    return 0;
+  } else {
+    return (low + (long)(tw_rand_unif(g) * (high + 1 - low)));
   }
 }
 
@@ -42,19 +42,19 @@ unsigned long tw_rand_ulong(tw_rng_stream& g, unsigned long low, unsigned long h
 }
 
 long tw_rand_binomial(tw_rng_stream& g, long N, double P) {
-	long sucesses = 0;
+  long sucesses = 0;
 
-	for (int trials = 0; trials < N; trials++) {
-		if (tw_rand_unif(g) <= P) {
-			sucesses++;
+  for (int trials = 0; trials < N; trials++) {
+    if (tw_rand_unif(g) <= P) {
+      sucesses++;
     }
-	}
+  }
 
-	return sucesses;
+  return sucesses;
 }
 
 double tw_rand_exponential(tw_rng_stream& g, double Lambda) {
-	return -Lambda * log(tw_rand_unif(g));
+  return -Lambda * log(tw_rand_unif(g));
 }
 
 double tw_rand_pareto(tw_rng_stream& g, double shape, double scale) {
@@ -62,65 +62,65 @@ double tw_rand_pareto(tw_rng_stream& g, double shape, double scale) {
 }
 
 double tw_rand_gamma(tw_rng_stream& g, double shape, double scale) {
-	double a, b, q, phi, d;
+  double a, b, q, phi, d;
 
-	if (shape > 1) {
-		a = 1 / sqrt(2 * shape - 1);
-		b = shape - log(4);
-		q = shape + 1 / a;
-		phi = 4.5;
-		d = 1 + log(phi);
+  if (shape > 1) {
+    a = 1 / sqrt(2 * shape - 1);
+    b = shape - log(4);
+    q = shape + 1 / a;
+    phi = 4.5;
+    d = 1 + log(phi);
 
-		while (1) {
-			double U_One = tw_rand_unif(g);
-			double U_Two = tw_rand_unif(g);
-			double V = a * log(U_One / (1 - U_One));
-			double Y = shape * exp(V);
-			double Z = U_One * U_One * U_Two;
-			double W = b + q * V - Y;
+    while (1) {
+      double U_One = tw_rand_unif(g);
+      double U_Two = tw_rand_unif(g);
+      double V = a * log(U_One / (1 - U_One));
+      double Y = shape * exp(V);
+      double Z = U_One * U_One * U_Two;
+      double W = b + q * V - Y;
 
-			double temp1 = W + d - phi * Z;
-			double temp2 = log(Z);
+      double temp1 = W + d - phi * Z;
+      double temp2 = log(Z);
 
-			if (temp1 >= 0 || W >= temp2) {
-				return scale * Y;
+      if (temp1 >= 0 || W >= temp2) {
+        return scale * Y;
       }
-		}
-	} else if (shape == 1) {
-		return (tw_rand_exponential(g, scale));
-	} else {
-		b = (exp(1) + shape) / exp(1);
+    }
+  } else if (shape == 1) {
+    return (tw_rand_exponential(g, scale));
+  } else {
+    b = (exp(1) + shape) / exp(1);
 
-		while (1) {
-			double U_One = tw_rand_unif(g);
-			double P = b * U_One;
+    while (1) {
+      double U_One = tw_rand_unif(g);
+      double P = b * U_One;
 
-			if (P <= 1) {
-				double Y = pow(P, (1 / shape));
-				double U_Two = tw_rand_unif(g);
+      if (P <= 1) {
+        double Y = pow(P, (1 / shape));
+        double U_Two = tw_rand_unif(g);
 
-				if (U_Two <= exp(-Y)) {
-					return scale * Y;
+        if (U_Two <= exp(-Y)) {
+          return scale * Y;
         }
-			} else {
-				double Y = -log((b - P) / shape);
-				double U_Two = tw_rand_unif(g);
+      } else {
+        double Y = -log((b - P) / shape);
+        double U_Two = tw_rand_unif(g);
 
-				if (U_Two <= pow(Y, (shape - 1))) {
-					return scale * Y;
+        if (U_Two <= pow(Y, (shape - 1))) {
+          return scale * Y;
         }
-			}
-		}
-	}
+      }
+    }
+  }
 }
 
 long tw_rand_geometric(tw_rng_stream& g, double P) {
-	int count = 1;
-	while (tw_rand_unif(g) > P) {
-		count++;
+  int count = 1;
+  while (tw_rand_unif(g) > P) {
+    count++;
   }
 
-	return count;
+  return count;
 }
 
 // Uses the Box-Muller transform to get a random number from a normal

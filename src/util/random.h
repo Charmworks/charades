@@ -1,5 +1,5 @@
 #ifndef _RANDOM_H_
-#define	_RANDOM_H_
+#define _RANDOM_H_
 
 #include "typedefs.h"
 
@@ -8,13 +8,13 @@
 #ifdef USE_XOROSHIRO
 #include "xoroshiro.h"
 typedef xoroshiro128plus tw_rng_stream;
-#define tw_rand_unif(G) std::generate_canonical<double, std::numeric_limits<double>::digits>(G)
+#define tw_rand_unif(G)         std::generate_canonical<double, std::numeric_limits<double>::digits>(G)
 #define tw_rand_reverse_unif(G) G.prev()
 #else
 #include "clcg4.h"
 typedef clcg4 tw_rng_stream;
-#define tw_rand_unif(G)			G()
-#define tw_rand_reverse_unif(G)	G.prev()
+#define tw_rand_unif(G)         G()
+#define tw_rand_reverse_unif(G) G.prev()
 #endif
 
 /*
