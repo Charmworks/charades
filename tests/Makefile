@@ -5,7 +5,7 @@ all:
 test:
 	make test -C ties
 	make test -C rng
-	python test.py
+	python3 test.py
 
 clean:
 	make clean -C ties

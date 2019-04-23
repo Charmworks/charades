@@ -15,4 +15,4 @@ clean:
 	rm -f *.o *~ core*
 
 example: example.C example.h $(BUILD_DIR)/libcharades.a
-	$(CC) $(CFLAGS) $(LFLAGS) example.C -o example -L$(BUILD_DIR) -lcharades
+	$(CC) example.C -o example -L$(BUILD_DIR) -lcharades $(CFLAGS) $(LFLAGS)

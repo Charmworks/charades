@@ -15,7 +15,7 @@ clean:
 	rm -f *.o *~ core*
 
 rng: rng.C rng.h $(BUILD_DIR)/libcharades.a
-	$(CC) $(CFLAGS) $(LFLAGS) rng.C -o rng -L$(BUILD_DIR) -lcharades
+	$(CC) rng.C -o rng -L$(BUILD_DIR) -lcharades $(CFLAGS) $(LFLAGS)
 
 test: rng
 	./rng

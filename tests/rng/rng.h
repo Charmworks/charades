@@ -1,7 +1,7 @@
 #ifndef RNG_H_
 #define RNG_H_
 
-#include "charades.h"
+#include "random.h"
 
 #define CALLS 8192
 #define MOVES 11

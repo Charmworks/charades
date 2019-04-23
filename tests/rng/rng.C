@@ -7,14 +7,14 @@ void DistributionTester<T,G>::test() {
   std::vector<T> results(CALLS);
   std::vector<int> counts(CALLS);
 
-  CkPrintf("Testing %s\n", this->name());
+  std::cout << "Testing " << name() << std::endl;
 
   for (index = 0; index < CALLS; index++) {
     counts[index] = rng.count();
     results[index] = call(rng, index);
   }
 
-  CkPrintf("Total RNG count: %i\n", rng.count());
+  std::cout << "Total RNG count: " << rng.count() << std::endl;
 
   for (int s = 0; s < MOVES; s++) {
     int target = sequence[s];

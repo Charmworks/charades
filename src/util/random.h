@@ -1,6 +1,7 @@
 #ifndef _RANDOM_H_
 #define _RANDOM_H_
 
+#include <assert.h>
 #include <math.h>
 #include <random>
 

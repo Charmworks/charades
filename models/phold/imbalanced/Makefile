@@ -17,4 +17,4 @@ clean:
 	rm -f output ross.csv
 
 phold: phold.C phold.h $(BUILD_DIR)/libcharades.a
-	$(CC) $(CFLAGS) $(LFLAGS) phold.C -o phold -L$(BUILD_DIR) -lcharades
+	$(CC) phold.C -o phold -L$(BUILD_DIR) -lcharades $(CFLAGS) $(LFLAGS)

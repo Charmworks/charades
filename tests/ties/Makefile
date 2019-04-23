@@ -17,7 +17,7 @@ clean:
 	rm -f *.o *~ core*
 
 arithmetic: arithmetic.C arithmetic.h $(BUILD_DIR)/libcharades.a
-	$(CC) $(CFLAGS) $(LFLAGS) arithmetic.C -o arithmetic -L$(BUILD_DIR) -lcharades
+	$(CC) arithmetic.C -o arithmetic -L$(BUILD_DIR) -lcharades $(CFLAGS) $(LFLAGS)
 
 test: arithmetic
 	$(CHARMRUN) +p1 ++local ./arithmetic
