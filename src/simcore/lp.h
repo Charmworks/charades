@@ -261,7 +261,7 @@ class LPBase {
   public:
     LPChare* owner;
     unsigned gid;
-    tw_rng_stream rng;
+    RNG rng;
 
     virtual void initialize() {}
     virtual void forward(Event* e) {}

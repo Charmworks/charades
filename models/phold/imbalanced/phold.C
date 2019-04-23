@@ -40,12 +40,12 @@ void PHoldLP::forward(PHoldMessage* msg, tw_bf* bf) {
 
 void PHoldLP::reverse(PHoldMessage* msg, tw_bf* bf) {
   // We definitely used rng for offset and remote percent
-  tw_rand_reverse_unif(rng);
-  tw_rand_reverse_unif(rng);
+  rng.prev();
+  rng.prev();
 
   // If it was a remote message then we also used rng for the destination
   if (bf->c1 == 1) {
-    tw_rand_reverse_unif(rng);
+    rng.prev();
   }
 }
 

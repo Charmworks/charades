@@ -48,7 +48,7 @@ void ExampleLP::forward(ExampleMessage* msg, tw_bf* bf) {
 }
 
 void ExampleLP::reverse(ExampleMessage* msg, tw_bf* bf) {
-  tw_rand_reverse_unif(rng);
+  rng.prev();
   counter--;
 }
 
@@ -60,7 +60,7 @@ void ExampleLP::forward(ExampleMessage2* msg, tw_bf* bf) {
   tw_event_send(e);
 }
 void ExampleLP::reverse(ExampleMessage2* msg, tw_bf* bf) {
-  tw_rand_reverse_unif(rng);
+  rng.prev();
   counter--;
 }
 
@@ -85,7 +85,7 @@ void ExampleLP2::forward(ExampleMessage* msg, tw_bf* bf) {
 }
 
 void ExampleLP2::reverse(ExampleMessage* msg, tw_bf* bf) {
-  tw_rand_reverse_unif(rng);
+  rng.prev();
   counter--;
 }
 
@@ -98,7 +98,7 @@ void ExampleLP2::forward(ExampleMessage2* msg, tw_bf* bf) {
 }
 
 void ExampleLP2::reverse(ExampleMessage2* msg, tw_bf* bf) {
-  tw_rand_reverse_unif(rng);
+  rng.prev();
   counter--;
 }
 
