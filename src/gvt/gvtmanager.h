@@ -13,6 +13,8 @@ class GVTManager : public CBase_GVTManager {
     /** Global virtual times */
     Time curr_gvt, prev_gvt;
 
+    bool active, continuous;
+
     /** Local pointers to other PE-level objects */
     DistributedScheduler* scheduler;
 
@@ -22,6 +24,10 @@ class GVTManager : public CBase_GVTManager {
   public:
     GVTManager();
 
+    // TODO: Initialize?
+    /** Called by the local Scheduler instance after the simulation ends */
+    virtual void finalize() {}
+
     /** Every subclass needs to implement gvt_begin() */
     virtual void gvt_begin() { CkAbort("Cannot call GVTManager::begin()\n"); }
 
@@ -29,12 +35,15 @@ class GVTManager : public CBase_GVTManager {
     Time current_gvt() const { return curr_gvt; }
     Time previous_gvt() const { return prev_gvt; }
 
+    bool is_active() const { return active; }
+    bool is_continuous() const { return continuous; }
+
     /** Called by the local PEManager after all groups have been initialized */
     virtual void groups_created();
 
     /** Methods for producing and consuming events for GVTs that need to know */
     virtual void consume(RemoteEvent* e) {}
-    virtual void produce(RemoteEvent* e) {}
+    virtual bool produce(RemoteEvent* e) { return true; }
 };
 
 #endif

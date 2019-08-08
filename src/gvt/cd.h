@@ -19,7 +19,7 @@ class CdGVT : public CBase_CdGVT {
     void gvt_end(Time);     /**< Result of min time reduction */
 
     void consume(RemoteEvent* e); /**< Decrement event count */
-    void produce(RemoteEvent* e); /**< Increment event count */
+    bool produce(RemoteEvent* e); /**< Increment event count */
 
   private:
     unsigned max_phase, current_phase, next_phase;

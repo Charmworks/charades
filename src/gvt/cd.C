@@ -84,10 +84,12 @@ void CdGVT::consume(RemoteEvent* e) {
   detector_pointers[e->phase]->consume();
 }
 
-void CdGVT::produce(RemoteEvent* e) {
+bool CdGVT::produce(RemoteEvent* e) {
   if(e->ts < min_sent) {
     min_sent = e->ts;
   }
   e->phase = current_phase;
   detector_pointers[current_phase]->produce();
+
+  return true;
 }

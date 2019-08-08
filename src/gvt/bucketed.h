@@ -18,7 +18,7 @@ class BucketGVT : public CBase_BucketGVT {
     /**Increment received count for the proper bucket of the event, check boundaries **/
     void consume(RemoteEvent* e);
     /**Increment sent count for proper bucket and recalculate min_sent, check boundaries**/
-    void produce(RemoteEvent* e);
+    bool produce(RemoteEvent* e);
 
   private:
 

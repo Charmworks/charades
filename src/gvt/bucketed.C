@@ -107,7 +107,7 @@ void BucketGVT::consume(RemoteEvent* e) {
   }
 }
 
-void BucketGVT::produce(RemoteEvent* e) {
+bool BucketGVT::produce(RemoteEvent* e) {
 
   e->phase = e->ts / bucket_size;
   sent[e->phase]++;
@@ -123,4 +123,5 @@ void BucketGVT::produce(RemoteEvent* e) {
     doing_reduction = true;
     contribute(CkCallback(CkReductionTarget(BucketGVT, bucket_ready), thisProxy));
   }
+  return true;
 }
