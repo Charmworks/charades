@@ -6,14 +6,6 @@
 #include "scheduler.h"
 #include "statistics.h"
 
-CProxy_Initialize mainProxy;
-
-Initialize::Initialize(CkArgMsg *m) {
-  delete m;
-  mainProxy = thisProxy;
-  CkExit();
-}
-
 void tw_init(int argc, char** argv) {
   clear_globals();
   charm_init(argc, argv);

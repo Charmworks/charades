@@ -7,20 +7,6 @@
 #include "lp.h"
 #include "mpi-interoperate.h" // This has to be included here
 
-extern CProxy_Initialize mainProxy;
-
-class Initialize : public CBase_Initialize {
-  public:
-    Initialize(CkArgMsg *m);
-
-    Initialize(CkMigrateMessage* m) { }
-
-    void Exit() {
-      CkPrintf("Exiting via mainchare\n");
-      CkExit();
-    }
-};
-
 void tw_init(int argc, char** argv);
 void tw_create_simulation(LPFactory* factory, LPMapper* mapper);
 void tw_create_simulation(LPFactory* factory);
