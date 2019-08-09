@@ -6,9 +6,12 @@
 
 SyncGVT::SyncGVT() {
   gvt_name = "Synchronous GVT";
+  active = false;
+  continuous = false;
 }
 
 void SyncGVT::gvt_begin() {
+  active = true;
 #ifdef CMK_TRACE_ENABLED
     gvt_start = CmiWallTimer();
 #endif
@@ -30,6 +33,7 @@ void SyncGVT::gvt_contribute() {
 }
 
 void SyncGVT::gvt_end(Time new_gvt) {
+  active = false;
   prev_gvt = curr_gvt;
   curr_gvt = new_gvt;
   scheduler->gvt_done(curr_gvt);
