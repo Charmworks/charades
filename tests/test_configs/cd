@@ -1,0 +1,4 @@
+# Optimistic w/Phased GVT
+sync=3
+gvt=2
+buffer-size=655360

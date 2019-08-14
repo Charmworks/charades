@@ -7,6 +7,7 @@
 import subprocess
 from collections import namedtuple
 import os
+import sys
 
 build_dir = os.path.abspath('../src/build')
 model_dir = os.path.abspath('../models')
@@ -15,6 +16,11 @@ test_dir = os.path.abspath('.')
 charmrun = os.path.join(build_dir,'charmrun')
 
 CfgElem = namedtuple('CfgElem', 'name path')
+
+class CharmConfig:
+  def __init__(self, name, args):
+    self.name = name
+    self.args = args
 
 class TestConfig:
   exe = CfgElem("","")
@@ -34,13 +40,14 @@ class ModelConfig:
     self.cfgs = [os.path.join(cfg_dir, c) for c in os.listdir(cfg_dir) if os.path.isfile(os.path.join(cfg_dir, c))]
 
 def runTest(cfg):
-  outdir = os.path.join("test_output", os.path.relpath(os.path.dirname(cfg.exe.path),start=model_dir), os.path.basename(cfg.model_cfg.path), os.path.basename(cfg.test_cfg.path))
+  outdir = os.path.join("test_output", os.path.relpath(os.path.dirname(cfg.exe.path),start=model_dir), os.path.basename(cfg.model_cfg.path), os.path.basename(cfg.test_cfg.path), cfg.charm_cfg.name)
   os.makedirs(outdir, exist_ok=True)
   cfg.stdout_path = os.path.join(outdir, "test.out")
   cfg.stderr_path = os.path.join(outdir, "test.err")
   print ("================================")
   print ("Running Test:")
   print ("Executable:\t"+cfg.exe.name, "("+cfg.exe.path+")")
+  print ("Charm Config:\t"+str(cfg.charm_cfg.args))
   print ("Model Config:\t"+cfg.model_cfg.name, "("+cfg.model_cfg.path+")")
   print ("Test Config:\t"+cfg.test_cfg.name, "("+cfg.test_cfg.path+")")
   print ("Test STDOUT:\t"+cfg.stdout_path)
@@ -48,7 +55,7 @@ def runTest(cfg):
 
   try:
     with open(cfg.stdout_path, "w") as fout, open(cfg.stderr_path, "w") as ferr:
-      result = subprocess.call([charmrun] + cfg.charm_cfg + [cfg.exe.path, cfg.model_cfg.path, cfg.test_cfg.path], stdout=fout, stderr=ferr, timeout=10)
+      result = subprocess.call([charmrun] + cfg.charm_cfg.args + [cfg.exe.path, cfg.model_cfg.path, cfg.test_cfg.path], stdout=fout, stderr=ferr, timeout=10)
   except subprocess.TimeoutExpired:
     cfg.status = -1
     print("STATUS:\t\tTimeout!")
@@ -65,9 +72,13 @@ example_config = ModelConfig("Example Mode", os.path.join(model_dir, 'example'),
 model_configs = [phold_config, example_config]
 
 cfg_path = 'test_configs/'
-test_cfgs = [os.path.join(cfg_path,f) for f in os.listdir(cfg_path) if os.path.isfile(os.path.join(cfg_path, f))]
 
-charm_cfgs = [['+p1','++local'], ['+p2', '++local']]
+if len(sys.argv) == 1:
+  test_cfgs = [os.path.join(cfg_path,f) for f in os.listdir(cfg_path) if os.path.isfile(os.path.join(cfg_path, f))]
+else:
+  test_cfgs = [os.path.join(cfg_path,f) for f in set(os.listdir(cfg_path)).intersection(sys.argv[1:]) if os.path.isfile(os.path.join(cfg_path, f))]
+
+charm_cfgs = [CharmConfig("1",['+p1','++local']), CharmConfig("2", ['+p2', '++local'])]
 
 tests = []
 for m in model_configs:
