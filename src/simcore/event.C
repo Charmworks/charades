@@ -134,6 +134,11 @@ void tw_event_send(Event* e) {
   }
 }
 
+void charm_event_release(RemoteEvent* e) {
+  int dest_chare = g_lp_mapper->get_chare_id(e->dest_lp);
+  lps(dest_chare).recv_remote_event(e);
+}
+
 void tw_event_rollback(Event * event) {
   Event* e = event->caused_by_me;
   LPBase* dest_lp = event->owner;

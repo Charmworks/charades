@@ -41,6 +41,11 @@ unsigned g_tw_gvt_trigger;
 unsigned g_tw_gvt_phases;
 unsigned g_tw_gvt_bucket_size;
 unsigned g_tw_async_reduction;
+double   g_tw_reserve_threshold;
+uint32_t g_tw_reserve_buckets;
+uint32_t g_tw_adaptive_buckets;
+uint32_t g_tw_clear_lag;
+uint32_t g_tw_clear_buckets;
 ///@}
 
 /** \name LB Configuration */
@@ -59,6 +64,7 @@ unsigned g_tw_rng_default;
 
 /** \name Misc Configuration */
 ///@{
+char g_output_dir[256];
 unsigned gvt_print_interval;
 unsigned g_tw_stat_interval;
 long int g_tw_expected_events;
@@ -78,6 +84,11 @@ void clear_globals() {
   g_tw_gvt_phases    = 2;
   g_tw_gvt_bucket_size    = 8;
   g_tw_async_reduction = 0;
+  g_tw_reserve_threshold = 1.0;
+  g_tw_reserve_buckets = 0;
+  g_tw_adaptive_buckets = 0;
+  g_tw_clear_lag = 0;
+  g_tw_clear_buckets = 1;
   g_tw_ldb_interval  = 0;
   g_tw_stat_interval = 16;
   g_tw_max_ldb       = 0;

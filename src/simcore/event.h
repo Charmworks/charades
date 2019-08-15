@@ -30,7 +30,11 @@ struct RemoteEvent : public CMessage_RemoteEvent {
     uint64_t src_lp;
     uint64_t dest_lp;
 
-    uint8_t phase;    /**< Used for async phased GVT calculation */
+    // Async GVT variables
+    uint8_t phase;
+    bool anti;
+    uint8_t offset;
+
     uint8_t type_id;  /**< Used for double-dispatch of event data */
     uint8_t type_size;
     char* data;       /**< Points to memory for user event data */
@@ -41,6 +45,8 @@ struct RemoteEvent : public CMessage_RemoteEvent {
       p | src_lp;
       p | dest_lp;
       p | phase;
+      p | anti;
+      p | offset;
       p | type_id;
       p | type_size;
       p(data, type_size);
@@ -249,6 +255,7 @@ void tw_event_rollback(Event* event);
 // API for Charm++ specific event usage, to be used by original ROSS code
 void charm_event_cancel(Event* e);
 void charm_anti_send(unsigned, Event* e);
+void charm_event_release(RemoteEvent* e);
 
 template <typename MsgType>
 uint32_t get_msg_id() {

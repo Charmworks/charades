@@ -3,33 +3,103 @@
 
 #include "gvtmanager.h"
 
+#include "event.h"
+
+#include <list>
+
+struct OffsetStats {
+  int regular, anti;
+  int held, cancelled, released;
+  int lag;
+
+  OffsetStats()
+      : regular(0), anti(0), held(0), cancelled(0), released(0), lag(0) {}
+
+  double anti_ratio() const {
+    return regular ? (double)anti / regular : 0.0;
+  }
+
+  double held_ratio() const {
+    return regular ? (double)held / regular : 0.0;
+  }
+
+  double cancelled_ratio() const {
+    return held ? (double)cancelled / held : 0.0;
+  }
+
+  // TODO: Can we tell when we send an anti event if the orginal would have
+  // been held and then released. Would maybe help determine if we are not
+  // holding events long enough.
+  double released_ratio() const {
+    return held ? (double)released / held : 0.0;
+  }
+
+  double average_lag() const {
+    return anti ? (double)lag / anti : 0.0;
+  }
+};
+
 class BucketGVT : public CBase_BucketGVT {
   public:
 
     BucketGVT();
-    /** Check if program has crossed bucket boundary**/
+
+    void finalize();
+
     void gvt_begin();
-    /**Check if sent = recieved for bucket and that no bucket rolled back**/
-    void check_counts(int, int, int);
-    /**Serves as checkpoint to ensure all PES cross boundary before we start reducing counts **/
-    void bucket_ready();
-    /** Called by the all reduce from check_counts() with resulting gvt**/
-    void gvt_end(Time, double);
-    /**Increment received count for the proper bucket of the event, check boundaries **/
-    void consume(RemoteEvent* e);
-    /**Increment sent count for proper bucket and recalculate min_sent, check boundaries**/
-    bool produce(RemoteEvent* e);
+
+    /** Returns number of buckets the local scheduler instance has passed */
+    int buckets_passed() const;
+
+    /**
+     * Starts the next GVT computation with a reduction to all_ready if active
+     * is false and buckets_passed() is at least 1.
+     */
+    void attempt_gvt();
+
+    /**
+     * Target of reduction signalling all PEs are ready with the minumum number
+     * of buckets passed by all schedulers.
+     */
+    void all_ready(int num_buckets);
+
+    /**
+     * Contributes sent and recvd counts for the specified number of buckets, as
+     * well as the number of buckets we are still passed, to check_counts().
+     */
+    void send_counts(int num_buckets);
+
+    /**
+     * Target of the tuple reduction from send_counts() which contains the sent
+     * and recvd counts for relevant buckets as well as the minimum number of
+     * buckets passed by all PEs.
+     */
+    void check_counts(CkReductionMsg* msg);
+
+    /** Advances the GVT by the specified number of buckets */
+    void advance_gvt(int num_buckets);
+
+    /** Attempt to cancel adaptively held back events */
+    bool attempt_cancel(RemoteEvent* anti);
+
+    void consume(RemoteEvent* e); ///< Increment recvd and attempt GVT
+    bool produce(RemoteEvent* e); ///< Increment sent and attempt GVT
 
   private:
+    Time bucket_size;   ///< Size of each bucket
+    Time max_ts;        ///< Max end ts used when bucket size doesn't divide end
+    int total_buckets;  ///< Total number of buckets
+    int curr_bucket;    ///< Index of current bucket
+    int* counts;        ///< Array of sent and received counts
 
-    /**start and end phase of the gvt**/
-    unsigned bucket_size, cur_bucket;
-    /** indicates if cur bucket is doing reductions **/
-    bool doing_reduction;
-    int * rollback_flags;
-    int * sent;
-    int * received;
-    Time*  min_sent;
+    int start_reductions;
+    int count_reductions;
+
+    OffsetStats* stats;
+    int reserve_buckets;
+    int clear_buckets;
+    double reserve_threshold;
+    std::list<RemoteEvent*>* reserves;
 };
 
 #endif

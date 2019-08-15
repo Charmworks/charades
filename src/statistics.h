@@ -68,7 +68,10 @@ class Statistics {
     uint64_t self_sends;   ///< events sent to ourselves
     uint64_t local_sends;  ///< events sent to different LPs in the same chare
     uint64_t remote_sends; ///< events sent to different chares
+    uint64_t remote_holds;
+    uint64_t remote_cancels;
     uint64_t anti_sends;   ///< anti events sent
+    uint64_t anti_cancels;
     ///@}
 
     /** \name GVT stats

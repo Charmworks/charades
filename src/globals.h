@@ -40,6 +40,11 @@ extern unsigned g_tw_gvt_trigger;     ///< unit of the GVT interval (time or eve
 extern unsigned g_tw_gvt_phases;      ///< number of phases in a phased gvt
 extern unsigned g_tw_gvt_bucket_size; ///< size of each bucket in a bucketed gvt
 extern unsigned g_tw_async_reduction; ///< use asynchronous reductions in GVTs
+extern double   g_tw_reserve_threshold;
+extern uint32_t g_tw_reserve_buckets;
+extern uint32_t g_tw_adaptive_buckets;
+extern uint32_t g_tw_clear_lag;
+extern uint32_t g_tw_clear_buckets;
 ///@}
 
 /** \name LB Configuration *////@{
@@ -55,6 +60,7 @@ extern unsigned g_tw_rng_default; ///< \todo documentation needed
 ///@}
 
 /** \name Misc Configuration *////@{
+extern char g_output_dir[256];        ///< output directory for extra logging
 extern unsigned gvt_print_interval;   ///< frequency of progress print outs
 extern unsigned g_tw_stat_interval;   ///< frequency of logging stats (in GVTs)
 extern long int g_tw_expected_events; ///< expected number of committed events
