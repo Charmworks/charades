@@ -111,7 +111,6 @@ class DistributedScheduler : public CBase_DistributedScheduler {
     GVTManager* gvt_manager;  /**< Direct pointer to our local GVT Manager */
 
     TriggerPtr gvt_trigger;   /**< Determines when to compute GVT */
-    TriggerPtr lb_trigger;    /**< Determines when to do LB */
     TriggerPtr print_trigger; /**< Determines when to print progress */
 #if CMK_TRACE_ENABLED
     TriggerPtr stat_trigger;  /**< Determines when to log stats */
@@ -133,7 +132,7 @@ class DistributedScheduler : public CBase_DistributedScheduler {
 
     /** Methods called by the GVT Manager signifying the scheduler may resume */
     virtual void gvt_resume();        /**< Called when LPs can unblock */
-    virtual void gvt_done(Time gvt);  /**< Called when GVT is complete */
+    virtual void gvt_done(Time gvt, bool lb);  /**< Called when GVT is complete */
 
     /** Methods informing the GVT Manager about incoming/outgoing events */
     void consume(RemoteEvent* e) {

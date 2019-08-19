@@ -8,6 +8,9 @@ extern CProxy_GVTManager gvt_manager_proxy;
 class RemoteEvent;
 class DistributedScheduler;
 
+class Trigger;
+typedef std::unique_ptr<Trigger> TriggerPtr;
+
 class GVTManager : public CBase_GVTManager {
   protected:
     /** Global virtual times */
@@ -20,6 +23,8 @@ class GVTManager : public CBase_GVTManager {
 
     /** GVT name for output purposes */
     std::string gvt_name;
+
+    TriggerPtr lb_trigger; /**< Determines when to do LB */
 
   public:
     GVTManager();

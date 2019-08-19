@@ -50,6 +50,8 @@ uint32_t g_tw_clear_buckets;
 
 /** \name LB Configuration */
 ///@{
+uint32_t g_tw_ldb_continuous;
+uint32_t g_tw_ldb_first;
 unsigned g_tw_ldb_interval;
 unsigned g_tw_max_ldb;
 unsigned g_tw_ldb_metric;
@@ -89,6 +91,8 @@ void clear_globals() {
   g_tw_adaptive_buckets = 0;
   g_tw_clear_lag = 0;
   g_tw_clear_buckets = 1;
+  g_tw_ldb_continuous = 0;
+  g_tw_ldb_first = 0;
   g_tw_ldb_interval  = 0;
   g_tw_stat_interval = 16;
   g_tw_max_ldb       = 0;

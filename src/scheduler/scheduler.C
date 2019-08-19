@@ -155,16 +155,6 @@ DistributedScheduler::DistributedScheduler() {
     }
   }
 
-  // Set up the load balancing trigger
-  if (g_tw_ldb_interval > 0) {
-    lb_trigger.reset(new CountTrigger(g_tw_ldb_interval));
-    if (g_tw_max_ldb > 0) {
-      lb_trigger.reset(new BoundedTrigger(lb_trigger.release(), g_tw_max_ldb));
-    }
-  } else {
-    lb_trigger.reset(new ConstTrigger(false));
-  }
-
   // Set up the print trigger
   print_trigger.reset(new CountTrigger(gvt_print_interval));
 
@@ -198,7 +188,6 @@ void DistributedScheduler::iteration_done() {
   if (gvt_trigger->ready()) {
     gvt_manager->gvt_begin();
     gvt_trigger->reset();
-    lb_trigger->iteration_done();
   } else {
     next_iteration();
   }
@@ -210,7 +199,7 @@ void DistributedScheduler::iteration_done() {
  * going to do load balancing this iteration after the current iteration.
  */
 void DistributedScheduler::next_iteration() {
-  if (!running && !lb_trigger->ready()) {
+  if (!running) {
     running = true;
     thisProxy[CkMyPe()].execute();
   }
@@ -226,7 +215,9 @@ void DistributedScheduler::gvt_resume() {}
  * The computed GVT determines if we are past the end time and the sim is over
  * If none of the above are true, then just start the next iteration
  */
-void DistributedScheduler::gvt_done(Time gvt) {
+// TODO: Don't have the lb argument. Instead just have the GVT call something
+// like Scheduler::start_load_balancing()
+void DistributedScheduler::gvt_done(Time gvt, bool lb) {
   TW_ASSERT(gvt >= PE_VALUE(g_last_gvt), "GVT Causality Violation\n");
   PE_STATS(total_gvts)++;
   PE_VALUE(g_last_gvt) = gvt;
@@ -247,14 +238,16 @@ void DistributedScheduler::gvt_done(Time gvt) {
   if(gvt >= g_tw_ts_end) {
     print_progress(gvt);
     end_simulation();
-  } else if (lb_trigger->ready()) {
-    print_progress(gvt);
-    start_balancing();
+    gvt_manager->finalize();
   } else {
     if (print_trigger->ready()) {
       print_progress(gvt);
     }
-    next_iteration();
+    if (lb) {
+      start_balancing();
+    } else {
+      next_iteration();
+    }
   }
 
   // If printing is ready, it would have been handled in one of the if branches
@@ -277,7 +270,6 @@ void DistributedScheduler::start_balancing() {
 /** After load balancing completes we can do the next scheduler iteration */
 void DistributedScheduler::balancing_complete() {
   DEBUG_PE("Load balancing complete\n");
-  lb_trigger->reset();
   next_iteration();
 }
 

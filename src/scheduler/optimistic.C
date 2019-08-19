@@ -57,15 +57,20 @@ void OptimisticScheduler::gvt_resume() {
   next_iteration();
 }
 
-void OptimisticScheduler::gvt_done(Time gvt) {
+void OptimisticScheduler::gvt_done(Time gvt, bool lb) {
   collect_fossils(gvt);
-  DistributedScheduler::gvt_done(gvt);
+  DistributedScheduler::gvt_done(gvt, lb);
 }
 
 void OptimisticScheduler::collect_fossils(Time gvt) {
   for (int i = 0; i < next_lps.get_size(); i++) {
     next_lps.as_array()[i]->lp->fossil_me(gvt);
   }
+}
+
+void OptimisticScheduler::balancing_complete() {
+  process_cancel_q();
+  DistributedScheduler::balancing_complete();
 }
 
 /** Call process_cancel_q on every LP chare on our PE */

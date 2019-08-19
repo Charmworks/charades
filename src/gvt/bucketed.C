@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "scheduler.h"
 #include "statistics.h"
+#include "trigger.h"
 
 #include <float.h>
 #include <fstream>
@@ -178,6 +179,7 @@ void BucketGVT::check_counts(CkReductionMsg* msg) {
   while (completed_buckets < valid_buckets && completed_buckets < num_buckets &&
       counts[SENT_IDX(completed_buckets)] == counts[RECV_IDX(completed_buckets)]) {
     completed_buckets++;
+    lb_trigger->iteration_done();
   }
 
   /** Advance the GVT past the completed buckets */
@@ -217,7 +219,12 @@ void BucketGVT::advance_gvt(int num_buckets) {
       bucket++;
     } while (bucket < last_bucket);
   }
-  scheduler->gvt_done(curr_gvt);
+  if (lb_trigger->ready() && g_tw_ldb_continuous) {
+    lb_trigger->reset();
+    scheduler->gvt_done(curr_gvt, true);
+  } else {
+    scheduler->gvt_done(curr_gvt, false);
+  }
 }
 
 bool key_matches(RemoteEvent* e1, RemoteEvent* e2) {

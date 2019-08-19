@@ -4,6 +4,8 @@
 #include "event.h"
 #include "scheduler.h"
 #include "globals.h"
+#include "trigger.h"
+
 #include <float.h>
 
 CdGVT::CdGVT() {
@@ -56,8 +58,11 @@ void CdGVT::gvt_begin() {
     detector_ready[current_phase] = false;
     current_phase = next_phase;
     next_phase = (current_phase+1)%max_phase;
+    lb_trigger->iteration_done();
   }
-  scheduler->gvt_resume();
+  if (!lb_trigger->ready() || g_tw_ldb_continuous) {
+    scheduler->gvt_resume();
+  }
 }
 
 void CdGVT::gvt_contribute() {
@@ -74,7 +79,13 @@ void CdGVT::gvt_end(Time new_gvt) {
   detector_ready[next_phase] = true;
   prev_gvt = curr_gvt;
   curr_gvt = new_gvt;
-  scheduler->gvt_done(curr_gvt);
+
+  if (lb_trigger->ready()) {
+    lb_trigger->reset();
+    scheduler->gvt_done(curr_gvt, true);
+  } else {
+    scheduler->gvt_done(curr_gvt, false);
+  }
 }
 
 void CdGVT::consume(RemoteEvent* e) {
