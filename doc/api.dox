@@ -5,24 +5,19 @@ This page lists the available functions for interacting with the simulation
 engine before, during, and after a simulation.
 
 \section setup_api Simulation Setup
-- \ref tw_addopts()
-- \ref tw_init()
-- \ref tw_define_lps()
-- \ref tw_run()
+- \ref ArgumentSet \copybrief ArgumentSet
+- \ref tw_add_arguments \copybrief tw_add_arguments
+- \ref tw_init() \copybrief tw_init()
+- \ref tw_create_simulation() \copybrief tw_create_simulation()
+- \ref tw_run() \copybrief tw_run()
+- \ref tw_end() \copybrief tw_end()
 
 \section event_api Event API
-- \ref tw_event_new(): Allocates a new event for a target LP. The virtual time
-offset (from the sending LPs current virtual time) and the sending LP is also
-passed in at construction and should not be changed afterwards.
-
-- \ref tw_event_data(): Accessor function to get a pointer to an event's model
-specific data.
-
-- \ref tw_event_send(): Send an event to its destination LP, scheduled at the
-virtual time specified at even construction.
+- \ref tw_event_new(uint64_t, Time, LPBase*, size_t) \copybrief tw_event_new
+- \ref tw_event_new<Type, Args>(uint64_t, Time, LPBase*, Args&&...) Typed version of \ref tw_event_new
+- \ref Event::get_data<Type>() \copybrief Event::get_data
+- \ref tw_event_send(Event* e) \copybrief tw_event_send
 
 \section rand Random Number Generation
-- \ref tw_rand_exponential
-- \ref tw_rand_reverse_unif
-\see ross_random.h
+\see random.h
 */

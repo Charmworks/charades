@@ -2,88 +2,229 @@
 \page getting_started Getting Started
 
 \section build Building Charades
-The source code for the Charades simulation engine is all located in `src/`. In
-order to build Charades paths to Charades and Charm++ need to be configured
+The source code for the Charades simulation engine is all located in \ref src/.
+In order to build Charades paths to Charades and Charm++ need to be configured
 correctly.
 
-1. Copy the configuration template (`config.mk.template`) to `config.mk`. All
-submodules and models will include this config file to compile correctly.
+1. Copy the configuration template (`src/config.mk.template`) to
+`src/config.mk`. All submodules and models will include this config file to
+compile correctly.
 
-2. Update paths in `config.mk` to point to your Charm++ build and Charades path.
-Charm++ must already be built. Currently, support only exists for non-smp Charm
-builds.
+2. Update paths in `src/config.mk` to point to your Charm++ directory and
+Charades \ref src/ directory. Charm++ must already be built according to
+instructions here: https://charm.readthedocs.io/en/latest/. Currently, support
+only exists for non-smp Charm builds.
 
-3. Run make from with the `src/` directory. Alternatively, individual modules
-can be compiled from within their respective subdirectories.
+3. Run make from within the \ref src/ directory. Alternatively, individual
+modules can be compiled from within their respective subdirectories.
 
 After the build completes, all object files and `charades.a` can be found in
-`src/build/`. Models need to be linked to this library in order to work.
+src/build/. Models need to be linked to this library in order to work.
 
-\section model Writing Models
-There are three basic steps for writing models in Charades. First, the LP
-behavior needs to be defined by writing special function we will refer to as
-LP handlers. They take care of setup, teardown, and processing events. Secondly,
-the LP mapping must be set up. This entails writing functions that define how
-many (and which) LPs are assigned to a single work unit (chare), and a map that
-designates the type of each LP in the simulation. There are default maps
-provided for everything but the type map. Finally, the main function must be
-written to set up the simulation configuration, and start the simulation.
+\section mbuild Building Models
+When compiling and linking a model, the Makefile for the model must include two
+things:
 
-These three steps are described below, and also explained in detail in the
-example model provided.
+1. Include the same `config.mk` as was created while building the Charades
+library so that the compiler has the correct paths to includes, and uses the
+same compile-time options as the library.
 
-\subsection handlers Writing LP Handlers
-To define an LP, you need 5 different handlers: initialize, forward, reverse,
-commit, and finalize. Not all of these handlers need to have non-empty bodies
-depending on the functionality your simulation requires.                     
-                                                                             
-Initialize and forward always need code, and make up the core of an LP       
-defintion:                                                                   
-- Intialize is called before the simulation begins, and is used to           
-  set up the initial LP state and send out initial messages. Without initial 
-  messages the simulation wouldn't have anything to run and would immediately
-  end.                                                                       
-- Forward is called to handle every event sent to the passed in LP.          
-                                                                             
-Reverse and commit handlers are only used if you need to run your simulation 
-with optimistic synchronization.                                             
-- Reverse is required, and called to reverse the effects of the passed in    
-  event on the passed in LP. In order to do so, it is often the case that    
-  the bitfield is set in forward save information about branches and loops.  
-- Commit is optional, and is called after GVT on each event that is ready to 
-  be committed. Any non-reverisble side effects such as I/O should be done   
-  in this function. If there are no such side-effects, the function can still
-  be left empty.                                                             
-                                                                             
-The finalize handler is called after the simulation, and can be used for     
-things like statistics collection and logging, but can be left empty if      
-needed.
+2. Link the Charades library built in section \ref build in the linking step.
 
-\see init_f
-\see event_f
-\see revent_f
-\see commit_f
-\see final_f
+Compiling will create a model executable and (possibly) a charmrun launch script
+(depending on the current Charm++ build you used).
 
-\subsection mapping Writing LP Maps
-There are 5 types of LP maps that can be defined, although only one is required.
-The 4 optional maps affect LP placement, and are not described in this guide
-because for most basic models the default mappings will suffice. To see an
-example of placement maps being used, see the dragonfly model in the `models/`
+Example models and the associated Makefiles can be found in the \ref models/
 directory.
 
-The only required map is the type map, which maps a global LP ID to a pointer to
-an LPType. See type_map_f for the method signature. Once you have defined the LP
-handlers, you can use them to create LPType objects which define the behavior of
-LPs. The type map simply takes a global ID and returns a pointer to one of these
-type objects.
+\section running Running Models
+To run a compiled model, use the `charmrun` launch script to run the model on
+the desired number of processors. For example, to run on `N` processors use
+the `+p` argument to the `charmrun` script:
 
-\see LPType
-\see type_map_f
-\see init_map_f
-\see chare_map_f
-\see local_map_f
-\see numlp_map_f
+`./charmrun +pN ./model <model-args>`
+
+Depending on the `Charm++` build and execution environment, you may also need to
+include the `++local` command-line flag to `charmrun` as well. More information
+on launching Charm applications can be found in the Charm++
+manual: https://charm.readthedocs.io/en/latest/.
+
+\section model Writing Models
+There are three basic steps for writing models in Charades. First, you must
+define your %LPs and events. %LPs and events dictate how your simulation runs, and
+make up the bulk of your models workload. Second, you must tell the simulator
+how to create and initially place your %LPs. This is done by defining LPFactory
+and LPMapper subclasses. Finally, a simple main function must be written to
+initialize the Charades library and configuration settings before running the
+simulation.
+
+These three steps are described below.
+
+\subsection handlers Writing LP Handlers
+%LPs are objects in your simulation, which are defined by inheriting from the
+base LP class, and overriding methods for setup, teardown, and event handling
+for the various types of events the %LP will need to handle. Events are simply
+C++ objects.
+
+The base LP class in Charades utilizes the Curiously Recurring Template Pattern
+(CRTP), and takes a variable number of template parameters depending on the
+number of different event types the %LP will have to handle. For example, to
+define an %LP, `SampleLP`, that can handle both `FooEvent` and `BarEvent` event
+types, the class header would look as follows:
+
+\code{.cpp}
+class SampleLP : public LP<SampleLP, FooEvent, BarEvent> {
+  // ...
+};
+\endcode
+
+There are five methods which determine the behavior of an %LP and can be
+overridden/defined by derived classes:
+
+1. LPBase::initialize(): Called once per %LP during simulation setup after %LPs
+have been created to set the initial state and seed the simulation with initial
+events. Can be overridden by derived %LP classes.
+
+2. LPBase::finalize(): Called after the simulation completes. Can be used for
+things such as final output, statistics collection or other tasks which need to
+be performed on simulation completion. Can be overridden by derived %LP classes.
+
+3. `forward(...)`, `reverse(...)`, and `commit(...)` event handlers: A derived
+%LP class must define these methods for each event type they wish to handle.
+They are not overrides of the methods in the LP class, but rather overloads
+which are dispatched to by LP based on event type. These methods are called
+during the simulation to actually process events as they are scheduled by the
+simulator. At minimum, an %LP needs a `forward(EventType* e, tw_bf* bf)`
+definition for each event type it can handle according to its declaration. This
+method is called when an event is ready to be executed by the LP.
+
+If you want your model to run with optimistic synchronization by using
+speculative event execution, then you will also need to define
+`reverse(EventType* e, tw_bf* bf)` and possibly `commit(EventType* e, tw_bf*
+bf)` for each relevant event type. The `reverse(...)` method is called when the
+effects of an incorrectly executed event need to be reversed. The `commit(...)`
+method is called when an event that was previously executed is known to have
+been correctly scheduled and is therefore being committed. If the event would
+have any irreversible side effects such as writing to file or stdout, those can
+be done at this time.
+
+The tw_bf fields are bitfields that can be used in conjunction with optimistic
+synchronization to save information about the forward execution path in order to
+correctly reverse it if need be.
+
+A complete skeleton for our previously mentioned `SampleLP` would therefore look
+like this:
+
+\code{.cpp}
+// Class containing data for FooEvents
+class FooEvent {
+public:
+  int id;
+  double data;
+};
+
+// Class containing data for BarEvents
+class BarEvent {
+public:
+  char c;
+};
+
+class SampleLP : public LP<SampleLB, FooEvent, BarEvent> {
+private:
+  // Private member variables and methods
+public:
+  SampleLP() {}
+
+  void initialize() { /* Setup code here  */ }
+  void finalize() { /* Finalization code here */ }
+
+  void forward(FooEvent* e, tw_bf* bf) {
+    // Process e, updating our state and possibly creating more events
+  }
+  void reverse(FooEvent* e, tw_bf* bf) {
+    // Reverse the effects that e had on our local state
+    // The simulator will handle cancellation of events that were created and
+    // sent due to the forward execution of e.
+  }
+  void commit(FooEvent* e, tw_bf* bf) {
+    // Resolve any irreversible side effects of e now that we know it is being
+    // committed.
+    std::cout << "Committing event" << e->id << std::endl;
+  }
+
+  // Same process for dealing with BarEvents
+  void forward(BarEvent* e, tw_bf* bf) {}
+  void reverse(BarEvent* e, tw_bf* bf) {}
+  void commit(BarEvent* e, tw_bf* bf) {}
+};
+\endcode
+
+Example models showing %LP and event definition can be found in the \ref models/
+subdirectory of the Charades distribution. Specifically, the Example model and
+the PHOLD models are good places to start looking.
+
+The public API exposed by Charades for creating/sending events, generating
+random numbers, etc is documented here: \ref api.
+
+\subsection mapping LP Creation and Mapping
+In order for the simulator to be able to create and map LPs for the simulation,
+the model must define a subclass of the LPFactory class and, optionally, a
+subclass of the LPMapper class.
+
+\subsubsection LPFactory
+The LPFactory interface defines a single method:
+LPBase* LPFactory::create_lp(uint64_t gid) const. This method take a global LP
+id and creates and returns a pointer to the LP which has that ID. Continuing
+with our above example, a basic LPFactory would look like:
+
+\code{.cpp}
+class SampleLPFactory : public LPFactory {
+public:
+  LPBase* create_lp(uint64_t gid) const {
+    return new SampleLP();
+  }
+};
+\endcode
+
+For models with more than one LP type, or more complex LPs, create_lp can use
+the gid to determine which LP to create. This can be seen in both the PHOLD and
+Example models in the 'models' subdirectory.
+
+\subsubsection LPMapper
+The LPMapper object is used to map LPs to execution units, which in Charades
+are Charm++ objects called chares. %LPs mapped to the same chare will always
+exist on the same hardware resources, will be migrated together, and share
+queues for pending and processed events. Communication between LPs on the same
+chare is instantaneous and involves simply enqueueing an event into their
+shared queue.  Communication between %LPs on different chares is handled by the
+Charm++ runtime system and may involve network communication if the chares are
+not currently on the same computational node.
+
+The LPMapper interface declares 4 pure virtual methods which must be overridden
+by a concrete derived class:
+
+1. uint64_t LPMapper::get_chare_id(uint64_t gid) const: Defines the chare id on
+which the %LP with global id \p gid is mapped to.
+2. uint64_t LPMapper::get_local_id(uint64_t gid) const: Defines the local offset
+of the %LP with global id \p gid within the chare it is mapped to.
+3. uint64_t LPMapper::get_global_id(uint64_t cid, uint64_t lid) const: Given a
+chare id (\p cid) and local id (\p lid), returns the corresponding global id.
+Must be consistent with the results of LPMapper::get_chare_id and
+LPMapper::get_local_id.
+4. uint64_t LPMapper::get_num_lps(uint64_t cid) const: Given a chare id (\p
+cid), returns the number of %LPs that that chare contains.
+
+The default mapper in Charades is a simple block mapping of chares, and can be
+found in `src/setup/mapper.h`. It uses the global parameter \ref
+g_lps_per_chare to determine how many %LPs per chare. Other relevant global
+parameters for determining simulation size and mapping are: \ref g_total_lps
+and \ref g_num_chares.
+
+\see LPFactory
+\see LPMapper
+\see g_total_lps
+\see g_num_chares
+\see g_lps_per_chare
 
 \subsection main Writing the Main Function
 The purpose of the main() function is to set a few global variables used for
@@ -94,36 +235,38 @@ Many of the globals for configuration can be set using the command line as well
 and running the model with `--help` will show the available options, so in this
 guide we will mostly focus on other requirements of the main function.
 
-The first (or second thing) you main function should do is call \ref tw_init()
+The first (or second thing) you main function should do is call \ref tw_init(...)
 and pass in the command line arguments. This sets up the simulator and parses
-configuration options from the command line. The only thing that should be done
-before this is adding model specific command line options to be parsed via
-\ref tw_optadd().
+configuration options from the command line. The only thing that may be done
+before this is adding model specific command line options to be parsed by using
+ArgumentSet%s and \ref tw_add_arguments(...).
 
-After tw_init is called, the global variables for LP mapping must be set. As
-described above, the only required map is the type map, which is held in
-g_type_map. For more information on mapping variables see globals.h.
+After \ref tw_init(...) is called, event types must be registered, and global
+configuration variables may be set. For each event type in your model, call
+\ref register_msg_type to make the simulator aware of the different types of
+events that will be sent during execution. Globals such as \ref g_total_lps can
+also be set at this point, although keep in mind that any set here will
+overwrite values passed in on the command line.
 
-Once the LP mapping is set up, tw_define_lps() creates and configures the LP
-chare array. Once tw_define_lps() is called, the simulation can be run with
-tw_run(), which runs the simulation to completion and returns control after.
-The last thing to do is call tw_end().
+Once the events have been registered and the configuration variables are set,
+call \ref tw_create_simulation(LPFactory*, LPMapper*). A pointer to an
+LPFactory must be passed as the first argument, but the second argument for an
+LPMapper is optional. If ignored, the default BlockMapper will be used. This
+creates all of the LPs for the simulation according to the configuration
+chosen, as well as the simulation scheduler and any other simulation
+components, such as a GVTManager, depending on how the simulation is being run.
 
-\section mbuild Building Models
-When building a model, include the same `config.mk` as was created while
-building the Charades library so that the paths are correct. The other thing
-that must be included is the Charades library during the linker step. For a
-basic example, see the Makefile in the example model. Compiling will create a
-model executable and a charmrun launch script (depending on the current Charm++
-build you used).
+Finally, call \ref tw_run() and \ref tw_end(). The call to \ref tw_run() first
+calls the \ref LPBase::initialize() method on all %LPs, then runs the
+simulation to completion. The \ref tw_end() call cleans up the simulation
+resources and exits the application.
 
-\section running Running Models
-Run the model using the `charmrun` launch script created able, using the +p
-option to specify the number of processors.
-
-`charmrun +pN ./model <model-args>`
-
-More information on launching Charm applications can be found in the Charm++
-manual.
+\see ArgumentSet
+\see tw_add_arguments(...)
+\see tw_init(...)
+\see tw_create_simulation(...)
+\see tw_run()
+\see tw_end()
+\see \ref global_config
 
 */

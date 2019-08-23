@@ -217,6 +217,7 @@ public:
     return msg;
   }
 
+  /** Public accessor for the event payload, cast as the specified type */
   template<typename DataType>
   DataType* get_data() const {
     return reinterpret_cast<DataType*>(msg->data);
@@ -247,6 +248,7 @@ static inline void link_causality(Event* nev, Event* cev) {
  */
 Event* event_alloc(RemoteEvent* event, uint64_t dest_gid, Time offset, LPBase * sender);
 Event* event_alloc();
+/** Sends an event to its destination %LP */
 void tw_event_send(Event* event);
 void tw_event_free(Event* e, bool commit);
 void tw_event_rollback(Event* event);
@@ -290,6 +292,14 @@ public:
   }
 };
 
+/**
+ * Creates an Event with the appropriate payload type for the desired
+ * destination and offset in virtual time.
+ * \param dest_gid global id of the destination %LP
+ * \param offset offset (in units of virtual time) from the %LPs current time
+ * \param sender pointer to the sending %LP
+ * \param args arguments to pass to the MsgType constructor
+ */
 template <typename MsgType, typename... Args>
 Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender, Args&&... args) {
   RemoteEvent* msg = new (sizeof(MsgType)) RemoteEvent();
@@ -299,6 +309,13 @@ Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender, Args&&... ar
   return event_alloc(msg, dest_gid, offset, sender);
 }
 
+/**
+ * Creates a generic Event with payload of the specified size.
+ * \param dest_gid global id of the destination %LP
+ * \param offset offset (in units of virtual time) from the %LPs current time
+ * \param sender pointer to the sending %LP
+ * \param size size of the message payload
+ */
 Event* tw_event_new(uint64_t dest_gid, Time offset, LPBase* sender, size_t size);
 
 #endif

@@ -257,18 +257,35 @@ class LPChare : public CBase_LPChare {
     ///@}
 };
 
+/**
+ * Non-templated base class for LP, so that the simulator can deal with a single
+ * %LP base type. Event handling methods are overridden by LP so that event
+ * handling can be specialized by event type via an event dispatcher.
+ */
 class LPBase {
   public:
+    /** The LPChare this %LP object lives on */
     LPChare* owner;
+    /** The global id of this %LP */
     unsigned gid;
+    /** The random number generator for this %LP */
     RNG rng;
 
+    /** Called to initialize LP state and seed initial events */
     virtual void initialize() {}
+    /** Overridden by LP */
     virtual void forward(Event* e) {}
+    /** Overridden by LP */
     virtual void reverse(Event* e) {}
+    /** Overridden by LP */
     virtual void commit(Event* e) {}
+    /** Called to perform any final actions before simulation exit */
     virtual void finalize() {}
 
+    /**
+     * Called by the scheduler to break ties on events with the same timestamp.
+     * Can be overridden by derived classes for model specific tiebreaking.
+     */
     virtual bool compare(const Event* e1, const Event* e2) {
       if (e1->src_lp != e2->src_lp) {
         return e1->src_lp < e2->src_lp;
@@ -287,6 +304,12 @@ class LPBase {
     }
 };
 
+/**
+ * Base class which defines the interface for defining model %LPs. Parameterized
+ * by the derived class (CRTP), and the types of events it handles. Uses a
+ * DispatcherBase object to dispatch event handling to specific methods in the
+ * derived class.
+ */
 template <typename Derived, typename M, typename... Ms>
 class LP : public LPBase {
   private:
@@ -312,12 +335,25 @@ class LP : public LPBase {
         registered = true;
       }
     }
+
+    /**
+     * Called by the Scheduler to forward execute \p e. Uses a dispatcher to
+     * call the correct handler on the derived class.
+     */
     void forward(Event* e) {
       dispatchers[e->type_id]->forward(static_cast<Derived*>(this), e);
     }
+    /**
+     * Called by the Scheduler to reverse execute \p e during a rollback. Uses
+     * a dispatcher to call the correct handler on the derived class.
+     */
     void reverse(Event* e) {
       dispatchers[e->type_id]->reverse(static_cast<Derived*>(this), e);
     }
+    /**
+     * Called by the Scheduler when \p e is committed. Uses  a dispatcher to
+     * call the correct handler on the derived class.
+     */
     void commit(Event* e) {
       dispatchers[e->type_id]->commit(static_cast<Derived*>(this), e);
     }

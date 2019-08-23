@@ -49,7 +49,7 @@ extern uint32_t g_tw_clear_buckets;
 
 /** \name LB Configuration *////@{
 extern uint32_t g_tw_ldb_continuous;
-extern uint32_t g_tw_ldb_first;
+extern uint32_t g_tw_ldb_first;     ///< first interval to call lb
 extern unsigned g_tw_ldb_interval;  ///< number of intervals to wait before lb
 extern unsigned g_tw_max_ldb;       ///< max number of times to call lb
 extern unsigned g_tw_ldb_metric;    ///< metric used to measure LP load

@@ -1,0 +1,39 @@
+/** \dir src/
+ * Main source directory for the Charades library. Contains make configuration
+ * files, top level files, the build directory, and submodules for schedulers,
+ * gvt managers, simulation setup, simulation core, collections, and utilities.
+ *
+ * To build Charades, copy config.mk.template to config.mk, modify paths, and
+ * run make.
+ * \see \ref getting_started
+ */
+
+/** \dir src/collections
+ * Contains data structures for holding collections of events and LPs.
+ */
+
+/** \dir src/gvt
+ * Contains definitions for various GVTManagers, which orchestrate the
+ * computation of the Global Virtual Time (GVT) in distributed simulations.
+ */
+
+/** \dir src/scheduler
+ * Contains definitions for the different types of schedulers in Charades
+ * (sequential, conservative, or optimistic). Schedulers manage execution of
+ * various simulation processes such as event execution, gvt computation,
+ * fossil collection, and load balancing.
+ */
+
+/** \dir src/setup
+ * Contains code for setup routines and classes.
+ */
+
+/** \dir src/simcore
+ * Contains code for core simulation components. Primarily events and LPs, as
+ * well as the methods for creation and sending of events.
+ */
+
+/** \dir src/util
+ * Contains code for various utilies such as command line parsing and random
+ * number generation.
+ */

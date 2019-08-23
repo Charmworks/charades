@@ -1,3 +1,7 @@
+/** \file command_line.h
+ * Defines functions for registering and parsing command line arguments.
+ */
+
 #ifndef CLARG_H_
 #define CLARG_H_
 
@@ -79,14 +83,26 @@ public:
 // adding one entry for each argument in it's map
 // Or we can just make a more proper composite set
 // We want to preserve set names and order for printing
+/**
+ * Class for a set of arguments that can be read from the command line.
+ */
 class ArgumentSet : public AggregateParser {
 private:
   std::string name;
   std::map<std::string, uint8_t> indices;
 
 public:
+  /**
+   * \param n name of the arguments set (shown when using --help)
+   */
   ArgumentSet(std::string n) : name(n) {}
 
+  /**
+   * Register a new command line argument to be parsed.
+   * \param name name of the argument that will be used on the command line
+   * \param desc description of the argument shown when using --help
+   * \param loc the address where the parsed value should be stored
+   */
   template <typename ArgType>
   void register_argument(std::string name, std::string desc, ArgType& loc) {
     if (indices.find(name) != indices.end()) {
@@ -105,6 +121,7 @@ public:
   }
 };
 
+/** Add a new set of arguments for the simulator to parse */
 void tw_add_arguments(ArgumentSet* args);
 void parse_command_line(int argc, char** argv);
 

@@ -3,8 +3,31 @@
 
 This page lists a number of global variables that can be used to set up the
 simulation engine. They should be set before the simulation is run. Once the
-simulation begins they should be treated as readonly.
+simulation begins they should be treated as readonly. Many of them can also be
+set via command line. Pass the --help argument for more information.
 
-\ref g_total_lps
+\section LP Setup
+- \ref g_total_lps \copybrief g_total_lps
+- \ref g_num_chares \copybrief g_num_chares
+- \ref g_lps_per_chare \copybrief g_lps_per_chare
+
+\section Simulation Synchronization
+- \ref g_tw_lookahead \copybrief g_tw_lookahead
+- \ref g_tw_synchronization_protocol \copybrief g_tw_synchronization_protocol
+- \ref g_tw_ts_end \copybrief g_tw_ts_end
+
+\section GVT Configuration
+- \ref g_tw_gvt_scheme \copybrief g_tw_gvt_scheme
+- \ref g_tw_gvt_interval \copybrief g_tw_gvt_interval
+- \ref g_tw_gvt_trigger \copybrief g_tw_gvt_trigger
+
+\section LB Configuration
+- \ref g_tw_ldb_first \copybrief g_tw_ldb_first
+- \ref g_tw_ldb_iterval \copybrief g_tw_ldb_iterval
+- \ref g_tw_max_ldb \copybrief g_tw_max_ldb
+
+\section Misc
+- \ref g_tw_print_interval \copybrief g_tw_print_interval
+- \ref g_tw_expected_events \copybrief g_tw_expected_events
 
 */
